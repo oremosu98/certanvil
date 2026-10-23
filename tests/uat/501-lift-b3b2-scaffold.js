@@ -23,6 +23,15 @@ const { _fnBody, fs, path, ROOT, results, test, vm } = require('./_context');
       /_slComputePace\([^;]*_slSession\.timeUp\)/.test(_fnBody(sl, '_slRenderExamResult') || ''));
     test('_slRenderPaceBlock reads "Out of time" when the clock ran out',
       /pace\.timeUp[^;]*'Out of time'/.test(_fnBody(sl, '_slRenderPaceBlock') || ''));
+
+    // An untouched configure step saves {slots:{}}: it is not an answer (it read as one, so the End
+    // dialog said "3 answered, 0 skipped" for an exam nobody touched).
+    const actx = vm.createContext({ Object, Array, String });
+    vm.runInContext(_fnBody(sl, '_slIsAnswered') || '', actx);
+    const ans = (a) => { actx._slSession = { answers: [a] }; return vm.runInContext('_slIsAnswered(0)', actx); };
+    test('_slIsAnswered: empty nested slots are not an answer; a filled slot, a pick or an order is',
+      ans({ d1: { slots: {} }, f1: { slots: {} } }) === false && ans(null) === false && ans({ a: '' }) === false
+      && ans({ d1: { slots: { s1: 'VLAN 20' } } }) === true && ans({ p: 'B' }) === true && ans({ o: [2, 0, 1] }) === true);
   } catch (err) {
     test('Lift B3b2 scaffold: block (threw)', false);
     results.errors.push('501 lift-b3b2-scaffold block threw: ' + err.message);

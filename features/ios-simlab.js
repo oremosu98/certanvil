@@ -112,7 +112,9 @@
     var ref = scn && scn.assets && scn.assets.reference;
     // A new round rises in after the skeleton; a Reset re-mount (same opts) and the exam's per-question
     // re-renders do not replay it.
-    if (opts && !opts.__islEntered && !(wrap.closest && wrap.closest('.exam-pbq'))) { opts.__islEntered = true; wrap.classList.add('isl-enter'); }
+    // v8.189.0 Lift B3b2: Sim Lab's own Exam mode places Reset as the full exam does and drops the inline Submit.
+    var inExam = !!(wrap.closest && wrap.closest('.exam-pbq, #page-sim-lab.isl-exam'));
+    if (opts && !opts.__islEntered && !inExam) { opts.__islEntered = true; wrap.classList.add('isl-enter'); }
     var prose = wrap.querySelector('.sl-scn-prose');
     if (prose && !prose.querySelector('.isl-scn-k')) prose.insertAdjacentHTML('afterbegin', '<span class="isl-scn-k">' + SCN + 'Scenario</span>');
     var panel = wrap.querySelector('.sl-ref');
@@ -128,7 +130,9 @@
     }
     // Inside the full exam the B2 dock (Prev · Flag · Next) stays, so Reset moves: into the console
     // bar when the reference is a terminal, otherwise a compact pill at the top right of step 1.
-    var reset = wrap.closest && wrap.closest('.exam-pbq') ? wrap.querySelector('.sl-actions .sl-reset') : null;
+    var reset = inExam ? wrap.querySelector('.sl-actions .sl-reset') : null;
+    var sub = inExam && wrap.closest('#page-sim-lab') ? wrap.querySelector('[data-action="simLabSubmitScenario"]') : null;
+    if (sub) sub.remove();
     if (reset) {
       var bar = ref && ref.kind === 'terminal' ? wrap.querySelector('.term-head') : null;
       var step = wrap.querySelector('.sl-step');

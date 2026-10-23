@@ -1467,7 +1467,7 @@ html[data-theme] body #page-exam #exam-options .option.exam-selected::after, htm
 html[data-theme="light"] body #page-exam #exam-options .option::after { --ix-check: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fbf8f2' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>"); }
 /* a Sim Lab question: "Sim Lab" tag before the topic, the console card holds its own Reset */
 html[data-theme] body #page-exam:has(#exam-options .exam-pbq) #exam-topic-lbl::before { content: "Sim Lab"; margin-right: 9px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border-radius: 999px; padding: 5px 8px; }
-html[data-theme] body #page-exam .exam-pbq { max-width: 100%; overflow-x: auto; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) { max-width: 100%; overflow-x: auto; }
 
 /* dock: Prev · Flag · Next */
 html[data-theme] body #page-exam .exam-nav-row { order: 4; display: flex !important; align-items: stretch !important; justify-content: flex-start !important; gap: 10px !important; margin: 0 !important; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)) !important; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent) !important; background: var(--bg) !important; }
@@ -1808,51 +1808,51 @@ html[data-theme] body #page-sim-lab.isl-practice.active { padding: 0 !important;
 #page-sim-lab.isl-practice .slr-dot.now { background: var(--accent); }
 /* body + cards */
 #page-sim-lab.isl-practice #sl-body { padding: 4px 20px calc(96px + env(safe-area-inset-bottom)); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-scn-prose,
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-scn-logs,
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-ref,
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-step { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin: 0 0 11px; box-shadow: none; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-scn-prose { font: 500 13.5px/1.55 Inter, sans-serif; color: var(--text); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-scn-k { display: flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-scn-k svg { width: 13px; height: 13px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-scn-prose mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-scn-logs { font: 500 11.5px/1.65 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); white-space: pre; overflow-x: auto; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-ref { overflow-x: auto; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-ref:has(> .term) { padding: 0; overflow: hidden; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-ref-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-ref-head > span { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-dim); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-enlarge { position: relative; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--accent-deep); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: transform .15s var(--ios-ease); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-enlarge::after { content: ""; position: absolute; inset: -9px -4px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-enlarge:active { transform: scale(0.97); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .isl-enlarge svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-scn-prose,
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-scn-logs,
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-ref,
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-step { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin: 0 0 11px; box-shadow: none; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-scn-prose { font: 500 13.5px/1.55 Inter, sans-serif; color: var(--text); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-scn-k { display: flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-scn-k svg { width: 13px; height: 13px; flex: 0 0 auto; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-scn-prose mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-scn-logs { font: 500 11.5px/1.65 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); white-space: pre; overflow-x: auto; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-ref { overflow-x: auto; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-ref:has(> .term) { padding: 0; overflow: hidden; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-ref-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-ref-head > span { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-dim); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-enlarge { position: relative; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--accent-deep); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: transform .15s var(--ios-ease); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-enlarge::after { content: ""; position: absolute; inset: -9px -4px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-enlarge:active { transform: scale(0.97); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .isl-enlarge svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 /* terminal = the console card: host name + "console", mono body */
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term { margin: 0; border: 0; border-radius: 0; background: transparent; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-head { padding: 9px 12px; background: transparent; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-host .lamp, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-sess { display: none; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-host-name { font: 700 10.5px/1 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-host-name::after { content: " console"; font-weight: 700; color: var(--text-dim); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-body { font: 500 11.5px/1.65 'Roboto Mono', ui-monospace, monospace; padding: 6px 0 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .term-cmd .pmt { color: var(--accent-deep); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term { margin: 0; border: 0; border-radius: 0; background: transparent; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-head { padding: 9px 12px; background: transparent; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-host .lamp, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-sess { display: none; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-host-name { font: 700 10.5px/1 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-host-name::after { content: " console"; font-weight: 700; color: var(--text-dim); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-body { font: 500 11.5px/1.65 'Roboto Mono', ui-monospace, monospace; padding: 6px 0 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .term-cmd .pmt { color: var(--accent-deep); }
 /* steps */
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-step-k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-step .sl-prompt { font: 600 15.5px/1.35 Inter, sans-serif; color: var(--text); margin: 0 0 12px; letter-spacing: -0.005em; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-block { display: grid; gap: 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-line { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 10px 12px; font: 600 12px/1.35 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); text-align: left; cursor: pointer; transition: background-color .16s, border-color .16s, transform .12s var(--ios-ease); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-line::before { content: ""; flex: 0 0 auto; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); box-sizing: border-box; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-line:active { transform: scale(0.98); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-line.sl-sel { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--text); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-analyze-line.sl-sel::before { border-color: var(--accent); background: var(--accent) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center / 11px no-repeat; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cmd-menu { display: grid; gap: 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cmd { min-height: 44px; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 10px 12px; font: 600 12px/1.35 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cmd.used { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); color: var(--text); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-order-list { display: flex; flex-direction: column; gap: 8px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-order-row, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-chip, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-match-l, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-match-r { min-height: 48px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; font: 500 13px/1.35 Inter, sans-serif; color: var(--text); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-grip { color: var(--text-dim); }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cat-cols, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-match-grid { grid-template-columns: 1fr; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-field-label, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cfg-label { display: block; font: 700 11.5px/1.35 Inter, sans-serif; color: var(--text-mid); margin: 12px 0 7px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-cfg-select, :is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-field-input { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); padding: 0 14px; font: 500 13.5px/1.3 Inter, sans-serif; scroll-margin-bottom: 120px; box-sizing: border-box; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-dp-toggle { display: flex; gap: 6px; }
-:is(#page-sim-lab.isl-practice, #page-exam .exam-pbq) .sl-dp-btn { flex: 1 1 0; min-height: 44px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-step-k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 0 0 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-step .sl-prompt { font: 600 15.5px/1.35 Inter, sans-serif; color: var(--text); margin: 0 0 12px; letter-spacing: -0.005em; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-block { display: grid; gap: 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-line { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 10px 12px; font: 600 12px/1.35 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); text-align: left; cursor: pointer; transition: background-color .16s, border-color .16s, transform .12s var(--ios-ease); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-line::before { content: ""; flex: 0 0 auto; width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); box-sizing: border-box; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-line:active { transform: scale(0.98); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-line.sl-sel { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--text); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-analyze-line.sl-sel::before { border-color: var(--accent); background: var(--accent) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>") center / 11px no-repeat; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cmd-menu { display: grid; gap: 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cmd { min-height: 44px; width: 100%; text-align: left; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 10px 12px; font: 600 12px/1.35 'Roboto Mono', ui-monospace, monospace; color: var(--text-mid); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cmd.used { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); color: var(--text); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-order-list { display: flex; flex-direction: column; gap: 8px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-order-row, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-chip, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-match-l, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-match-r { min-height: 48px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; font: 500 13px/1.35 Inter, sans-serif; color: var(--text); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-grip { color: var(--text-dim); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cat-cols, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-match-grid { grid-template-columns: 1fr; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-field-label, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cfg-label { display: block; font: 700 11.5px/1.35 Inter, sans-serif; color: var(--text-mid); margin: 12px 0 7px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-cfg-select, :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-field-input { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--text); padding: 0 14px; font: 500 13.5px/1.3 Inter, sans-serif; scroll-margin-bottom: 120px; box-sizing: border-box; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-dp-toggle { display: flex; gap: 6px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam, #page-exam .exam-pbq) .sl-dp-btn { flex: 1 1 0; min-height: 44px; }
 /* dock: Reset · Submit answers */
 #page-sim-lab.isl-practice #sl-body .sl-actions { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(var(--lift-col-w, 100%), 100%); z-index: 95; display: flex; justify-content: stretch; flex-wrap: nowrap; gap: 10px; margin: 0; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); box-sizing: border-box; }
 #page-sim-lab.isl-practice .sl-actions .sl-reset { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border-radius: 13px; padding: 13px 16px; font: 650 14px/1 Inter, sans-serif; color: var(--text-mid); background: transparent; }
@@ -1860,13 +1860,13 @@ html[data-theme] body #page-sim-lab.isl-practice.active { padding: 0 !important;
 #page-sim-lab.isl-practice .sl-actions .gnt-cta { flex: 1 1 auto; width: auto; margin: 0; border: none; border-radius: 13px; padding: 14px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); }
 #page-sim-lab.isl-practice .sl-actions .gnt-cta:active { transform: scale(0.985); }
 /* loader: the quiz's generating treatment */
-#page-sim-lab.isl-practice .isl-loader { padding: 8px 0 0; text-align: center; }
-#page-sim-lab.isl-practice .isl-skel { position: relative; overflow: hidden; height: 92px; border-radius: 12px; background: var(--surface3); margin-bottom: 11px; }
-#page-sim-lab.isl-practice .isl-skel-2 { height: 150px; } #page-sim-lab.isl-practice .isl-skel-3 { height: 120px; }
-#page-sim-lab.isl-practice .isl-loader .slr-loader-t { font: 600 19px/1.3 Fraunces, Georgia, serif; color: var(--text); margin-top: 22px; }
-#page-sim-lab.isl-practice .isl-loader .slr-loader-s { font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); margin-top: 6px; }
-#page-sim-lab.isl-practice .isl-gen-track { width: 60%; height: 3px; margin: 16px auto 0; border-radius: 999px; background: var(--track); overflow: hidden; }
-#page-sim-lab.isl-practice .isl-gen-bar { width: 40%; height: 100%; border-radius: 999px; background: var(--accent); }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader { padding: 8px 0 0; text-align: center; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel { position: relative; overflow: hidden; height: 92px; border-radius: 12px; background: var(--surface3); margin-bottom: 11px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-skel-2 { height: 150px; } #page-sim-lab.isl-practice .isl-skel-3 { height: 120px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader .slr-loader-t { font: 600 19px/1.3 Fraunces, Georgia, serif; color: var(--text); margin-top: 22px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-loader .slr-loader-s { font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); margin-top: 6px; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-gen-track { width: 60%; height: 3px; margin: 16px auto 0; border-radius: 999px; background: var(--track); overflow: hidden; }
+:is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-gen-bar { width: 40%; height: 100%; border-radius: 999px; background: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes isl-round-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
   #page-sim-lab.isl-practice .sl-scenario.isl-enter > :not(.sl-actions) { opacity: 0; animation: isl-round-in .5s var(--ios-ease) forwards; }
@@ -1931,15 +1931,15 @@ html[data-theme] body #page-sim-lab-result.active:has(.isl-vbody) { padding: 0 !
 
 /* ═════════════════════ LIFT B3b1 · EXAM PBQ (cert-ios-exam.html ?v=pbq) · isl- ═════════════════════ */
 /* The round's cards (shared above via :is) inside the B2 exam; its dock stays Prev · Flag · Next, so Reset moves up. */
-html[data-theme] body #page-exam .exam-pbq .sl-actions:not(:has(button)) { display: none; }
-html[data-theme] body #page-exam .exam-pbq .sl-reset.isl-reset-pill { position: relative; min-height: 0; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-mid); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; transition: transform .15s var(--ios-ease); }
-html[data-theme] body #page-exam .exam-pbq .sl-reset.isl-reset-pill::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12a9 9 0 1 0 3-6.7L3 8'/><path d='M3 3v5h5'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12a9 9 0 1 0 3-6.7L3 8'/><path d='M3 3v5h5'/></svg>") center / contain no-repeat; }
-html[data-theme] body #page-exam .exam-pbq .sl-reset.isl-reset-pill::after { content: ""; position: absolute; inset: -9px -4px; }
-html[data-theme] body #page-exam .exam-pbq .sl-reset.isl-reset-pill:active { transform: scale(0.97); }
-html[data-theme] body #page-exam .exam-pbq .sl-step:has(> .isl-reset-step) { position: relative; }
-html[data-theme] body #page-exam .exam-pbq .sl-reset.isl-reset-step { position: absolute; top: 11px; right: 12px; z-index: 1; }   /* above the step eyebrow, which would otherwise take the tap */
-html[data-theme] body #page-exam .exam-pbq .sl-step:has(> .isl-reset-step) > .sl-step-k { padding-right: 92px; }
-html[data-theme] body #page-exam .exam-pbq .term-head .sl-reset.isl-reset-pill { margin-left: auto; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-actions:not(:has(button)) { display: none; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-reset.isl-reset-pill { position: relative; min-height: 0; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-mid); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; transition: transform .15s var(--ios-ease); }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-reset.isl-reset-pill::before { content: ""; width: 12px; height: 12px; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12a9 9 0 1 0 3-6.7L3 8'/><path d='M3 3v5h5'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 12a9 9 0 1 0 3-6.7L3 8'/><path d='M3 3v5h5'/></svg>") center / contain no-repeat; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-reset.isl-reset-pill::after { content: ""; position: absolute; inset: -9px -4px; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-reset.isl-reset-pill:active { transform: scale(0.97); }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-step:has(> .isl-reset-step) { position: relative; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-reset.isl-reset-step { position: absolute; top: 11px; right: 12px; z-index: 1; }   /* above the step eyebrow, which would otherwise take the tap */
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .sl-step:has(> .isl-reset-step) > .sl-step-k { padding-right: 92px; }
+html[data-theme] body :is(#page-exam .exam-pbq, #page-sim-lab.isl-exam) .term-head .sl-reset.isl-reset-pill { margin-left: auto; }
 
 
 /* ═════════════════════ LIFT B3b2 · END (cert-ios-simlab.html ?v=exam-end, exam-end-jump, exam-abandon) · isl- ═════════════════════ */
@@ -1950,3 +1950,46 @@ html[data-theme] body #isl-end .isl-ms-flag { color: var(--accent-deep) !importa
 html[data-theme] body #isl-end .modal-box { transition: transform .2s var(--ios-ease); }
 html[data-theme] body #isl-end.is-under .modal-box { transform: scale(0.98); }
 @media (prefers-reduced-motion: reduce) { html[data-theme] body #isl-end.is-under .modal-box { transform: none; } }
+
+/* ═════════════════════ LIFT B3b2 · ROUND (cert-ios-simlab.html ?v=exam-round, ?v=exam-round-last, ?v=exam-loading) · isl- ═════════════════════ */
+/* Sim Lab's own Exam mode: the B2 bar (time left · round · End) and dock over the B3b1 cards. Engine DOM, restyled. */
+html[data-theme] body #page-sim-lab.isl-exam.active { padding: 0 !important; margin: 0 !important; max-width: none !important; animation: none !important; transform: none !important; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+#page-sim-lab.isl-exam .sl-shell { max-width: none; padding: 0; }
+#page-sim-lab.isl-exam .sl-topbar, #page-sim-lab.isl-exam #sl-palette, #page-sim-lab.isl-exam #sl-dots { display: none !important; }
+#page-sim-lab.isl-exam button { font-family: inherit; box-sizing: border-box; }
+#page-sim-lab.isl-exam #sl-body { padding: 12px 20px calc(96px + env(safe-area-inset-bottom)); }
+#page-sim-lab.isl-exam:has(#isl-xbar) #sl-body { padding-top: 76px; }
+/* bar: plain top padding (the iOS web view already clears the status bar, v8.188.1) */
+#page-sim-lab.isl-exam #isl-xbar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; background: var(--bg); }
+#page-sim-lab.isl-exam .isl-xt { flex: 0 0 auto; min-width: 0; }
+#page-sim-lab.isl-exam .isl-xtl { display: block; font: 800 8.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+#page-sim-lab.isl-exam #sl-clock-slot { display: block; }
+#page-sim-lab.isl-exam #isl-xbar .sl-clock { display: inline-flex; align-items: center; gap: 5px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; font: 700 17px/1 'Roboto Mono', monospace; color: var(--text); font-variant-numeric: tabular-nums; }
+#page-sim-lab.isl-exam #isl-xbar .sl-clock svg { width: 13px; height: 13px; fill: none; stroke: var(--accent-deep); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+#page-sim-lab.isl-exam #isl-xbar .sl-clock .cap { display: none; }
+/* the one-way latch in the last 10%: amber, never red (spec) */
+#page-sim-lab.isl-exam #isl-xbar .sl-clock.is-low { color: var(--accent-deep); border: 0; }
+#page-sim-lab.isl-exam #isl-xbar .sl-clock.is-low svg { stroke: var(--accent-deep); }
+#page-sim-lab.isl-exam .isl-xmid { flex: 1 1 auto; min-width: 0; text-align: center; }
+#page-sim-lab.isl-exam .isl-xcn { display: block; font: 700 13.5px/1 Inter, sans-serif; color: var(--text); }
+#page-sim-lab.isl-exam .isl-xcs { display: block; font: 500 10.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+#page-sim-lab.isl-exam .isl-xend { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 0; margin: 0; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ios-ease), background-color .18s; }
+#page-sim-lab.isl-exam .isl-xend::after { content: ""; position: absolute; inset: -7px -4px; }
+#page-sim-lab.isl-exam .isl-xend:active { transform: scale(0.97); }
+#page-sim-lab.isl-exam #isl-xstrip { position: fixed; top: 56px; left: 0; right: 0; z-index: 60; display: flex; gap: 2px; align-items: flex-end; height: 12px; padding: 0 18px 6px; background: var(--bg); }
+#page-sim-lab.isl-exam #isl-xstrip i { flex: 1 1 0; height: 5px; border-radius: 2px; background: var(--track); }
+#page-sim-lab.isl-exam #isl-xstrip i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+#page-sim-lab.isl-exam #isl-xstrip i.cur { height: 12px; background: var(--accent); }
+#page-sim-lab.isl-exam #isl-xstrip i.flag { background: var(--accent-deep); }
+/* dock: ‹ · Flag · Next (Review on the last round) */
+#page-sim-lab.isl-exam .isl-xdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+#page-sim-lab.isl-exam .isl-xdock button { min-height: 48px; margin: 0; cursor: pointer; }
+#page-sim-lab.isl-exam .isl-xprev { flex: 0 0 auto; width: 48px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--text-mid); transition: transform .14s var(--ios-ease); }
+#page-sim-lab.isl-exam .isl-xprev:disabled { opacity: 0.4; cursor: default; }
+#page-sim-lab.isl-exam .isl-xflag { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; padding: 0 16px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--text-mid); font: 650 13px/1 Inter, sans-serif; transition: background-color .18s, border-color .18s, color .18s, transform .14s var(--ios-ease); }
+#page-sim-lab.isl-exam .isl-xflag.is-on { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+#page-sim-lab.isl-exam .isl-xflag.is-on svg { fill: currentColor; }
+#page-sim-lab.isl-exam .isl-xnext { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 14px; border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+#page-sim-lab.isl-exam .isl-xprev:active, #page-sim-lab.isl-exam .isl-xflag:active { transform: scale(0.97); }
+#page-sim-lab.isl-exam .isl-xnext:active { transform: scale(0.985); }
+#page-sim-lab.isl-exam .isl-xdock svg { flex: 0 0 auto; }

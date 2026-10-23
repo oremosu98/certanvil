@@ -96,3 +96,191 @@ for (const vp of PHONES) {
     });
   });
 }
+
+// ── Task 4: Exam mode wired on phones ──
+async function setTier(page, tier) {
+  await page.evaluate((t) => {
+    window._quotaState = t === 'pro' ? { tier: 'pro' } : { tier: 'free', used_today: 0, daily_limit: 15 };
+    document.body.classList.toggle('is-pro-tier', t === 'pro');
+    if (typeof renderGauntletDrillsCard === 'function') renderGauntletDrillsCard();
+  }, tier);
+}
+async function countConfirms(page) {
+  await page.evaluate(() => { window.__confirms = 0; window.confirm = function () { window.__confirms++; return true; }; });
+}
+async function startExam(page, vp, n) {
+  await boot(page, vp, 'pro');
+  await page.evaluate(() => {
+    try { localStorage.removeItem('nplus_pbq_free_count'); } catch (_) {}
+    window._slMeteredGenerate = async () => ({ bad: true });   // force the seed pool (offline)
+    startSimLabHome();
+  });
+  await expect(page.locator('#page-sim-lab-entry')).toHaveClass(/active/);
+  await setTier(page, 'pro');
+  await countConfirms(page);
+  if (vp.width < 900) {
+    await page.locator('#isl-entry [data-act="mode"][data-mode="exam"]').click();
+    await page.locator('#isl-entry [data-act="rounds"][data-rounds="' + n + '"]').click();
+    await page.locator('#isl-entry [data-act="start"]').click();
+    await page.waitForSelector('#isl-xbar .sl-clock', { timeout: 10000 });
+  } else {
+    await page.locator('#sle-mode .sle-seg-opt[data-mode="exam"]').click();
+    await page.locator('#sle-rounds .sle-chip[data-rounds="' + n + '"]').click();
+    await page.locator('#sle-start').click();
+    await page.waitForSelector('#sl-palette .pq', { timeout: 10000 });
+  }
+}
+// Answer the round in view the way a widget would: write into the live responses object.
+async function answerInView(page) {
+  return page.evaluate(() => {
+    const s = window._simLab.examSession(), st = s.scenarios[s.idx].steps[0];
+    window.__slResponses[st.id] = st.type === 'order' ? [0] : 'probe';
+    return st.id;
+  });
+}
+const S = (page, fn) => page.evaluate(fn);
+
+for (const vp of PHONES) {
+  test.describe('Lift B3b2 exam @' + vp.width, () => {
+    test('June exam chrome: bar, strip and dock; no palette, inline Submit or entrance', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Round 1 of 3');
+      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText('0 answered');
+      await expect(page.locator('#isl-xbar .isl-xtl')).toHaveText('Time left');
+      await expect(page.locator('#isl-xstrip i')).toHaveCount(3);
+      await expect(page.locator('.isl-xdock')).toBeVisible();
+      await expect(page.locator('.isl-xdock [data-act="prev"]')).toBeDisabled();
+      await expect(page.locator('#sl-palette')).toBeHidden();
+      await expect(page.locator('.sl-topbar')).toBeHidden();
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#app-topbar')).toBeHidden();
+      await expect(page.locator('#sl-body [data-action="simLabSubmitScenario"]')).toHaveCount(0);
+      await expect(page.locator('#sl-body .isl-enter')).toHaveCount(0);
+      await expect(page.locator('#page-sim-lab')).toHaveClass(/isl-exam/);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+    test('the clock ticks in the bar and latches amber in the last 10%', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await S(page, () => { const s = window._simLab.examSession(); s.deadlineMs = Date.now() + 0.05 * s.budgetMs; window._simLab.tickClock(); });
+      await expect(page.locator('#isl-xbar .sl-clock')).toHaveClass(/is-low/);
+    });
+    test('Flag and Next mark and move; ‹ returns with the flag kept', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('.isl-xdock [data-act="flag"]').click();
+      await expect(page.locator('.isl-xdock [data-act="flag"]')).toHaveText('Flagged');
+      await expect(page.locator('#isl-xstrip i').nth(0)).toHaveClass('cur');
+      await page.locator('.isl-xdock [data-act="next"]').click();
+      await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Round 2 of 3');
+      await expect(page.locator('#isl-xstrip i').nth(0)).toHaveClass('flag');
+      await page.locator('.isl-xdock [data-act="prev"]').click();
+      await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Round 1 of 3');
+      await expect(page.locator('.isl-xdock [data-act="flag"]')).toHaveText('Flagged');
+    });
+    test('counts include the round in view', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('.isl-xdock [data-act="next"]').click();
+      await page.locator('.isl-xdock [data-act="next"]').click();
+      await expect(page.locator('.isl-xdock [data-act="next"]')).toHaveText('Review');
+      await answerInView(page);
+      await page.locator('.isl-xdock [data-act="flag"]').click();
+      await page.locator('.isl-xdock [data-act="next"]').click();
+      await expect(page.locator('#isl-end .ms-val')).toHaveText(['1', '2', '1']);
+      await expect(page.locator('#isl-end .ix-review')).toHaveText('Review the 2 you skipped first');
+      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText('1 answered');
+      expect(await S(page, () => window._simLab.examSession().view)).toBe('review');
+    });
+    test('dialog time is not counted; a jump restores answers', async ({ page }) => {
+      await startExam(page, vp, 3);
+      const id = await answerInView(page);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await expect(page.locator('#isl-end')).not.toHaveClass(/hidden/);
+      const before = await S(page, () => window._simLab.examSession().roundMs.slice());
+      await page.waitForTimeout(1200);
+      await page.locator('#isl-end .ix-jump-t').click();
+      await page.locator('#isl-end .ix-jgrid button[data-i="0"]').click();
+      await expect(page.locator('#isl-end')).toHaveClass(/hidden/);
+      const after = await S(page, () => window._simLab.examSession().roundMs.slice());
+      expect(after).toEqual(before);
+      expect(await page.evaluate((k) => !!window._simLab.examSession().answers[0][k], id)).toBe(true);
+      await expect(page.locator('#isl-xstrip i').nth(0)).toHaveClass('cur');
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.keyboard.press('Escape');
+      expect(await S(page, () => window._simLab.examSession().view)).toBe('round');
+    });
+    test('abandon asks; Keep going keeps; Escape closes only the sheet; Abandon leaves for good', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Abandon this exam?');
+      await expect(page.locator('#exam-sheet .ix-sheet-stay')).toHaveText('Keep going');
+      await page.locator('#exam-sheet .ix-sheet-stay').click();
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      expect(await S(page, () => window.iosSimLab.isEndOpen())).toBe(true);
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      expect(await S(page, () => window.iosSimLab.isEndOpen())).toBe(true);
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      expect(await S(page, () => window._simLab.examSession())).toBeFalsy();
+      await page.waitForTimeout(2500);
+      await expect(page.locator('#page-sim-lab-result')).not.toHaveClass(/active/);
+      expect(await S(page, () => window.__confirms)).toBe(0);
+    });
+    test('time-up closes the dialog and the sheet', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await S(page, () => { window._simLab.examSession().deadlineMs = Date.now() - 1; window._simLab.tickClock(); });
+      await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      expect(await S(page, () => window.iosSimLab.isEndOpen())).toBe(false);
+      await page.waitForTimeout(500);
+      await expect(page.locator('#page-sim-lab-result')).toHaveClass(/active/);
+    });
+    test('Reset asks in the sheet, from the console bar or the step-1 pill', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await expect(page.locator('#sl-body .isl-reset-pill')).toHaveCount(1);
+      await page.locator('#sl-body .isl-reset-pill').click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Start this PBQ again?');
+      await page.locator('#exam-sheet .ix-sheet-stay').click();
+      expect(await S(page, () => window.__confirms)).toBe(0);
+    });
+    test('exam then practice leaves no exam chrome', async ({ page }) => {
+      await startExam(page, vp, 3);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      await page.evaluate(() => startSimLabHome());
+      await page.locator('#isl-entry [data-act="mode"][data-mode="practice"]').click();
+      await page.locator('#isl-entry [data-act="rounds"][data-rounds="3"]').click();
+      await page.locator('#isl-entry [data-act="start"]').click();
+      await page.waitForSelector('#sl-body [data-action="simLabSubmitScenario"]', { timeout: 10000 });
+      await expect(page.locator('#page-sim-lab')).toHaveClass(/isl-practice/);
+      await expect(page.locator('#page-sim-lab')).not.toHaveClass(/isl-exam/);
+      await expect(page.locator('#isl-xbar')).toHaveCount(0);
+      await expect(page.locator('.isl-xdock')).toHaveCount(0);
+      await expect(page.locator('.sl-topbar #sl-clock-slot')).toHaveCount(1);
+      await expect(page.locator('#sl-timer-slot .sl-timer')).toBeVisible();
+    });
+  });
+}
+
+test('Lift B3b2 desktop: Exam mode keeps the palette, the footer, the review screen and confirm()', async ({ page }) => {
+  await startExam(page, DESKTOP, 3);
+  await expect(page.locator('#sl-palette')).toBeVisible();
+  await expect(page.locator('#sl-body .sl-examfoot')).toBeVisible();
+  await expect(page.locator('#isl-xbar')).toHaveCount(0);
+  await page.locator('#sl-body .sl-examfoot .sl-navbtn.next').click();
+  await page.locator('#sl-body .sl-examfoot .sl-navbtn.next').click();
+  await page.locator('#sl-body .sl-examfoot .sl-navbtn.next').click();
+  await expect(page.locator('#sl-body .slv-review')).toBeVisible();
+  await page.locator('.sl-topbar [data-action="simLabExit"]').click();
+  expect(await page.evaluate(() => window.__confirms)).toBe(1);
+});

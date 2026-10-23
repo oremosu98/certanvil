@@ -856,6 +856,7 @@ test('exam countdown: derived from deadline; amber latches; background expiry au
 });
 
 test('exam palette: 4 states render (now/answered/not-yet/flagged) with ≥44pt squares', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // desktop Exam mode; phones get the B3b2 bar, dock and End dialog (lift-b3b2.spec)
   await gotoApp(page);
   const r = await page.evaluate(async () => {
     window._quotaState = { tier: 'pro' };
@@ -897,6 +898,7 @@ test('exam palette: 4 states render (now/answered/not-yet/flagged) with ≥44pt 
 });
 
 test('exam nav: flag toggles + per-round answers persist across Prev/Next', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // desktop Exam mode; phones get the B3b2 bar, dock and End dialog (lift-b3b2.spec)
   await gotoApp(page);
   const r = await page.evaluate(async () => {
     window._quotaState = { tier: 'pro' };
@@ -1196,6 +1198,7 @@ test('exam pace verdict: under-par shows "On exam pace", over-par shows coaching
 
 // Task 10: simLabExit cleanup + exam chrome teardown
 test('exam exit: stops the clock and tears down exam chrome', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // desktop Exam mode; phones get the B3b2 bar, dock and End dialog (lift-b3b2.spec)
   await gotoApp(page);
   // The §3.7 confirm gate fires for a mid-exam session — accept it so teardown proceeds.
   page.on('dialog', dialog => dialog.accept());
@@ -1225,6 +1228,7 @@ test('exam exit: stops the clock and tears down exam chrome', async ({ page }) =
 
 // §3.7 confirm gate: cancel stays in exam, accept exits
 test('exam leave: confirm gate — cancel stays, accept exits', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });   // desktop Exam mode; phones get the B3b2 bar, dock and End dialog (lift-b3b2.spec)
   await gotoApp(page);
 
   // --- CANCEL path: dismiss the confirm → exam must remain active ---

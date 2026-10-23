@@ -3148,11 +3148,54 @@
 
   function _slRenderExamLoader(host) {
     host.innerHTML = '';
+    if (_slXPhone()) {   // v8.189.0 Lift B3b2: the B3b1 skeleton, with the exam's lines
+      var pbox = _el('div', 'slr-loader isl-loader');
+      pbox.innerHTML = '<div class="isl-skel" aria-hidden="true"></div><div class="isl-skel isl-skel-2" aria-hidden="true"></div><div class="isl-skel isl-skel-3" aria-hidden="true"></div>' +
+        '<div class="slr-loader-t">Building your exam…</div><div class="slr-loader-s">Every round is built before your clock starts.</div>' +
+        '<div class="isl-gen-track" aria-hidden="true"><div class="isl-gen-bar"></div></div>';
+      host.appendChild(pbox);
+      return;
+    }
     var box = _el('div', 'slr-loader');
     box.innerHTML = '<div class="slr-spin" aria-hidden="true"></div>' +
       '<div class="slr-loader-t">Building your exam…</div>' +
       '<div class="slr-loader-s">Generating every round up front so the clock never waits on us.</div>';
     host.appendChild(box);
+  }
+
+  // v8.189.0 Lift B3b2: Sim Lab Exam mode on phones (features/ios-simlab.js); null on desktop.
+  function _slXPhone() { var i = window.iosSimLab; return (i && i.isPhone && i.isPhone() && i.examBar && i.openEnd) ? i : null; }
+  function _slExamFlags() {
+    var a = [], f = [];
+    for (var i = 0; i < _slSession.rounds; i++) { a.push(_slIsAnswered(i)); f.push(_slSession.flagged.has(i)); }
+    return { idx: _slSession.idx, rounds: _slSession.rounds, answered: a, flagged: f };
+  }
+  // "K answered" and the strip move with rounds, flags and the End dialog, not while you type.
+  function _slExamBarSync() {
+    var xp = _slXPhone();
+    if (xp && _slSession && _slSession.mode === 'exam') xp.examBar.update(window._iosSlExamBarModel(_slExamFlags()));
+  }
+  // The B2 End dialog replaces the review screen on phones. Time in it counts towards no round.
+  function _slOpenEnd() {
+    var xp = _slXPhone();
+    if (!xp || !_slSession || _slSession.mode !== 'exam' || _slSession.__submitted) return;
+    if (_slSession.view === 'round') {
+      _slSession.roundMs[_slSession.idx] += Math.max(0, Date.now() - _slSession.roundEnteredAt);
+      _slCaptureAnswer(_slSession.idx);
+    }
+    _slSession.view = 'review';
+    _slExamBarSync();
+    xp.openEnd(window._iosSlEndModel(_slExamFlags()), {
+      onSubmit: function () { _slExamSubmit(false); },
+      onReview: function (t) { if (_slSession) _slRenderRound(t); },
+      onJump: function (i) { if (_slSession) _slRenderRound(i); },
+      onAbandon: function () {
+        if (!window.iosSheet) return Promise.resolve(false);
+        return window.iosSheet({ title: 'Abandon this exam?', body: 'Your answers won\'t be scored.', go: 'Abandon', stay: 'Keep going' })
+          .then(function (ok) { if (ok && _slSession && _slSession.mode === 'exam' && !_slSession.__submitted) _slLeave(); return ok; });
+      },
+      onClose: function () { if (!_slSession) return; _slSession.view = 'round'; _slSession.roundEnteredAt = Date.now(); }
+    });
   }
 
   // Pre-generate ALL rounds before the clock starts (§3.6). Each round: AI →
@@ -3256,7 +3299,7 @@
   function _slExamShowExamChrome() {
     var badge = document.getElementById('sl-exam-badge'); if (badge) badge.classList.remove('is-hidden');
     var dots = document.getElementById('sl-dots'); if (dots) dots.classList.add('is-hidden');   // palette replaces dots in exam
-    var pal = document.getElementById('sl-palette'); if (pal) pal.classList.remove('is-hidden');
+    var pal = document.getElementById('sl-palette'); if (pal && !_slXPhone()) pal.classList.remove('is-hidden');
   }
 
   function _slSignedClock(ms) {
@@ -3373,6 +3416,8 @@
     if (window._simLab.__examSubmitSpy) window._simLab.__examSubmitSpy();   // test hook (Task 4)
     if (!_slSession || _slSession.mode !== 'exam' || _slSession.__submitted) return;
     _slSession.__submitted = true;
+    if (window.iosSheet) window.iosSheet.dismiss();                                  // v8.189.0: a sheet open at time-up resolves as stay
+    if (window.iosSimLab && window.iosSimLab.closeEnd) window.iosSimLab.closeEnd();
     // capture the round in view (if a round, not the review screen)
     if (_slSession.view === 'round') {
       _slSession.roundMs[_slSession.idx] += Math.max(0, Date.now() - _slSession.roundEnteredAt);
@@ -3394,19 +3439,21 @@
   function _slIsAnswered(idx) {
     var a = _slSession.answers[idx];
     if (!a) return false;
-    // any non-empty saved response object counts as answered
-    return Object.keys(a).some(function (k) {
-      var v = a[k];
+    // any non-empty saved response counts as answered. v8.189.0: empty nested objects don't, so an
+    // untouched configure step ({slots:{}}) no longer reads as answered in the counts and the palette.
+    function filled(v) {
       if (v == null) return false;
       if (Array.isArray(v)) return v.length > 0;
-      if (typeof v === 'object') return Object.keys(v).length > 0;
+      if (typeof v === 'object') return Object.keys(v).some(function (k) { return filled(v[k]); });
       return String(v).trim().length > 0;
-    });
+    }
+    return filled(a);
   }
 
   function _slRenderPalette() {
     var host = document.getElementById('sl-palette');
     if (!host) return;
+    if (_slXPhone()) { host.classList.add('is-hidden'); return; }   // v8.189.0: the strip and the End dialog's grid do its job on phones
     host.classList.remove('is-hidden');
     host.innerHTML = '';
     _slSession.scenarios.forEach(function (scn, i) {
@@ -3478,6 +3525,7 @@
     // (which _slMountScenario exposes) starts populated with it. A deep copy keeps
     // the saved snapshot insulated from edits made on this re-entry.
     _slMountScenario(body, scn, {
+      lift: true,                                               // v8.189.0 Lift B3b2: phones get the B3b1 cards, Reset in the sheet
       onSubmit: function () {},                                 // exam never per-round-submits; nav/Review drives flow
       initial: _slSession.answers[idx] ? _slCloneResp(_slSession.answers[idx]) : null,
       onReset: function () {                                    // v8.166.0: keep the time already spent, clear the answer
@@ -3487,6 +3535,7 @@
       }
     });
     _slRenderExamFooter(idx);
+    _slExamBarSync();
   }
 
   function _slRenderExamFooter(idx) {
@@ -3494,6 +3543,21 @@
     // Remove any existing footer to avoid stacking on re-render (flag toggle).
     var old = body.querySelector('.sl-examfoot');
     if (old) old.remove();
+    var oldDock = body.querySelector('.isl-xdock');
+    if (oldDock) oldDock.remove();
+    if (_slXPhone()) {   // v8.189.0 Lift B3b2: the B2 dock, ‹ · Flag · Next (Review on the last round)
+      var dock = _el('div', 'isl-xdock', window._iosSlExamDockHtml({ first: idx === 0, last: idx === _slSession.rounds - 1, flagged: _slSession.flagged.has(idx) }));
+      dock.addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('button[data-act]');
+        if (!b || b.disabled || !_slSession) return;
+        var i = _slSession.idx, act = b.getAttribute('data-act');
+        if (act === 'prev') _slExamNav(i - 1);
+        else if (act === 'flag') _slToggleFlag(i);
+        else if (act === 'next') { if (i === _slSession.rounds - 1) _slOpenEnd(); else _slExamNav(i + 1); }
+      });
+      body.appendChild(dock);
+      return;
+    }
     var foot = _el('div', 'sl-examfoot');
     var flagged = _slSession.flagged.has(idx);
     var flag = _el('button', 'sl-flagbtn' + (flagged ? ' is-on' : ''),
@@ -3522,6 +3586,7 @@
     else _slSession.flagged.add(idx);
     _slRenderPalette();
     _slRenderExamFooter(idx);
+    _slExamBarSync();
   }
 
   function _slReviewCounts() {
@@ -3595,6 +3660,7 @@
       var budgetMs = _slExamBudgetMs(scns);
       _slSession = _slExamBlankState(scns, budgetMs);
       _slSession.deadlineMs = Date.now() + budgetMs;
+      var xp = _slXPhone(); if (xp) xp.examBar.mount(_slOpenEnd);   // v8.189.0 Lift B3b2: holds #sl-clock-slot
       _slStartCountdown(_slSession.deadlineMs);   // Task 4
       _slExamShowExamChrome();                     // Task 4 (badge + palette container visibility)
       _slRenderRound(0);                           // Task 4 (exam round wrapper)
@@ -3769,8 +3835,16 @@
     if (window.iosSheet) window.iosSheet.dismiss();   // v8.188.0 Lift B3b1
     // §3.7 confirm gate: mid-exam only (clock still running, not yet submitted)
     if (_slSession && _slSession.mode === 'exam' && !_slSession.__submitted) {
+      if (_slXPhone()) { _slOpenEnd(); return; }   // v8.189.0 Lift B3b2: phones leave through End, then Abandon exam
       if (!window.confirm('Leave? Your exam ends and won\'t be scored.')) return;
     }
+    _slLeave();
+  }
+  // Leaving without a score (desktop Leave after its confirm, phone Abandon after its sheet).
+  function _slLeave() {
+    var isl = window.iosSimLab;
+    if (isl && isl.closeEnd) isl.closeEnd();
+    if (isl && isl.examBar) isl.examBar.unmount();
     if (_slTimer) { _slTimer.stop(); _slTimer = null; }
     if (_slSession && _slSession.mode === 'exam') _slStopCountdown();   // clear interval + visibility/focus listeners
     _slMode = null;
@@ -3856,6 +3930,8 @@
   function _slSetPractice(on) {
     var pg = document.getElementById('page-sim-lab');
     if (pg) { pg.classList.toggle('isl-practice', !!on); pg.classList.toggle('isl-exam', !on); }   // v8.189.0 Lift B3b2
+    var isl = window.iosSimLab;
+    if (on && isl && isl.examBar) { isl.examBar.unmount(); if (isl.closeEnd) isl.closeEnd(); }
   }
   function _slSessionStart() {
     var cert = window.CURRENT_CERT || 'netplus';
