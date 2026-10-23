@@ -64,6 +64,7 @@ No web top bar; the tab bar stays (as the Sim Lab start screen).
   their row: done rungs fill, missed rungs turn red, the live rung is lit (today's `_renderGauntletLadder`
   states, restyled). "The Gauntlet · topic", the rung chip, the hinge highlight and the answer card stay as
   approved in Lift A. Leaving (✕) behaves as today.
+  The live rung's taller bar uses `transform: scaleY`, never `height` (visual pass, stage 2).
 
 ### Results (`#page-gauntlet-result` on phones)
 No web top bar, no tab bar. The Sim Lab verdict's language.
@@ -75,6 +76,9 @@ No web top bar, no tab bar. The Sim Lab verdict's language.
   chevron. Each row opens to show that wording with its hinge highlighted, "Your answer", "Answer" and the
   explanation; closed by default. Then today's "Run it again and every question is re-worded from scratch…"
   line. Docked **Run it again** (primary) · Different concept.
+- **Free user after today's run** (both results): a foot note under the docked buttons says what the primary
+  does before the gate opens: "That was today's free run. The next one is free tomorrow, or Pro runs it again
+  now." (added in the visual pass, stage 5). The Pro gate itself is unchanged.
 - Milestone toasts drop from the top as on quiz results (Lift A `.mtoast`), never over the seal.
 
 ## Architecture
@@ -102,7 +106,7 @@ No web top bar, no tab bar. The Sim Lab verdict's language.
 ## Process
 
 1. Draw into the E2E first (`mockups/cert-ios-gauntlet.html`, states `entry`, `entry-pick`, `entry-free`,
-   `loading`, `run`, `run-answered`, `result-cracked`, `result-miss`, `result-miss-open`; HUD **B3c1 ›**).
+   `loading`, `run`, `run-answered`, `result-cracked`, `result-miss`, `result-miss-open`, `result-miss-free`; HUD **B3c1 ›**).
    5-stage visual pass. Founder taps it in the Simulator and approves.
 2. Plan, build (native), side-by-sides, final review, ship on "ship it".
 
