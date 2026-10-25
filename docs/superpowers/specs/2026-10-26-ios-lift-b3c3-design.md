@@ -67,17 +67,22 @@ The B3b1 Sim Lab start-screen language. No web top bar; the tab bar stays.
 No web top bar, no tab bar.
 - Header: ‹ (asks before leaving), "Decision N of M", and the dots (done / now).
 - The decision in the B3b1 round-card look (`_slMountScenario` unchanged; the sorter's service selector stays).
+- **Submit** is docked (the B3b1 round dock), not inline in the card.
 - After Submit, today's grading: every option marked ("✓ Best" / "✗", the wrong pick in red) and "The tell".
-- Docked: Flag · **Next decision** (**See results** on the last). No arrow glyphs.
+  **Next decision** (**See results** on the last) replaces Submit in the dock. No arrow glyphs. Today's Flag
+  button does nothing at any width, so the phone dock drops it.
 
 ### Exam-style run (`#page-decision-lab` on phones)
 No web top bar, no tab bar.
 - The B3b2 exam bar: "Time left" with the countdown (amber in the last 10%), "Decision N of M", End; the dots
   under it.
-- Today's forward-only flow: Submit, then the next decision; no feedback, no going back.
+- No ‹: End is the only way out. **Submit** is docked; it moves straight to the next decision (today's
+  forward-only flow, no feedback, no going back).
 - **End** opens the B3b2 End dialog (`#isl-end` look): Answered / Skipped counts, "Submit and see results",
   "Abandon set" (asks in the sheet: "Abandon this set?" / "Nothing from it will count." / Abandon · Keep going).
-  No Jump grid (the run only goes forward). Time spent in the dialog keeps counting.
+  No Jump grid and no "Review the N you skipped" (the run only goes forward). "Skipped" counts every decision
+  not yet submitted, the current one included; its unsaved pick is dropped on Submit. Time spent in the dialog
+  keeps counting.
 - Time-up: as today, the clock submits and unanswered decisions count as missed; any open dialog or sheet
   closes first.
 
@@ -87,19 +92,24 @@ No web top bar, no tab bar. The B3b1 verdict language.
 - "**N of M** right calls".
 - "Look-alikes you still confuse" (today's pair rows, "missed ×N") and "Weak service families" (today's chips),
   each only when it has entries.
-- "Your N decisions": one row per decision (the scenario's first sentence, Right / Wrong pill, chevron), closed
-  by default. A pick decision (`analyze`) opens to "Your pick" (or "No answer" when time ran out), "Right call"
-  and "The tell"; any other step type opens to "The tell" only.
-- Docked: **Drill your look-alikes** when any decision was missed, **Run another set** when none was (both
-  re-run a set as today); then "Back to Drills" / "Back to Home".
+- "Your N decisions": one row per decision (the scenario's `title`, a Right / Wrong pill from `result.passed`,
+  chevron), closed by default. A pick decision (`analyze`) opens to "Your pick" (the picked line's text, looked
+  up by id in `step.payload.lines`, or "No answer" when nothing was submitted), "Right call" and "The tell";
+  any other step type opens to "The tell" only.
+- Docked: **Run another set** (re-runs a set with the same mode and count, through today's gates, so a free
+  user's second set opens today's gate); then "Back to Drills" / "Back to Home". Today's "Drill your 3
+  look-alikes" is renamed because it never filtered to look-alikes (it rotates the bank by the minute).
 - Milestone toasts sit above the dock and never cover the score (the B3c1/B3c2 rule).
 
 ### Leaving
-- ‹ on the practice run asks "Leave Decision Lab?" / "Your decisions so far won't count." in the in-app sheet
-  (`iosSheet`), Leave · Keep going. In Exam-style, ‹ opens the End dialog.
+- ‹ on the practice run asks "Leave Decision Lab?" in the in-app sheet (`iosSheet`), Leave · Keep going. Body:
+  "Your decisions so far won't count." (Pro) / "Your decisions so far won't count. Today's free set is
+  already used." (free: the free run is counted at Start). In Exam-style, End and the End dialog do this.
 - From the results, Back leaves straight away.
-- **Every width:** a new `decisionLabExit()` stops any running clock and goes back to where Decision Lab was
-  opened from (Drills or Home). Desktop keeps leaving without asking.
+- One origin, recorded when the entry opens (the active page, as `startRewordGauntlet` does): Drills or Home.
+- **Every width:** a new `decisionLabExit()` stops any running clock, clears the session and goes back to that
+  origin. Desktop keeps leaving without asking. The entry's back uses the origin on phones; desktop keeps
+  today's Home.
 
 ## Architecture
 
@@ -111,8 +121,12 @@ No web top bar, no tab bar. The B3b1 verdict language.
 - **Hooks in `features/sim-lab.js`** (Decision Lab section), phone only: `decisionLabOpenEntry` renders the phone
   entry (records the origin page); `_dlRunRound` / `_dlUpdateChrome` add the phone header and dock around the
   mounted scenario; Exam-style reuses the B3b2 exam bar and End dialog hosts from `features/ios-simlab.js`;
-  `_dlRenderResult` builds the decision rows from `_dlSession.results` (the response's selected ids against
+  `_dlRenderResult` builds the decision rows from `_dlSession.results` (`responses[step.id].selected` against
   `step.answer.selected`) and renders the phone result. New `decisionLabExit` at every width.
+- **Changes to `features/ios-simlab.js` (shared with B3b2):** `examBar.mount` takes options (the shell selector
+  and the clock-slot id, `#dl-clock-slot` for Decision Lab), and the End dialog takes a variant (eyebrow, title,
+  submit and abandon labels, `noJump`, `noReview`; counts from `results.length`). Sim Lab's own markup stays
+  byte-identical (the B3b2 UAT and E2E pin it).
 - **CSS:** the B3b1 round-card and B3b2 exam-bar rules widened to `#page-decision-lab` where they apply, plus a
   `B3c3 · DECISION LAB` section in `lift-ios.css`, prefix `idl-`. Reveals rest visible and animate from hidden.
 - **lift-shell:** `HIDE_ON['decision-lab']` and `HIDE_ON['decision-lab-result']`; the app top bar hides on all
@@ -134,7 +148,7 @@ No web top bar, no tab bar. The B3b1 verdict language.
 - Leave / ‹ mid-practice ask in the sheet; Keep going stays; Leave lands where Decision Lab was opened from. At
   every width Leave and Back now work.
 - Gates, the free cap, scoring, look-alikes, weak families, drill stats and milestones behave as today.
-- The results button names what it does: "Drill your look-alikes" with misses, "Run another set" without.
+- The results button says what it does ("Run another set").
 - Desktop Decision Lab looks and behaves as today apart from the working Leave and Back.
 
 ## Rejected approaches
