@@ -53,3 +53,19 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     results.errors.push('481 ios-home-view block threw: ' + err.message);
   }
 })();
+
+// Reveal rules must rest visible and animate FROM hidden (fill backwards). WebKit never starts the
+// animation on content drawn while its page is display:none, so a rule whose resting state is
+// opacity 0 with fill forwards leaves the content invisible (blank Home after a tab round-trip).
+(function () {
+  try {
+    const fs = require('fs'), path = require('path');
+    const css = fs.readFileSync(path.join(__dirname, '..', '..', 'lift-ios.css'), 'utf8');
+    const bad = css.split('\n').filter(l => /\{[^}]*opacity:\s*0[;\s][^}]*animation:[^;}]*\bforwards\b/.test(l));
+    test('lift-ios.css: no reveal rests at opacity 0 waiting on a forwards animation (WebKit blank Home)', bad.length === 0);
+    if (bad.length) console.log('    ' + bad.map(l => l.trim().slice(0, 90)).join('\n    '));
+  } catch (err) {
+    test('Lift A reveal guard: block (threw)', false);
+    results.errors.push('481 reveal guard threw: ' + err.message);
+  }
+})();

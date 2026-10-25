@@ -207,7 +207,7 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home .ih-domain-mast { font: 600 9.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 6px; }
 #ios-home .ih-domain-mast b { color: var(--text-mid); font-weight: 700; }
 @media (prefers-reduced-motion: no-preference) {
-#ios-home .ih-reveal { opacity: 0; transform: translateY(9px); animation: ih-rise .5s var(--ios-ease) forwards; }
+#ios-home .ih-reveal { animation: ih-rise .5s var(--ios-ease) backwards; }
 #ios-home .ih-reveal:nth-child(1) {animation-delay:.04s}
 #ios-home .ih-reveal:nth-child(2) {animation-delay:.08s}
 #ios-home .ih-reveal:nth-child(3) {animation-delay:.12s}
@@ -221,7 +221,7 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home .ih-reveal:nth-child(11) {animation-delay:.44s}
 #ios-home .ih-reveal:nth-child(12) {animation-delay:.48s}
 #ios-home .ih-reveal:nth-child(n+13) {animation-delay:.52s}
-@keyframes ih-rise { to { opacity: 1; transform: none; } }
+@keyframes ih-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 }
 
 /* Home lost the page padding above: keep the content clear of the fixed tab bar. */
@@ -433,13 +433,13 @@ body:has(#page-results.active #ios-results:not(:empty)) #app-topbar, body:has(#p
 #ios-results .ir-btn-ghost:hover { background: color-mix(in oklab, var(--text) 5%, transparent); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
 }
 @media (prefers-reduced-motion: no-preference) {
-#ios-results .ir-reveal { opacity: 0; transform: translateY(10px); animation: ir-rise .5s var(--ios-ease) forwards; }
+#ios-results .ir-reveal { animation: ir-rise .5s var(--ios-ease) backwards; }
 #ios-results .ir-done-head { animation-delay: .04s; }
 #ios-results .ir-scaled { animation-delay: .10s; }
 #ios-results .ir-stats { animation-delay: .16s; }
 #ios-results .ir-split { animation-delay: .20s; }
 #ios-results .ir-sect { animation-delay: .24s; }
-@keyframes ir-rise { to { opacity: 1; transform: none; } }
+@keyframes ir-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 }
 
 /* app-specific: real scroll (no inner scroller), sticky dock, row buttons, pass state */
@@ -696,7 +696,7 @@ html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #
 #ios-custom .ic-foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--text-dim); margin: 9px 0 0;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: no-preference) {
-#ios-custom .ic-reveal { opacity: 0; transform: translateY(9px); animation: ic-rise .5s var(--ios-ease) forwards; }
+#ios-custom .ic-reveal { animation: ic-rise .5s var(--ios-ease) backwards; }
 #ios-custom .ic-reveal:nth-child(1) {animation-delay:.04s}
 #ios-custom .ic-reveal:nth-child(2) {animation-delay:.08s}
 #ios-custom .ic-reveal:nth-child(3) {animation-delay:.12s}
@@ -710,7 +710,7 @@ html[data-theme="light"] #ios-custom .ic-i-sun, html:not([data-theme="light"]) #
 #ios-custom .ic-reveal:nth-child(11) {animation-delay:.44s}
 #ios-custom .ic-reveal:nth-child(12) {animation-delay:.48s}
 #ios-custom .ic-reveal:nth-child(n+13) {animation-delay:.52s}
-@keyframes ic-rise { to { opacity: 1; transform: none; } }
+@keyframes ic-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 }
 
 
@@ -875,7 +875,7 @@ body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:ha
 #ios-progress .ip-rcard .ip-rpct { font: 600 11px/1 'Roboto Mono', monospace; color: var(--accent-deep); }
 #ios-progress .ip-rcard .ip-rago { font: 500 10px/1 Inter, sans-serif; color: var(--text-dim); }
 @media (prefers-reduced-motion: no-preference) {
-#ios-progress .ip-reveal { opacity: 0; transform: translateY(9px); animation: ip-rise .5s var(--ios-ease) forwards; }
+#ios-progress .ip-reveal { animation: ip-rise .5s var(--ios-ease) backwards; }
 #ios-progress .ip-reveal:nth-child(1) {animation-delay:.04s}
 #ios-progress .ip-reveal:nth-child(2) {animation-delay:.09s}
 #ios-progress .ip-reveal:nth-child(3) {animation-delay:.14s}
@@ -888,7 +888,7 @@ body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:ha
 #ios-progress .ip-reveal:nth-child(10) {animation-delay:.49s}
 #ios-progress .ip-reveal:nth-child(11) {animation-delay:.54s}
 #ios-progress .ip-reveal:nth-child(12) {animation-delay:.59s}
-@keyframes ip-rise { to { opacity: 1; transform: none; } }
+@keyframes ip-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 }
 #ios-progress .ip-stand-top { display: grid; grid-template-columns: auto 1fr 1fr; align-items: end; gap: 18px; }
 #ios-progress .ip-st-cell { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
@@ -1107,7 +1107,7 @@ body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:ha
 #ios-analytics .in-empty b { display: block; font: 650 14px/1.2 Inter, sans-serif; color: var(--text); }
 #ios-analytics .in-empty span { display: block; font-size: 11.5px; color: var(--text-dim); margin-top: 5px; }
 @media (prefers-reduced-motion: no-preference) {
-#ios-analytics .in-reveal { opacity: 0; transform: translateY(9px); animation: in-rise .5s var(--ios-ease) forwards; }
+#ios-analytics .in-reveal { animation: in-rise .5s var(--ios-ease) backwards; }
 #ios-analytics .in-reveal:nth-child(1) {animation-delay:.04s}
 #ios-analytics .in-reveal:nth-child(2) {animation-delay:.09s}
 #ios-analytics .in-reveal:nth-child(3) {animation-delay:.14s}
@@ -1116,7 +1116,7 @@ body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar, body:ha
 #ios-analytics .in-reveal:nth-child(6) {animation-delay:.29s}
 #ios-analytics .in-reveal:nth-child(7) {animation-delay:.34s}
 #ios-analytics .in-reveal:nth-child(8) {animation-delay:.39s}
-@keyframes in-rise { to { opacity: 1; transform: none; } }
+@keyframes in-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 }
 #ios-analytics .in-ho { padding: 12px 0 13px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
 #ios-analytics .in-card-head + .in-ho { border-top: 0; padding-top: 4px; }
@@ -1352,7 +1352,7 @@ body:has(#page-exam-results.active #ios-exam-results:not(:empty)) #app-topbar, b
 #ios-exam-results .ie-btn-ghost:hover { background: color-mix(in oklab, var(--text) 5%, transparent); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
 }
 @media (prefers-reduced-motion: no-preference) {
-#ios-exam-results .ie-reveal { opacity: 0; transform: translateY(10px); animation: ie-rise .5s var(--ios-ease) forwards; }
+#ios-exam-results .ie-reveal { animation: ie-rise .5s var(--ios-ease) backwards; }
 #ios-exam-results .ie-done-head { animation-delay: .04s; }
 #ios-exam-results .ie-scorecard { animation-delay: .10s; }
 #ios-exam-results .ie-sect-kick { animation-delay: .18s; }
@@ -1362,7 +1362,7 @@ body:has(#page-exam-results.active #ios-exam-results:not(:empty)) #app-topbar, b
 #ios-exam-results .ie-drow:nth-of-type(3) {animation-delay:.32s}
 #ios-exam-results .ie-drow:nth-of-type(4) {animation-delay:.36s}
 #ios-exam-results .ie-drow:nth-of-type(5) {animation-delay:.40s}
-@keyframes ie-rise { to { opacity: 1; transform: none; } }
+@keyframes ie-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 }
 #ios-exam-results .ie-srow { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 9px; cursor: pointer; font: inherit; color: inherit; transition: transform .14s var(--ios-ease); }
 #ios-exam-results .ie-srow:active { transform: scale(.99); }
@@ -1655,8 +1655,8 @@ html[data-theme] body #page-drills:has(#ios-drills:not(:empty)) { padding-top: 0
 #ios-drills .id-domain-mast b { color: var(--text-mid); font-weight: 700; }
 #ios-drills .id-foot-note { font: 500 11px/1.5 Inter, sans-serif; color: var(--text-dim); text-align: center; margin: 16px 8px 4px; }
 @media (prefers-reduced-motion: no-preference) {
-@keyframes id-rise { to { opacity: 1; transform: none; } }
-#ios-drills .id-reveal { opacity: 0; transform: translateY(9px); animation: id-rise .5s var(--ios-ease) forwards; }
+@keyframes id-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+#ios-drills .id-reveal { animation: id-rise .5s var(--ios-ease) backwards; }
 #ios-drills .id-reveal:nth-child(1) {animation-delay:.04s}
 #ios-drills .id-reveal:nth-child(2) {animation-delay:.08s}
 #ios-drills .id-reveal:nth-child(3) {animation-delay:.12s}
@@ -1778,7 +1778,7 @@ html[data-theme] body #page-sim-lab-entry:has(#isl-entry:not(:empty)) { padding-
 #isl-entry .isl-foot { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--text-dim); margin: 9px 0 0; }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes isl-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
-  #isl-entry .isl-reveal { opacity: 0; animation: isl-rise .5s var(--ios-ease) forwards; }
+  #isl-entry .isl-reveal { animation: isl-rise .5s var(--ios-ease) backwards; }
   #isl-entry .isl-reveal:nth-child(2) { animation-delay: .04s; } #isl-entry .isl-reveal:nth-child(3) { animation-delay: .08s; }
   #isl-entry .isl-reveal:nth-child(4) { animation-delay: .12s; } #isl-entry .isl-reveal:nth-child(5) { animation-delay: .16s; }
   #isl-entry .isl-reveal:nth-child(6) { animation-delay: .20s; } #isl-entry .isl-reveal:nth-child(7) { animation-delay: .24s; }
@@ -1871,7 +1871,7 @@ html[data-theme] body #page-sim-lab.isl-practice.active { padding: 0 !important;
 :is(#page-sim-lab.isl-practice, #page-sim-lab.isl-exam) .isl-gen-bar { width: 40%; height: 100%; border-radius: 999px; background: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   @keyframes isl-round-in { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
-  #page-sim-lab.isl-practice .sl-scenario.isl-enter > :not(.sl-actions) { opacity: 0; animation: isl-round-in .5s var(--ios-ease) forwards; }
+  #page-sim-lab.isl-practice .sl-scenario.isl-enter > :not(.sl-actions) { animation: isl-round-in .5s var(--ios-ease) backwards; }
   #page-sim-lab.isl-practice .sl-scenario.isl-enter > :nth-child(2) { animation-delay: .05s; }
   #page-sim-lab.isl-practice .sl-scenario.isl-enter > :nth-child(3) { animation-delay: .10s; }
   #page-sim-lab.isl-practice .sl-scenario.isl-enter > :nth-child(4) { animation-delay: .15s; }

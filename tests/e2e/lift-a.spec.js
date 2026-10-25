@@ -33,6 +33,20 @@ test.describe('Lift A scaffold', () => {
 });
 
 test.describe('Lift A Home', () => {
+  // WebKit never starts a CSS animation on content drawn while its page is display:none (Home is
+  // re-rendered just before showPage marks it active), so a reveal whose resting state is opacity 0
+  // left every card invisible after a tab round-trip. toBeVisible ignores opacity, so read it.
+  test('Home cards are opaque after Home → Drills → Home', async ({ page }) => {
+    await openApp(page, PHONE);
+    await page.click('#lift-tabbar .lift-tab[data-page="drills"]', { force: true });
+    await expect(page.locator('#page-drills')).toHaveClass(/active/);
+    await page.click('#lift-tabbar .lift-tab[data-page="setup"]', { force: true });
+    await expect(page.locator('#page-setup')).toHaveClass(/active/);
+    await page.waitForTimeout(1200);
+    const faded = await page.evaluate(() => [...document.querySelectorAll('#ios-home .ih-reveal')]
+      .filter(el => getComputedStyle(el).opacity !== '1').map(el => el.className));
+    expect(faded).toEqual([]);
+  });
   test('phone renders the E2E Home and hides the desktop bento', async ({ page }) => {
     await openApp(page, PHONE);
     await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
