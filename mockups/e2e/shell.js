@@ -74,6 +74,17 @@
     'whynot-verdict-open' : 'cert-ios-whynot.html?v=verdict-open',
     'whynot-session'      : 'cert-ios-whynot.html?v=session',
     'whynot-leave'        : 'cert-ios-whynot.html?v=leave',
+    'dl'                  : 'cert-ios-decisionlab.html',                 // B3c3 (25 Oct): Decision Lab
+    'dl-free'             : 'cert-ios-decisionlab.html?v=entry-free',
+    'dl-practice'         : 'cert-ios-decisionlab.html?v=practice',
+    'dl-graded'           : 'cert-ios-decisionlab.html?v=practice-graded',
+    'dl-exam'             : 'cert-ios-decisionlab.html?v=exam',
+    'dl-exam-amber'       : 'cert-ios-decisionlab.html?v=exam-amber',
+    'dl-exam-end'         : 'cert-ios-decisionlab.html?v=exam-end',
+    'dl-results'          : 'cert-ios-decisionlab.html?v=results',
+    'dl-results-open'     : 'cert-ios-decisionlab.html?v=results-open',
+    'dl-results-timeup'   : 'cert-ios-decisionlab.html?v=results-exam-timeup',
+    'dl-leave'            : 'cert-ios-decisionlab.html?v=leave',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
@@ -161,7 +172,8 @@
                            {sel:'#drillWeak',     to:'quiz'},
                            {sel:'.domain',        to:'quiz'},
                            {sel:'.mrow', text:'Reword Gauntlet', to:'gauntlet'},
-                           {sel:'.mrow', text:'Why-Not', to:'whynot'} ],
+                           {sel:'.mrow', text:'Why-Not', to:'whynot'},
+                           {sel:'.mrow', text:'Decision Lab', to:'dl'} ],
     'review'           : [ {sel:'#toHome', to:'home'} ],
     // report is a sheet; its X / Cancel close it (pop back to the previous screen)
     'report'           : [ {sel:'#closeBtn', to:'pop'}, {sel:'#cancelBtn', to:'pop'} ],
@@ -246,6 +258,11 @@
   NAV['whynot-verdict'] = [ {text:'Next round', to:'whynot-session'} ]; NAV['whynot-verdict-open'] = NAV['whynot-verdict'];
   NAV['whynot-session'] = [ {text:'Back to Drills', to:'drills'}, {text:'Next target', to:'whynot-loading'} ];
   NAV['whynot-leave'] = [ {text:'Leave', to:'drills'} ];
+  NAV['dl'] = [ {sel:'#startBtn', to:'dl-practice'}, {sel:'.back', to:'drills'} ]; NAV['dl-free'] = [ {sel:'.back', to:'drills'} ];
+  NAV['dl-practice'] = [ {text:'Submit', to:'dl-graded'} ]; NAV['dl-graded'] = [ {text:'Next decision', to:'dl-exam'} ];
+  NAV['dl-exam'] = [ {text:'Submit', to:'dl-exam-amber'} ]; NAV['dl-exam-amber'] = [ {text:'Submit and see results', to:'dl-results-timeup'} ];
+  NAV['dl-results'] = [ {text:'Back to Drills', to:'drills'}, {text:'Run another set', to:'dl-practice'} ]; NAV['dl-results-open'] = NAV['dl-results']; NAV['dl-results-timeup'] = NAV['dl-results'];
+  NAV['dl-leave'] = [ {text:'Leave', to:'drills'} ];
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -651,6 +668,12 @@
     if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
       b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
       b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
+    });
+    var LIFT_B3C3 = ['dl','dl-free','dl-practice','dl-graded','dl-exam','dl-exam-amber','dl-exam-end','dl-results','dl-results-open','dl-results-timeup','dl-leave'];
+    var b3c3Btn = document.getElementById('hud-liftb3c3'), b3c3I = -1;
+    if (b3c3Btn) b3c3Btn.addEventListener('click', function () {
+      b3c3I = (b3c3I + 1) % LIFT_B3C3.length; resetTo(LIFT_B3C3[b3c3I]);
+      b3c3Btn.textContent = 'B3c3 ' + (b3c3I + 1) + '/' + LIFT_B3C3.length + ' \u203a';
     });
     var LIFT_B3C2 = ['whynot','whynot-free','whynot-pick','whynot-loading','whynot-question','whynot-reason','whynot-picked','whynot-wrong','whynot-verdict','whynot-verdict-open','whynot-session','whynot-leave'];
     var b3c2Btn = document.getElementById('hud-liftb3c2'), b3c2I = -1;

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CertAnvil · Decision Lab (iOS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* Forged-bronze tokens (matches dg-system.css + the cert-ios mockups). */
+  :root {
+    --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
+    --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
+    --border: oklch(0.34 0.009 275);
+    --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
+    --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
+    --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
+  }
+  [data-theme="light"] {
+    --bg: oklch(0.975 0.007 85); --surface: oklch(0.955 0.009 84); --surface-2: oklch(0.92 0.010 84);
+    --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.38 0.014 280); --muted: oklch(0.52 0.013 280);
+    --border: oklch(0.85 0.010 85);
+    --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
+    --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
+    --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
+  }
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); }
+  * { box-sizing: border-box; }
+  html { color-scheme: light dark; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px; transition: background .35s var(--ease), color .35s var(--ease); }
+  .stage { max-width: 520px; margin: 0 auto; }
+  .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
+  .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
+  .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright); background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; }
+  .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .phone-wrap { display: flex; flex-direction: column; align-items: center; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto; background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 12; }
+  .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
+  .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
+  .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+  svg.i { stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+
+  .body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 20px; }
+  .body::-webkit-scrollbar { width: 0; }
+  .card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-bottom: 11px; }
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 10px; }
+
+  /* ── start screen ── */
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+  .back { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+  .back svg { width: 16px; height: 16px; }
+  .hdr h1 { font: 600 21px/1 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+  .hero { text-align: center; padding: 10px 6px 4px; }
+  .hero-i { width: 58px; height: 58px; border-radius: 999px; margin: 6px auto 14px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+  .hero-i svg { width: 26px; height: 26px; }
+  .hero h2 { font: 600 26px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.014em; margin: 0; color: var(--ink); }
+  .hero h2 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px auto 0; max-width: 32ch; }
+  .seg { display: flex; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); }
+  .seg button { flex: 1 1 0; text-align: left; border: 1px solid transparent; border-radius: 11px; background: none; padding: 10px 11px; cursor: pointer; font: inherit; color: var(--ink); transition: background-color .18s, border-color .18s, transform .14s var(--ease); }
+  .seg button:active { transform: scale(0.98); }
+  .seg b { display: flex; align-items: center; gap: 6px; font: 700 14px/1.2 Inter, sans-serif; }
+  .seg button > span { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 3px; }
+  .seg .on { background: color-mix(in oklab, var(--accent) 9%, var(--bg)); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .seg .on b { color: var(--accent-deep); }
+  .lock-pill { display: inline-flex; align-items: center; gap: 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); border-radius: 999px; padding: 4px 7px; }
+  .lock-pill svg { width: 10px; height: 10px; stroke-width: 2.4; }
+  .target .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .target .v { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rchip { min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 0 16px; font: 650 14px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: transform .14s var(--ease); }
+  .rchip:active { transform: scale(0.97); }
+  .rchip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .rchip.locked { color: var(--muted); }
+  .rchip svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  /* entry, rebuilt in the custom-quiz language */
+  .en-hdr { align-items: flex-start; }
+  .en-title { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
+  .en-title h1 { font: 600 21px/1.05 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); }
+  .en-title span { display: block; font: 500 11.5px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .cert-strip { display: flex; align-items: center; gap: 10px; margin: 10px 2px 4px; }
+  .cert-strip .cm { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; }
+  .cert-strip .cn b { display: block; font: 650 13.5px/1.05 Inter, sans-serif; color: var(--ink); }
+  .cert-strip .cn span { display: block; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .en-lead { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 12px 2px 0; max-width: 36ch; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .mode { text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 15px; padding: 13px 13px 12px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .18s, background-color .18s, transform .12s var(--ease); }
+  .mode:active { transform: scale(0.985); }
+  .mode .mi { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 10%, var(--surface-2)); display: grid; place-items: center; margin-bottom: 10px; color: var(--accent-deep); }
+  .mode .mi svg { width: 18px; height: 18px; }
+  .mode b { display: flex; align-items: center; gap: 6px; font: 650 14px/1.1 Inter, sans-serif; color: var(--ink); }
+  .mode > span:last-child { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .mode .tick { margin-left: auto; display: grid; color: var(--accent-deep); opacity: 0; }
+  .mode .tick svg { width: 16px; height: 16px; stroke-width: 2.6; }
+  .mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+  .mode[aria-pressed="true"] .tick { opacity: 1; }
+  .pro-tag { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); border-radius: 999px; padding: 4px 7px; }
+  .pro-tag svg { width: 9px; height: 9px; stroke-width: 2.6; }
+  .count-echo { display: flex; align-items: baseline; gap: 9px; margin: 2px 2px 8px; }
+  .count-echo .bn { font: 600 44px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .count-echo .bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .cseg { display: flex; gap: 5px; background: color-mix(in oklab, var(--ink) 5%, var(--surface-2)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
+  .cseg button { flex: 1 1 0; min-height: 40px; border: none; background: transparent; cursor: pointer; border-radius: 9px; font: 700 14px/1 Inter, sans-serif; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background-color .2s var(--ease), color .2s, transform .14s var(--ease); }
+  .cseg button:active { transform: scale(0.96); }
+  .cseg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
+  .cseg button.locked { color: color-mix(in oklab, var(--muted) 75%, transparent); }
+  .cseg button svg { width: 11px; height: 11px; stroke-width: 2.4; }
+  .cap-note { margin: 9px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--muted); }
+  .cap-note b { color: var(--ink-soft); }
+  .en-dock { flex-direction: column; gap: 0; }
+  .en-dock .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .en-dock .btn-primary svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+  .en-dock .qc { font: 700 12px/1 'Roboto Mono', monospace; opacity: 0.82; }
+  .foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--muted); margin: 9px 0 0; }
+  .free-note { font: 500 11.5px/1.45 Inter, sans-serif; color: var(--muted); text-align: center; margin: 14px 8px 2px; }
+
+  /* ── session top bar (Leave · Round pill · timer) + ticks ── */
+  .rbar { display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; }
+  .leave { flex: 0 0 auto; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 9px 13px; cursor: pointer; }
+  .rpill { font: 800 10.5px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+  .rspace { flex: 1; }
+  .timer { display: inline-flex; align-items: center; gap: 5px; font: 700 14px/1 'Roboto Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .timer svg { width: 13px; height: 13px; stroke: var(--accent-deep); }
+  .ticks { display: flex; gap: 5px; padding: 2px 18px 6px; }
+  .ticks i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track); }
+  .ticks i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .ticks i.cur { background: var(--accent); }
+
+  /* ── round ── */
+  .scen .k { display: inline-flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 8px; }
+  .scen p { margin: 0; font: 500 13.5px/1.55 Inter, sans-serif; color: var(--ink); }
+  .scen mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
+  .con { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; margin-bottom: 11px; }
+  .con-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); font: 700 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .con-bar b { color: var(--ink-soft); font-weight: 700; }
+  .reset-pill { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--ink-soft); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .reset-pill svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .con-body { padding: 11px 12px; font: 500 11.5px/1.65 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .con-body .ln { display: block; white-space: pre; overflow-x: auto; }
+  .con-body .ln.hit { color: var(--accent-deep); font-weight: 700; }
+  .con-body .pr { color: var(--accent-deep); font-weight: 700; }
+  .ref .ref-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .ref .ref-head span { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted); }
+  .enlarge { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--accent-deep); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .enlarge svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .net { width: 100%; height: auto; display: block; }
+  .net rect { fill: var(--surface-2); stroke: var(--border); }
+  .net .zone { fill: none; stroke: var(--border); stroke-dasharray: 4 4; }
+  .net text { fill: var(--ink-soft); font: 600 9px Inter, sans-serif; }
+  .net text.z { fill: var(--muted); font: 800 7.5px Inter, sans-serif; letter-spacing: 1px; }
+  .net text.ip { fill: var(--muted); font: 500 8px 'Roboto Mono', monospace; }
+  .net line { stroke: var(--muted); stroke-width: 1.2; }
+  .net .dev { fill: color-mix(in oklab, var(--accent) 14%, var(--surface)); stroke: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .step .sk { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .step h3 { font: 600 15.5px/1.35 Inter, sans-serif; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.005em; }
+  .pick { display: grid; gap: 8px; }
+  .pick button { min-height: 44px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 0 12px; font: 600 12px/1.2 'Roboto Mono', monospace; color: var(--ink-soft); cursor: pointer; display: flex; width: 100%; align-items: center; gap: 7px; text-align: left; transition: background-color .16s, border-color .16s, transform .12s var(--ease); }
+  .pick button:active { transform: scale(0.98); }
+  .pick button .ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); display: grid; place-items: center; flex: 0 0 auto; }
+  .pick button.on { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--ink); }
+  .pick button.on .ck { background: var(--accent); border-color: var(--accent); }
+  .pick button.on .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .fld { margin-top: 12px; }
+  .fld label { display: block; font: 700 11.5px/1 Inter, sans-serif; color: var(--ink-soft); margin-bottom: 7px; }
+  .sel { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 0 14px; display: flex; align-items: center; justify-content: space-between; font: 500 13.5px/1.3 Inter, sans-serif; color: var(--muted); }
+  .sel.set { color: var(--ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .sel svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .ord { display: flex; flex-direction: column; gap: 8px; }
+  .ord .row { min-height: 48px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; font: 500 13px/1.35 Inter, sans-serif; color: var(--ink); }
+  .ord .n { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, var(--surface)); }
+  .ord .grip { margin-left: auto; flex: 0 0 auto; width: 18px; height: 18px; color: var(--muted); }
+
+  /* ── dock ── */
+  .dock { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .btn-primary { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-ghost { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 13px; padding: 13px 16px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; display: inline-flex; align-items: center; gap: 7px; transition: transform .15s var(--ease); }
+  .btn-ghost:active { transform: scale(0.98); }
+  .btn-ghost svg { width: 14px; height: 14px; stroke-width: 2.2; }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
+
+  /* ── loader (the quiz's generating treatment) ── */
+  .skel { border-radius: 12px; background: var(--surface-2); }
+  .gen-line { font: 600 16px/1.4 Fraunces, Georgia, serif; letter-spacing: -0.008em; color: var(--ink); text-align: center; margin: 22px 14px 6px; }
+  .gen-cap { display: block; text-align: center; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted); }
+  .gen-track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; margin: 14px 40px 0; }
+  .gen-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px; background: var(--accent); transform: translateX(-100%); }
+  @media (prefers-reduced-motion: no-preference) {
+    .shimmer { position: relative; overflow: hidden; }
+    .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 9%, transparent), transparent); animation: shim 1.35s var(--ease) infinite; }
+    .gen-bar { animation: ind 1.5s var(--ease) infinite; }
+    @keyframes shim { to { transform: translateX(100%); } }
+    @keyframes ind { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  }
+
+  /* ── verdict (the exam results' language) ── */
+  .done-kick { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; margin: 8px 0 11px; }
+  .done-kick svg { width: 14px; height: 14px; stroke-width: 2.4; }
+  .done-title { font: 600 32px/1.05 Fraunces, serif; letter-spacing: -0.016em; color: var(--ink); margin: 0; }
+  .done-title em { font-style: normal; color: var(--accent); }
+  .done-sub { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }
+  .vscore { display: flex; align-items: baseline; gap: 6px; margin-top: 16px; }
+  .vscore b { font: 600 52px/0.95 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .vscore span { font: 700 13px/1 Inter, sans-serif; color: var(--muted); }
+  .vmeter { height: 7px; border-radius: 999px; background: var(--track); margin-top: 12px; overflow: hidden; }
+  .vmeter i { display: block; height: 100%; border-radius: 999px; background: var(--pass); }
+  .srow { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 9px; cursor: pointer; font: inherit; color: inherit; min-height: 56px; transition: transform .14s var(--ease); }
+  .srow:active { transform: scale(.99); }
+  .srow .sn2 { flex: 1 1 auto; min-width: 0; }
+  .srow .st { display: block; font: 600 14px/1.25 Inter, sans-serif; color: var(--ink); }
+  .srow .ss { display: block; font: 500 11px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 5px; }
+  .srow .sv { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 6px 9px; }
+  .srow .sv.ok { color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); }
+  .srow .sv.part { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); }
+  .srow .sv.no { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); }
+  .srow > svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--muted); transition: transform .2s var(--ease); }
+  .srow[aria-expanded="true"] > svg { transform: rotate(90deg); }
+  .sdet { display: none; margin: -4px 0 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+  .srow[aria-expanded="true"] + .sdet { display: block; }
+  .sdet .q { font: 600 12.5px/1.4 Inter, sans-serif; color: var(--ink); margin: 0 0 8px; }
+  .sdet .lab { font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; margin: 10px 0 5px; }
+  .sdet .lab.a { color: var(--pass); } .sdet .lab.y { color: var(--miss); }
+  .sdet .val { font: 500 11.5px/1.55 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .sdet .why { font: 500 12px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  /* stage 3: accordion choreography, content part only (BRAND §6: transform + opacity). Open settles in 220ms; close is instant. */
+  @media (prefers-reduced-motion: no-preference) { .srow[aria-expanded="true"] + .sdet { animation: sdetIn .22s cubic-bezier(0.16,1,0.3,1); } @keyframes sdetIn { from { opacity: 0; transform: translateY(-4px); } } }
+  @media (prefers-reduced-motion: reduce) { .srow[aria-expanded="true"] + .sdet { animation: sdetFade .2s ease; } @keyframes sdetFade { from { opacity: 0; } } }
+  .slip { border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 14px; margin-top: 6px; }
+  .slip .k { display: inline-flex; align-items: center; gap: 6px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); }
+  .slip .k svg, .scen .k svg { width: 13px; height: 13px; flex: 0 0 auto; }
+  .slip p { margin: 7px 0 0; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  /* today's free-user upsell, quiet: a row under the slip card, never in the dock */
+  .upsell { width: 100%; min-height: 44px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: 13px; background: transparent; padding: 0 14px; cursor: pointer; font: 650 13px/1.3 Inter, sans-serif; color: var(--accent-deep); text-align: left; transition: transform .15s var(--ease); }
+  .upsell:active { transform: scale(0.98); }
+  .upsell svg { width: 15px; height: 15px; stroke: currentColor; flex: 0 0 auto; }
+
+  /* ── sheets: confirm (B2's) and enlarge ── */
+  .scrim { position: absolute; inset: 0; z-index: 8; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .scrim.open { opacity: 1; pointer-events: auto; transition: opacity .26s var(--ease); }
+  .lsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .lsheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .ls-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, transparent); margin: 0 auto 16px; }
+  .lsheet h3 { font: 600 21px/1.2 Fraunces, serif; color: var(--ink); margin: 0 0 6px; }
+  .lsheet p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 18px; }
+  .ls-stay { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; }
+  .ls-go { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+  .esheet { position: absolute; left: 0; right: 0; bottom: 0; top: 48px; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .esheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .es-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px 12px; border-bottom: 1px solid var(--border); }
+  .es-head .ls-grip { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; }
+  .es-head h3 { flex: 1; font: 600 18px/1.2 Fraunces, serif; color: var(--ink); margin: 14px 0 0; }
+  .es-close { margin-top: 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--ink-soft); font: 650 12.5px/1 Inter, sans-serif; padding: 9px 13px; cursor: pointer; }
+  .es-body { flex: 1; overflow: auto; padding: 16px; }
+  .es-body .net { width: 640px; max-width: none; }
+  .es-hint { font: 500 11px/1.4 Inter, sans-serif; color: var(--muted); text-align: center; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); }
+  /* stage 2: 44pt hit areas + press feedback on small pills and sheet buttons */
+  .enlarge, .reset-pill, .es-close { position: relative; transition: transform .15s var(--ease); }
+  .enlarge::after, .reset-pill::after, .es-close::after { content: ""; position: absolute; inset: -7px; }
+  .ls-stay, .ls-go { transition: transform .15s var(--ease); }
+  .enlarge:active, .reset-pill:active, .es-close:active, .ls-stay:active, .ls-go:active { transform: scale(0.97); }
+  @media (prefers-reduced-motion: reduce) { .lsheet, .esheet { transform: none; opacity: 0; transition: opacity .2s ease, visibility 0s linear .2s; } .lsheet.open, .esheet.open { opacity: 1; transition: opacity .2s ease, visibility 0s; } }
+
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 5px 0; color: var(--muted); }
+  .tab svg { width: 22px; height: 22px; }
+  .tab span { font: 700 10px/1 Inter, sans-serif; }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; max-width: 44ch; margin-left: auto; margin-right: auto; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* rests visible, animates from hidden (CLAUDE.md gotcha) */ .reveal { animation: rise .5s var(--ease) backwards; }
+    .reveal:nth-child(2){animation-delay:.05s}.reveal:nth-child(3){animation-delay:.10s}.reveal:nth-child(4){animation-delay:.15s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.25s}
+    @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* ── B3b2 · Sim Lab exam: the B2 exam bar, round strip, dock and End dialog (lifted from cert-ios-exam.html; .timer/.ticks renamed) ── */
+  .ebar { display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; }
+  .xtimer { flex: 0 0 auto; min-width: 0; }
+  .xtimer .tl { display: block; font: 800 8.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .xtimer .tv { display: inline-flex; align-items: center; gap: 5px; font: 700 17px/1 'Roboto Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .xtimer .tv svg { width: 13px; height: 13px; stroke: var(--accent-deep); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .xtimer.low .tv { color: var(--accent-deep); }
+  .xtimer.low .tv svg { stroke: var(--accent-deep); }
+  .ecount { flex: 1 1 auto; text-align: center; min-width: 0; }
+  .ecount .cn { display: block; font: 700 13.5px/1 Inter, sans-serif; color: var(--ink); }
+  .ecount .cs { display: block; font: 500 10.5px/1 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .end-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ease), background .18s; }
+  .end-btn:active { transform: scale(.96); }
+  .emap { padding: 2px 18px 0; }
+  .xticks { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
+  .xticks i { flex: 1 1 0; height: 5px; border-radius: 2px; background: var(--track); }
+  .xticks i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .xticks i.cur { height: 12px; background: var(--accent); }
+  .xticks i.flag { background: var(--accent-deep); }
+  .efoot { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .flag-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); font: 650 13px/1 Inter, sans-serif; padding: 0 16px; cursor: pointer; transition: background .18s, border-color .18s, color .18s, transform .14s var(--ease); }
+  .flag-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .flag-btn:active { transform: scale(.97); }
+  .flag-btn.on { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+  .flag-btn.on svg { fill: currentColor; }
+  .next-btn { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .next-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .next-btn:active { transform: scale(0.985); }
+  .modal { position: absolute; z-index: 9; left: 22px; right: 22px; top: 50%; transform: translateY(-50%) scale(0.96); opacity: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 20px 19px 18px; box-shadow: 0 30px 70px -28px rgba(0,0,0,.6); transition: transform .2s var(--ease), opacity .2s var(--ease); }
+  .modal { max-height: calc(100% - 96px); overflow-y: auto; }
+  .modal.open { transform: translateY(-50%) scale(1); opacity: 1; pointer-events: auto; transition: transform .26s var(--ease), opacity .2s var(--ease); }
+  /* a sheet stacked over the dialog: the dialog recedes so the sheet holds the decision */
+  .modal::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--bg); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .modal.open.under { transform: translateY(-50%) scale(0.98); pointer-events: none; }
+  .modal.open.under::after { opacity: .55; }
+  @media (prefers-reduced-motion: reduce) { .modal, .modal.open, .modal.open.under { transform: translateY(-50%); transition: opacity .2s ease; } }
+  .modal-kick { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+  .modal-kick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .modal h2 { font: 600 23px/1.1 Fraunces, serif; letter-spacing: -0.012em; color: var(--ink); margin: 11px 0 0; }
+  .modal h2 em { font-style: normal; color: var(--accent); }
+  .msum { display: flex; gap: 8px; margin: 16px 0; }
+  .msum-cell { flex: 1 1 0; border: 1px solid var(--border); border-radius: 13px; background: var(--bg); padding: 12px 8px; text-align: center; }
+  .msum-cell .mn { display: block; font: 600 24px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .msum-cell.flag .mn { color: var(--accent-deep); }
+  .msum-cell.skip .mn { color: var(--miss); }
+  .msum-cell .ml { display: block; font: 700 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 7px; }
+  .m-review { width: 100%; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); font: 650 13.5px/1 Inter, sans-serif; padding: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .18s, border-color .18s, transform .14s var(--ease); margin-bottom: 9px; }
+  .m-review svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .m-review:active { transform: scale(.99); }
+  .m-submit { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .m-submit:active { transform: scale(.985); }
+  .m-abandon { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 11px; font: 650 13px/1 Inter, sans-serif; color: var(--miss); transition: opacity .15s var(--ease); }
+  .m-abandon:active { opacity: .6; }
+  .ecount .cp { display: block; font: 600 10px/1 'Roboto Mono', monospace; color: var(--pass); margin-top: 4px; }
+  .ecount .cp.behind { color: var(--miss); }
+  .prev-btn { flex: 0 0 auto; width: 48px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); cursor: pointer; transition: transform .14s var(--ease), border-color .18s; }
+  .prev-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .prev-btn:active { transform: scale(.97); }
+  .prev-btn:disabled { opacity: .35; cursor: default; }
+  .jump { margin-top: 4px; }
+  .jump-t { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 10px 2px 6px; cursor: pointer; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .jump-t svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease); }
+  .jump.open .jump-t svg { transform: rotate(180deg); }
+  .jgrid { display: none; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; max-height: 236px; overflow-y: auto; scrollbar-width: thin; padding: 4px 3px 2px 1px; }
+  .jump.open .jgrid { display: grid; }
+  .jgrid button { aspect-ratio: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; padding: 0; }
+  .jgrid button.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; color: var(--ink-soft); }
+  .jgrid button.f { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .jgrid button.c { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+  .jkey { display: flex; gap: 12px; margin-top: 8px; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); }
+  .jkey i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+  .jkey i.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; }
+  .jkey i.f { background: var(--accent); border-color: var(--accent); }
+  .xticks { height: 10px; }
+  .xticks i { border-radius: 3px; }
+  .ex-loader { padding-top: 34px; }
+  /* reset pill in the console bar / step 1 (as the full exam's Sim Lab questions) */
+  .step { position: relative; }
+  .step .reset-pill.at-step { position: absolute; top: 11px; right: 12px; }
+  .step:has(.at-step) .sk { padding-right: 86px; }
+  /* pace card (today's contents, June look) */
+  .pace { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-top: 16px; }
+  .pace .pk { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .pace .ph { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; }
+  .pace .pt { font: 600 28px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .pace .pv { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 6px 9px; color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); }
+  .pace .pv.over { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); }
+  .pace .ps { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 9px 0 0; }
+  .pace .ptrack { position: relative; height: 7px; border-radius: 999px; background: var(--track); margin: 16px 0 0; }
+  .pace .pfill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--pass); }
+  .pace .pfill.over { background: var(--miss); }
+  .pace .ptick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); border-radius: 2px; }
+  .pace .ptick b { position: absolute; top: -16px; right: -2px; white-space: nowrap; font: 700 9.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .pscale { display: flex; justify-content: space-between; margin-top: 7px; font: 500 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .prows { margin-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding-top: 9px; display: grid; gap: 7px; }
+  .pace .prow { display: flex; align-items: baseline; gap: 10px; font: 500 12px/1.3 Inter, sans-serif; color: var(--ink-soft); }
+  .pace .prow .rn { flex: 1 1 auto; min-width: 0; }
+  .pace .prow .rt { font: 600 11.5px/1 'Roboto Mono', monospace; color: var(--ink); }
+  .pace .prow .rp { font: 500 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .prow .rt.over { color: var(--miss); }
+
+  /* ═══ B3c3 · Decision Lab (cert-ios-decisionlab.html) ═══ */
+  /* pieces shared with the Gauntlet / Why-Not drawings */
+  .dock.stack { flex-direction: column; gap: 8px; }
+  .dock.stack .btn-primary, .dock.stack .btn-ghost { width: 100%; justify-content: center; }
+  .miss-call { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  .srow .ss.t { font: 500 11.5px/1.3 Inter, sans-serif; margin-top: 4px; }
+  .sdet .lab.ok { color: var(--pass); } .sdet .lab.no { color: var(--miss); } .sdet .lab.n { color: var(--muted); }
+  .sdet .val.rs { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink); }
+  .sdet .dwhy { font: 500 12px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  .tab.on { color: var(--accent-deep); }
+  /* entry: today's target card */
+  .tgt .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tgt .v { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+  .tgt .w { font: 500 12px/1.4 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  /* run header (practice): back, Decision N of M, the dots */
+  .dlbar { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+  .dlbar .rpill { margin-left: 0; }
+  .dots { display: flex; gap: 5px; padding: 2px 20px 8px; }
+  .dots i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track); }
+  .dots i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .dots i.cur { background: var(--accent); transform: scaleY(1.4); }
+  /* the pick, single choice */
+  .pick.one button { font: 550 14px/1.3 Inter, sans-serif; }   /* service names read as words, not commands */
+  .pick.one button .ck { border-radius: 999px; }
+  .pick button.best { border-color: color-mix(in oklab, var(--pass) 55%, var(--border)); background: color-mix(in oklab, var(--pass) 9%, var(--surface)); color: var(--ink); }
+  .pick button.best .ck { background: var(--pass); border-color: var(--pass); }
+  .pick button.best .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .pick button.miss { border-color: color-mix(in oklab, var(--miss) 50%, var(--border)); background: color-mix(in oklab, var(--miss) 8%, var(--surface)); color: var(--ink); }
+  .pick button.miss .ck { background: var(--miss); border-color: var(--miss); }
+  .pick button.miss .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .pick button.dim { opacity: 0.55; }
+  .pick button .vd { margin-left: auto; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+  .pick button.best .vd { color: var(--pass); } .pick button.miss .vd { color: var(--miss); }
+  .pick button[disabled] { cursor: default; }
+  .tell { border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 14px; margin-top: 11px; }
+  .tell .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); }
+  .tell p { margin: 7px 0 0; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  /* results: look-alike rows and family chips */
+  .confrow .pr { flex: 1 1 auto; min-width: 0; }
+  .confrow { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 8px; font: 500 13px/1.35 Inter, sans-serif; color: var(--ink-soft); }
+  .confrow b { color: var(--ink); font-weight: 650; }
+  .confrow .tag { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--miss); background: color-mix(in oklab, var(--miss) 12%, transparent); border-radius: 999px; padding: 6px 9px; }
+  .chipset { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chipset span { border: 1px solid var(--border); border-radius: 999px; background: var(--surface); padding: 8px 12px; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .score-sub { font: 700 13px/1 Inter, sans-serif; color: var(--muted); margin-top: 6px; }
+  /* exam End dialog without Flagged / Review / Jump: two count cells */
+  .msum.two { grid-template-columns: 1fr 1fr; }
+  /* stage 2: a decision swaps with a short fade, never a re-stagger (5-20 a set); the tell follows the marks */
+  .pick button { transition: background-color .18s var(--ease), border-color .18s var(--ease), opacity .2s var(--ease), transform .12s var(--ease); }
+  .xtimer .tv { transition: color .2s var(--ease); }
+  /* stage 3: the next dot lights on the same beat as the decision swap */
+  .dots i { transition: background-color .15s var(--ease); }
+  @media (prefers-reduced-motion: no-preference) {
+    .runbody .reveal { animation: dlswap .15s var(--ease) backwards; }
+    @keyframes dlswap { from { opacity: 0; } }
+    .tell { animation: dltell .2s var(--ease) .08s backwards; }
+    @keyframes dltell { from { opacity: 0; transform: translateY(4px); } }
+  }
+  @media (prefers-reduced-motion: reduce) { .tell { animation: dlfade .2s ease backwards; } @keyframes dlfade { from { opacity: 0; } } }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="stage-head">
+      <div>
+        <p class="stage-eyebrow">Cert app · iOS · B3c3</p>
+        <h1 class="stage-title">Decision Lab</h1>
+        <p class="stage-sub">Read the buried constraint, make the right call. States: <code>?v=entry</code>, <code>entry-free</code>, <code>practice</code>, <code>practice-graded</code>, <code>exam</code>, <code>exam-amber</code>, <code>exam-end</code>, <code>results</code>, <code>results-open</code>, <code>results-exam-timeup</code>, <code>leave</code>.</p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button"><svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="themeLabel">Dark</span></button>
+    </div>
+    <div class="phone-wrap">
+      <div class="phone">
+        <div class="screen" id="screen">
+          <div class="notch"></div>
+          <div class="statusbar"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/></svg></span></div>
+          <div id="app" style="display:contents"></div>
+        </div>
+      </div>
+      <p class="hint" id="hint"></p>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var v = new URLSearchParams(location.search).get('v') || 'entry';
+      var I = {
+        play: '<path d="M6 4l14 8-14 8V4z"/>', back: '<path d="M15 6l-6 6 6 6"/>',
+        dl: '<path d="M6 3v6a3 3 0 0 0 3 3h6"/><path d="M18 9V3M15 6l3-3 3 3M18 12v9"/>',
+        book: '<path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h6"/>',
+        clock: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 1.5M9 2h6"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+        check: '<path d="M20 6L9 17l-5-5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', right: '<path d="M9 6l6 6-6 6"/>', chev: '<path d="M6 9l6 6 6-6"/>',
+        done: '<path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+        home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>', drills: '<path d="M4 6h16M4 12h16M4 18h10"/>', prog: '<path d="M5 19V9M12 19V4M19 19v-7"/>', acct: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+      };
+      function ic(k, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>'; }
+      function $(id) { return document.getElementById(id); }
+      var TAB = '<div class="tabbar">' + [['home','Home'],['drills','Drills'],['prog','Progress'],['acct','Account']].map(function (t) { return '<button class="tab' + (t[0] === 'drills' ? ' on' : '') + '" type="button">' + ic(t[0]) + '<span>' + t[1] + '</span></button>'; }).join('') + '</div>';
+      // the drawn decision: AZ-900, a lift-and-shift with a buried constraint
+      var SCN = 'A retailer is moving an on-premises SQL Server to Azure. Its nightly reports run as <mark>SQL Agent jobs</mark>, and the team wants to change as little as possible.';
+      var OPTS = ['Azure SQL Database', 'Azure SQL Managed Instance', 'Azure Cosmos DB', 'Azure Database for MySQL'], BEST = 1;
+      var TELL = 'SQL Agent jobs live at the instance level. SQL Managed Instance keeps the whole instance, Agent included, so the move changes the least. SQL Database is a single database without the Agent.';
+      function dots(n, cur, done) { return '<div class="dots">' + Array.apply(null, Array(n)).map(function (_, i) { return '<i class="' + (i + 1 === cur ? 'cur' : i + 1 <= done ? 'done' : '') + '"></i>'; }).join('') + '</div>'; }
+      function decision(picked, graded) {
+        return '<div class="card scen reveal"><div class="k">' + ic('dl') + 'Scenario</div><p>' + SCN + '</p></div>'
+          + '<div class="card step reveal"><div class="sk">Your call</div><h3>Which service fits with the fewest changes?</h3><div class="pick one">'
+          + OPTS.map(function (o, i) {
+            var cls = !graded ? (i === picked ? 'on' : '') : i === BEST ? 'best' : i === picked ? 'miss' : 'dim';
+            var vd = graded && i === BEST ? '<span class="vd">Best</span>' : graded && i === picked ? '<span class="vd">Your pick</span>' : '';
+            var mark = (!graded && i === picked) || (graded && i === BEST) ? ic('check') : graded && i === picked ? ic('x') : '';
+            return '<button type="button" class="' + cls + '"' + (graded ? ' disabled' : '') + '><span class="ck">' + mark + '</span>' + o + vd + '</button>';
+          }).join('') + '</div>'
+          + (graded ? '<div class="tell"><div class="k">The tell</div><p>' + TELL + '</p></div>' : '') + '</div>';
+      }
+      var LEAVE = '<div class="scrim" id="scrim"></div><div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="ls-grip"></div><h3 id="lsT">Leave Decision Lab?</h3><p>Your decisions so far won’t count.</p><button class="ls-stay" type="button" id="lsStay">Keep going</button><button class="ls-go" type="button">Leave</button></div>';
+      var h = '', hint = '';
+      if (/^entry/.test(v)) {
+        var free = v === 'entry-free';
+        h = '<div class="hdr en-hdr"><button class="back" type="button" aria-label="Back to Drills">' + ic('back') + '</button><span class="en-title" style="align-self:center"><h1>Decision Lab</h1></span>'
+          + (free ? '<span class="lock-pill">' + ic('lock') + 'Pro</span>' : '') + '</div>'
+          + '<div class="body"><div class="hero reveal"><div class="hero-i">' + ic('dl') + '</div><h2>Make the <em>right call</em></h2><p>Three of four options look right. The buried constraint picks the winner.</p></div>'
+          + '<div class="card tgt reveal" style="margin-top:16px"><div class="k">Today’s target</div><div class="v">Mixed services</div><div class="w">Azure AZ-900</div></div>'
+          + '<div class="sect reveal">Mode</div><div class="modes reveal" role="group" aria-label="Decision Lab mode">'
+          + '<button class="mode" type="button" aria-pressed="true"><span class="mi">' + ic('book') + '</span><b>Practice <span class="tick">' + ic('check') + '</span></b><span>Why each wrong option is wrong.</span></button>'
+          + '<button class="mode" type="button" aria-pressed="false"><span class="mi">' + ic('clock') + '</span><b>Exam-style ' + (free ? '<span class="pro-tag">' + ic('lock') + 'Pro</span>' : '<span class="tick">' + ic('check') + '</span>') + '</b><span>Timed, no feedback till the end.</span></button></div>'
+          + '<div class="sect reveal">How many decisions</div><div class="count-echo reveal"><span class="bn">10</span><span class="bl">decisions</span></div>'
+          + '<div class="cseg reveal" role="group" aria-label="Decisions"><button type="button" aria-pressed="false">5</button><button type="button" aria-pressed="true">10</button><button type="button" aria-pressed="false"' + (free ? ' class="locked">' + ic('lock') : '>') + '20</button></div>'
+          + (free ? '<p class="cap-note reveal">Free covers <b>one set a day</b>, with the full reasoning on every miss.</p>' : '') + '</div>'
+          + '<div class="dock en-dock"><button class="btn-primary" type="button" id="startBtn">' + ic('play') + 'Start the drill <span class="qc">10 decisions</span></button></div>' + TAB;
+        hint = free ? 'Free user: the Pro pill, Exam-style and 20 locked (each opens today’s gate), the free line under the count.' : 'Entry in the Sim Lab start-screen language: target, mode cards, how many decisions, Start docked above the tab bar.';
+      } else if (/^practice|^leave/.test(v)) {
+        var graded = v === 'practice-graded';
+        h = '<div class="dlbar"><button class="back" type="button" id="dlBack" aria-label="Leave Decision Lab">' + ic('back') + '</button><span class="rpill">Decision 3 of 10</span></div>' + dots(10, 3, 2)
+          + '<div class="body runbody">' + decision(0, graded) + '</div>'
+          + '<div class="dock"><button class="btn-primary" type="button">' + (graded ? 'Next decision' : 'Submit') + '</button></div>'
+          + LEAVE;
+        hint = { practice: 'Practice: the decision as a Sim Lab round card, Submit docked. ‹ asks before leaving.', 'practice-graded': 'After Submit: Best in green, your pick in red, the tell. Next decision takes Submit’s place.', leave: '‹ mid-set asks in the in-app sheet. Keep going is the default.' }[v];
+      } else if (/^exam/.test(v)) {
+        var amber = v === 'exam-amber', cur = amber ? 10 : 4, ans = amber ? 8 : 3;
+        h = '<div class="ebar"><div class="xtimer' + (amber ? ' low' : '') + '"><span class="tl">Time left</span><span class="tv">' + ic('clock') + (amber ? '1:52' : '17:42') + '</span></div>'
+          + '<div class="ecount"><span class="cn">Decision ' + cur + ' of 10</span><span class="cs">' + ans + ' answered</span></div><button class="end-btn" type="button" id="endBtn">End</button></div>'
+          + dots(10, cur, cur - 1)
+          + '<div class="body runbody">' + decision(amber ? 1 : null, false) + '</div>'
+          + '<div class="dock"><button class="btn-primary" type="button">' + (amber ? 'Submit and see results' : 'Submit') + '</button></div>'
+          + '<div class="scrim" id="scrim"></div><div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mT">'
+          + '<span class="modal-kick">' + ic('done') + 'Decision Lab · Exam-style</span><h2 id="mT">Submit <em>set?</em></h2>'
+          + '<div class="msum two"><div class="msum-cell"><span class="mn">3</span><span class="ml">Answered</span></div><div class="msum-cell skip"><span class="mn">7</span><span class="ml">Skipped</span></div></div>'
+          + '<button class="m-submit" type="button">Submit and see results</button><button class="m-abandon" type="button" id="mAbandon">Abandon set</button></div>'
+          + '<div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="ls-grip"></div><h3 id="lsT">Abandon this set?</h3><p>Nothing from it will count.</p><button class="ls-stay" type="button" id="xStay">Keep going</button><button class="ls-go" type="button">Abandon</button></div>';
+        hint = { exam: 'Exam-style: the Sim Lab Exam bar (Time left, Decision N of M, End) and today’s forward-only run. Submit moves on, no feedback.', 'exam-amber': 'The last 10% of the clock turns amber. On the last decision Submit reads Submit and see results.', 'exam-end': 'End: the Sim Lab Exam dialog, two counts, no Flagged, Review or Jump (the run only goes forward).' }[v];
+      } else {
+        var tu = v === 'results-exam-timeup';
+        var D = [
+          ['Relational database that scales on its own', 'Databases', 1], ['Lift and shift SQL Server with Agent jobs', 'Databases', 0], ['Global low-latency NoSQL', 'Databases', 1],
+          ['Event-driven code with no servers', 'Compute', 1], ['Files shared over SMB', 'Storage', 0], ['Archive data for seven years', 'Storage', 1],
+          ['Block a country at the edge', 'Networking', 1], ['Who patches the guest OS in IaaS', 'Shared responsibility', 0], ['Single sign-on for SaaS apps', 'Identity', 1], ['Predict monthly cost before you deploy', 'Cost', 1]
+        ];
+        var ANS = ['Azure SQL Database', 'Azure SQL Managed Instance', 'Azure Cosmos DB', 'Azure Functions', 'Azure Files', 'The Archive access tier', 'Azure Front Door', '', 'Microsoft Entra ID', 'The Azure pricing calculator'];
+        var MISS = { 1: ['Azure SQL Database', TELL], 4: ['Azure Blob Storage', 'SMB shares are Azure Files. Blob Storage holds objects and has no SMB share to mount.'], 6: ['Azure Firewall', 'Blocking by country at the edge is a Front Door WAF rule. Azure Firewall sits inside your network, after the traffic has arrived.'] };
+        if (tu) { D[6][2] = 0; D[8][2] = -1; D[9][2] = -1; }
+        var passed = D.filter(function (d) { return d[2] === 1; }).length, open = v === 'results-open';
+        h = '<div class="body" style="padding-top:12px"><div class="done-kick reveal">' + ic(tu ? 'clock' : 'dl') + (tu ? 'Decision Lab · Exam-style · Time’s up' : 'Decision Lab · Practice · AZ-900') + '</div>'
+          + '<h2 class="done-title reveal"><em>' + passed + ' of 10</em> right calls</h2>'
+          + '<div class="sect reveal">Look-alikes you still confuse</div>'
+          + '<div class="confrow reveal"><span class="pr"><b>SQL Database</b> vs <b>SQL Managed Instance</b></span><span class="tag">Missed ×1</span></div>'
+          + '<div class="confrow reveal"><span class="pr"><b>Blob Storage</b> vs <b>Azure Files</b></span><span class="tag">Missed ×1</span></div>'
+          + '<div class="sect reveal">Weak service families</div><div class="chipset reveal"><span>Databases</span><span>Storage</span><span>Shared responsibility</span>' + (tu ? '<span>Networking</span>' : '') + '</div>'
+          + '<div class="sect reveal">Your ten decisions</div>'
+          + D.map(function (d, i) {
+            var ok = d[2] === 1, none = d[2] === -1, isOpen = open && i === 1;
+            var det = i === 7 ? '<div class="lab n">The tell</div><p class="dwhy" style="margin-top:0">In IaaS you run the virtual machine, so patching the guest OS is yours. Microsoft patches the hosts underneath.</p>'
+              : (!ok && MISS[i]) ? '<div class="lab no">Your pick</div><div class="val rs">' + MISS[i][0] + '</div><div class="lab ok">Right call</div><div class="val rs">' + ANS[i] + '</div><div class="lab n">The tell</div><p class="dwhy" style="margin-top:0">' + MISS[i][1] + '</p>'
+              : none ? '<div class="lab no">Your pick</div><div class="val rs">No answer</div><div class="lab ok">Right call</div><div class="val rs">' + ANS[i] + '</div>'
+              : '<div class="lab ok">Your pick</div><div class="val rs">' + ANS[i] + '</div>';
+            return '<button class="srow reveal" type="button" aria-expanded="' + isOpen + '"><span class="sn2"><span class="st">' + d[0] + '</span><span class="ss t">' + d[1] + '</span></span><span class="sv ' + (ok ? 'ok">Right' : 'no">Wrong') + '</span>' + ic('right') + '</button><div class="sdet">' + det + '</div>';
+          }).join('') + '</div>'
+          + '<div class="dock stack"><button class="btn-primary" type="button">Run another set</button><button class="btn-ghost" type="button">Back to Drills</button></div>';
+        hint = { results: 'Results: N of M right calls, the look-alikes, the weak families, then one row per decision. Tap a row.', 'results-open': 'A pick decision opens to your pick, the right call and the tell. A sorter (row 8) opens to the tell only.', 'results-exam-timeup': 'Time ran out: the kicker says so, and decisions you never reached read No answer.' }[v];
+      }
+      $('app').innerHTML = h; $('hint').textContent = hint;
+      function openM() { $('scrim').classList.add('open'); $('modal').classList.add('open'); }
+      function openL() { $('scrim').classList.add('open'); $('lsheet').classList.add('open'); if ($('modal')) $('modal').classList.add('under'); }
+      function closeAll() { ['scrim', 'modal', 'lsheet'].forEach(function (id) { if ($(id)) $(id).classList.remove('open', 'under'); }); }
+      if ($('endBtn')) $('endBtn').addEventListener('click', openM);
+      if ($('mAbandon')) $('mAbandon').addEventListener('click', openL);
+      if ($('xStay')) $('xStay').addEventListener('click', function () { $('lsheet').classList.remove('open'); $('modal').classList.remove('under'); });
+      if ($('dlBack')) $('dlBack').addEventListener('click', openL);
+      if ($('lsStay')) $('lsStay').addEventListener('click', closeAll);
+      if ($('scrim')) $('scrim').addEventListener('click', closeAll);
+      [].slice.call(document.querySelectorAll('button.srow')).forEach(function (b) { b.addEventListener('click', function () { b.setAttribute('aria-expanded', String(b.getAttribute('aria-expanded') !== 'true')); }); });
+      [].slice.call(document.querySelectorAll('.modes .mode')).forEach(function (b, i, all) { b.addEventListener('click', function () { if (b.querySelector('.pro-tag')) return; all.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }); });
+      if (v === 'exam-end') setTimeout(openM, 40);
+      if (v === 'leave') setTimeout(openL, 40);
+      // theme
+      var html = document.documentElement, label = $('themeLabel'), icon = $('themeIcon');
+      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
+      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint() { var dark = html.getAttribute('data-theme') !== 'light'; icon.innerHTML = dark ? SUN : MOON; label.textContent = dark ? 'Light' : 'Dark'; }
+      $('themeToggle').addEventListener('click', function () { var n = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; html.setAttribute('data-theme', n); try { localStorage.setItem('ca-theme', n); } catch (e) {} paint(); });
+      paint();
+    })();
+  </script>
+</body>
+</html>
