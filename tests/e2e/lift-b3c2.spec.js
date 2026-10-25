@@ -170,6 +170,16 @@ for (const vp of PHONES) {
       await expect(page.locator('#wn-round-root .iwn-lt')).toHaveText('C');
       await expect(page.locator('#wn-round-root')).toHaveClass(/iwn-static/);
     });
+    test('final review I1: a pick patches the step in place and hands focus to Next; Next keeps focus in the step', async ({ page }) => {
+      await toReasons(page, vp);
+      await page.evaluate(() => { document.querySelector('#wn-round-root .iwn-card').__keep = 1; });
+      await page.locator('#wn-round-root .iwn-reason').nth(await trueIdx(page)).click();
+      expect(await page.evaluate(() => document.querySelector('#wn-round-root .iwn-card').__keep)).toBe(1);   // not re-rendered
+      await expect(page.locator('#wn-round-root .iwn-next')).toBeFocused();
+      await page.locator('#wn-round-root .iwn-next').click();
+      await expect(page.locator('#wn-round-root .iwn-lt')).toHaveText('C');
+      expect(await page.evaluate(() => !!(document.activeElement && document.getElementById('wn-round-root').contains(document.activeElement)))).toBe(true);
+    });
     test('a fake pick turns red and the true reason green', async ({ page }) => {
       await toReasons(page, vp);
       const t = await trueIdx(page), f = await fakeIdx(page);
@@ -196,6 +206,16 @@ for (const vp of PHONES) {
       await page.setViewportSize(vp);
       await expect(page.locator('#wn-round-root .iwn-card')).toBeVisible();
       await expect(page.locator('#wn-round-root .iwn-reason').nth(t)).toHaveClass(/right/);
+    });
+    test('final review I2: crossing 899px outside Why-Not leaves another in-app sheet alone', async ({ page }) => {
+      await boot(page, vp, 'pro');
+      await page.evaluate(() => { showPage('drills'); window.__sheet = iosSheet({ title: 'Abandon this exam?', body: 'x', go: 'Abandon', stay: 'Keep going' }); });
+      await expect(page.locator('#exam-sheet')).toHaveClass(/open/);
+      await page.setViewportSize(DESKTOP);
+      await page.waitForTimeout(150);
+      await page.setViewportSize(vp);
+      await page.waitForTimeout(150);
+      await expect(page.locator('#exam-sheet')).toHaveClass(/open/);
     });
     test('leave sheet: Keep going stays, Leave exits', async ({ page }) => {
       await toReasons(page, vp);

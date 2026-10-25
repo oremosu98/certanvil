@@ -42,7 +42,7 @@
       + '<span class="iwn-strip">Why-Not · <b>' + e(m.topic) + '</b> · Round ' + m.round + ' of 3</span></div>'
       + '<div class="iwn-body"><div class="iwn-ans"><span class="iwn-tk' + (m.answerRight ? '' : ' no') + '">' + svg(m.answerRight ? CHECK : X, 13) + '</span><span>'
       + (m.answerRight ? 'You answered <b>' + e(m.answerText) + '</b>. Right. Now earn the other three points.' : 'The answer was <b>' + e(m.answerText) + '</b>. The reasons below still score.') + '</span></div>'
-      + '<div class="iwn-card"><div class="iwn-wtarget"><span class="iwn-lt">' + e(m.letter) + '</span><b>' + e(m.optionText) + '</b></div><p class="iwn-ask">Why does it lose?</p>'
+      + '<div class="iwn-card" data-letter="' + e(m.letter) + '"><div class="iwn-wtarget"><span class="iwn-lt">' + e(m.letter) + '</span><b>' + e(m.optionText) + '</b></div><p class="iwn-ask">Why does it lose?</p>'
       + m.reasons.map(function (r, i) {
         return '<button type="button" class="iwn-reason' + r.cls + '" data-act="reason" data-i="' + i + '"' + (m.done ? ' disabled' : '') + '><span class="iwn-rdot">' + svg(r.cls === ' wrong' ? X : CHECK, 11) + '</span><span>' + e(r.t) + '</span></button>';
       }).join('')
@@ -136,9 +136,35 @@
   // without replaying the entrance (iwn-static). False on desktop.
   function renderReasons(root, s) {
     if (!root || !isPhone()) return false;
+    var html = _iosWnReasonHtml(_iosWnReasonModel(s));
+    var card = root.querySelector('.iwn-card');
+    // A pick on the option already showing patches the step in place (final review I1): the reason states,
+    // the bar and Next transition as drawn, and focus moves to Next instead of falling to the page.
+    if (s.picked != null && card && card.getAttribute('data-letter') === String(s.letter) && !card.querySelector('.iwn-note')) {
+      var t = document.createElement('div'); t.innerHTML = html;
+      var nb = t.querySelectorAll('.iwn-reason'), ob = root.querySelectorAll('.iwn-reason');
+      [].forEach.call(ob, function (b, i) {
+        if (!nb[i]) return;
+        b.className = nb[i].className; b.disabled = true;
+        var nd = nb[i].querySelector('.iwn-rdot'), od = b.querySelector('.iwn-rdot'); if (nd && od) od.innerHTML = nd.innerHTML;
+      });
+      var note = t.querySelector('.iwn-note'); if (note && ob.length) ob[ob.length - 1].insertAdjacentElement('afterend', note);
+      var ns = t.querySelectorAll('.iwn-bars i'), os = root.querySelectorAll('.iwn-bars i');
+      [].forEach.call(os, function (x, i) { if (ns[i]) x.className = ns[i].className; });
+      var nn = t.querySelector('.iwn-next'), on = root.querySelector('.iwn-next');
+      if (nn && on) { on.textContent = nn.textContent; on.classList.remove('wait'); on.removeAttribute('aria-hidden'); on.removeAttribute('tabindex'); try { on.focus({ preventScroll: true }); } catch (_) { on.focus(); } }
+      root.classList.add('iwn-static');
+      return true;
+    }
+    var hadFocus = !!(document.activeElement && root.contains(document.activeElement));
     root.classList.toggle('iwn-static', (s.wrongIdx || 0) > 0 || s.picked != null);
-    root.innerHTML = _iosWnReasonHtml(_iosWnReasonModel(s));
+    root.innerHTML = html;
     _bindRound(root);
+    // Next to the next option (a WebKit tap never focuses the button, so key on the step, not on focus)
+    if (hadFocus || (s.picked == null && (s.wrongIdx || 0) > 0)) {
+      var f = root.querySelector('.iwn-reason:not([disabled])') || root.querySelector('.iwn-next:not(.wait)');
+      if (f) { try { f.focus({ preventScroll: true }); } catch (_) { f.focus(); } }
+    }
     return true;
   }
   // Renders the round verdict / the session verdict into #wn-verdict-root and wires it. False on desktop.
@@ -187,6 +213,8 @@
   // Crossing 899px (an iPhone Pro Max rotating, iPad split view): the screen redraws in the new layout
   // (features/flagship-drills.js owns the state).
   if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () {
+    var act = document.querySelector('.page.active');
+    if (!act || !/^page-whynot/.test(act.id)) return;   // only Why-Not's own screens (final review I2: leave other sheets alone)
     if (window.iosSheet && window.iosSheet.dismiss) { try { window.iosSheet.dismiss(); } catch (_) {} }
     if (typeof window._wnRerender === 'function') { try { window._wnRerender(); } catch (_) {} }
   });
