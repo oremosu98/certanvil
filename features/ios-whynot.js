@@ -94,7 +94,8 @@
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     var meter = '';
     for (var i = 0; i < 12; i++) meter += i < m.meter ? '<i class="on"></i>' : '<i></i>';
-    return '<div class="iwn-vbody"><div class="iwn-vkick">' + e(m.kick) + '</div><h2 class="iwn-stitle">' + m.title + '</h2>'
+    var MARK = '<svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20z"></path><path d="M9.5 9a2.5 2.5 0 0 1 4.86.83c0 1.67-2.5 2.5-2.5 2.5"></path><path d="M12 17h.01"></path></svg>';
+    return '<div class="iwn-vbody"><div class="iwn-vkick">' + MARK + e(m.kick) + '</div><h2 class="iwn-stitle">' + m.title + '</h2>'
       + '<div class="iwn-meter" aria-hidden="true">' + meter + '</div><p class="iwn-ssub">3 questions answered toward today’s goal.</p>'
       + '<div class="iwn-sect">Your three rounds</div>'
       + m.rows.map(function (r) { return '<div class="iwn-sround"><span class="iwn-st">' + e(r.title) + '</span><span class="iwn-sv ' + (r.points === 4 ? 'ok' : 'nt') + '">' + r.points + ' of 4</span></div>'; }).join('')

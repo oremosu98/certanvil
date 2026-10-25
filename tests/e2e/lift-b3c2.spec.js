@@ -148,6 +148,9 @@ for (const vp of PHONES) {
       await startSession(page, vp);
       await expect(page.locator('#q-label')).toHaveText('Round 1 of 3');
       await expect(page.locator('#quiz-prog-dots')).toBeHidden();
+      // side-by-side drift: only the topic takes the accent; "Why-Not" and the round count stay dim
+      await expect(page.locator('#gauntlet-run-topic span')).toHaveCount(2);
+      await expect(page.locator('#gauntlet-run-topic span').nth(1)).toHaveText(' · Round 1 of 3');
     });
     test('the reason step: one option at a time, the note after a pick', async ({ page }) => {
       await toReasons(page, vp);

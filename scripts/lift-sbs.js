@@ -90,6 +90,19 @@ const SCREENS = [
   ['gt-miss', 'cert-ios-gauntlet.html?v=result-miss', 'gt-miss'],
   ['gt-miss-open', 'cert-ios-gauntlet.html?v=result-miss-open', 'gt-miss-open'],
   ['gt-miss-free', 'cert-ios-gauntlet.html?v=result-miss-free', 'gt-miss-free'],
+  // B3c2: Why-Not
+  ['wn-entry', 'cert-ios-whynot.html?v=entry', 'wn-entry'],
+  ['wn-free', 'cert-ios-whynot.html?v=entry-free', 'wn-free'],
+  ['wn-pick', 'cert-ios-whynot.html?v=entry-pick', 'wn-pick'],
+  ['wn-loading', 'cert-ios-whynot.html?v=loading', 'wn-loading'],
+  ['wn-question', 'cert-ios-whynot.html?v=question', 'wn-question'],
+  ['wn-reason', 'cert-ios-whynot.html?v=reason', 'wn-reason'],
+  ['wn-picked', 'cert-ios-whynot.html?v=reason-picked', 'wn-picked'],
+  ['wn-wrong', 'cert-ios-whynot.html?v=reason-wrong', 'wn-wrong'],
+  ['wn-verdict', 'cert-ios-whynot.html?v=verdict', 'wn-verdict'],
+  ['wn-verdict-open', 'cert-ios-whynot.html?v=verdict-open', 'wn-verdict-open'],
+  ['wn-session', 'cert-ios-whynot.html?v=session', 'wn-session'],
+  ['wn-leave', 'cert-ios-whynot.html?v=leave', 'wn-leave'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -107,6 +120,24 @@ const GT_RUN = { concept: 'Remote Desktop listens on TCP 3389', rungs: [
   { question: 'Which port is the BEST one to restrict to stop remote GUI logins to Windows hosts?', options: ['80', '389', '3389', '8080'], answer: 'C', explanation: 'Closing 3389 stops RDP, the remote GUI login. 389 is LDAP and does not carry a desktop session.', hinge: 'BEST' },
   { question: 'All of these ports carry remote access EXCEPT which one?', options: ['22', '3389', '5900', '161'], answer: 'D', explanation: '161 is SNMP, for monitoring. 22 (SSH), 3389 (RDP) and 5900 (VNC) all give remote access.', hinge: 'EXCEPT' },
   { question: 'An admin moved RDP off its default port. Which port did they move it off of?', options: ['3389', '3390', '443', '22'], answer: 'A', explanation: 'RDP\u2019s default is 3389, so that is the port it was moved off of.', hinge: 'off of' } ] };
+// B3c2: five Why-Not rounds in today's shape, the drawing's RDP round first (its exact reasons and notes)
+const WN_KIT = (r, f1, f2, n) => ({ reason: r, fakes: [f1, f2], note: n });
+const WN_RD = (q, o, a, x, k) => ({ question: q, options: o, answer: a, explanation: x, whynot: k });
+const WN_RUN = { rounds: [
+  WN_RD('Which TCP port does Remote Desktop Protocol listen on by default?', ['3389', '22', '445', '5900'], 'A', 'RDP listens on TCP 3389 by default. Windows turns it on when you allow remote connections.', {
+    B: WN_KIT('22 is SSH, a command-line login.', '22 is UDP only, so it can’t carry a session.', '22 is reserved for DNS zone transfers.', 'SSH owns 22 and gives you a command line. It runs over TCP, and DNS zone transfers use 53.'),
+    C: WN_KIT('445 is SMB, for file and printer sharing.', '445 only carries encrypted web traffic.', '445 is what RDP falls back to without NLA.', 'SMB shares run on 445. Encrypted web traffic is 443, and RDP stays on 3389 with or without NLA.'),
+    D: WN_KIT('5900 is VNC, a different remote desktop protocol.', 'Windows blocks 5900, so nothing can listen on it.', '5900 is RDP’s port for multi-monitor sessions.', 'VNC listens on 5900. It’s remote desktop too, over a different protocol from RDP. Windows doesn’t block 5900, and RDP has no extra port for monitors.') }),
+  WN_RD('Which port does HTTPS use by default on the public web?', ['80', '443', '8080', '21'], 'B', 'HTTPS uses TCP 443.', {
+    A: WN_KIT('80 is plain HTTP.', '80 is only for FTP.', '80 is UDP only.', 'HTTP is 80.'), C: WN_KIT('8080 is an alternate HTTP port.', '8080 is DNS.', '8080 is SMTP.', 'An alternate, not the default.'), D: WN_KIT('21 is FTP control.', '21 is HTTPS on old servers.', '21 is SSH.', 'FTP control uses 21.') }),
+  WN_RD('Which port does DNS use for ordinary name lookups?', ['25', '110', '53', '123'], 'C', 'DNS lookups use port 53.', {
+    A: WN_KIT('25 is SMTP.', '25 is DNS over TCP.', '25 is NTP.', 'SMTP is 25.'), B: WN_KIT('110 is POP3.', '110 is DNS zone transfers.', '110 is LDAP.', 'POP3 is 110.'), D: WN_KIT('123 is NTP.', '123 is DNS over UDP.', '123 is SNMP.', 'NTP is 123.') }),
+  WN_RD('Which port does SNMP polling use?', ['161', '389', '636', '514'], 'A', 'SNMP polling uses UDP 161.', {
+    B: WN_KIT('389 is LDAP.', '389 is SNMP traps.', '389 is Syslog.', 'LDAP is 389.'), C: WN_KIT('636 is LDAPS.', '636 is SNMPv3.', '636 is RDP.', 'LDAPS is 636.'), D: WN_KIT('514 is Syslog.', '514 is SNMP polling.', '514 is SSH.', 'Syslog is 514.') }),
+  WN_RD('Which port does SSH use by default?', ['23', '22', '3389', '69'], 'B', 'SSH uses TCP 22.', {
+    A: WN_KIT('23 is Telnet.', '23 is SFTP.', '23 is SSH over UDP.', 'Telnet is 23.'), C: WN_KIT('3389 is RDP.', '3389 is SSH tunnelling.', '3389 is SCP.', 'RDP is 3389.'), D: WN_KIT('69 is TFTP.', '69 is SSH keys.', '69 is SFTP.', 'TFTP is 69.') })
+] };
+
 function examState(step) {
   const qs = Array.from({ length: 90 }, (_, i) => ({ type: 'mcq', question: 'Which of the following is the primary function of ICMP in network communications?',
     options: { A: 'Providing error reporting and diagnostic capabilities for IP networks', B: 'Establishing encrypted connections between remote hosts',
@@ -225,6 +256,47 @@ async function shootReal(browser, step, theme) {
         if (step === 'gt-miss-open') { await p.locator('#gnt-result-root .igt-srow').nth(2).click(); await p.waitForTimeout(400); }
       }
     }
+  } else if (/^wn/.test(step || '')) {
+    // B3c2: Why-Not, forge stubbed in the page; picks read _wnRound.map so true / fake land as drawn
+    const free = step === 'wn-free';
+    const tier = () => p.evaluate((f) => { window._quotaState = f ? { tier: 'free', used_today: 0, daily_limit: 15 } : { tier: 'pro' }; document.body.classList.toggle('is-pro-tier', !f); }, free);
+    await p.evaluate(async ([st, run]) => {
+      try { localStorage.setItem('nplus_a2hs_dismissed', '1'); } catch (_) {}
+      window._claudeFetch = st === 'wn-loading' ? () => new Promise(() => {}) : async () => ({ ok: true, json: async () => ({ content: [{ type: 'text', text: JSON.stringify(run) }] }) });
+      window.aiValidateQuestions = async (k, qs) => qs; window.validateQuestions = (qs) => qs;
+      if (typeof showPage === 'function') showPage('drills');
+    }, [step, WN_RUN]);
+    await p.waitForTimeout(500);
+    await tier();
+    await p.evaluate(() => startWhyNot());
+    await p.waitForTimeout(900);
+    if (step === 'wn-pick') { await p.locator('#iwn-entry .iwn-switch').click(); await p.waitForTimeout(500); }
+    if (!/^wn-(entry|pick|free)$/.test(step)) {
+      await tier(); await p.locator('#iwn-entry .iwn-start').click(); await p.waitForTimeout(1200);
+      const toReasons = async (n) => {
+        await p.locator('#options .option').nth(n).click();
+        for (let k = 0; k < 3 && !(await p.locator('#page-whynot-round').evaluate(el => el.classList.contains('active'))); k++) { await p.locator('#btn-next').click({ timeout: 3000 }).catch(() => {}); await p.waitForTimeout(350); }
+      };
+      const pick = async (real) => { const i = await p.evaluate((r) => _wnRound.map.findIndex(x => !!x.real === r), real); await p.locator('#wn-round-root .iwn-reason').nth(i).click(); await p.waitForTimeout(500); };
+      const nextR = async () => { await p.locator('#wn-round-root .iwn-next').click(); await p.waitForTimeout(500); };
+      if (step !== 'wn-loading' && step !== 'wn-question') {
+        await toReasons(0);
+        if (step === 'wn-picked') { await pick(true); await nextR(); await pick(true); }
+        if (step === 'wn-wrong' || /^wn-(verdict|session)/.test(step)) { await pick(true); await nextR(); await pick(true); await nextR(); await pick(false); }
+        if (/^wn-(verdict|session)/.test(step)) { await nextR(); await p.waitForTimeout(600); }
+        if (step === 'wn-verdict-open') { await p.locator('#wn-verdict-root .iwn-srow').nth(3).click(); await p.waitForTimeout(400); }
+        if (step === 'wn-session') {
+          for (const [n, picks] of [[1, [true, true, true]], [2, [true, true, false]]]) {
+            await p.locator('#wn-verdict-root .iwn-primary').click(); await p.waitForTimeout(1200);
+            await toReasons(n);
+            for (let j = 0; j < 3; j++) { await pick(picks[j]); await nextR(); }
+            await p.waitForTimeout(600);
+          }
+          await p.locator('#wn-verdict-root .iwn-primary').click(); await p.waitForTimeout(4600);   // let any milestone toast leave
+        }
+        if (step === 'wn-leave') { await p.locator('#wn-round-root .iwn-leave').click(); await p.waitForTimeout(600); }
+      }
+    }
   } else if (/^xs/.test(step || '')) {
     // B3b2: a Pro Sim Lab exam, 5 rounds, seeds only (offline); the drawn round is the terminal seed in round 2
     await p.evaluate(async (st) => {
@@ -315,7 +387,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn)/.test(step || '') });
   await ctx.close();
   return buf;
 }
@@ -335,7 +407,7 @@ async function pair(browser, left, right, file) {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   for (const theme of ['dark', 'light']) {
-    for (const [name, file, step] of SCREENS.filter(x => !process.env.LIFT_ONLY || x[0] === process.env.LIFT_ONLY)) {
+    for (const [name, file, step] of SCREENS.filter(x => { const o = process.env.LIFT_ONLY; return !o || x[0] === o || (o.endsWith('*') && x[0].startsWith(o.slice(0, -1))); })) {
       const l = await shootE2E(browser, file, theme);
       const r = await shootReal(browser, step, theme);
       const f = path.join(OUT, name + '-' + theme + '.png');

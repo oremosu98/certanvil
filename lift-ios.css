@@ -2264,7 +2264,7 @@ html[data-theme] body #page-whynot-round.active:has(.iwn-card), html[data-theme]
 
 /* ═════════════════════ LIFT B3c2 · WHY-NOT VERDICTS (cert-ios-whynot.html ?v=verdict, verdict-open, session) · iwn- ═════════════════════ */
 #wn-verdict-root .iwn-vbody { padding: 8px 20px calc(150px + env(safe-area-inset-bottom)); }
-#wn-verdict-root .iwn-vkick { margin: 12px 0 11px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
+#wn-verdict-root .iwn-vkick { display: inline-flex; align-items: center; gap: 7px; margin: 12px 0 11px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); }
 #wn-verdict-root :is(.iwn-vtitle, .iwn-stitle) { margin: 8px 0 0; font: 600 34px/1.05 Fraunces, Georgia, serif !important; letter-spacing: -0.016em !important; text-transform: none !important; color: var(--text); }
 #wn-verdict-root :is(.iwn-vtitle, .iwn-stitle) em { font-style: normal; color: var(--accent); }
 #wn-verdict-root .iwn-callout, #wn-verdict-root .iwn-ssub { margin: 10px 0 0; font: 500 13.5px/1.5 Inter, sans-serif; color: var(--text-mid); }

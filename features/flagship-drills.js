@@ -751,6 +751,8 @@
     if (_wnPhone()) {
       const lbl = document.getElementById('q-label'), fill = document.getElementById('prog-fill');
       if (lbl) lbl.textContent = 'Round ' + (_wnSession.roundIdx + 1) + ' of ' + WHY_NOT_ROUNDS;
+      // only the topic takes the accent (the drawing); "Why-Not" and the round count stay dim
+      if (topicEl) topicEl.innerHTML = '<span>Why-Not</span> · ' + escHtml(_wnSession.topic) + '<span> · Round ' + (_wnSession.roundIdx + 1) + ' of ' + WHY_NOT_ROUNDS + '</span>';
       if (fill) fill.style.width = Math.round((_wnSession.roundIdx + 1) * 100 / WHY_NOT_ROUNDS) + '%';
     }
   }

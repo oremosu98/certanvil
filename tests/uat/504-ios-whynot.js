@@ -65,6 +65,8 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       && (sh.match(/iwn-sv ok/g) || []).length === 1 && (sh.match(/iwn-sv nt/g) || []).length === 2 && /data-act="exit"[^>]*>Back to Drills/.test(sh)
       && /data-act="next-topic"[^>]*>Next target/.test(sh) && sh.indexOf('3 questions answered toward today’s goal.') >= 0);
 
+    test('Session (side-by-side drift): the kicker carries the Why-Not mark',
+      /<div class="iwn-vkick"><svg/.test(sh));
     // ── escaping ──
     const bad = R({ optionText: 'A&B <x>', reasons: [{ t: '<b>', real: true }, { t: 'y', real: false }, { t: 'z', real: false }], picked: 0, note: '& <i>' });
     const vbad = run('_iosWnVerdictHtml(_iosWnVerdictModel(__s))', V({ topic: 'T<x>', wrong: [{ letter: 'B', text: '<img>', right: false, picked: '<s>', reason: '&', note: '<u>' }].concat(W.slice(1)) }));
