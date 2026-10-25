@@ -27,11 +27,13 @@ async function setTier(page, tier) {
 // Opens the entry the way a person does: from Drills (or Home with from: 'setup').
 async function openEntry(page, vp, tier, from) {
   await boot(page, vp, tier);
-  await page.evaluate((f) => { showPage(f === 'setup' ? 'setup' : 'drills'); }, from || 'drills');
-  await page.waitForTimeout(400);
+  const origin = from === 'setup' ? 'setup' : 'drills';
+  await page.evaluate((f) => { showPage(f); }, origin);
+  await expect(page.locator('#page-' + origin)).toHaveClass(/active/, { timeout: 10000 });   // let the switch settle before the next one
+  await page.waitForTimeout(150);
   await setTier(page, tier || 'pro');   // signed out, the app resets _quotaState after load
   await page.evaluate(() => decisionLabOpenEntry());
-  await expect(page.locator('#page-decision-lab-entry')).toHaveClass(/active/);
+  await expect(page.locator('#page-decision-lab-entry')).toHaveClass(/active/, { timeout: 10000 });
 }
 module.exports = { boot, setTier, openEntry };
 
