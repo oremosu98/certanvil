@@ -62,6 +62,18 @@
     'gauntlet-miss'        : 'cert-ios-gauntlet.html?v=result-miss',
     'gauntlet-miss-open'   : 'cert-ios-gauntlet.html?v=result-miss-open',
     'gauntlet-miss-free'   : 'cert-ios-gauntlet.html?v=result-miss-free',
+    'whynot'              : 'cert-ios-whynot.html',                      // B3c2 (25 Oct): Why-Not
+    'whynot-free'         : 'cert-ios-whynot.html?v=entry-free',
+    'whynot-pick'         : 'cert-ios-whynot.html?v=entry-pick',
+    'whynot-loading'      : 'cert-ios-whynot.html?v=loading',
+    'whynot-question'     : 'cert-ios-whynot.html?v=question',
+    'whynot-reason'       : 'cert-ios-whynot.html?v=reason',
+    'whynot-picked'       : 'cert-ios-whynot.html?v=reason-picked',
+    'whynot-wrong'        : 'cert-ios-whynot.html?v=reason-wrong',
+    'whynot-verdict'      : 'cert-ios-whynot.html?v=verdict',
+    'whynot-verdict-open' : 'cert-ios-whynot.html?v=verdict-open',
+    'whynot-session'      : 'cert-ios-whynot.html?v=session',
+    'whynot-leave'        : 'cert-ios-whynot.html?v=leave',
     'hub'               : 'cert-ios-hub.html',
     'quiz'              : 'cert-ios-quiz.html',
     'quiz-short-set'    : 'cert-ios-quiz.html?v=short',
@@ -147,7 +159,9 @@
     // drills launcher: every drill CTA starts a (10-Q) drill session -> quiz
     'drills'           : [ {sel:'#drillMistakes', to:'quiz'},
                            {sel:'#drillWeak',     to:'quiz'},
-                           {sel:'.domain',        to:'quiz'} ],
+                           {sel:'.domain',        to:'quiz'},
+                           {sel:'.mrow', text:'Reword Gauntlet', to:'gauntlet'},
+                           {sel:'.mrow', text:'Why-Not', to:'whynot'} ],
     'review'           : [ {sel:'#toHome', to:'home'} ],
     // report is a sheet; its X / Cancel close it (pop back to the previous screen)
     'report'           : [ {sel:'#closeBtn', to:'pop'}, {sel:'#cancelBtn', to:'pop'} ],
@@ -226,6 +240,12 @@
   NAV['gauntlet-run'] = [ {sel:'.exit', to:'drills'} ]; NAV['gauntlet-answered'] = [ {text:'Next question', to:'gauntlet-miss'}, {sel:'.exit', to:'drills'} ];
   NAV['gauntlet-cracked'] = [ {text:'Back to Drills', to:'drills'}, {text:'Next target', to:'gauntlet-loading'} ];
   NAV['gauntlet-miss'] = [ {text:'Run it again', to:'gauntlet-loading'}, {text:'Different concept', to:'gauntlet-loading'} ]; NAV['gauntlet-miss-open'] = NAV['gauntlet-miss']; NAV['gauntlet-miss-free'] = NAV['gauntlet-miss'];
+  NAV['whynot'] = [ {sel:'#startBtn', to:'whynot-loading'}, {sel:'.back', to:'drills'} ]; NAV['whynot-free'] = [ {sel:'.back', to:'drills'} ];
+  NAV['whynot-question'] = [ {sel:'.exit', to:'whynot-leave'} ];
+  NAV['whynot-picked'] = [ {text:'Next: why does D lose?', to:'whynot-wrong'} ]; NAV['whynot-wrong'] = [ {text:'See the round verdict', to:'whynot-verdict'} ];
+  NAV['whynot-verdict'] = [ {text:'Next round', to:'whynot-session'} ]; NAV['whynot-verdict-open'] = NAV['whynot-verdict'];
+  NAV['whynot-session'] = [ {text:'Back to Drills', to:'drills'}, {text:'Next target', to:'whynot-loading'} ];
+  NAV['whynot-leave'] = [ {text:'Leave', to:'drills'} ];
   NAV['analytics-wins'] = NAV['analytics']; NAV['analytics-map'] = NAV['analytics']; NAV['review-done'] = NAV['review'] || [];
 
   var TABS = { 'Home':'home', 'Drills':'drills', 'Progress':'progress', 'Account':'settings',
@@ -631,6 +651,12 @@
     if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
       b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
       b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
+    });
+    var LIFT_B3C2 = ['whynot','whynot-free','whynot-pick','whynot-loading','whynot-question','whynot-reason','whynot-picked','whynot-wrong','whynot-verdict','whynot-verdict-open','whynot-session','whynot-leave'];
+    var b3c2Btn = document.getElementById('hud-liftb3c2'), b3c2I = -1;
+    if (b3c2Btn) b3c2Btn.addEventListener('click', function () {
+      b3c2I = (b3c2I + 1) % LIFT_B3C2.length; resetTo(LIFT_B3C2[b3c2I]);
+      b3c2Btn.textContent = 'B3c2 ' + (b3c2I + 1) + '/' + LIFT_B3C2.length + ' \u203a';
     });
     var LIFT_B3A = ['drills','drills-free','drills-empty','drills-dl'];
     var b3Btn = document.getElementById('hud-liftb3a'), b3I = -1;
