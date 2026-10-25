@@ -900,7 +900,8 @@
     _wnSession.roundResults.push({
       answerRight: !!_wnRound.answerRight,
       reasons: Object.assign({}, _wnRound.reasons),
-      points: answerPt + reasonPts
+      points: answerPt + reasonPts,
+      firstPick: _wnRound.firstPick || '', pickedText: Object.assign({}, _wnRound.pickedText || {})   // Lift B3c2: the open verdict rows
     });
     renderWhyNotVerdict();
     showPage('whynot-verdict');
@@ -925,6 +926,14 @@
           : missedReasons.length
             ? 'The reasons need work: ' + missedReasons.map(optName).join(' and ') + ' got past you.'
             : 'The reasons were all right. The answer got away.';
+    // Lift B3c2: phones get the June verdict (features/ios-whynot.js); its rows open to the reasons
+    if (_wnPhone() && window.iosWhyNot.renderVerdict) {
+      window.iosWhyNot.renderVerdict(root, { topic: _wnSession.topic, round: i + 1, last: lastRound, points: res.points, callout: callout,
+        answer: { text: r.options[['A', 'B', 'C', 'D'].indexOf(ans)], right: !!res.answerRight, firstPick: res.firstPick, explanation: r.explanation },
+        wrong: _wnRound.wrongLetters.map(l => ({ letter: l, text: r.options[['A', 'B', 'C', 'D'].indexOf(l)], right: !!res.reasons[l],
+          picked: (res.pickedText || {})[l] || '', reason: r.whynot[l].reason, note: r.whynot[l].note })) });
+      return;
+    }
     const rows = [
       '<div class="gnt-rr ' + (res.answerRight ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
         (res.answerRight ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
@@ -970,25 +979,10 @@
     try { renderStatsCard(); renderReadinessCard(); } catch (_) {}
     whyNotMode = false;
     if (typeof _renderGauntletLadder === 'function') { try { _renderGauntletLadder(); } catch (_) {} }
-    const root = document.getElementById('wn-verdict-root');
-    if (root) {
-      const pts = _wnSession.points;
-      const perRound = _wnSession.roundResults.map((x, i) =>
-        '<div class="gnt-rr ' + (x.points === 4 ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
-        (x.points === 4 ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
-        '</svg></span><span class="gnt-rr-t"><b>Round ' + (i + 1) + '</b><span>' + x.points + ' of 4</span></span></div>'
-      ).join('');
-      root.innerHTML =
-        '<div class="wn-vd-head">' +
-          '<div class="wn-vd-score">Session: <b>' + pts + ' of 12</b></div>' +
-          '<p class="wn-vd-call">' + escHtml(_wnSession.topic) + ' · 3 questions answered toward today’s goal</p>' +
-        '</div>' +
-        '<div class="gnt-rung-report">' + perRound + '</div>' +
-        '<div class="gnt-result-footer">' +
-          '<button type="button" class="btn btn-primary gnt-cta" data-action="whyNotNextTopic">Next target →</button>' +
-          '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">' + (_wnReturn === 'drills' ? 'Back to Drills' : 'Back to Home') + '</button>' +
-        '</div>';
-    }
+    _wnLastSession = { topic: _wnSession.topic, points: _wnSession.points, rounds: _wnSession.roundResults.map(x => ({ points: x.points })), back: _wnReturn };
+    _wnRenderSession();
+    _wnSession = null;
+    _wnRound = null;
     try {
       if (typeof bumpDrillStat === 'function') {
         bumpDrillStat('whynot', 'done', 1);
@@ -999,12 +993,37 @@
         _nu.forEach((id, i) => setTimeout(() => showMilestoneCelebration(id), 500 + i * 900));
       }
     } catch (_) {}
-    _wnSession = null;
-    _wnRound = null;
     // the user is usually ALREADY on the verdict page (round verdict re-uses
     // it) — re-showing the active page can race the transition animation
     var _act = document.querySelector('.page.active');
     if (!_act || _act.id !== 'page-whynot-verdict') showPage('whynot-verdict');
+  }
+
+  // Lift B3c2: the session verdict renders from a saved summary, so crossing 899px can redraw it after
+  // _wnSession is cleared. Phones get the June view; desktop keeps today's markup.
+  let _wnLastSession = null;
+  function _wnRenderSession() {
+    const root = document.getElementById('wn-verdict-root'), S = _wnLastSession;
+    if (!root || !S) return;
+    if (_wnPhone() && window.iosWhyNot.renderSession && window.iosWhyNot.renderSession(root, S)) return;
+    {
+      const pts = S.points;
+      const perRound = S.rounds.map((x, i) =>
+        '<div class="gnt-rr ' + (x.points === 4 ? 'ok' : 'bad') + '"><span class="gnt-rr-ic"><svg viewBox="0 0 24 24" aria-hidden="true">' +
+        (x.points === 4 ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M18 6 6 18M6 6l12 12"/>') +
+        '</svg></span><span class="gnt-rr-t"><b>Round ' + (i + 1) + '</b><span>' + x.points + ' of 4</span></span></div>'
+      ).join('');
+      root.innerHTML =
+        '<div class="wn-vd-head">' +
+          '<div class="wn-vd-score">Session: <b>' + pts + ' of 12</b></div>' +
+          '<p class="wn-vd-call">' + escHtml(S.topic) + ' · 3 questions answered toward today’s goal</p>' +
+        '</div>' +
+        '<div class="gnt-rung-report">' + perRound + '</div>' +
+        '<div class="gnt-result-footer">' +
+          '<button type="button" class="btn btn-primary gnt-cta" data-action="whyNotNextTopic">Next target →</button>' +
+          '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">' + (S.back === 'drills' ? 'Back to Drills' : 'Back to Home') + '</button>' +
+        '</div>';
+    }
   }
 
   function whyNotNextTopic() {
@@ -1062,6 +1081,7 @@
     if (id === 'page-whynot') renderWhyNotEntry();
     else if (id === 'page-whynot-round' && _wnSession && _wnRound) renderWhyNotPicker();
     else if (id === 'page-whynot-verdict' && _wnSession && _wnSession.roundResults.length > _wnSession.roundIdx) renderWhyNotVerdict();
+    else if (id === 'page-whynot-verdict' && !_wnSession && _wnLastSession) _wnRenderSession();
   };
 
   // ── feature registry ──

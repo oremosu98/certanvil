@@ -140,6 +140,19 @@
     _bindRound(root);
     return true;
   }
+  // Renders the round verdict / the session verdict into #wn-verdict-root and wires it. False on desktop.
+  function renderVerdict(root, s) {
+    if (!root || !isPhone()) return false;
+    root.innerHTML = _iosWnVerdictHtml(_iosWnVerdictModel(s));
+    _bindRound(root);
+    return true;
+  }
+  function renderSession(root, s) {
+    if (!root || !isPhone()) return false;
+    root.innerHTML = _iosWnSessionHtml(_iosWnSessionModel(s));
+    _bindRound(root);
+    return true;
+  }
   // One delegated listener per root for the reason step and the round verdict (both live in Why-Not pages).
   function _bindRound(root) {
     if (root.__iwnBound) return;
@@ -187,5 +200,7 @@
   window.iosWhyNot.pickTopic = pickTopic;
   window.iosWhyNot.renderReasons = renderReasons;
   window.iosWhyNot.confirmLeave = confirmLeave;
+  window.iosWhyNot.renderVerdict = renderVerdict;
+  window.iosWhyNot.renderSession = renderSession;
   window.iosWhyNot._bindRound = _bindRound;
 })();

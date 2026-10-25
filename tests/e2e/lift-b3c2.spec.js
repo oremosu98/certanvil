@@ -34,7 +34,7 @@ async function boot(page, viewport, tier) {
   await page.setViewportSize(viewport);
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
-    try { localStorage.setItem('nplus_theme', 'dark'); } catch (_) {}
+    try { localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); } catch (_) {}   // the iOS Safari install banner would cover the docks
   });
   await page.goto('/');
   await page.waitForLoadState('load');
@@ -214,6 +214,81 @@ for (const vp of PHONES) {
   });
 }
 
+// One round's reasons: picks[i] true = pick the true reason for wrong option i, false = a fake. Ends on the round verdict.
+async function playReasons(page, picks) {
+  for (let i = 0; i < 3; i++) {
+    const idx = picks[i] ? await trueIdx(page) : await fakeIdx(page);
+    await page.locator('#wn-round-root .iwn-reason').nth(idx).click();
+    await page.locator('#wn-round-root .iwn-next').click();
+    await page.waitForTimeout(150);
+  }
+  await expect(page.locator('#page-whynot-verdict')).toHaveClass(/active/, { timeout: 5000 });
+}
+// From the quiz page: answer round n's question right (rounds' answers are A, B, C), then its reasons.
+async function playRound(page, n, picks) {
+  await page.locator('#options .option').nth(n).click();
+  for (let k = 0; k < 3 && !(await page.locator('#page-whynot-round').evaluate(el => el.classList.contains('active'))); k++) {
+    await page.locator('#btn-next').click({ timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+  await playReasons(page, picks);
+}
+
+for (const vp of PHONES) {
+  test.describe('Lift B3c2 verdicts @' + vp.width, () => {
+    test('round verdict: N of 4, rows open to your reason and the true reason', async ({ page }) => {
+      await toReasons(page, vp);
+      await playReasons(page, [true, true, false]);
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#wn-verdict-root .iwn-vtitle')).toHaveText('You earned 3 of 4');
+      await expect(page.locator('#wn-verdict-root .iwn-callout')).toContainText('misdiagnosed why');
+      await expect(page.locator('#wn-verdict-root .iwn-srow')).toHaveCount(4);
+      await page.locator('#wn-verdict-root .iwn-srow').nth(3).click();
+      const d3 = page.locator('#iwn-sdet-3');
+      await expect(d3).toBeVisible();
+      await expect(d3).toContainText('Your reason');
+      await expect(d3).toContainText('True reason');
+      await expect(d3).toContainText('5900 is VNC, a different remote desktop protocol.');
+      await expect(d3).toContainText('VNC listens on 5900.');
+      const fake = await page.evaluate(() => _wnSession.roundResults[0].pickedText.D);
+      await expect(d3).toContainText(fake);
+      await page.locator('#wn-verdict-root .iwn-srow').nth(1).click();
+      await expect(page.locator('#iwn-sdet-1')).not.toContainText('Your reason');
+      await page.locator('#wn-verdict-root .iwn-srow').nth(0).click();
+      await expect(page.locator('#iwn-sdet-0')).toContainText('Your first pick');
+      await expect(page.locator('#iwn-sdet-0')).toContainText('3389');
+      await expect(page.locator('#wn-verdict-root .iwn-primary')).toHaveText('Next round');
+    });
+    test('Next round, then the session verdict', async ({ page }) => {
+      const before = await (async () => { await startSession(page, vp); return page.evaluate(() => loadHistory().filter(h => h.mode === 'whynot').length); })();
+      await playRound(page, 0, [true, true, true]);
+      await page.locator('#wn-verdict-root .iwn-primary').click();
+      await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 5000 });
+      await expect(page.locator('#q-label')).toHaveText('Round 2 of 3');
+      await playRound(page, 1, [true, false, true]);
+      await page.locator('#wn-verdict-root .iwn-primary').click();
+      await playRound(page, 2, [true, true, true]);
+      await expect(page.locator('#wn-verdict-root .iwn-primary')).toHaveText('Session verdict');
+      const pts = await page.evaluate(() => _wnSession.points);
+      await page.locator('#wn-verdict-root .iwn-primary').click();
+      await expect(page.locator('#wn-verdict-root .iwn-stitle')).toHaveText('Session: ' + pts + ' of 12');
+      await expect(page.locator('#wn-verdict-root .iwn-meter i')).toHaveCount(12);
+      await expect(page.locator('#wn-verdict-root .iwn-meter i.on')).toHaveCount(pts);
+      await expect(page.locator('#wn-verdict-root .iwn-sround')).toHaveCount(3);
+      await expect(page.locator('#wn-verdict-root .iwn-sround').nth(1)).toContainText('3 of 4');
+      expect(await page.evaluate(() => loadHistory().filter(h => h.mode === 'whynot').length)).toBe(before + 1);
+    });
+    test('session verdict Back leaves without asking', async ({ page }) => {
+      await startSession(page, vp);
+      for (let n = 0; n < 3; n++) { await playRound(page, n, [true, true, true]); await page.locator('#wn-verdict-root .iwn-primary').click(); }
+      await expect(page.locator('#wn-verdict-root .iwn-stitle')).toBeVisible();
+      await page.locator('#wn-verdict-root .iwn-leave').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/, { timeout: 5000 });   // opened from Home
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+    });
+  });
+}
+
 test.describe('Lift B3c2 desktop', () => {
   test("the entry is today's", async ({ page }) => {
     await openEntry(page, DESKTOP, 'pro');
@@ -227,5 +302,15 @@ test.describe('Lift B3c2 desktop', () => {
     await page.locator('#wn-round-root [data-action="whyNotExit"]').click();
     await expect(page.locator('#exam-sheet')).toBeHidden();
     await expect(page.locator('#page-whynot-round')).not.toHaveClass(/active/, { timeout: 5000 });
+  });
+  test("verdicts are today's", async ({ page }) => {
+    await toReasons(page, DESKTOP);
+    for (let i = 0; i < 3; i++) {
+      await page.locator('#wn-round-root .wn-reason').nth(await trueIdx(page)).click();
+      await page.locator('#wn-next-btn').click();
+      await page.waitForTimeout(150);
+    }
+    await expect(page.locator('#wn-verdict-root .wn-vd-head')).toBeVisible();
+    await expect(page.locator('#wn-verdict-root .iwn-vbody')).toHaveCount(0);
   });
 });
