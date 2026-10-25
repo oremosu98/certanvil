@@ -52,6 +52,15 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('Escaping: titles, picks, tells, pairs and families are escaped',
       bad.indexOf('A&amp;B &lt;x&gt;') >= 0 && bad.indexOf('&lt;s&gt;') >= 0 && bad.indexOf('&lt;i&gt;') >= 0 && bad.indexOf('&lt;u&gt;') >= 0
       && bad.indexOf('<i>') < 0 && bad.indexOf('<s>') < 0 && bad.indexOf('<u>') < 0);
+
+    // ── Task 2: the entry host and the exit ──
+    const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
+    test('index.html: #idl-entry is the first child of #page-decision-lab-entry (ios-only iq-screen)',
+      /<div id="page-decision-lab-entry" class="page">\s*<section id="idl-entry" class="ios-only iq-screen" aria-label="Decision Lab"><\/section>/.test(html));
+    test('features/ios-decisionlab.js loads deferred right after ios-whynot.js',
+      /<script defer src="features\/ios-whynot\.js"><\/script>\s*<script defer src="features\/ios-decisionlab\.js"><\/script>/.test(html));
+    test('decisionLabExit is defined (Leave and Back called an undefined name); ios-decisionlab has no inline on*=',
+      /window\.decisionLabExit = /.test(sl) && /window\.iosDecisionLab\.renderEntry = /.test(src) && !/\son[a-z]+=/.test(src));
   } catch (err) {
     test('Lift B3c3 Decision Lab: block (threw)', false);
     results.errors.push('505 ios-decisionlab block threw: ' + err.message);

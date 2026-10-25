@@ -2302,3 +2302,62 @@ html[data-theme] body #page-whynot-round.active:has(.iwn-card), html[data-theme]
 html[data-theme] body:has(#page-whynot-verdict.active .iwn-vbody) .celebration-toast { top: auto !important; bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
 html[data-theme] body:has(#page-whynot-verdict.active .iwn-vbody) .celebration-toast ~ .celebration-toast { top: auto !important; bottom: calc(150px + 84px + env(safe-area-inset-bottom)) !important; }
 html[data-theme] body:has(#page-whynot-verdict.active .iwn-vbody) .celebration-toast:not(.show) { transform: translateY(16px) !important; }
+
+/* ═════════════════════ LIFT B3c3 · DECISION LAB ENTRY (cert-ios-decisionlab.html ?v=entry, entry-free, entry-exam) · idl- ═════════════════════ */
+/* Spec docs/superpowers/specs/2026-10-26-ios-lift-b3c3-design.md. The entry is drawn before its page shows, so :has on the host is safe here. */
+body:has(#page-decision-lab-entry.active) #app-topbar, body:has(#page-decision-lab-entry.active) .app-topbar,
+body:has(#page-decision-lab.active) #app-topbar, body:has(#page-decision-lab.active) .app-topbar,
+body:has(#page-decision-lab-result.active) #app-topbar, body:has(#page-decision-lab-result.active) .app-topbar { display: none !important; }
+#page-decision-lab-entry:has(#idl-entry:not(:empty)) > :not(#idl-entry) { display: none !important; }
+#page-decision-lab-entry.active:has(#idl-entry:not(:empty)) { animation: none !important; transform: none !important; }   /* a transformed page would trap the fixed Start dock */
+html[data-theme] body #page-decision-lab-entry:has(#idl-entry:not(:empty)) { padding: 0 !important; max-width: none !important; }
+#idl-entry { background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+#idl-entry button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
+#idl-entry .idl-hdr { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+#idl-entry .idl-back { position: relative; flex: 0 0 auto; width: 34px; height: 34px; min-height: 0; margin: 0; padding: 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--text-mid); transition: transform .14s var(--ios-ease); }
+#idl-entry .idl-back::after { content: ""; position: absolute; inset: -5px; }
+#idl-entry .idl-back:active { transform: scale(0.97); }
+#idl-entry .idl-hdr h1 { flex: 1; margin: 0; font: 600 21px/1.05 Fraunces, Georgia, serif !important; letter-spacing: -0.01em !important; text-transform: none !important; color: var(--text); }
+#idl-entry .idl-pro { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); border-radius: 999px; padding: 4px 7px; }
+#idl-entry .idl-body { padding: 4px 20px calc(160px + env(safe-area-inset-bottom)); }
+#idl-entry .idl-hero { text-align: center; padding: 10px 6px 4px; }
+#idl-entry .idl-mark { width: 58px; height: 58px; border-radius: 999px; margin: 6px auto 14px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+#idl-entry .idl-hero h2 { margin: 0; font: 600 26px/1.1 Fraunces, Georgia, serif !important; letter-spacing: -0.014em !important; text-transform: none !important; color: var(--text); }
+#idl-entry .idl-hero h2 em { font-style: italic; color: var(--accent); }
+#idl-entry .idl-hero p { margin: 10px auto 0; max-width: 32ch; font: 500 13.5px/1.5 Inter, sans-serif; color: var(--text-mid); }
+#idl-entry .idl-target { margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; }
+#idl-entry .idl-k, #idl-entry .idl-sect { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+#idl-entry .idl-v { margin-top: 8px; font: 650 16px/1.3 Inter, sans-serif; color: var(--text); }
+#idl-entry .idl-w { margin-top: 4px; font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); }
+#idl-entry .idl-sect { margin: 18px 2px 10px; font-size: 10px; }
+#idl-entry .idl-modes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 9px; }
+#idl-entry .idl-mode { display: block; min-height: 0; margin: 0; text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 15px; padding: 13px 13px 12px; color: var(--text); transition: border-color .18s, background-color .18s, transform .12s var(--ios-ease); }
+#idl-entry .idl-mode:active { transform: scale(0.985); }
+#idl-entry .idl-mi { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 10%, var(--surface2)); display: grid; place-items: center; margin-bottom: 10px; color: var(--accent-deep); }
+#idl-entry .idl-mode b { display: flex; align-items: center; gap: 6px; font: 650 14px/1.1 Inter, sans-serif; color: var(--text); }
+#idl-entry .idl-ml { display: block; margin-top: 4px; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--text-dim); }
+#idl-entry .idl-tick { margin-left: auto; display: grid; color: var(--accent-deep); opacity: 0; transition: opacity .18s; }
+#idl-entry .idl-tick svg { stroke-width: 2.6; }
+#idl-entry .idl-mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+#idl-entry .idl-mode[aria-pressed="true"] .idl-tick { opacity: 1; }
+#idl-entry .idl-protag { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface2)); border-radius: 999px; padding: 4px 7px; }
+#idl-entry .idl-count { display: flex; align-items: baseline; gap: 9px; margin: 2px 2px 8px; }
+#idl-entry .idl-bn { font: 600 44px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+#idl-entry .idl-bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+#idl-entry .idl-seg { display: flex; gap: 5px; background: color-mix(in oklab, var(--text) 5%, var(--surface2)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
+#idl-entry .idl-seg button { flex: 1 1 0; min-height: 40px; margin: 0; padding: 0; border: none; background: transparent; border-radius: 9px; font: 700 14px/1 Inter, sans-serif; color: var(--text-dim); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background-color .2s var(--ios-ease), color .2s, transform .14s var(--ios-ease); }
+#idl-entry .idl-seg button:active { transform: scale(0.96); }
+#idl-entry .idl-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
+#idl-entry .idl-seg button.locked { color: color-mix(in oklab, var(--text-dim) 75%, transparent); }
+#idl-entry .idl-seg button svg { stroke-width: 2.4; }
+#idl-entry .idl-cap { margin: 9px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
+#idl-entry .idl-cap b { color: var(--text-mid); }
+#idl-entry .idl-dock { position: fixed; left: 0; right: 0; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 40; padding: 12px 18px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+#idl-entry .idl-start { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 0; margin: 0; padding: 14px; border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+#idl-entry .idl-start:active { transform: scale(0.985); }
+#idl-entry .idl-qc { font: 700 12px/1 'Roboto Mono', monospace; opacity: 0.82; }
+@media (prefers-reduced-motion: no-preference) {
+  #page-decision-lab-entry.active #idl-entry .idl-hero, #page-decision-lab-entry.active #idl-entry .idl-target, #page-decision-lab-entry.active #idl-entry .idl-modes { animation: idl-rise .52s var(--ios-ease) backwards; }
+  #page-decision-lab-entry.active #idl-entry .idl-target { animation-delay: .06s; } #page-decision-lab-entry.active #idl-entry .idl-modes { animation-delay: .12s; }
+  @keyframes idl-rise { from { opacity: 0; transform: translateY(9px); } }
+}

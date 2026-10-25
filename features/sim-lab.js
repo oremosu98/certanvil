@@ -2766,7 +2766,14 @@
       var on = parseInt(c.getAttribute('data-decisions'), 10) === _dlPickedDecisions;
       c.classList.toggle('is-on', on);
       c.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
+    });    _dlRenderPhoneEntry();
+  }
+  // v8.192.0: the June entry on phones (features/ios-decisionlab.js); false on desktop, which keeps today's card.
+  var _dlOrigin = 'setup';
+  function _dlRenderPhoneEntry() {
+    if (!window.iosDecisionLab || typeof window.iosDecisionLab.renderEntry !== 'function') return false;
+    return window.iosDecisionLab.renderEntry({ mode: _dlPickedMode, decisions: _dlPickedDecisions, target: _dlTargetLabel(),
+      back: _dlOrigin, free: !_slIsPro() });
   }
 
   function _dlBindModeToggle() {
@@ -2774,10 +2781,19 @@
     if (!host || host.__bound) return; host.__bound = true;
     host.addEventListener('click', function (e) {
       var opt = e.target.closest('.dl-seg-opt'); if (!opt) return;
-      var m = opt.getAttribute('data-mode');
-      if (m === 'exam' && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('exam')); return; }
-      _dlPickedMode = m; _dlSyncEntry();
+      decisionLabPickMode(opt.getAttribute('data-mode'));
     });
+  }
+  // v8.192.0: the toggle and chip logic as callable functions, shared by the desktop card and the phone entry.
+  function decisionLabPickMode(m) {
+    if (m === 'exam' && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('exam')); return; }
+    _dlPickedMode = m === 'exam' ? 'exam' : 'practice'; _dlSyncEntry();
+  }
+  function decisionLabPickDecisions(n) {
+    n = parseInt(n, 10);
+    if (n === 20 && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('full20')); return; }
+    if (n !== 5 && n !== 10 && n !== 20) return;
+    _dlPickedDecisions = n; _dlSyncEntry();
   }
 
   function _dlBindDecisionChips() {
@@ -2785,9 +2801,7 @@
     if (!host || host.__bound) return; host.__bound = true;
     host.addEventListener('click', function (e) {
       var chip = e.target.closest('.dl-chip'); if (!chip) return;
-      var n = parseInt(chip.getAttribute('data-decisions'), 10);
-      if (n === 20 && !_slIsPro()) { window._gateProOnly('Decision Lab', _dlGateCopy('full20')); return; }
-      _dlPickedDecisions = n; _dlSyncEntry();
+      decisionLabPickDecisions(chip.getAttribute('data-decisions'));
     });
   }
 
@@ -3080,13 +3094,33 @@
   }
 
   function decisionLabOpenEntry() {
+    // v8.192.0: remember where Decision Lab was opened from, as startRewordGauntlet does. Its own pages keep the origin.
+    var active = document.querySelector('.page.active');
+    if (!(active && /^page-decision-lab/.test(active.id))) _dlOrigin = (active && active.id === 'page-drills') ? 'drills' : 'setup';
     _dlPickedMode = 'practice';
     _dlPickedDecisions = 10;
     var tgt = document.getElementById('dl-target'); if (tgt) tgt.textContent = _dlTargetLabel();
     _dlBindModeToggle(); _dlBindDecisionChips(); _dlSyncEntry();
     if (typeof showPage === 'function') showPage('decision-lab-entry');
   }
-  function decisionLabEntryBack() { if (typeof showPage === 'function') showPage('setup'); }
+  function _dlGoOrigin() {
+    var phone = !!(window.iosDecisionLab && window.iosDecisionLab.isPhone && window.iosDecisionLab.isPhone());
+    if (typeof showPage === 'function') showPage(phone && _dlOrigin === 'drills' ? 'drills' : 'setup');   // desktop has no Drills page
+  }
+  function decisionLabEntryBack() { _dlGoOrigin(); }
+  // v8.192.0: Leave (runner) and Back (results) called this name, which was never defined, so both did nothing.
+  // At every width: stop the clock, take down the phone exam chrome, drop the session, go back to the origin.
+  function decisionLabExit() {
+    _slStopCountdown();
+    var isl = window.iosSimLab;
+    if (isl && isl.isEndOpen && isl.isEndOpen() && isl.closeEnd) isl.closeEnd();
+    if (window.iosSheet && typeof window.iosSheet.dismiss === 'function') window.iosSheet.dismiss();
+    if (_dlSession && _dlSession.examBar && isl && isl.examBar && typeof isl.examBar.unmount === 'function') {
+      try { isl.examBar.unmount(_dlSession.examBar); } catch (_) {}
+    }
+    _dlSession = null;
+    _dlGoOrigin();
+  }
 
   // Spec §4 — the revenue tap. EXACT copy; do not paraphrase.
   function _slExamGateCopy() {
@@ -4407,6 +4441,9 @@
   window._simLab.dlGateCopy = _dlGateCopy;
   window.decisionLabOpenEntry = decisionLabOpenEntry;
   window.decisionLabEntryBack = decisionLabEntryBack;
+  window.decisionLabExit = decisionLabExit;
+  window.decisionLabPickMode = decisionLabPickMode;
+  window.decisionLabPickDecisions = decisionLabPickDecisions;
   window.decisionLabSessionStart = _dlSessionStartDispatch;
   window._simLab.dlBuildSet = _dlBuildSet;
   window._simLab.dlSession = function () { return _dlSession; };

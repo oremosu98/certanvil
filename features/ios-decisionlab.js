@@ -75,8 +75,32 @@
       + '<button type="button" class="idl-ghost" data-act="exit">' + e(m.backLabel) + '</button></div>';
   }
 
+  // ── Phone hosts ──
+  function _call(name, arg) { if (typeof window[name] === 'function') window[name](arg); }
+  // Renders the phone entry into #idl-entry and wires it (one delegated listener). False on desktop.
+  function renderEntry(s) {
+    var host = document.getElementById('idl-entry');
+    if (!host) return false;
+    if (!isPhone()) { host.innerHTML = ''; return false; }
+    host.innerHTML = _iosDlEntryHtml(_iosDlEntryModel(s));
+    if (!host.__idlBound) {
+      host.__idlBound = true;
+      host.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !host.contains(b)) return;
+        var act = b.getAttribute('data-act');
+        if (act === 'back') _call('decisionLabEntryBack');
+        else if (act === 'mode') _call('decisionLabPickMode', b.getAttribute('data-mode'));
+        else if (act === 'count') _call('decisionLabPickDecisions', b.getAttribute('data-n'));
+        else if (act === 'start') _call('decisionLabSessionStart');
+      });
+    }
+    return true;
+  }
+
   window._iosDlEntryModel = _iosDlEntryModel; window._iosDlEntryHtml = _iosDlEntryHtml;
   window._iosDlResultModel = _iosDlResultModel; window._iosDlResultHtml = _iosDlResultHtml;
   window.iosDecisionLab = window.iosDecisionLab || {};
   window.iosDecisionLab.isPhone = isPhone;
+  window.iosDecisionLab.renderEntry = renderEntry;
 })();
