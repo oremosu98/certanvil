@@ -131,6 +131,52 @@
     return true;
   }
 
+  // Renders the reason step into #wn-round-root and wires it. Options 2-3 of a round swap in place
+  // without replaying the entrance (iwn-static). False on desktop.
+  function renderReasons(root, s) {
+    if (!root || !isPhone()) return false;
+    root.classList.toggle('iwn-static', (s.wrongIdx || 0) > 0 || s.picked != null);
+    root.innerHTML = _iosWnReasonHtml(_iosWnReasonModel(s));
+    _bindRound(root);
+    return true;
+  }
+  // One delegated listener per root for the reason step and the round verdict (both live in Why-Not pages).
+  function _bindRound(root) {
+    if (root.__iwnBound) return;
+    root.__iwnBound = true;
+    root.addEventListener('click', function (ev) {
+      var row = ev.target.closest && ev.target.closest('.iwn-srow');
+      if (row && root.contains(row)) {
+        var open = row.getAttribute('aria-expanded') !== 'true', d = document.getElementById(row.getAttribute('aria-controls'));
+        row.setAttribute('aria-expanded', String(open)); if (d) d.hidden = !open;
+        return;
+      }
+      var b = ev.target.closest && ev.target.closest('[data-act]');
+      if (!b || !root.contains(b) || b.disabled) return;
+      var act = b.getAttribute('data-act');
+      if (act === 'reason') _call('whyNotPickReason', Number(b.getAttribute('data-i')));
+      else if (act === 'next') { if (!b.classList.contains('wait')) _call('whyNotNextTarget'); }
+      else if (act === 'leave' || act === 'back') confirmLeave();
+      else if (act === 'next-round') _call('whyNotNextRound');
+      else if (act === 'session') _call('whyNotFinishSession');
+      else if (act === 'next-topic') _call('whyNotNextTopic');
+      else if (act === 'exit') _call('whyNotExit');
+    });
+  }
+  // Leaving mid-session asks first in the in-app sheet; only Leave runs today's exit.
+  function confirmLeave() {
+    if (typeof window.iosSheet !== 'function') { _call('whyNotExit'); return Promise.resolve(); }
+    return window.iosSheet({ title: 'Leave Why-Not?', body: 'Your rounds so far won’t count.', go: 'Leave', stay: 'Keep going' })
+      .then(function (go) { if (go) _call('whyNotExit'); });
+  }
+
+  // Crossing 899px (an iPhone Pro Max rotating, iPad split view): the screen redraws in the new layout
+  // (features/flagship-drills.js owns the state).
+  if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () {
+    if (window.iosSheet && window.iosSheet.dismiss) { try { window.iosSheet.dismiss(); } catch (_) {} }
+    if (typeof window._wnRerender === 'function') { try { window._wnRerender(); } catch (_) {} }
+  });
+
   window._iosWnEntryModel = _iosWnEntryModel; window._iosWnEntryHtml = _iosWnEntryHtml;
   window._iosWnReasonModel = _iosWnReasonModel; window._iosWnReasonHtml = _iosWnReasonHtml;
   window._iosWnVerdictModel = _iosWnVerdictModel; window._iosWnVerdictHtml = _iosWnVerdictHtml;
@@ -139,4 +185,7 @@
   window.iosWhyNot.isPhone = isPhone;
   window.iosWhyNot.renderEntry = renderEntry;
   window.iosWhyNot.pickTopic = pickTopic;
+  window.iosWhyNot.renderReasons = renderReasons;
+  window.iosWhyNot.confirmLeave = confirmLeave;
+  window.iosWhyNot._bindRound = _bindRound;
 })();

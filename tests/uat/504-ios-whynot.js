@@ -83,6 +83,11 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('renderWhyNotEntry hands phones to iosWhyNot.renderEntry; the topic list opens the sheet on phones; Start closes it',
       /iosWhyNot[^;]*\.renderEntry\(/.test(_fnBody(fd, 'renderWhyNotEntry') || '') && /pickTopic/.test(_fnBody(fd, 'whyNotToggleTopicList') || '')
       && /closeTopics/.test(_fnBody(fd, 'startWhyNot') || '') && /closeTopics/.test(_fnBody(fd, 'whyNotStart') || ''));
+    test("lift-shell hides the tab bar on the reason step and the verdicts, not the entry",
+      /'whynot-round': 1/.test(fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8')) && /'whynot-verdict': 1/.test(fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8'))
+      && !/'whynot': 1/.test(fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8')));
+    test('ios-whynot.js: confirmLeave asks with the B2 sheet copy, then runs whyNotExit',
+      /Leave Why-Not\?/.test(src) && /Your rounds so far won\u2019t count\.|Your rounds so far won’t count\./.test(src) && /whyNotExit/.test(_fnBody(src, 'confirmLeave') || ''));
   } catch (err) {
     test('Lift B3c2 Why-Not: block (threw)', false);
     results.errors.push('504 ios-whynot block threw: ' + err.message);

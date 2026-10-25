@@ -2080,6 +2080,8 @@ html[data-theme] body #page-gauntlet:has(#igt-entry:not(:empty)) { padding: 0 !i
 /* ═════════════════════ LIFT B3c1 · RUN (cert-ios-gauntlet.html ?v=run, ?v=run-answered) · igt- ═════════════════════ */
 /* The Lift A quiz runs the Gauntlet; the five-rung ladder takes the question pills' row while it shows. */
 html[data-theme] body #page-quiz:has(#gauntlet-ladder:not(.is-hidden)) #quiz-prog-dots { display: none !important; }
+/* Lift B3c2: Why-Not hides the pill row with .is-hidden (one question per round); Lift A forces the row visible otherwise */
+html[data-theme] body #page-quiz #quiz-prog-dots.is-hidden { display: none !important; }
 html[data-theme] body #page-quiz #gauntlet-ladder:not(.is-hidden) { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; margin: 2px 0 16px; padding: 0; border: 0; background: none; }
 html[data-theme] body #page-quiz #gauntlet-ladder .gnt-rung { min-width: 0; margin: 0; padding: 0; }
 html[data-theme] body #page-quiz #gauntlet-ladder .gnt-rung-bar { height: 5px; margin: 0; border-radius: 3px; background: var(--track); overflow: hidden; transform-origin: center bottom; transition: transform .25s var(--ios-ease), background-color .25s var(--ios-ease); }
@@ -2198,4 +2200,64 @@ html[data-theme] body #page-whynot:has(#iwn-entry:not(:empty)) { padding: 0 !imp
   #page-whynot.active #iwn-entry .iwn-hero, #page-whynot.active #iwn-entry .iwn-target, #page-whynot.active #iwn-entry .iwn-rounds { animation: iwn-rise .52s var(--ios-ease) both; }
   #page-whynot.active #iwn-entry .iwn-target { animation-delay: .06s; } #page-whynot.active #iwn-entry .iwn-rounds { animation-delay: .12s; }
   @keyframes iwn-rise { from { opacity: 0; transform: translateY(9px); } }
+}
+
+/* ═════════════════════ LIFT B3c2 · WHY-NOT REASONS (cert-ios-whynot.html ?v=reason, reason-picked, reason-wrong, leave) · iwn- ═════════════════════ */
+html[data-theme] body #page-whynot-round.active:has(.iwn-card), html[data-theme] body #page-whynot-verdict.active:has(.iwn-vbody) { padding: 0 !important; margin: 0 !important; max-width: none !important; animation: none !important; transform: none !important; background: var(--bg); color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; }
+#page-whynot-round #wn-round-root:has(.iwn-card), #page-whynot-verdict #wn-verdict-root:has(.iwn-vbody) { max-width: none; margin: 0; padding: 0; display: block; text-align: left; }
+:is(#wn-round-root, #wn-verdict-root) button { font-family: inherit; box-sizing: border-box; cursor: pointer; }
+:is(#wn-round-root, #wn-verdict-root) .iwn-wbar { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+:is(#wn-round-root, #wn-verdict-root) .iwn-strip { min-width: 0; font: 800 9.5px/1.3 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+:is(#wn-round-root, #wn-verdict-root) .iwn-strip b { color: var(--accent-deep); font-weight: 800; }
+#wn-round-root .iwn-body { padding: 4px 20px calc(150px + env(safe-area-inset-bottom)); }
+#wn-round-root .iwn-ans { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); font: 500 13px/1.45 Inter, sans-serif; color: var(--text-mid); }
+#wn-round-root .iwn-ans b { color: var(--text); font-weight: 650; }
+#wn-round-root .iwn-tk { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; color: var(--on-accent); background: var(--green); }
+#wn-round-root .iwn-tk.no { background: var(--miss); }
+#wn-round-root .iwn-card { padding: 15px 15px 13px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+#wn-round-root .iwn-wtarget { display: flex; align-items: center; gap: 11px; }
+#wn-round-root .iwn-lt { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font: 800 13px/1 Inter, sans-serif; color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, var(--surface3)); }
+#wn-round-root .iwn-wtarget b { font: 650 17px/1.3 Inter, sans-serif; color: var(--text); }
+#wn-round-root .iwn-ask { margin: 14px 0 12px; font: 600 21px/1.2 Fraunces, Georgia, serif; letter-spacing: -0.01em; color: var(--text); }
+#wn-round-root .iwn-reason { width: 100%; min-height: 52px; display: flex; align-items: center; gap: 11px; margin: 0 0 8px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--bg); color: var(--text); text-align: left; font: 500 14px/1.4 Inter, sans-serif; transition: border-color .18s, background-color .18s, opacity .2s, transform .12s var(--ios-ease); }
+#wn-round-root .iwn-reason:active:not([disabled]) { transform: scale(0.99); }
+#wn-round-root .iwn-reason[disabled] { cursor: default; opacity: 1; }
+#wn-round-root .iwn-rdot { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 999px; border: 1.5px solid var(--border); display: grid; place-items: center; }
+#wn-round-root .iwn-rdot svg { stroke: var(--on-accent); opacity: 0; }
+#wn-round-root .iwn-reason.right { border-color: color-mix(in oklab, var(--green) 55%, var(--border)); background: color-mix(in oklab, var(--green) 9%, var(--surface)); }
+#wn-round-root .iwn-reason.wrong { border-color: color-mix(in oklab, var(--miss) 50%, var(--border)); background: color-mix(in oklab, var(--miss) 8%, var(--surface)); }
+#wn-round-root .iwn-reason.right .iwn-rdot { background: var(--green); border-color: var(--green); }
+#wn-round-root .iwn-reason.wrong .iwn-rdot { background: var(--miss); border-color: var(--miss); }
+#wn-round-root .iwn-reason.right .iwn-rdot svg, #wn-round-root .iwn-reason.wrong .iwn-rdot svg { opacity: 1; }
+#wn-round-root .iwn-reason.dim { opacity: 0.55; }
+#wn-round-root .iwn-note { margin-top: 4px; padding: 12px 14px; border-radius: 13px; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--text-mid); }
+#wn-round-root .iwn-note b { display: block; margin-bottom: 6px; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+#wn-round-root .iwn-note.good { border: 1px solid color-mix(in oklab, var(--green) 26%, var(--border)); background: color-mix(in oklab, var(--green) 8%, var(--surface)); }
+#wn-round-root .iwn-note.good b { color: var(--green); }
+#wn-round-root .iwn-note.bad { border: 1px solid color-mix(in oklab, var(--miss) 24%, var(--border)); background: color-mix(in oklab, var(--miss) 6%, var(--surface)); }
+#wn-round-root .iwn-note.bad b { color: var(--miss); }
+#wn-round-root .iwn-pts { margin: 14px 2px 4px; }
+#wn-round-root .iwn-bars, #wn-round-root .iwn-labs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+#wn-round-root .iwn-bars i { display: block; height: 5px; border-radius: 3px; background: var(--track); transition: background-color .2s var(--ios-ease); }
+#wn-round-root .iwn-bars i.done { background: var(--green); }
+#wn-round-root .iwn-bars i.bad { background: var(--miss); }
+#wn-round-root .iwn-bars i.live { background: var(--accent); transform: scaleY(1.4); }
+#wn-round-root .iwn-labs { margin-top: 7px; }
+#wn-round-root .iwn-labs span { text-align: center; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+:is(#wn-round-root, #wn-verdict-root) .iwn-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; flex-direction: column; gap: 8px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+:is(#wn-round-root, #wn-verdict-root) :is(.iwn-next, .iwn-primary) { width: 100%; min-height: 0; margin: 0; padding: 14px; border: 0; border-radius: 13px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: opacity .18s var(--ios-ease) .14s, transform .15s var(--ios-ease); }
+#wn-round-root .iwn-next.wait { visibility: hidden; opacity: 0; transition: none; }   /* keeps its slot until a reason is picked */
+:is(#wn-round-root, #wn-verdict-root) .iwn-leave { width: 100%; min-height: 0; margin: 0; padding: 13px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--text-mid); font: 650 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+:is(#wn-round-root, #wn-verdict-root) :is(.iwn-next, .iwn-primary):active { transform: scale(0.985); }
+:is(#wn-round-root, #wn-verdict-root) .iwn-leave:active { transform: scale(0.98); }
+@media (prefers-reduced-motion: no-preference) {
+  #page-whynot-round.active #wn-round-root:not(.iwn-static) :is(.iwn-ans, .iwn-card, .iwn-pts) { animation: iwn-rise .52s var(--ios-ease) both; }
+  #page-whynot-round.active #wn-round-root:not(.iwn-static) .iwn-card { animation-delay: .06s; } #page-whynot-round.active #wn-round-root:not(.iwn-static) .iwn-pts { animation-delay: .12s; }
+  #wn-round-root .iwn-note { animation: iwn-note .2s var(--ios-ease) .08s both; }
+  @keyframes iwn-note { from { opacity: 0; transform: translateY(4px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  #wn-round-root .iwn-note { animation: iwn-fade .2s ease both; }
+  #wn-round-root .iwn-bars i.live { transform: none; }
+  @keyframes iwn-fade { from { opacity: 0; } }
 }

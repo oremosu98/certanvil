@@ -747,7 +747,14 @@
       topicEl.classList.remove('is-hidden');
     }
     if (dots) dots.classList.add('is-hidden');
+    // Lift B3c2: on phones the quiz bar counts rounds, not the round's single question
+    if (_wnPhone()) {
+      const lbl = document.getElementById('q-label'), fill = document.getElementById('prog-fill');
+      if (lbl) lbl.textContent = 'Round ' + (_wnSession.roundIdx + 1) + ' of ' + WHY_NOT_ROUNDS;
+      if (fill) fill.style.width = Math.round((_wnSession.roundIdx + 1) * 100 / WHY_NOT_ROUNDS) + '%';
+    }
   }
+  function _wnPhone() { return !!(window.iosWhyNot && window.iosWhyNot.isPhone && window.iosWhyNot.isPhone()); }
 
   function _wnFinishQuestion() {
     const r = _wnSession.rounds[_wnSession.roundIdx];
@@ -755,6 +762,10 @@
     if (_wnRound.answerRight === undefined) _wnRound.answerRight = false;
     _wnRound.wrongLetters = ['A', 'B', 'C', 'D'].filter(l => l !== ans);
     _wnRound.wrongIdx = 0;
+    // Lift B3c2: the round verdict's answer row shows the option picked first on the quiz
+    const q0 = questions && questions[0], first = (log || []).find(x => x && x.q === q0);
+    _wnRound.firstPick = (first && q0 && q0.options) ? (q0.options[first.chosen] || '') : '';
+    _wnRound.pickedText = {}; _wnRound.pickedIdx = {};
     renderWhyNotPicker();
     showPage('whynot-round');
   }
@@ -769,9 +780,28 @@
     // shuffle [true, fake, fake]; remember where the true reason landed
     // v8.153.0: Fisher-Yates. sort(() => Math.random() - 0.5) put the true reason
     // first 44% of the time (should be 33%).
-    const entries = [{ t: kit.reason, real: true }, { t: kit.fakes[0], real: false }, { t: kit.fakes[1], real: false }];
-    for (let i = entries.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [entries[i], entries[j]] = [entries[j], entries[i]]; }
-    _wnRound.map = entries;
+    // Lift B3c2: a re-render of the same option (rotation, a phone pick) keeps its order
+    let entries = (_wnRound.map && _wnRound.mapLetter === letter) ? _wnRound.map : null;
+    if (!entries) {
+      entries = [{ t: kit.reason, real: true }, { t: kit.fakes[0], real: false }, { t: kit.fakes[1], real: false }];
+      for (let i = entries.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [entries[i], entries[j]] = [entries[j], entries[i]]; }
+      _wnRound.map = entries; _wnRound.mapLetter = letter;
+    }
+    const pickedIdx = (_wnRound.pickedIdx || {})[letter];
+    if (_wnPhone() && window.iosWhyNot.renderReasons) {
+      const ansText = r.options[['A', 'B', 'C', 'D'].indexOf(r.answer.trim().toUpperCase())];
+      const seg = ['answer'].concat(_wnRound.wrongLetters).map((k, i) => {
+        if (i === 0) return _wnRound.answerRight ? 'done' : 'bad';
+        const li = i - 1, got = _wnRound.reasons[_wnRound.wrongLetters[li]];
+        if (li < _wnRound.wrongIdx || (li === _wnRound.wrongIdx && got !== undefined)) return got ? 'done' : 'bad';
+        return li === _wnRound.wrongIdx ? 'live' : '';
+      });
+      window.iosWhyNot.renderReasons(root, { topic: _wnSession.topic, round: _wnSession.roundIdx + 1, answerRight: !!_wnRound.answerRight, answerText: ansText,
+        letter: letter, optionText: optText, wrong: _wnRound.wrongLetters, reasons: entries, picked: pickedIdx === undefined ? null : pickedIdx,
+        note: kit.note, segs: seg, nextLetter: _wnRound.wrongLetters[_wnRound.wrongIdx + 1] || null, wrongIdx: _wnRound.wrongIdx });
+      return;
+    }
+    root.classList.remove('iwn-static');
     const segs = ['answer'].concat(_wnRound.wrongLetters).map((k, i) => {
       if (i === 0) return '<i class="' + (_wnRound.answerRight ? 'done' : 'bad') + '"></i>';
       const li = i - 1;
@@ -797,6 +827,7 @@
         '<button type="button" class="btn btn-primary gnt-cta is-hidden" id="wn-next-btn" data-action="whyNotNextTarget">Next →</button>' +
         '<button type="button" class="btn gnt-ghost" data-action="whyNotExit">Leave session</button>' +
       '</div>';
+    if (pickedIdx !== undefined) _wnPaintPick(pickedIdx);   // a desktop re-render keeps the pick
   }
 
   function whyNotPickReason(i) {
@@ -809,6 +840,18 @@
     const right = !!(pick && pick.real);
     _wnRound.reasons[letter] = right;
     if (right) _wnSession.points++;
+    (_wnRound.pickedText = _wnRound.pickedText || {})[letter] = pick ? pick.t : '';
+    (_wnRound.pickedIdx = _wnRound.pickedIdx || {})[letter] = i;
+    if (_wnPhone()) { renderWhyNotPicker(); return; }   // Lift B3c2: the phone view re-renders with the pick
+    _wnPaintPick(i);
+  }
+
+  // today's desktop DOM patch after a pick (split out so a desktop re-render can restore it)
+  function _wnPaintPick(i) {
+    const r = _wnSession.rounds[_wnSession.roundIdx];
+    const letter = _wnRound.wrongLetters[_wnRound.wrongIdx];
+    const kit = r.whynot[letter];
+    const right = !!(_wnRound.map[i] && _wnRound.map[i].real);
     _wnRound.map.forEach((e, j) => {
       const btn = document.getElementById('wn-reason-' + j);
       if (!btn) return;
@@ -1013,6 +1056,13 @@
   window._gauntletApplyHinge = _gauntletApplyHinge;
   window._finishGauntlet = _finishGauntlet;
   window._wnFinishQuestion = _wnFinishQuestion;
+  // Lift B3c2: crossing 899px re-renders whichever Why-Not screen is showing in the new layout
+  window._wnRerender = function () {
+    const act = document.querySelector('.page.active'), id = act && act.id;
+    if (id === 'page-whynot') renderWhyNotEntry();
+    else if (id === 'page-whynot-round' && _wnSession && _wnRound) renderWhyNotPicker();
+    else if (id === 'page-whynot-verdict' && _wnSession && _wnSession.roundResults.length > _wnSession.roundIdx) renderWhyNotVerdict();
+  };
 
   // ── feature registry ──
   window._certanvilFeatures = window._certanvilFeatures || {};

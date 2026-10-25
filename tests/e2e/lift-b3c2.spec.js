@@ -116,10 +116,116 @@ for (const vp of PHONES) {
   });
 }
 
+// Lift A: pick an option, confirm with Next, then move on to the reason step with Next.
+async function answer(page, idx) {
+  await page.locator('#options .option').nth(idx).click();
+  await page.locator('#btn-next').click();
+  await page.waitForTimeout(150);
+}
+async function nextQ(page) { await page.locator('#btn-next').click(); await page.waitForTimeout(250); }
+async function startSession(page, vp) {
+  await openEntry(page, vp, 'pro');
+  await setTier(page, 'pro');
+  await page.locator('#iwn-entry .iwn-start:visible, #wn-start-btn:visible').first().click();   // phone or desktop Start
+  await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 8000 });
+}
+async function toReasons(page, vp, right) {
+  await startSession(page, vp);
+  await page.locator('#options .option').nth(right === false ? 1 : 0).click();
+  // phones confirm then move on (two Nexts); desktop reveals on the pick (one Next)
+  for (let k = 0; k < 3 && !(await page.locator('#page-whynot-round').evaluate(el => el.classList.contains('active'))); k++) {
+    await page.locator('#btn-next').click({ timeout: 3000 }).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+  await expect(page.locator('#page-whynot-round')).toHaveClass(/active/, { timeout: 8000 });
+}
+const trueIdx = (page) => page.evaluate(() => _wnRound.map.findIndex(x => x.real));
+const fakeIdx = (page) => page.evaluate(() => _wnRound.map.findIndex(x => !x.real));
+
+for (const vp of PHONES) {
+  test.describe('Lift B3c2 reasons @' + vp.width, () => {
+    test('the question shows Round 1 of 3', async ({ page }) => {
+      await startSession(page, vp);
+      await expect(page.locator('#q-label')).toHaveText('Round 1 of 3');
+      await expect(page.locator('#quiz-prog-dots')).toBeHidden();
+    });
+    test('the reason step: one option at a time, the note after a pick', async ({ page }) => {
+      await toReasons(page, vp);
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      await expect(page.locator('#app-topbar')).toBeHidden();
+      await expect(page.locator('#wn-round-root .iwn-ans')).toContainText('Right. Now earn the other three points.');
+      await expect(page.locator('#wn-round-root .iwn-reason')).toHaveCount(3);
+      await expect(page.locator('#wn-round-root .iwn-next')).toHaveClass(/wait/);
+      const t = await trueIdx(page);
+      await page.locator('#wn-round-root .iwn-reason').nth(t).click();
+      await expect(page.locator('#wn-round-root .iwn-reason').nth(t)).toHaveClass(/right/);
+      await expect(page.locator('#wn-round-root .iwn-reason.dim')).toHaveCount(2);
+      await expect(page.locator('#wn-round-root .iwn-note')).toContainText('Right reason');
+      await expect(page.locator('#wn-round-root .iwn-next')).toHaveText('Next: why does C lose?');
+      await expect(page.locator('#wn-round-root .iwn-next')).not.toHaveClass(/wait/);
+      await page.locator('#wn-round-root .iwn-next').click();
+      await expect(page.locator('#wn-round-root .iwn-lt')).toHaveText('C');
+      await expect(page.locator('#wn-round-root')).toHaveClass(/iwn-static/);
+    });
+    test('a fake pick turns red and the true reason green', async ({ page }) => {
+      await toReasons(page, vp);
+      const t = await trueIdx(page), f = await fakeIdx(page);
+      await page.locator('#wn-round-root .iwn-reason').nth(f).click();
+      await expect(page.locator('#wn-round-root .iwn-reason').nth(f)).toHaveClass(/wrong/);
+      await expect(page.locator('#wn-round-root .iwn-reason').nth(t)).toHaveClass(/right/);
+      await expect(page.locator('#wn-round-root .iwn-note')).toContainText('Wrong reason');
+    });
+    test('a double-tap on a reason scores once', async ({ page }) => {
+      await toReasons(page, vp);
+      const before = await page.evaluate(() => _wnSession.points);
+      await page.locator('#wn-round-root .iwn-reason').nth(await trueIdx(page)).dblclick();
+      await page.waitForTimeout(200);
+      expect(await page.evaluate(() => _wnSession.points)).toBe(before + 1);
+      await expect(page.locator('#wn-round-root .iwn-note')).toHaveCount(1);
+    });
+    test('crossing 899px keeps the reason step', async ({ page }) => {
+      await toReasons(page, vp);
+      const t = await trueIdx(page);
+      await page.locator('#wn-round-root .iwn-reason').nth(t).click();
+      await page.setViewportSize(DESKTOP);
+      await expect(page.locator('#wn-round-root .wn-card')).toBeVisible();
+      await expect(page.locator('#wn-round-root .wn-target b')).toHaveText('22');
+      await page.setViewportSize(vp);
+      await expect(page.locator('#wn-round-root .iwn-card')).toBeVisible();
+      await expect(page.locator('#wn-round-root .iwn-reason').nth(t)).toHaveClass(/right/);
+    });
+    test('leave sheet: Keep going stays, Leave exits', async ({ page }) => {
+      await toReasons(page, vp);
+      await page.locator('#wn-round-root .iwn-leave').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Leave Why-Not?');
+      await page.locator('#exam-sheet .ix-sheet-stay').click();
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      await expect(page.locator('#page-whynot-round')).toHaveClass(/active/);
+      await page.locator('#wn-round-root .iwn-leave').click();
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/, { timeout: 5000 });   // opened from Home, so today's exit lands on Home
+      expect(await page.evaluate(() => whyNotMode)).toBe(false);
+      await page.evaluate(() => window._testInjectQuiz([
+        { type: 'mcq', question: 'Which port does HTTPS use by default?', options: { A: '443', B: '80', C: '22', D: '25' }, answer: 'A', explanation: 'HTTPS is 443.', topic: 'Ports & Protocols', difficulty: 'Foundational' },
+        { type: 'mcq', question: 'Which port does SSH use by default?', options: { A: '21', B: '22', C: '23', D: '25' }, answer: 'B', explanation: 'SSH is 22.', topic: 'Ports & Protocols', difficulty: 'Foundational' }]));
+      await expect(page.locator('#q-label')).toContainText('Question 1 of');
+    });
+  });
+}
+
 test.describe('Lift B3c2 desktop', () => {
   test("the entry is today's", async ({ page }) => {
     await openEntry(page, DESKTOP, 'pro');
     await expect(page.locator('#page-whynot .gnt-shell')).toBeVisible();
     expect(await page.evaluate(() => document.getElementById('iwn-entry').innerHTML)).toBe('');
+  });
+  test("the reason step is today's; Leave session exits without a sheet", async ({ page }) => {
+    await toReasons(page, DESKTOP);
+    await expect(page.locator('#wn-round-root .wn-card')).toBeVisible();
+    await expect(page.locator('#wn-round-root .iwn-card')).toHaveCount(0);
+    await page.locator('#wn-round-root [data-action="whyNotExit"]').click();
+    await expect(page.locator('#exam-sheet')).toBeHidden();
+    await expect(page.locator('#page-whynot-round')).not.toHaveClass(/active/, { timeout: 5000 });
   });
 });
