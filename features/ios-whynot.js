@@ -102,10 +102,41 @@
       + '<button type="button" class="iwn-leave" data-act="exit">' + e(m.backLabel) + '</button></div>';
   }
 
+  // ── Phone hosts ──
+  function _call(name, arg) { if (typeof window[name] === 'function') window[name](arg); }
+  function _topics() { return Object.keys((typeof TOPIC_DOMAINS !== 'undefined' && TOPIC_DOMAINS) || {}); }
+  // Opens the B3c1 topic sheet; a picked topic goes through today's whyNotChooseTopic.
+  function pickTopic(current) {
+    if (!window.iosGauntlet || !window.iosGauntlet.pickTopic) return;
+    window.iosGauntlet.pickTopic(_topics(), current).then(function (t) { if (t) _call('whyNotChooseTopic', t); });
+  }
+  // Renders the phone entry into #iwn-entry and wires it (one delegated listener). False on desktop.
+  function renderEntry(s) {
+    var host = document.getElementById('iwn-entry');
+    if (!host) return false;
+    if (!isPhone()) { host.innerHTML = ''; return false; }
+    host.innerHTML = _iosWnEntryHtml(_iosWnEntryModel(s));
+    host.__iwnTopic = s.topic;
+    if (!host.__iwnBound) {
+      host.__iwnBound = true;
+      host.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !host.contains(b)) return;
+        var act = b.getAttribute('data-act');
+        if (act === 'back') _call('whyNotBack');
+        else if (act === 'start') _call('whyNotStart');
+        else if (act === 'pick') pickTopic(host.__iwnTopic);
+      });
+    }
+    return true;
+  }
+
   window._iosWnEntryModel = _iosWnEntryModel; window._iosWnEntryHtml = _iosWnEntryHtml;
   window._iosWnReasonModel = _iosWnReasonModel; window._iosWnReasonHtml = _iosWnReasonHtml;
   window._iosWnVerdictModel = _iosWnVerdictModel; window._iosWnVerdictHtml = _iosWnVerdictHtml;
   window._iosWnSessionModel = _iosWnSessionModel; window._iosWnSessionHtml = _iosWnSessionHtml;
   window.iosWhyNot = window.iosWhyNot || {};
   window.iosWhyNot.isPhone = isPhone;
+  window.iosWhyNot.renderEntry = renderEntry;
+  window.iosWhyNot.pickTopic = pickTopic;
 })();

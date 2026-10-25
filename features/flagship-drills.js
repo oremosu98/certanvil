@@ -509,6 +509,7 @@
   // ── Block C: Why-Not ──
   function startWhyNot() {
     _wnTopic = null;
+    if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics();
     const active = document.querySelector('.page.active');
     _wnReturn = (active && active.id === 'page-drills') ? 'drills' : 'setup';
     renderWhyNotEntry();
@@ -537,9 +538,22 @@
     if (whyEl) whyEl.textContent = _wnTopic ? 'Your pick' : ((w && w.topic === topicName) ? 'Your weakest topic right now' : 'A good place to start');
     const listEl = document.getElementById('wn-topic-list');
     if (listEl) listEl.classList.add('is-hidden');
+    // Lift B3c2: phones get the June entry (features/ios-whynot.js); desktop keeps the card above
+    if (window.iosWhyNot && window.iosWhyNot.renderEntry) {
+      try {
+        window.iosWhyNot.renderEntry({ topic: topicName, why: whyEl ? whyEl.textContent : '', back: _wnReturn,
+          free: !!(typeof _quotaState !== 'undefined' && _quotaState && _quotaState.tier === 'free') });
+      } catch (_) {}
+    }
   }
 
   function whyNotToggleTopicList() {
+    // Lift B3c2: on phones the list is the B3c1 topic sheet
+    if (window.iosWhyNot && window.iosWhyNot.isPhone && window.iosWhyNot.isPhone() && window.iosGauntlet && window.iosGauntlet.pickTopic) {
+      const nm = document.getElementById('wn-topic-name');
+      window.iosWhyNot.pickTopic(nm ? nm.textContent : null);
+      return;
+    }
     const el = document.getElementById('wn-topic-list');
     if (!el) return;
     if (!el.classList.contains('is-hidden')) { el.classList.add('is-hidden'); return; }
@@ -641,6 +655,7 @@
   async function whyNotStart(opts) {
     opts = opts || {};
     if (_wnBusy) return; // double-tap guard
+    if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics();
     if (typeof _gateProOnly === 'function' && !_gateProOnly('Why-Not', {
       title: 'Why-Not is a Pro feature',
       body: 'The right answer is one point. Knowing why the wrong ones are wrong is the other three. Go Pro to run Why-Not on every cert in the library.'

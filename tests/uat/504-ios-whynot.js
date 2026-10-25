@@ -71,6 +71,18 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('Escaping: option, reason, note, topic and verdict strings are escaped',
       bad.indexOf('A&amp;B &lt;x&gt;') >= 0 && bad.indexOf('&lt;b&gt;') >= 0 && bad.indexOf('&amp; &lt;i&gt;') >= 0 && bad.indexOf('<i>') < 0
       && vbad.indexOf('&lt;img&gt;') >= 0 && vbad.indexOf('&lt;s&gt;') >= 0 && vbad.indexOf('&lt;u&gt;') >= 0 && vbad.indexOf('T&lt;x&gt;') >= 0 && vbad.indexOf('<img>') < 0);
+
+    // ── Task 2: the entry host ──
+    test('index.html: #iwn-entry is the first child of #page-whynot (ios-only iq-screen)',
+      /<div id="page-whynot" class="page">\s*<section id="iwn-entry" class="ios-only iq-screen" aria-label="Why-Not"><\/section>/.test(html));
+    test('features/ios-whynot.js loads deferred right after ios-gauntlet.js',
+      /<script defer src="features\/ios-gauntlet\.js"><\/script>\s*<script defer src="features\/ios-whynot\.js"><\/script>/.test(html));
+    test('ios-whynot.js exports renderEntry; no inline on*= in its markup',
+      /window\.iosWhyNot\.renderEntry = /.test(src) && !/\son[a-z]+=/.test(src));
+    const fd = fs.readFileSync(path.join(ROOT, 'features', 'flagship-drills.js'), 'utf8');
+    test('renderWhyNotEntry hands phones to iosWhyNot.renderEntry; the topic list opens the sheet on phones; Start closes it',
+      /iosWhyNot[^;]*\.renderEntry\(/.test(_fnBody(fd, 'renderWhyNotEntry') || '') && /pickTopic/.test(_fnBody(fd, 'whyNotToggleTopicList') || '')
+      && /closeTopics/.test(_fnBody(fd, 'startWhyNot') || '') && /closeTopics/.test(_fnBody(fd, 'whyNotStart') || ''));
   } catch (err) {
     test('Lift B3c2 Why-Not: block (threw)', false);
     results.errors.push('504 ios-whynot block threw: ' + err.message);
