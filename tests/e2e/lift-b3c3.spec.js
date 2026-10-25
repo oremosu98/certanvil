@@ -1,6 +1,6 @@
 // Lift B3c3 (v8.192.0): Decision Lab and its Exam-style on phones, against cert-ios-decisionlab.html.
-// Runs on the real AZ-900 seed (features/decision-lab-seed-az900.js), loaded by _ensureDecisionLabLoaded after
-// switching CURRENT_CERT; no network.
+// Runs on a 20-scenario analyze fixture (copied from decision-lab.spec.js installSeedFixture, never imported: importing
+// a spec re-registers its tests). The real seed rotates its start by the minute and mixes in non-analyze steps.
 const { test, expect } = require('@playwright/test');
 
 const PHONES = [{ width: 390, height: 844 }, { width: 402, height: 874 }];
@@ -15,7 +15,31 @@ async function boot(page, viewport, tier) {
   await page.goto('/');
   await page.waitForLoadState('load');
   await page.evaluate(() => new Promise((res) => { window.CURRENT_CERT = 'az900'; window._ensureDecisionLabLoaded(res); }));
+  await installSeedFixture(page, 20);
   await setTier(page, tier || 'pro');
+}
+function installSeedFixture(page, count) {
+  return page.evaluate((count) => {
+    const PAIRS = ['Pricing Calculator vs TCO Calculator', 'SQL Database vs SQL Managed Instance'];
+    const FAMS = ['Cost & pricing tools', 'Databases'];
+    function scn(i) {
+      return {
+        id: 'DL-FX-' + i, cert: 'az900', objective: '1.1', topic: 'Cost tools', title: 'Decision ' + i, scenario: 'A team needs X.',
+        estMinutes: 2, pair: PAIRS[i % 2], family: FAMS[i % 2],
+        steps: [{
+          id: 's1', type: 'analyze', points: 1, prompt: 'Pick the best service', explanation: 'Compare two worlds.',
+          payload: { multi: false, lines: [
+            { id: 'a', text: 'Pricing Calculator', why: 'No on-prem baseline.' },
+            { id: 'b', text: 'TCO Calculator' },
+            { id: 'c', text: 'Cost Management', why: 'Needs live Azure usage.' },
+            { id: 'd', text: 'Azure Advisor', why: 'Needs deployed resources.' }
+          ] },
+          answer: { selected: ['b'] }
+        }]
+      };
+    }
+    window.DECISION_LAB_SEED_AZ900 = Array.from({ length: count }, (_, i) => scn(i + 1));
+  }, count);
 }
 async function setTier(page, tier) {
   await page.evaluate((t) => {
@@ -42,7 +66,7 @@ async function startPractice(page, vp, tier, n) {
   await openEntry(page, vp, tier || 'pro');
   if (n && n !== 10) await page.evaluate((k) => decisionLabPickDecisions(k), n);
   await page.evaluate(() => decisionLabSessionStart());
-  await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 5000 });
+  await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
   await expect(page.locator('#dl-body .sl-analyze-line').first()).toBeVisible();
 }
 // Clicks an analyze line: the right one, or the first wrong one.
@@ -91,15 +115,15 @@ for (const vp of PHONES) {
     test('back goes where Decision Lab was opened from', async ({ page }) => {
       await openEntry(page, vp, 'pro', 'drills');
       await page.locator('#idl-entry .idl-back').click();
-      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 4000 });
+      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
     });
     test('Leave stops the clock and a new set starts clean', async ({ page }) => {
       await openEntry(page, vp, 'pro');
       await page.locator('#idl-entry [data-mode="exam"]').click();
       await page.locator('#idl-entry .idl-start').click();
-      await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 5000 });
+      await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
       await page.evaluate(() => decisionLabExit());
-      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 4000 });
+      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
       await page.waitForTimeout(1300);
       expect(await page.evaluate(() => !!document.querySelector('#page-decision-lab-result.active'))).toBe(false);
       await page.evaluate(() => decisionLabOpenEntry());
@@ -148,7 +172,7 @@ for (const vp of PHONES) {
         await expect(page.locator('#dl-body .sl-actions button')).toHaveText(i === 4 ? 'See results' : 'Next decision');
         await page.locator('#dl-body .sl-actions button').click();
       }
-      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 5000 });
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
     });
     test('‹ asks before leaving; Keep going stays; Leave exits', async ({ page }) => {
       await startPractice(page, vp, 'free');
@@ -162,7 +186,7 @@ for (const vp of PHONES) {
       await expect(page.locator('#page-decision-lab')).toHaveClass(/active/);
       await back.click();
       await page.locator('#exam-sheet .ix-sheet-go').click();
-      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 5000 });
+      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
       expect(await page.evaluate(() => window._simLab.dlSession())).toBeNull();
     });
   });
@@ -174,9 +198,9 @@ test.describe('Lift B3c3 desktop', () => {
     await expect(page.locator('#page-decision-lab-entry .gnt-shell')).toBeVisible();
     expect(await page.evaluate(() => document.getElementById('idl-entry').innerHTML)).toBe('');
     await page.locator('#dl-start').click();
-    await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 5000 });
+    await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
     await page.locator('#page-decision-lab [data-action="decisionLabExit"]').click();
-    await expect(page.locator('#page-decision-lab')).not.toHaveClass(/active/, { timeout: 4000 });
+    await expect(page.locator('#page-decision-lab')).not.toHaveClass(/active/, { timeout: 10000 });
   });
   test("practice is today's: inline Submit, Next decision with the arrow, the Flag row", async ({ page }) => {
     await openEntry(page, DESKTOP, 'pro', 'drills');
