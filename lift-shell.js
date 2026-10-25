@@ -30,7 +30,9 @@
     /* Lift B3c1: the Gauntlet's results are immersive (the entry keeps the tab bar) */
     'gauntlet-result': 1,
     /* Lift B3c2: Why-Not's reason step and verdicts are immersive (the entry keeps the tab bar) */
-    'whynot-round': 1, 'whynot-verdict': 1
+    'whynot-round': 1, 'whynot-verdict': 1,
+    /* Lift B3c3: Decision Lab's run and results are immersive (the entry keeps the tab bar) */
+    'decision-lab': 1, 'decision-lab-result': 1
   };
 
   /* tab to light when a non-tab page is active */

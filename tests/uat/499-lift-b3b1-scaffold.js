@@ -26,10 +26,10 @@ const { _fnBody, fs, html, path, ROOT, results, test } = require('./_context');
     test('practice session and the legacy single PBQ mark #page-sim-lab isl-practice; Exam mode clears it',
       /_slSetPractice\(true\)/.test(ss) && /_slSetPractice\(true\)/.test(pp) && /_slSetPractice\(false\)/.test(es));
     const rr = _fnBody(sl, '_slRunRound') || '', rd = _fnBody(sl, '_slRenderRound') || '', dl = _fnBody(sl, '_dlRunRound') || '';
-    test('lift: true is passed by the two practice callers and (v8.189.0, B3b2) Exam mode rounds, not Decision Lab',
+    test('lift: true is passed by the two practice callers, (v8.189.0, B3b2) Exam mode rounds and (v8.192.0, B3c3) Decision Lab',
       /\{ lift: true,\s*onReset: function \(\) \{ _slMountScenario\(body, scn, this\); \}/.test(rr)
       && /\{ lift: true,\s*onReset: function \(\) \{ _slMountScenario\(body, scn, this\); \}/.test(pp)
-      && /lift: true/.test(rd) && !/lift: true/.test(dl) && (sl.match(/lift: true/g) || []).length === 3);
+      && /lift: true/.test(rd) && /lift: true/.test(dl) && (sl.match(/lift: true/g) || []).length === 4);
   } catch (err) {
     test('Lift B3b1 scaffold: block (threw)', false);
     results.errors.push('499 lift-b3b1-scaffold block threw: ' + err.message);

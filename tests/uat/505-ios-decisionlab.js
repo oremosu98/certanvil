@@ -61,6 +61,14 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /<script defer src="features\/ios-whynot\.js"><\/script>\s*<script defer src="features\/ios-decisionlab\.js"><\/script>/.test(html));
     test('decisionLabExit is defined (Leave and Back called an undefined name); ios-decisionlab has no inline on*=',
       /window\.decisionLabExit = /.test(sl) && /window\.iosDecisionLab\.renderEntry = /.test(src) && !/\son[a-z]+=/.test(src));
+
+    // ── Task 3: the practice run ──
+    const shell = fs.readFileSync(path.join(ROOT, 'lift-shell.js'), 'utf8');
+    test('lift-shell hides the tab bar on the Decision Lab run and results, not the entry',
+      /'decision-lab': 1, 'decision-lab-result': 1/.test(shell) && !/'decision-lab-entry': 1/.test(shell));
+    test('ios-decisionlab.js: confirmLeave asks with the sheet copy (free adds the spent-set line), then exits confirmed',
+      /title: 'Leave Decision Lab\?'/.test(src) && src.indexOf('Your decisions so far won’t count.') >= 0 && src.indexOf(' Today’s free set is already used.') >= 0
+      && /decisionLabExit\(\{ confirmed: true \}\)/.test(src));
   } catch (err) {
     test('Lift B3c3 Decision Lab: block (threw)', false);
     results.errors.push('505 ios-decisionlab block threw: ' + err.message);

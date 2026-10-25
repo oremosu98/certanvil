@@ -196,7 +196,8 @@ test('dl practice grade: submitting a wrong pick reveals per-option why + teach,
     const whyShown = document.querySelectorAll('#dl-body .dl-why').length;
     const sess = window._simLab.dlSession();
     const idxBefore = sess.idx;
-    document.querySelector('#dl-body .dl-cta-row .dl-cta:not(.ghost)').click();
+    // v8.192.0: phones (the mobile-safari project) dock Next where Submit was; desktop keeps the CTA row.
+    document.querySelector('#dl-body .dl-cta-row .dl-cta:not(.ghost), #dl-body .sl-actions .gnt-cta').click();
     return { graded, correct, pickedWrong, teach, whyShown, idxBefore, idxAfter: sess.idx };
   });
   expect(r.graded).toBe(true);
@@ -295,7 +296,7 @@ test('dl verdict: clusters missed look-alikes + weak families; Pro persists acro
     ];
     const clusters = S.dlVerdictClusters(results);
     window._quotaState = { tier: 'pro' };
-    localStorage.removeItem('nplus_dl_weak');
+    localStorage.removeItem(STORAGE.DL_WEAK);
     window.CURRENT_CERT = 'az900';
     window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
     window.DECISION_LAB_SEED_AZ900 = [];
@@ -327,8 +328,8 @@ test('dl free cap: 1 set/day uses _dlBumpFreeRun (not _bumpPbqFreeRun); 2nd set 
   await installSeedFixture(page, 'DECISION_LAB_SEED_AZ900', 8);
   const r = await page.evaluate(async () => {
     window._quotaState = { tier: 'free' };
-    localStorage.removeItem('nplus_dl_free_count');
-    localStorage.removeItem('nplus_pbq_free_count');
+    localStorage.removeItem(STORAGE.DL_FREE_COUNT);
+    localStorage.removeItem(STORAGE.PBQ_FREE_COUNT);
     window.CURRENT_CERT = 'az900';
     window.CERT_PACK = { meta: { name: 'Azure Fundamentals', code: 'AZ-900' } };
     const pbqBefore = window._pbqFreeRunsToday();

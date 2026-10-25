@@ -2829,7 +2829,18 @@
     return out;
   }
 
+  function _dlPhone() { return !!(window.iosDecisionLab && window.iosDecisionLab.isPhone && window.iosDecisionLab.isPhone()); }
+  // v8.192.0 Lift B3c3: phones get the June run (lift-ios.css keys on idl-practice / idl-exam).
+  function _dlPhoneChrome() {
+    var page = document.getElementById('page-decision-lab'); if (!page) return;
+    var phone = _dlPhone(), mode = _dlSession && _dlSession.mode;
+    page.classList.toggle('idl-practice', phone && mode === 'practice');
+    page.classList.toggle('idl-exam', phone && mode === 'exam');
+    var leave = page.querySelector('.dl-sbar [data-action="decisionLabExit"]');
+    if (leave) { if (phone) leave.setAttribute('aria-label', 'Leave Decision Lab'); else leave.removeAttribute('aria-label'); }
+  }
   function _dlUpdateChrome() {
+    _dlPhoneChrome();
     var pill = document.getElementById('dl-round-pill');
     if (pill) {
       pill.classList.remove('is-hidden');
@@ -2881,7 +2892,9 @@
     var step = scn.steps[0];   // the hero scenario->pick is a single analyze step
     var body = document.getElementById('dl-body');
     body.innerHTML = '';
+    var phone = _dlPhone();
     _slMountScenario(body, scn, {
+      lift: true,
       onSubmit: function (result) {
         _dlSession.results.push({ scenario: scn, score: result, passed: result.fraction === 1, responses: result.responses });
         if (_dlSession.mode === 'exam') { _dlAdvance(); return; }   // exam-style: no reveal (Task 6 overrides flow)
@@ -2890,6 +2903,15 @@
         var host = body.querySelector('.sl-scenario') || body;
         _dlGradeAnalyze(host, step, picked);
         var oldSubmit = body.querySelector('[data-action="simLabSubmitScenario"]');
+        var last = _dlSession.idx + 1 >= _dlSession.rounds;
+        if (phone && oldSubmit && oldSubmit.parentNode) {
+          // Phones: Next takes Submit's place in the dock, an instant label swap. No Flag (it never did anything).
+          var nx = _el('button', 'btn btn-primary gnt-cta', last ? 'See results' : 'Next decision');
+          nx.setAttribute('type', 'button');
+          nx.addEventListener('click', _dlAdvance);
+          oldSubmit.parentNode.replaceChild(nx, oldSubmit);
+          return;
+        }
         if (oldSubmit) oldSubmit.remove();
         var row = _el('div', 'dl-cta-row');
         var flag = _el('button', 'dl-cta ghost', 'Flag'); flag.setAttribute('type', 'button');
@@ -2903,6 +2925,11 @@
         if (next.scrollIntoView) next.scrollIntoView({ block: 'nearest' });
       }
     });
+    if (phone) {
+      var sub = body.querySelector('[data-action="simLabSubmitScenario"]');
+      if (sub) sub.textContent = 'Submit';
+      body.classList.remove('idl-swap'); void body.offsetWidth; body.classList.add('idl-swap');   // a new decision fades in (150ms)
+    }
     // Shared-responsibility sorter: if the round's step is a categorize with a
     // services array, mount the service selector that shifts the boundary (Task 7).
     var first = scn.steps[0];
@@ -3110,7 +3137,14 @@
   function decisionLabEntryBack() { _dlGoOrigin(); }
   // v8.192.0: Leave (runner) and Back (results) called this name, which was never defined, so both did nothing.
   // At every width: stop the clock, take down the phone exam chrome, drop the session, go back to the origin.
-  function decisionLabExit() {
+  function decisionLabExit(opts) {
+    // Phones mid practice set ask first (the in-app sheet); its Leave comes back here confirmed.
+    var page = document.getElementById('page-decision-lab');
+    if (!(opts && opts.confirmed) && _dlSession && _dlSession.mode === 'practice' && _dlPhone() && page && page.classList.contains('active')
+        && window.iosDecisionLab && typeof window.iosDecisionLab.confirmLeave === 'function') {
+      window.iosDecisionLab.confirmLeave(!_slIsPro());
+      return;
+    }
     _slStopCountdown();
     var isl = window.iosSimLab;
     if (isl && isl.isEndOpen && isl.isEndOpen() && isl.closeEnd) isl.closeEnd();
@@ -4424,8 +4458,9 @@
       var v = row.querySelector('.dl-verdict');
       row.classList.add('dl-opt');
       row.setAttribute('aria-disabled', 'true');
-      if (isCorrect) { row.classList.add('dl-correct'); if (v) v.textContent = '✓ Best'; }
-      else { row.classList.add('dl-wrong'); if (wasPicked) row.classList.add('dl-picked-wrong'); if (v) v.textContent = '✗'; }
+      var phone = _dlPhone();   // v8.192.0: phones read Best / Your pick (no glyphs); desktop keeps today's
+      if (isCorrect) { row.classList.add('dl-correct'); if (v) v.textContent = phone ? 'Best' : '✓ Best'; }
+      else { row.classList.add('dl-wrong'); if (wasPicked) row.classList.add('dl-picked-wrong'); if (v) v.textContent = phone ? (wasPicked ? 'Your pick' : '') : '✗'; }
     });
     if (step.explanation && !host.querySelector('.dl-teach')) {
       var teach = _el('div', 'dl-teach',

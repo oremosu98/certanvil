@@ -98,9 +98,18 @@
     return true;
   }
 
+  // ‹ mid practice set: asks in the in-app sheet; Leave runs decisionLabExit confirmed. free = today's set is spent.
+  function confirmLeave(free) {
+    var exit = function () { if (typeof window.decisionLabExit === 'function') window.decisionLabExit({ confirmed: true }); };
+    if (typeof window.iosSheet !== 'function') { exit(); return Promise.resolve(); }
+    return window.iosSheet({ title: 'Leave Decision Lab?', body: 'Your decisions so far won’t count.' + (free ? ' Today’s free set is already used.' : ''), go: 'Leave', stay: 'Keep going' })
+      .then(function (go) { if (go) exit(); });
+  }
+
   window._iosDlEntryModel = _iosDlEntryModel; window._iosDlEntryHtml = _iosDlEntryHtml;
   window._iosDlResultModel = _iosDlResultModel; window._iosDlResultHtml = _iosDlResultHtml;
   window.iosDecisionLab = window.iosDecisionLab || {};
   window.iosDecisionLab.isPhone = isPhone;
   window.iosDecisionLab.renderEntry = renderEntry;
+  window.iosDecisionLab.confirmLeave = confirmLeave;
 })();
