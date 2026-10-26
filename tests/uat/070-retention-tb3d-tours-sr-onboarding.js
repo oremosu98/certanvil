@@ -1149,15 +1149,17 @@ test('v7.23.0 SR #6: vm fixture — buildSrForecast buckets (today=due-now, sum=
       const vm = require('vm');
       const now = Date.now();
       const DAY = 86400000;
-      const t0 = new Date(now); t0.setHours(0, 0, 0, 0); const sot = t0.getTime();
+      // Local midnight n days out (calendar arithmetic, so a 23h/25h DST day can't
+      // shift it — `midnight + n * DAY` failed 23:00–24:00 on 2026-10-25).
+      const t0 = new Date(now); const sod = n => new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + n).getTime();
       const fakeQueue = [
         { topic: 'A', nextReview: now - 5 * DAY, graduated: false },        // overdue → today
         { topic: 'B', nextReview: now - 100, graduated: false },            // due now → today
-        { topic: 'C', nextReview: sot + 1 * DAY + 1000, graduated: false }, // tomorrow
-        { topic: 'C', nextReview: sot + 1 * DAY + 2000, graduated: false }, // tomorrow
-        { topic: 'D', nextReview: sot + 3 * DAY + 5000, graduated: false }, // day 3
-        { topic: 'E', nextReview: sot + 6 * DAY + 5000, graduated: false }, // day 6 (within 7)
-        { topic: 'F', nextReview: sot + 9 * DAY, graduated: false },        // beyond 7 → excluded
+        { topic: 'C', nextReview: sod(1) + 1000, graduated: false },        // tomorrow
+        { topic: 'C', nextReview: sod(1) + 2000, graduated: false },        // tomorrow
+        { topic: 'D', nextReview: sod(3) + 5000, graduated: false },        // day 3
+        { topic: 'E', nextReview: sod(6) + 5000, graduated: false },        // day 6 (within 7)
+        { topic: 'F', nextReview: sod(9), graduated: false },               // beyond 7 → excluded
         { topic: 'G', nextReview: now - DAY, graduated: true }              // graduated → excluded
       ];
       const ctx = { loadSrQueue: () => fakeQueue.map(c => Object.assign({}, c)), Date: Date, Math: Math };
@@ -1167,6 +1169,44 @@ test('v7.23.0 SR #6: vm fixture — buildSrForecast buckets (today=due-now, sum=
       const sum = fc.days.reduce((s, d) => s + d.count, 0);
       return fc.days[0].count === 2 && fc.days[0].isToday === true && sum === 6 && fc.maxCount === 2;
     } catch (e) { return false; }
+  })());
+// vm-fixture: DST change days. The clock is pinned to 23:30 London time on each
+// UK change day (Oct = 25h, Mar = 23h) and the process TZ is swapped to
+// Europe/London for the run. Tomorrow's cards must land in day 1, labelled with
+// tomorrow's weekday, at both ends of tomorrow.
+test('SR forecast: DST change days — tomorrow\'s cards land in day 1 (Europe/London, Oct + Mar)',
+  (() => {
+    const body = _fnBody(js, 'buildSrForecast');
+    if (!body) return false;
+    const vm = require('vm');
+    const prevTZ = process.env.TZ;
+    try {
+      process.env.TZ = 'Europe/London';
+      const run = (fixed, queue) => {
+        class FakeDate extends Date {
+          constructor(...a) { if (a.length) super(...a); else super(fixed); }
+          static now() { return fixed; }
+        }
+        const ctx = { loadSrQueue: () => queue, Date: FakeDate, Math: Math };
+        vm.createContext(ctx);
+        return vm.runInContext(body + '\nbuildSrForecast();', ctx);
+      };
+      // 2026-10-25 23:30 GMT (clocks went back 02:00 BST → 01:00 GMT that morning)
+      const oct = run(Date.UTC(2026, 9, 25, 23, 30), [
+        { topic: 'early', nextReview: Date.UTC(2026, 9, 26, 0, 30) },   // Mon 00:30
+        { topic: 'late', nextReview: Date.UTC(2026, 9, 26, 23, 30) },   // Mon 23:30
+        { topic: 'tue', nextReview: Date.UTC(2026, 9, 27, 0, 10) }      // Tue 00:10
+      ]);
+      // 2026-03-29 23:30 BST = 22:30Z (clocks went forward 01:00 GMT → 02:00 BST)
+      const mar = run(Date.UTC(2026, 2, 29, 22, 30), [
+        { topic: 'early', nextReview: Date.UTC(2026, 2, 29, 23, 30) },  // Mon 00:30 BST
+        { topic: 'late', nextReview: Date.UTC(2026, 2, 30, 22, 30) }    // Mon 23:30 BST
+      ]);
+      return oct.days[0].count === 0 && oct.days[1].count === 2 && oct.days[1].label === 'Mon'
+        && oct.days[2].count === 1 && oct.days[2].label === 'Tue'
+        && mar.days[0].count === 0 && mar.days[1].count === 2 && mar.days[1].label === 'Mon';
+    } catch (e) { return false; }
+    finally { if (prevTZ === undefined) delete process.env.TZ; else process.env.TZ = prevTZ; }
   })());
 // ── v7.24.0 SR enhancements · Phase 5 (#7 exam-aware scheduling) ──
 test('v7.24.0 SR #7: SR_EXAM_BUFFER_PCT constant defined (0.15)',

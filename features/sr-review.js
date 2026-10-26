@@ -402,15 +402,17 @@
   function buildSrForecast() {
     const queue = loadSrQueue();
     const now = Date.now();
-    const DAY = 86400000;
-    const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
-    const startOfToday = t0.getTime();
+    // Day windows come from calendar arithmetic, not startOfToday + i * 24h:
+    // a DST change day is 23 or 25 hours long, and fixed-length windows drift
+    // an hour off local midnight for the rest of the week.
+    const t0 = new Date(now);
+    const dayStart = n => new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() + n).getTime();
     const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const active = queue.filter(e => !e.graduated);
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const winStart = startOfToday + i * DAY;
-      const winEnd = winStart + DAY;
+      const winStart = dayStart(i);
+      const winEnd = dayStart(i + 1);
       const inBucket = active.filter(e => {
         const nr = e.nextReview || 0;
         return i === 0 ? nr <= now : (nr >= winStart && nr < winEnd);
