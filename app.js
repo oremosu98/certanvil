@@ -894,7 +894,7 @@ function _gateSessionSizeForQuota(requestedCount, opts) {
 // The pre-block screen itself — lock mark, allowance rows, Go Pro CTA, and
 // a one-tap "start a right-sized set instead" escape hatch.
 function _showDailyLimitPreblockUI(detail) {
-  detail = detail || {};
+  detail = detail || {}; if (window.iosFirstRun && iosFirstRun.showLimit && iosFirstRun.showLimit(detail)) return;   // Lift C: phones get the full screen
   var picked = detail.picked || 0;
   var remaining = detail.remaining || 0;
   var limit = detail.limit || 15;

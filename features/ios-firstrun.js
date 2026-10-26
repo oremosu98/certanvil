@@ -132,16 +132,21 @@
     '</div>';
   }
 
-  // m = {picked, remaining}
+  // m = {picked, remaining, limit, mode}: the three honest ledes today's popup has (exam sim, part of the day used, over the cap)
   function _ifrLimitHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-    var r = Math.max(0, m.remaining || 0);
+    var r = Math.max(0, m.remaining || 0), lim = m.limit || 15;
+    var lede = m.mode === 'exam'
+      ? 'The exam simulator runs <b>' + e(m.picked) + ' questions</b>. Free covers <b>' + e(lim) + ' practice questions</b> a day, so the full sim needs Pro.'
+      : (r < lim && m.picked <= lim
+        ? 'You picked a <b>' + e(m.picked) + '-question</b> set, but you have <b>' + e(r) + '</b> of today\u2019s <b>' + e(lim) + '</b> free questions left.'
+        : 'You picked a <b>' + e(m.picked) + '-question</b> set. Free covers <b>' + e(lim) + ' practice questions</b> a day, so this one needs Pro.');
     return '<div class="ifr-check ifr-limit">' +
       '<div class="ifr-hdr"><button type="button" class="ifr-back" data-act="limit-back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="ifr-hdr-k">Free daily limit</span></div>' +
       '<div class="ifr-body">' +
         '<span class="ifr-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>' +
         '<h1 class="ifr-limit-h">That\'s more than your <em>free</em> day</h1>' +
-        '<p class="ifr-lede">You picked a <b>' + e(m.picked) + '-question</b> set. Free covers <b>15 practice questions</b> a day, so this one needs Pro.</p>' +
+        '<p class="ifr-lede">' + lede + '</p>' +
         '<div class="ifr-allow">' +
           '<div class="ifr-arow"><span class="ifr-aico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></span><span class="ifr-atx"><b>Practice</b><span>Quizzes and custom sets</span></span><span class="ifr-aamt">15 / day</span></div>' +
           '<div class="ifr-arow"><span class="ifr-aico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v4h-4"/></svg></span><span class="ifr-atx"><b>Daily Review</b><span>Spaced repetition</span></span><span class="ifr-aamt">5 / day</span></div>' +
@@ -351,7 +356,37 @@
     return p.catch(function () {}).then(function () { window._ifrUnmetered = false; });
   };
 
-  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); };
+  // ── The daily-limit screen (#ios-check host, phones only). Returns true when it took over from the popup. ──
+  var lim = null;
+  function onLimitTap(ev) {
+    var b = ev.target.closest('[data-act]'); if (!b || !lim) return;
+    var a = b.getAttribute('data-act'), d = lim;
+    if (a === 'limit-back') closeLimit();
+    else if (a === 'limit-pro') { goPro(); closeLimit(); }
+    else if (a === 'limit-small') {
+      closeLimit();
+      qCount = d.remaining;
+      if (d.mode !== 'quiz') { topic = MIXED_TOPIC; diff = 'Exam Level'; examMode = false; }   // today's popup: no smaller exam sim
+      document.querySelectorAll('#topic-group .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.v === topic); });
+      document.querySelectorAll('#diff-group .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.v === diff); });
+      document.querySelectorAll('#count-group .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.v === String(qCount)); });
+      if (typeof syncChipAriaPressed === 'function') { syncChipAriaPressed('#topic-group'); syncChipAriaPressed('#diff-group'); syncChipAriaPressed('#count-group'); }
+      if (typeof startQuiz === 'function') startQuiz();
+    }
+  }
+  function closeLimit() { var h = checkHost(); if (h) { h.hidden = true; h.innerHTML = ''; h.removeEventListener('click', onLimitTap); } html().classList.remove('ifr-check'); lim = null; }
+  IFR.showLimit = function (detail) {
+    var h = checkHost();
+    if (!IFR.isPhone() || !h || chk) return false;
+    lim = { picked: detail.picked || 0, remaining: detail.remaining || 0, limit: detail.limit || 15, mode: detail.mode || 'quiz' };
+    h.innerHTML = _ifrLimitHtml(lim);
+    h.setAttribute('aria-label', 'Free daily limit');
+    h.addEventListener('click', onLimitTap);
+    h.hidden = false; html().classList.add('ifr-check');
+    return true;
+  };
+
+  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.
   function boot() { var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }

@@ -197,3 +197,49 @@ test("1280 Take the diagnostic is today's desktop flow", async ({ page }) => {
   await expect(page.locator('#ios-check')).toBeHidden();
   await expect(page.locator('#ios-home [data-act="check"]')).toHaveCount(0);
 });
+
+// ── Task 4: the daily-limit screen ──
+for (const vp of PHONES) {
+  test.describe(`Lift C daily limit @${vp.width}`, () => {
+    async function overCap(page) {
+      await boot(page, vp, { signed: true, seed: { nplus_history: HISTORY } });
+      await setTier(page, 'free', 8);   // 7 left today
+      await page.evaluate(() => { window.__started = null; window.startQuiz = function () { window.__started = qCount; }; window.__open = null; window.open = function (u) { window.__open = u; }; });
+      await page.evaluate(() => _gateSessionSizeForQuota(25, { mode: 'quiz' }));
+    }
+    test('a free custom 25 with 7 left shows the full-screen limit', async ({ page }) => {
+      await overCap(page);
+      const s = page.locator('#ios-check');
+      await expect(s).toBeVisible();
+      await expect(s).toContainText("That's more than your free day");
+      await expect(s).toContainText('25-question');
+      await expect(page.locator('#daily-limit-preblock')).toHaveCount(0);
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+    });
+    test('Start a 7-question set starts 7', async ({ page }) => {
+      await overCap(page);
+      await page.locator('#ios-check [data-act="limit-small"]').click();
+      expect(await page.evaluate(() => window.__started)).toBe(7);
+      await expect(page.locator('#ios-check')).toBeHidden();
+    });
+    test('Go Pro for unlimited opens /pricing', async ({ page }) => {
+      await overCap(page);
+      await page.locator('#ios-check [data-act="limit-pro"]').click();
+      expect(await page.evaluate(() => window.__open)).toBe('https://certanvil.com/pricing');
+    });
+    test('the back control closes it and leaves the page as it was', async ({ page }) => {
+      await overCap(page);
+      await page.locator('#ios-check [data-act="limit-back"]').click();
+      await expect(page.locator('#ios-check')).toBeHidden();
+      await expect(page.locator('html')).not.toHaveClass(/ifr-check/);
+      expect(await page.evaluate(() => window.__started)).toBeNull();
+    });
+  });
+}
+test("1280 keeps today's daily-limit popup", async ({ page }) => {
+  await boot(page, DESKTOP, { signed: true, seed: { nplus_history: HISTORY } });
+  await setTier(page, 'free', 8);
+  await page.evaluate(() => _gateSessionSizeForQuota(25, { mode: 'quiz' }));
+  await expect(page.locator('#daily-limit-preblock')).toBeVisible();
+  await expect(page.locator('#ios-check')).toBeHidden();
+});
