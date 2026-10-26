@@ -269,7 +269,10 @@
         var chip = e.target.closest('.chip'); if (!chip) return;
         show(chip.getAttribute('data-state'));
       });
-      show('restore');
+      // Lift C (26 Oct): ?v=offline / ?v=restore open on one state with the designer chips hidden
+      var v = new URLSearchParams(location.search).get('v');
+      if (v) chips.style.display = 'none';
+      show(v === 'offline' || v === 'content' ? v : 'restore');
     })();
   </script>
 </body>

@@ -28,6 +28,12 @@
     'free-cert-picker'  : 'onboarding-free-cert-picker.html',
     'free-home-day0'    : 'onboarding-free-home-day0.html',
     'first-run-diag'    : 'onboarding-first-run-diagnostic.html',
+    'picker-lock'       : 'onboarding-free-cert-picker.html?v=lock',       // Lift C (26 Oct): the lock-in sheet open
+    'picker-pro'        : 'onboarding-free-cert-picker.html?v=pro',        // Lift C: a Pro user picks, no lock-in
+    'day0-pro'          : 'onboarding-free-home-day0.html?v=pro',          // Lift C: Pro day 0, no quota rows
+    'check-score'       : 'onboarding-first-run-diagnostic.html?v=score',  // Lift C: "Your starting point"
+    'restore'           : 'onboarding-loading-states.html?v=restore',      // Lift C: session restore skeleton
+    'offline'           : 'onboarding-loading-states.html?v=offline',      // Lift C: the calm offline state
     'notifications'     : 'onboarding-notifications-prime.html',
     'home'              : 'cert-ios-home.html',
     'home-exam-paused'  : 'cert-ios-home.html?v=exam',
@@ -153,8 +159,10 @@
                            {sel:'.btn-link',    to:'signup-signin'} ],
     'signup-signin'    : [ {sel:'.btn-apple',   to:'free-cert-picker'},
                            {sel:'.btn-primary', to:'free-cert-picker'} ],
-    'free-cert-picker' : [ {sel:'#confirmBtn',  to:'free-home-day0'},
-                           {sel:'#lockBtn',     to:'free-home-day0'} ],
+    // Lift C (26 Oct): Lock in opens the lock-in sheet (the mockup's own JS); only its confirm moves on
+    'free-cert-picker' : [ {sel:'#confirmBtn',  to:'free-home-day0'} ],
+    'picker-pro'       : [ {sel:'#lockBtn',     to:'day0-pro'} ],
+    'day0-pro'         : [ {sel:'.btn-primary', to:'first-run-diag'}, {sel:'.btn-ghost', to:'quiz'} ],
     // day-0 free home: the primary CTA places a readiness score (the 30-sec
     // check); the secondary "Start today's 15" (ghost) launches the daily
     // session — both handled with extra logic in the screen-specific block.
@@ -246,6 +254,7 @@
   // Wire it generically by label so every screen that has it navigates.
   // post-June variant screens reuse their base screen's routes
   NAV['quiz-short-set'] = NAV['quiz']; NAV['quiz-answered'] = NAV['quiz']; NAV['results-milestone'] = NAV['results'];
+  NAV['picker-lock'] = NAV['free-cert-picker'];
   NAV['custom-quiz-topic'] = NAV['custom-quiz']; NAV['custom-quiz-caught-up'] = NAV['custom-quiz'];
   // B1 (21 Oct): the Progress | Analytics view switch
   NAV['progress'] = (NAV['progress'] || []).concat([{sel:'[data-view="analytics"]', to:'analytics'}]);
@@ -521,7 +530,7 @@
       // first-run-diag: the mockup is a designer two-pane (tab-toggle between
       // "The check" and "Your readiness"). In the live flow it's a sequence:
       // hide the designer tabs, run a short check, then reveal readiness.
-      if (id === 'first-run-diag') {
+      if (id === 'first-run-diag' || id === 'check-score') {
         var momentsWrap = doc.querySelector('.moments-wrap');
         if (momentsWrap) momentsWrap.style.display = 'none';   // not real app chrome
         var chipB   = doc.getElementById('chipB');
@@ -678,6 +687,13 @@
     if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
       b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
       b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
+    });
+    // Lift C (26 Oct): first run on phones
+    var LIFT_C = ['restore','free-cert-picker','picker-lock','picker-pro','free-home-day0','day0-pro','first-run-diag','check-score','free-capped-home','daily-limit','offline'];
+    var cBtn = document.getElementById('hud-liftc'), cI = -1;
+    if (cBtn) cBtn.addEventListener('click', function () {
+      cI = (cI + 1) % LIFT_C.length; resetTo(LIFT_C[cI]);
+      cBtn.textContent = 'C ' + (cI + 1) + '/' + LIFT_C.length + ' \u203a';
     });
     var LIFT_B4 = ['st-signed-out','st-free','st-pro','st-exam-date','st-cert-switch','st-diag','st-restore','st-clear-bank','st-delete'];
     var b4Btn = document.getElementById('hud-liftb4'), b4I = -1;

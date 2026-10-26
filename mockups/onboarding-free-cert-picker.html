@@ -185,7 +185,7 @@
             <div class="cert-row reveal" data-cert="aplus-core1" data-name="A+ Core 1"><span class="mark">A+</span><div class="meta"><div class="nm">A+ Core 1</div><div class="cd">220-1101</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
             <div class="cert-row reveal" data-cert="aplus-core2" data-name="A+ Core 2"><span class="mark">A+</span><div class="meta"><div class="nm">A+ Core 2</div><div class="cd">220-1102</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
             <div class="cert-row reveal" data-cert="az900" data-name="Azure Fundamentals"><span class="mark">AZ</span><div class="meta"><div class="nm">Azure Fundamentals</div><div class="cd">AZ-900</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
-            <div class="cert-row reveal" data-cert="ai900" data-name="Azure AI Fundamentals"><span class="mark">AI</span><div class="meta"><div class="nm">Azure AI Fundamentals</div><div class="cd">AI-900</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
+            <div class="cert-row reveal" data-cert="ai900" data-name="Azure AI Fundamentals"><span class="mark">AI</span><div class="meta"><div class="nm">Azure AI Fundamentals</div><div class="cd">AI-901</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
             <div class="cert-row reveal" data-cert="sc900" data-name="Security Fundamentals"><span class="mark">SC</span><div class="meta"><div class="nm">Security Fundamentals</div><div class="cd">SC-900</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
             <div class="cert-row reveal" data-cert="clfc02" data-name="Cloud Practitioner"><span class="mark">CLF</span><div class="meta"><div class="nm">Cloud Practitioner</div><div class="cd">CLF-C02</div></div><span class="pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg></span></div>
           </div>
@@ -271,6 +271,19 @@
       scrim.addEventListener('click', closeSheet);
       document.getElementById('cancelBtn').addEventListener('click', closeSheet);
       confirmBtn.addEventListener('click', function(){ closeSheet(); /* mockup: real flow would write freeCertId + route to home */ });
+
+      // Lift C (26 Oct): ?v=lock opens the lock-in sheet; ?v=pro is a Pro user picking (no lock-in, no free terms)
+      var v = new URLSearchParams(location.search).get('v');
+      if (v === 'lock') { sheet.style.transition = scrim.style.transition = 'none'; openSheet(); }
+      if (v === 'pro') {
+        document.documentElement.classList.add('is-pro');
+        lockBtn.removeEventListener('click', openSheet);
+        var hint = document.querySelector('.foot-hint'); if (hint) hint.textContent = 'You can add the others any time from Switch cert in Settings.';
+        var tag = document.querySelector('.hdr .plan-tag'); if (tag) tag.textContent = 'Pro';
+        var note = document.querySelector('.note p'); if (note) note.innerHTML = 'Pro covers <b>every exam</b>. Start with the one you\u2019re sitting next.';
+        var relabel = function () { lockBtn.textContent = 'Start with ' + selected; };
+        relabel(); list.addEventListener('click', relabel);
+      }
     })();
   </script>
 </body>

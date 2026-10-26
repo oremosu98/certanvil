@@ -309,6 +309,9 @@
       }
       chipA.addEventListener('click', function(){ show('A'); });
       chipB.addEventListener('click', function(){ show('B'); });
+
+      // Lift C (26 Oct): ?v=score opens on "Your starting point" (the check's last answer submitted)
+      if (new URLSearchParams(location.search).get('v') === 'score') show('B');
     })();
   </script>
 </body>

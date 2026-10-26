@@ -206,6 +206,16 @@
       function paint(){ var dark = html.getAttribute('data-theme') !== 'light'; label.textContent = dark ? 'Light' : 'Dark'; icon.innerHTML = dark ? moon : sun; }
       document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
       paint();
+
+      // Lift C (26 Oct): ?v=pro is a Pro user's day 0. No daily 15, so no quota rows and no "daily 15" wording.
+      if (new URLSearchParams(location.search).get('v') === 'pro') {
+        document.querySelector('.hb-plan').textContent = 'Pro';
+        var q = document.querySelector('.hb-quota'); if (q) q.remove();
+        document.querySelector('.diag-p').innerHTML = 'A 30-second check that gives you a starting number, so you can watch it move.';
+        document.querySelector('.start-ring').innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" style="width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M13 2L3 14h7l-1 8 10-12h-7z"></path></svg>';
+        document.querySelector('.start-s').textContent = 'Skip the check and start a quiz. Your readiness still builds as you go.';
+        document.querySelector('.btn-ghost').textContent = 'Start a quiz';
+      }
     })();
   </script>
 </body>
