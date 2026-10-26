@@ -68,7 +68,21 @@ Pro** opens today's pricing page until in-app purchase lands in stage 6 (as Sett
 
 ## The screens
 
-**Day-0 Home** (`#ios-home`, a user with no answered questions in this cert). Replaces today's 'new' state.
+**State rules (one source for Home and the router).** Per cert:
+- **Check taken** = a readiness snapshot from the check exists. The phone check finishes through the
+  onboarding path (today's `_onbDiagnosticComplete` shape: it writes a readiness snapshot, source
+  `onb-calibration`, and skips `saveDiagnostic`), never `completeDiagnostic` and its Pass Plan result page.
+  The full Baseline stays in Settings' Pass Plan for everyone.
+- **Placed** = check taken, or any answered question in history.
+- **Day-0 Home** shows only while not placed. A user who skips the check and starts today's 15 becomes
+  placed by practising; the check is offered only on day-0 Home, so it is not offered again.
+- **Home's readiness number:** `getReadinessScore()` once history exists (as today); with no history, the
+  check's snapshot number, labelled as a starting point.
+- **Activated** (the switch-on router, `lib/router.js`) = placed. So a user who practised first is never
+  sent back into first run, and a not-activated user who has already saved a cert lands on day-0 Home, not
+  the picker.
+
+**Day-0 Home** (`#ios-home`, not placed). Replaces today's 'new' state.
 "Your exam is set" eyebrow, "Let's place your readiness." headline, the readiness card reading "not placed
 yet", free users' quota row (15 of 15 left), then **Take the 30-second check** (primary) and **Start today's
 15** (today's daily set). Pro: the same card without the quota row (drawn into the E2E first, deviation 2).
@@ -76,9 +90,11 @@ yet", free users' quota row (15 of 15 left), then **Take the 30-second check** (
 **The 30-second check.** Five questions on the existing diagnostic engine (`startDiagnostic`, count 5),
 June's layout: "Quick check", "Question 1 of 5", pick-then-confirm with a docked **Next question**, and
 **Skip the check** (back to day-0 Home, nothing recorded). It is free and does not draw on the daily 15. It
-ends on "Your starting point": the cert's own readiness number on its own scale (never a hard-coded 900 or
-720), "A starting point, not a grade.", **Start practising** (to Home, now placed). It seeds the review deck
-the way today's diagnostic does. Once taken, Home never offers it again; Settings' Pass Plan path stays.
+ends on "Your starting point": the cert's own readiness number on its own scale, taken from the cert
+pack (today's onboarding callback falls back to a hard-coded 720 via `EXAM_PASS_SCORE`; Lift C removes that
+fallback), "A starting point, not a grade.", **Start practising** (to Home, now placed). It seeds the review
+deck the way today's diagnostic does. Planning confirms where the daily quota is counted (client or the
+server proxy) and makes sure the check's five questions are not counted; a test pins it.
 
 **Capped Home** (free, today's 15 used). "Done for today" eyebrow, "That's today's 15 done.", **Start
 review** (Daily Review, the free 5) and **See Pro**. The "You've used today's free questions" popup stays for
@@ -90,7 +106,8 @@ instead** (or what is left today).
 
 **Offline.** On phones the orange banner becomes June's calm offline state, "You're offline.". The "Saved
 locally, will sync" line ships only if `cloud-store.js` really flushes writes made offline once the phone is
-back online; planning checks this, and if it does not, the copy change goes to the founder.
+back online; planning checks this, and if it does not, the copy change goes to the founder. The rest of the
+offline state ships either way; this one line never holds the release.
 
 **Behind the switch.**
 - **Cert picker** (`#onb-firstrun` step 1): June's list of exams with AI-901, **Lock in <cert>**, and June's
@@ -114,8 +131,9 @@ back online; planning checks this, and if it does not, the copy change goes to t
   and its score in a new `features/ios-firstrun.js`), styles in `lift-ios.css` under the `(max-width: 899px)`
   gate, wired to today's logic (`startDiagnostic`, readiness, quota, `onbFirstRun`, `iosSheet`). IIFE
   modules, `data-act` delegation, no inline `on*=`, `app.js` ratchet held.
-- WebKit rules from Lift B hold: no `:has(#host:not(:empty))` (toggle a class from JS), reveals rest
-  visible and animate from hidden with `backwards`, a re-render after a state change is still.
+- WebKit rules from Lift B hold: no new `:has(#host:not(:empty))` (toggle a class from JS), reveals rest
+  visible and animate from hidden with `backwards`, a re-render after a state change is still. The existing
+  `:has(#ios-home:not(:empty))` Home rules work (the host fills while its page enters) and stay as they are.
 - Fast lane. `auth-state.js`, `cloud-store.js`, `lib/supabase.js` and `sw.js` are not edited; if the offline
   check needs a `cloud-store.js` change, that piece goes to the gated lane on its own.
 - Motion follows BRAND.md §6. The five-stage visual pass runs on the drawing.
@@ -133,9 +151,11 @@ back online; planning checks this, and if it does not, the copy change goes to t
 - At 390 and 402, both themes, Free and Pro, every state matches the approved E2E side by side.
 - With the switch off: a new user sees day-0 Home, can take or skip the 5-question check, sees their
   starting point, and lands on a placed Home; a free user past 15 sees capped Home; an oversized set shows
-  the daily-limit screen; offline shows the calm state. The check never reduces the daily 15.
+  the daily-limit screen; offline shows the calm state. The check never reduces the daily 15. After the
+  check, a reload still shows the placed Home with the starting-point number, never day-0 again.
 - With `?onb=1`: a never-activated user gets the picker → lock-in sheet → day-0 Home, the choice is saved
-  (and survives reload), and an activated user goes straight to Home.
+  (and survives reload), and an activated user goes straight to Home. A user who practised without taking
+  the check is never routed back into first run.
 - No browser `confirm()` / `alert()` anywhere in first run on phones. No AI-900 label anywhere.
 - Desktop first run and Home unchanged (a desktop E2E pins them). No horizontal scroll; tab bar visible.
 
