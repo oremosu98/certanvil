@@ -74,8 +74,10 @@ Pro** opens today's pricing page until in-app purchase lands in stage 6 (as Sett
   `onb-calibration`, and skips `saveDiagnostic`), never `completeDiagnostic` and its Pass Plan result page.
   The full Baseline stays in Settings' Pass Plan for everyone.
 - **Placed** = check taken, or any answered question in history.
-- **Day-0 Home** shows only while not placed. A user who skips the check and starts today's 15 becomes
-  placed by practising; the check is offered only on day-0 Home, so it is not offered again.
+- **Day-0 Home** is a one-time screen, as in the E2E: it shows while not placed and not yet skipped.
+  **Skip the check** goes to the normal Home (today's new-user state, the E2E's `home`) and records the skip
+  per cert, so day-0 does not return. Starting today's 15 also leaves it for good (the user is then placed).
+  The check is offered only on day-0 Home.
 - **Home's readiness number:** `getReadinessScore()` once history exists (as today); with no history, the
   check's snapshot number, labelled as a starting point.
 - **Activated** (the switch-on router, `lib/router.js`) = placed. So a user who practised first is never
@@ -85,11 +87,15 @@ Pro** opens today's pricing page until in-app purchase lands in stage 6 (as Sett
 **Day-0 Home** (`#ios-home`, not placed). Replaces today's 'new' state.
 "Your exam is set" eyebrow, "Let's place your readiness." headline, the readiness card reading "not placed
 yet", free users' quota row (15 of 15 left), then **Take the 30-second check** (primary) and **Start today's
-15** (today's daily set). Pro: the same card without the quota row (drawn into the E2E first, deviation 2).
+15** (today's daily set). June draws it without the tab bar (it sits before the dashboard), and the build
+matches. Pro: the cert card without the quota row, the check card without "daily 15" wording, and **Start a
+quiz** (deviation 1).
 
 **The 30-second check.** Five questions on the existing diagnostic engine (`startDiagnostic`, count 5),
 June's layout: "Quick check", "Question 1 of 5", pick-then-confirm with a docked **Next question**, and
-**Skip the check** (back to day-0 Home, nothing recorded). It is free and does not draw on the daily 15. It
+**Skip the check** (to the normal Home; the skip is recorded, no score). The score screen's secondary link
+"See how readiness works" opens the readiness explainer the app already has; planning names it, and if
+there is none, the link is dropped with the founder's OK rather than shipped dead. It is free and does not draw on the daily 15. It
 ends on "Your starting point": the cert's own readiness number on its own scale, taken from the cert
 pack (today's onboarding callback falls back to a hard-coded 720 via `EXAM_PASS_SCORE`; Lift C removes that
 fallback), "A starting point, not a grade.", **Start practising** (to Home, now placed). It seeds the review
@@ -120,10 +126,12 @@ offline state ships either way; this one line never holds the release.
 
 ## Deviations to approve in the Simulator
 
-1. **Lock-in sheet wording.** June: "20 a day". The app enforces 15 new questions plus 5 review cards, so the
-   term reads "15 new questions and 5 review cards a day".
-2. **Pro day-0 Home.** June draws only Free; Pro is the same card without the quota row.
+1. **Pro day-0 Home** (`day0-pro`). June draws only Free.
+2. **Pro picker** (`picker-pro`): Pro tag, "Pro covers every exam", **Start with <cert>**, no lock-in sheet.
 3. **Picker shows until a choice is saved,** even when the web address already names a cert.
+
+June's lock-in sheet already reads "20 questions a day: 15 new practice questions plus 5 Daily Review
+cards", which matches the app, so its copy stays as drawn. The only picker label change is AI-900 to AI-901.
 
 ## Architecture
 
@@ -140,9 +148,10 @@ offline state ships either way; this one line never holds the release.
 
 ## Process
 
-1. Draw into the June E2E (`feat/cert-ios-e2e`) with a HUD button "C ›" and states: `day0-free`,
-   `day0-pro`, `check`, `check-score`, `capped`, `daily-limit`, `offline`, `picker`, `lock-in`, `restore`.
-   The three deviations are drawn in. Five-stage visual pass. Founder approves in the Simulator.
+1. Draw into the June E2E (`feat/cert-ios-e2e`) with a HUD button "C ›" and 11 states: `restore`,
+   `free-cert-picker`, `picker-lock`, `picker-pro`, `free-home-day0`, `day0-pro`, `first-run-diag`,
+   `check-score`, `free-capped-home`, `daily-limit`, `offline`. Five-stage visual pass. Founder approves in
+   the Simulator.
 2. Plan (writing-plans), build, side-by-sides for every state (`scripts/lift-sbs.js`), one fresh
    whole-branch review, ship on "ship it" (one release, or two if the switch-off half is ready first).
 
