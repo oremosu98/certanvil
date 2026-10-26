@@ -30,7 +30,7 @@ function installSeedFixture(page, count) {
           payload: { multi: false, lines: [
             { id: 'a', text: 'Pricing Calculator', why: 'No on-prem baseline.' },
             { id: 'b', text: 'TCO Calculator' },
-            { id: 'c', text: 'Cost Management', why: 'Needs live Azure usage.' },
+            { id: 'c', text: 'Microsoft Cost Management and Billing (budgets)', why: 'Needs live Azure usage.' },   // long: wraps on a phone
             { id: 'd', text: 'Azure Advisor', why: 'Needs deployed resources.' }
           ] },
           answer: { selected: ['b'] }
@@ -175,6 +175,11 @@ for (const vp of PHONES) {
       await expect(page.locator('#dl-body .dl-correct .dl-verdict')).toHaveText('Best');
       await expect(page.locator('#dl-body .dl-picked-wrong .dl-verdict')).toHaveText('Your pick');
       await expect(page.locator('#dl-body .dl-teach-k')).toHaveText('The tell');
+      const lay = await page.locator('#dl-body .sl-analyze-line').evaluateAll((ls) => ls.map((l) => {
+        const r = l.getBoundingClientRect(), lab = l.querySelector('.dl-lab').getBoundingClientRect(), v = l.querySelector('.dl-verdict');
+        return { labTop: Math.round(lab.top - r.top), vOnLabLine: !v || !v.textContent || v.getBoundingClientRect().top < lab.bottom };
+      }));
+      for (const x of lay) { expect(x.labTop).toBeLessThan(20); expect(x.vOnLabLine).toBe(true); }   // label beside its marker, the verdict on its line
       await expect(page.locator('#dl-body .sl-actions button')).toHaveCount(1);
       await expect(page.locator('#dl-body .sl-actions button')).toHaveText('Next decision');
       await expect(page.locator('#dl-body')).not.toContainText('Flag');

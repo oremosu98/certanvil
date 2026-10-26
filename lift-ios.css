@@ -2380,7 +2380,6 @@ html[data-theme] body #page-decision-lab:is(.idl-practice, .idl-exam).active { p
 #page-decision-lab:is(.idl-practice, .idl-exam) #dl-body { padding: 4px 20px calc(96px + env(safe-area-inset-bottom)); }
 /* graded: Best in green, your pick in red, the rest dim; today's per-option why lines stay */
 #page-decision-lab.idl-practice .sl-analyze-line { transition: background-color .18s var(--ios-ease), border-color .18s var(--ios-ease), opacity .2s var(--ios-ease), transform .12s var(--ios-ease); }
-#page-decision-lab.idl-practice .sl-analyze-line .dl-lab { flex: 1 1 auto; min-width: 0; }
 #page-decision-lab.idl-practice .dl-graded .sl-analyze-line { flex-wrap: wrap; cursor: default; }
 #page-decision-lab.idl-practice .dl-graded .sl-analyze-line .dl-why { flex: 1 0 100%; order: 3; padding-left: 25px; }
 #page-decision-lab.idl-practice .dl-graded .dl-opt.dl-correct { border-color: color-mix(in oklab, var(--green) 55%, var(--border)); background: color-mix(in oklab, var(--green) 9%, var(--surface)); color: var(--text); }
@@ -2459,7 +2458,8 @@ html[data-theme] body:has(#page-decision-lab-result.active .idl-vbody) .celebrat
 html[data-theme] body:has(#page-decision-lab-result.active .idl-vbody) .celebration-toast:not(.show) { transform: translateY(16px) !important; }
 /* the pick: one choice, service names read as words (drawn: Inter, round markers); the why lines only after grading */
 #page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line { font: 550 14px/1.3 Inter, -apple-system, sans-serif; color: var(--text); }
-#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line .dl-lab { flex: 1 1 auto; min-width: 0; }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line .dl-lab { flex: 1 1 0; min-width: 0; }   /* basis 0: a long label shrinks beside its marker, it never wraps under it */
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line .dl-verdict { flex: 0 0 auto; }
 #page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line::before { border-radius: 999px; }
 #page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-block:not(.dl-graded) .dl-why { display: none; }
 #page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-block:not(.dl-graded) .dl-verdict { display: none; }
