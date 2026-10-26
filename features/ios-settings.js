@@ -110,7 +110,7 @@
       + (m.certs || []).map(function (c) {
         var on = c.id === m.active;
         var inner = '<span class="ist-g">' + e(c.glyph) + '</span><span class="ist-n">' + e(c.name) + '<span>' + e(c.code) + '</span></span>'
-          + (on ? TICK : (c.tier === 'pro' && !m.pro ? '<span class="ist-pro-tag">Pro</span>' : ''));
+          + (on ? TICK : (c.tier === 'pro' && !m.pro ? '<span class="ist-pro-tag"><svg viewBox="0 0 24 24" aria-hidden="true" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span>' : ''));
         return on ? '<div class="ist-cert on" aria-current="true">' + inner + '</div>'
           : '<button type="button" class="ist-cert" data-act="pick-cert" data-id="' + e(c.id) + '">' + inner + '</button>';
       }).join('') + '</div>';

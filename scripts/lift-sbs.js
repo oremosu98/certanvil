@@ -114,6 +114,15 @@ const SCREENS = [
   ['dl-results-open', 'cert-ios-decisionlab.html?v=results-open', 'dl-results-open'],
   ['dl-results-timeup', 'cert-ios-decisionlab.html?v=results-exam-timeup', 'dl-results-timeup'],
   ['dl-leave', 'cert-ios-decisionlab.html?v=leave', 'dl-leave'],
+  ['st-signed-out', 'cert-ios-settings.html?v=signed-out', 'st-signed-out'],
+  ['st-free', 'cert-ios-settings.html?v=free', 'st-free'],
+  ['st-pro', 'cert-ios-settings.html?v=pro', 'st-pro'],
+  ['st-exam-date', 'cert-ios-settings.html?v=exam-date', 'st-exam-date'],
+  ['st-cert-switch', 'cert-ios-settings.html?v=cert-switch', 'st-cert-switch'],
+  ['st-diag', 'cert-ios-settings.html?v=diag', 'st-diag'],
+  ['st-restore', 'cert-ios-settings.html?v=restore', 'st-restore'],
+  ['st-clear-bank', 'cert-ios-settings.html?v=clear-bank', 'st-clear-bank'],
+  ['st-delete', 'cert-ios-settings.html?v=delete', 'st-delete'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -179,7 +188,7 @@ async function shootReal(browser, step, theme) {
   await ctx.route('**/*', r => {
     const u = new URL(r.request().url());
     if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return r.abort();
-    if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"role":"admin"};' + FAKE });
+    if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + (step === 'st-signed-out' ? '{"signedOut":true}' : '{"role":"admin"}') + ';' + FAKE });   // B4: the signed-out state has no session
     return r.continue();
   });
   await ctx.addInitScript(([t, h, q, ex, dr]) => {
@@ -308,6 +317,19 @@ async function shootReal(browser, step, theme) {
         if (step === 'wn-leave') { await p.locator('#wn-round-root .iwn-leave').click(); await p.waitForTimeout(600); }
       }
     }
+  } else if (/^st/.test(step || '')) {
+    // B4: the Account tab; free states pin a free tier over the fake session, Pro states keep its Pro tier
+    const free = /^st-(free|cert-switch|diag|clear-bank|signed-out)$/.test(step);
+    await p.evaluate((f) => {
+      if (f) { window._quotaState = { tier: 'free', used_today: 0, daily_limit: 15 }; document.body.classList.remove('is-pro-tier'); }
+      window._takeAutoBackup && window._takeAutoBackup();
+      saveWrongBank(Array.from({ length: 9 }, (_, i) => ({ question: 'Missed ' + i + '?', topic: 'OSPF' })));
+    }, free);
+    await p.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
+    await p.waitForTimeout(1800);
+    const act = { 'st-exam-date': 'exam', 'st-cert-switch': 'cert', 'st-restore': 'restore', 'st-clear-bank': 'clear', 'st-delete': 'delete' }[step];
+    if (act) { await p.locator('#ios-settings [data-act="' + act + '"]').first().click(); await p.waitForTimeout(700); }
+    if (step === 'st-diag') { await p.locator('#ios-settings .ist-pp [data-act="pp-empty"]').first().click(); await p.waitForTimeout(700); }
   } else if (/^dl/.test(step || '')) {
     // B3c3: Decision Lab on the real AZ-900 seed (analyze decisions only, as drawn), opened from Drills
     const free = step === 'dl-free';
@@ -439,7 +461,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn|dl)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn|dl|st)/.test(step || '') });
   await ctx.close();
   return buf;
 }

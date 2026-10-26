@@ -77,6 +77,21 @@ for (const vp of PHONES) {
       await expect(R.locator('[data-act="topup"]')).toBeVisible();
       await expect(R.locator('[data-act="gopro"]')).toHaveCount(0);
     });
+    test('the Pass Plan card reads like the drawing: no duplicate heading, a full-width CTA, small chip locks, one Go Pro', async ({ page }) => {
+      await openSettings(page, vp, { tier: 'free' });
+      const pp = page.locator('#ios-settings .ist-pp');
+      await expect(pp.locator('[data-act="pp-empty"]')).toBeVisible({ timeout: 8000 });
+      const m = await pp.evaluate((el) => {
+        const btn = el.querySelector('[data-act="pp-empty"]').getBoundingClientRect(), card = el.getBoundingClientRect();
+        const locks = Array.from(el.querySelectorAll('.cert-chip svg')).map((x) => x.getBoundingClientRect().height);
+        const vis = (sel) => { const n = el.querySelector(sel); return !!(n && n.offsetParent); };
+        return { wide: btn.width > card.width * 0.8, tall: btn.height >= 44, maxLock: Math.max.apply(null, locks.concat([0])), sub: vis('.sub-label'), pitch: vis('.locked-sub'), pro: vis('[data-act="pp-pro"]'),
+          h: getComputedStyle(el.querySelector('.pp-empty-h')).fontFamily };
+      });
+      expect(m).toEqual(expect.objectContaining({ wide: true, tall: true, sub: false, pitch: false, pro: false }));
+      expect(m.maxLock).toBeLessThanOrEqual(12);
+      expect(m.h).toMatch(/Fraunces/);
+    });
     test("today's sections and the reports panel are hidden beside the phone page", async ({ page }) => {
       await openSettings(page, vp, { tier: 'free' });
       await expect(page.locator('#page-settings .settings-layout')).toBeHidden();
@@ -254,6 +269,7 @@ for (const vp of PHONES) {
       await expect(m.locator('#dla-confirm')).toBeEnabled();
       const box = await m.locator('.dla-card').boundingBox();
       expect(box.width).toBeLessThanOrEqual(vp.width);
+      expect(Math.round(box.y + box.height)).toBeGreaterThanOrEqual(vp.height - 2);   // a bottom sheet, as drawn
       expect(d).toEqual([]);
     });
   });

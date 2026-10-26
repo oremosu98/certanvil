@@ -2634,3 +2634,40 @@ html[data-theme] body #page-settings.ist-on.active { padding: 0 !important; marg
   #ios-settings.ist-still .reveal { animation: none !important; }   /* a redraw after a state change does not replay the entrance */
   @keyframes ist-rise { from { opacity: 0; transform: translateY(9px); } }
 }
+/* the Pass Plan card: today's diagnostic.js markup, restyled as the drawing (its pitch line and "Get Pro at launch"
+   stay off the phone page: the account card's one Go Pro row covers that, founder decision 2) */
+#ios-settings .ist-pp .sub-label, #ios-settings .ist-pp .locked-sub, #ios-settings .ist-pp [data-act="pp-pro"] { display: none !important; }
+#ios-settings .ist-pp .plan-card { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+#ios-settings .ist-pp .pp-empty-h { margin: 0; font: 600 17px/1.25 Fraunces, Georgia, serif; color: var(--text); }
+#ios-settings .ist-pp .pp-empty-sub, #ios-settings .ist-pp .pcard-detail p { margin: 7px 0 0; font: 500 13px/1.5 Inter, sans-serif; color: var(--text-mid); }
+#ios-settings .ist-pp .btn { box-sizing: border-box; min-height: 44px; margin: 13px 0 0; padding: 12px; border-radius: 12px; font: 700 14px/1 Inter, sans-serif !important; box-shadow: none; transition: transform .15s var(--ios-ease); }
+#ios-settings .ist-pp .btn:active { transform: scale(0.985); }
+#ios-settings .ist-pp .pp-empty .btn, #ios-settings .ist-pp .btn-full { display: block; width: 100%; }
+#ios-settings .ist-pp .btn-primary { border: 0; background: var(--accent); color: var(--on-accent); }
+#ios-settings .ist-pp .btn-ghost { border: 1px solid var(--border); background: transparent; color: var(--text-mid); }
+#ios-settings .ist-pp .pcard-cta { display: flex; gap: 9px; }
+#ios-settings .ist-pp .pcard-cta .btn { flex: 1 1 0; width: auto !important; }
+#ios-settings .ist-pp .pcard-eyebrow { display: flex; justify-content: space-between; gap: 10px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-dim); }
+#ios-settings .ist-pp .pcard-main { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+#ios-settings .ist-pp .prob-ring { flex: 0 0 auto; width: 64px; height: 64px; border-radius: 999px; display: grid; place-items: center; }
+#ios-settings .ist-pp .prob-ring .inner { width: 52px; height: 52px; border-radius: 999px; background: var(--surface); display: grid; place-items: center; align-content: center; }
+#ios-settings .ist-pp .prob-ring .pct { font: 600 17px/1 Fraunces, Georgia, serif; color: var(--text); }
+#ios-settings .ist-pp .prob-ring .lbl { font: 700 8.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); margin-top: 3px; }
+#ios-settings .ist-pp .locked-certs { margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+#ios-settings .ist-pp .locked-h { margin: 0; font: 650 12.5px/1.35 Inter, sans-serif; color: var(--text); }
+#ios-settings .ist-pp .cert-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+#ios-settings .ist-pp .cert-chip { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; font: 600 11.5px/1 Inter, sans-serif; color: var(--text-dim); }
+#ios-settings .ist-pp .cert-chip svg { flex: 0 0 auto; width: 10px; height: 10px; }
+#ios-settings .ist-pp .plan-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+#ios-settings .ist-pp .plan-item:first-of-type { border-top: 0; }
+/* Delete account: today's confirm (features/settings.js), shown as the drawn bottom sheet while the phone page is on */
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal { align-items: flex-end !important; justify-content: stretch !important; padding: 0 !important; }
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dla-card { box-sizing: border-box; width: 100% !important; max-width: none !important; margin: 0 !important; border-radius: 22px 22px 0 0 !important; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)) !important; text-align: left !important; }
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dla-card::before { content: ""; display: block; width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 13px; }
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dla-mark { display: none !important; }
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dlpb-title { font: 600 19px/1.2 Fraunces, Georgia, serif !important; text-align: left !important; margin: 4px 0 4px !important; }
+html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dlpb-lede { text-align: left !important; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme] body:has(#page-settings.active.ist-on) #delete-account-modal .dla-card { animation: ist-sheet-in .36s var(--ios-ease) backwards; }
+  @keyframes ist-sheet-in { from { transform: translateY(100%); } }
+}
