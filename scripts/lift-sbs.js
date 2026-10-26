@@ -103,6 +103,17 @@ const SCREENS = [
   ['wn-verdict-open', 'cert-ios-whynot.html?v=verdict-open', 'wn-verdict-open'],
   ['wn-session', 'cert-ios-whynot.html?v=session', 'wn-session'],
   ['wn-leave', 'cert-ios-whynot.html?v=leave', 'wn-leave'],
+  ['dl-entry', 'cert-ios-decisionlab.html?v=entry', 'dl-entry'],
+  ['dl-free', 'cert-ios-decisionlab.html?v=entry-free', 'dl-free'],
+  ['dl-practice', 'cert-ios-decisionlab.html?v=practice', 'dl-practice'],
+  ['dl-graded', 'cert-ios-decisionlab.html?v=practice-graded', 'dl-graded'],
+  ['dl-exam', 'cert-ios-decisionlab.html?v=exam', 'dl-exam'],
+  ['dl-exam-amber', 'cert-ios-decisionlab.html?v=exam-amber', 'dl-exam-amber'],
+  ['dl-exam-end', 'cert-ios-decisionlab.html?v=exam-end', 'dl-exam-end'],
+  ['dl-results', 'cert-ios-decisionlab.html?v=results', 'dl-results'],
+  ['dl-results-open', 'cert-ios-decisionlab.html?v=results-open', 'dl-results-open'],
+  ['dl-results-timeup', 'cert-ios-decisionlab.html?v=results-exam-timeup', 'dl-results-timeup'],
+  ['dl-leave', 'cert-ios-decisionlab.html?v=leave', 'dl-leave'],
 ];
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -297,6 +308,47 @@ async function shootReal(browser, step, theme) {
         if (step === 'wn-leave') { await p.locator('#wn-round-root .iwn-leave').click(); await p.waitForTimeout(600); }
       }
     }
+  } else if (/^dl/.test(step || '')) {
+    // B3c3: Decision Lab on the real AZ-900 seed (analyze decisions only, as drawn), opened from Drills
+    const free = step === 'dl-free';
+    const tier = () => p.evaluate((f) => { window._quotaState = f ? { tier: 'free', used_today: 0, daily_limit: 15 } : { tier: 'pro' }; document.body.classList.add('is-state-resolved'); document.body.classList.toggle('is-pro-tier', !f); }, free);
+    await p.evaluate(async () => {
+      try { localStorage.removeItem(STORAGE.DL_FREE_COUNT); } catch (_) {}
+      window.CURRENT_CERT = 'az900';
+      await Promise.race([new Promise(res => window._ensureDecisionLabLoaded(res)), new Promise(res => setTimeout(res, 4000))]);
+      if (!window.DECISION_LAB_SEED_AZ900) throw new Error('AZ-900 Decision Lab seed did not load');
+      window.DECISION_LAB_SEED_AZ900 = window.DECISION_LAB_SEED_AZ900.filter(x => x.steps[0].type === 'analyze');
+      window.CERT_PACK = Object.assign({}, window.CERT_PACK, { meta: Object.assign({}, (window.CERT_PACK || {}).meta, { name: 'Microsoft Azure Fundamentals', code: 'AZ-900' }) });
+      showPage('drills');
+    });
+    await p.waitForTimeout(700);
+    await tier();
+    await p.evaluate(() => decisionLabOpenEntry());
+    await p.waitForTimeout(900);
+    const SUB = '#dl-body .sl-actions [data-action="simLabSubmitScenario"]';
+    const pick = (right) => p.evaluate((r) => {
+      const s = window._simLab.dlSession(), st = s.scenarios[s.idx].steps[0], want = st.answer.selected;
+      const ln = Array.from(document.querySelectorAll('#dl-body .sl-analyze-line')).find(l => (want.indexOf(l.getAttribute('data-line')) >= 0) === r);
+      if (ln) ln.click();
+    }, right);
+    if (/^dl-(practice|graded|leave|results$|results-open)/.test(step)) {
+      await p.evaluate(() => decisionLabSessionStart()); await p.waitForTimeout(900);
+      if (step === 'dl-graded') { await pick(false); await p.locator(SUB).click(); await p.waitForTimeout(600); }
+      if (step === 'dl-leave') { await p.locator('#page-decision-lab [data-action="decisionLabExit"]').click(); await p.waitForTimeout(600); }
+      if (/^dl-results/.test(step)) {
+        for (let i = 0; i < 10; i++) { await pick([1, 4, 6].indexOf(i) < 0); await p.locator(SUB).click(); await p.waitForTimeout(150); await p.locator('#dl-body .sl-actions button').click(); await p.waitForTimeout(250); }
+        await p.waitForTimeout(4600);   // let any milestone toast leave
+        if (step === 'dl-results-open') { await p.locator('#dl-result-root .idl-srow').nth(1).click(); await p.waitForTimeout(400); }
+      }
+    }
+    if (/^dl-(exam|results-timeup)/.test(step)) {
+      await p.evaluate(() => { decisionLabPickMode('exam'); decisionLabSessionStart(); }); await p.waitForTimeout(900);
+      const n = { 'dl-exam': 3, 'dl-exam-end': 3, 'dl-exam-amber': 9, 'dl-results-timeup': 7 }[step];
+      for (let i = 0; i < n; i++) { await pick(i % 3 !== 1); await p.locator(SUB).click(); await p.waitForTimeout(250); }
+      if (step === 'dl-exam-amber') { await p.evaluate(() => { const s = window._simLab.dlSession(); s.deadlineMs = Date.now() + 112000; s.budgetMs = 1200000; window._simLab.dlTick(); }); await p.waitForTimeout(400); }
+      if (step === 'dl-exam-end') { await p.locator('#isl-xbar .isl-xend').click(); await p.waitForTimeout(500); }
+      if (step === 'dl-results-timeup') { await p.evaluate(() => { window._simLab.dlSession().deadlineMs = Date.now() - 1; window._simLab.dlTick(); }); await p.waitForTimeout(4600); }
+    }
   } else if (/^xs/.test(step || '')) {
     // B3b2: a Pro Sim Lab exam, 5 rounds, seeds only (offline); the drawn round is the terminal seed in round 2
     await p.evaluate(async (st) => {
@@ -387,7 +439,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn|dl)/.test(step || '') });
   await ctx.close();
   return buf;
 }

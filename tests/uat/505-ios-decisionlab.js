@@ -45,6 +45,9 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('Results rows: a wrong pick shows Your pick, Right call and The tell; no answer reads No answer; another step type shows only The tell',
       /Your pick/.test(det(rh, 1)) && /SQL Database/.test(det(rh, 1)) && /Right call/.test(det(rh, 1)) && /The tell/.test(det(rh, 1))
       && /No answer/.test(det(rh, 2)) && !/Your pick|Right call/.test(det(rh, 3)) && /The tell/.test(det(rh, 3)) && /idl-sdet-1"[^>]*hidden/.test(rh));
+    test('Results kicker icon: the clock on time-up, the Decision Lab mark otherwise (as drawn)',
+      run('_iosDlResultHtml(_iosDlResultModel(__s))', R({ mode: 'exam', timeUp: true })).indexOf('<circle cx="12" cy="13" r="8">') >= 0
+      && run('_iosDlResultHtml(_iosDlResultModel(__s))', R()).indexOf('<circle cx="12" cy="13" r="8">') < 0);
     test('Results: no look-alike or family section when there are none',
       run('_iosDlResultHtml(_iosDlResultModel(__s))', R({ pairs: [], families: [] })).indexOf('Look-alikes') < 0
       && run('_iosDlResultHtml(_iosDlResultModel(__s))', R({ pairs: [], families: [] })).indexOf('Weak service families') < 0);

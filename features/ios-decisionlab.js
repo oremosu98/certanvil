@@ -46,13 +46,14 @@
       title: '<em>' + (Number(s.passed) || 0) + ' of ' + (Number(s.rounds) || 0) + '</em> right calls',
       pairs: (s.pairs || []).map(function (p) { var parts = String(p.label).split(' vs '); return { a: parts[0], b: parts.length > 1 ? parts.slice(1).join(' vs ') : null, count: p.count }; }),
       families: s.families || [], rows: s.decisions || [], n: (s.decisions || []).length,
-      backLabel: s.back === 'drills' ? 'Back to Drills' : 'Back to Home'
+      backLabel: s.back === 'drills' ? 'Back to Drills' : 'Back to Home', timeUp: !!s.timeUp
     };
   }
   function _iosDlResultHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     function svg(p, n) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + n + '" height="' + n + '" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
-    var h = '<div class="idl-vbody"><div class="idl-vkick">' + svg('<path d="M6 3v6a3 3 0 0 0 3 3h6"></path><path d="M18 9V3M15 6l3-3 3 3M18 12v9"></path>', 14) + e(m.kick) + '</div>'
+    var MARK = m.timeUp ? '<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 1.5M9 2h6"></path>' : '<path d="M6 3v6a3 3 0 0 0 3 3h6"></path><path d="M18 9V3M15 6l3-3 3 3M18 12v9"></path>';
+    var h = '<div class="idl-vbody"><div class="idl-vkick">' + svg(MARK, 14) + e(m.kick) + '</div>'
       + '<h2 class="idl-vtitle">' + m.title + '</h2>';
     if (m.pairs.length) {
       h += '<div class="idl-sect">Look-alikes you still confuse</div>' + m.pairs.map(function (p) {

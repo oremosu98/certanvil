@@ -2457,3 +2457,13 @@ html[data-theme] body #page-decision-lab-result.active:has(#dl-result-root.idl-r
 html[data-theme] body:has(#page-decision-lab-result.active .idl-vbody) .celebration-toast { top: auto !important; bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
 html[data-theme] body:has(#page-decision-lab-result.active .idl-vbody) .celebration-toast ~ .celebration-toast { top: auto !important; bottom: calc(150px + 84px + env(safe-area-inset-bottom)) !important; }
 html[data-theme] body:has(#page-decision-lab-result.active .idl-vbody) .celebration-toast:not(.show) { transform: translateY(16px) !important; }
+/* the pick: one choice, service names read as words (drawn: Inter, round markers); the why lines only after grading */
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line { font: 550 14px/1.3 Inter, -apple-system, sans-serif; color: var(--text); }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line .dl-lab { flex: 1 1 auto; min-width: 0; }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-line::before { border-radius: 999px; }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-block:not(.dl-graded) .dl-why { display: none; }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-block:not(.dl-graded) .dl-verdict { display: none; }
+#page-decision-lab.idl-practice .dl-graded .dl-opt:is(.dl-correct, .dl-picked-wrong)::before { background-position: center; background-repeat: no-repeat; background-size: 10px 10px; }
+#page-decision-lab.idl-practice .dl-graded .dl-opt.dl-correct::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6L9 17l-5-5'/></svg>"); }
+#page-decision-lab.idl-practice .dl-graded .dl-opt.dl-picked-wrong::before { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6L6 18M6 6l12 12'/></svg>"); }
+#page-decision-lab:is(.idl-practice, .idl-exam) .sl-analyze-block { border: 0 !important; padding: 0 !important; background: none !important; box-shadow: none !important; }

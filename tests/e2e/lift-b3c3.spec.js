@@ -97,6 +97,8 @@ for (const vp of PHONES) {
       await expect(page.locator('#idl-entry .idl-mode')).toHaveCount(2);
       await expect(page.locator('#idl-entry .idl-seg button')).toHaveCount(3);
       await expect(page.locator('#idl-entry .idl-pro')).toHaveCount(0);
+      await expect(page.locator('#idl-entry .idl-v')).toHaveText('Mixed services');
+      await expect(page.locator('#idl-entry .idl-w')).toHaveText('Azure Fundamentals AZ-900');   // the cert alone: the card already says Mixed
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
     });
     test('free: Exam-style and 20 open today\'s gates and keep Practice · 10', async ({ page }) => {
@@ -151,6 +153,16 @@ for (const vp of PHONES) {
       await expect(page.locator('#dl-dots .dl-dot')).toHaveCount(10);
       await expect(page.locator('#page-decision-lab [data-action="decisionLabExit"]')).toHaveAttribute('aria-label', 'Leave Decision Lab');
       await expect(page.locator('#dl-body .isl-scn-k')).toHaveText('Scenario');
+      await expect(page.locator('#dl-body .sl-step-k')).toHaveText('Your call');
+      const ln = await page.locator('#dl-body .sl-analyze-line').first().evaluate((el) => {
+        const lab = el.querySelector('.dl-lab'), why = el.querySelector('.dl-why'), mk = getComputedStyle(el, '::before');
+        return { font: getComputedStyle(lab).fontFamily, why: why ? getComputedStyle(why).display : 'none', round: mk.borderRadius, labW: lab.getBoundingClientRect().width, w: el.getBoundingClientRect().width };
+      });
+      expect(ln.font).toMatch(/^Inter/);          // service names read as words, not commands
+      expect(ln.why).toBe('none');                // why lines only after grading
+      expect(ln.round).toMatch(/999px|50%/);      // single choice: round markers
+      expect(ln.labW).toBeGreaterThan(ln.w * 0.6);
+      expect(await page.locator('#dl-body .sl-analyze-block').evaluate((b) => getComputedStyle(b).borderTopWidth)).toBe('0px');   // no frame round the options
       const sub = page.locator('#dl-body .sl-actions [data-action="simLabSubmitScenario"]');
       await expect(sub).toHaveText('Submit');
       expect(await sub.evaluate((b) => getComputedStyle(b.closest('.sl-actions')).position)).toBe('fixed');

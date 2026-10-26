@@ -2772,7 +2772,9 @@
   var _dlOrigin = 'setup';
   function _dlRenderPhoneEntry() {
     if (!window.iosDecisionLab || typeof window.iosDecisionLab.renderEntry !== 'function') return false;
-    return window.iosDecisionLab.renderEntry({ mode: _dlPickedMode, decisions: _dlPickedDecisions, target: _dlTargetLabel(),
+    var meta = (window.CERT_PACK && window.CERT_PACK.meta) || {};   // the cert alone: the June card already says "Mixed services"
+    var cert = [meta.name, meta.code].filter(Boolean).join(' ');
+    return window.iosDecisionLab.renderEntry({ mode: _dlPickedMode, decisions: _dlPickedDecisions, target: cert,
       back: _dlOrigin, free: !_slIsPro() });
   }
 
@@ -2929,6 +2931,7 @@
       var sub = body.querySelector('[data-action="simLabSubmitScenario"]');
       var lastX = _dlSession.mode === 'exam' && _dlSession.idx + 1 >= _dlSession.rounds;
       if (sub) sub.textContent = lastX ? 'Submit and see results' : 'Submit';
+      var sk = body.querySelector('.sl-step-k'); if (sk && scn.steps.length === 1) sk.textContent = 'Your call';   // as drawn: one call per decision
       _dlExamBarSync();
       body.classList.remove('idl-swap'); void body.offsetWidth; body.classList.add('idl-swap');   // a new decision fades in (150ms)
     }
