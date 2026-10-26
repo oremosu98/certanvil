@@ -314,6 +314,20 @@ test.describe('Lift B4 repaints', () => {
   });
 });
 
+test.describe('Lift B4 final review', () => {
+  test('the first entry reveal survives the email and Pass Plan arriving just after the draw', async ({ page }) => {
+    await boot(page, PHONES[1], { signed: true });
+    await setTier(page, 'pro');
+    await page.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
+    await expect(page.locator('#page-settings')).toHaveClass(/active/, { timeout: 10000 });
+    await page.waitForTimeout(150);
+    const r = await page.evaluate(() => ({ still: document.getElementById('ios-settings').classList.contains('ist-still'),
+      moving: Array.from(document.querySelectorAll('#ios-settings .ist-body > .reveal')).some((el) => el.getAnimations().length > 0) }));
+    expect(r).toEqual({ still: false, moving: true });
+    await expect(page.locator('#ios-settings .ist-em')).toContainText('simi.test@example.test', { timeout: 5000 });
+  });
+});
+
 test.describe('Lift B4 desktop', () => {
   test("today's Settings, #ios-settings empty, no ist-on", async ({ page }) => {
     await openSettings(page, DESKTOP, { tier: 'free' });

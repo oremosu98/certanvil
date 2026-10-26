@@ -198,6 +198,26 @@
     if (_sheetBack && _sheetBack.isConnected && _sheetBack.focus) { try { _sheetBack.focus({ preventScroll: true }); } catch (_) {} }
     _sheetBack = null;
   }
+  // Data that lands just after a draw (the email, the lazily loaded Pass Plan) patches in place: a full redraw would
+  // cancel the entrance reveal (final review, Important 1).
+  function patch(p) {
+    var host = document.getElementById('ios-settings');
+    if (!host || !host.innerHTML || !_state) return false;
+    function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    if (p.email != null) {
+      _state.email = p.email;
+      var em = host.querySelector('.ist-em'), av = host.querySelector('.ist-av');
+      if (em && em.firstChild && em.firstChild.nodeType === 3) em.firstChild.nodeValue = p.email;
+      else if (em) em.innerHTML = e(p.email) + '<span>Signed in</span>';
+      if (av) av.textContent = (p.email || '?').charAt(0).toUpperCase();
+    }
+    if (p.passPlanHtml != null) {
+      _state.passPlanHtml = p.passPlanHtml;
+      var pp = host.querySelector('.ist-pp');
+      if (pp) pp.innerHTML = p.passPlanHtml;
+    }
+    return true;
+  }
   function isSheetOpen() { var s = document.getElementById('ist-sheet'); return !!(s && !s.hidden); }
   // iosSheet.dismiss() closes the other sheets that go with their screen; close ours too. ios-sheet.js loads after
   // this file, so the hook attaches on first use.
@@ -334,5 +354,6 @@
   window.iosSettings.openSheet = openSheet;
   window.iosSettings.closeSheet = closeSheet;
   window.iosSettings.isSheetOpen = isSheetOpen;
+  window.iosSettings.patch = patch;
   window.iosSettings._on = window.iosSettings._on || {};   // data-act handlers (Tasks 3 and 4)
 })();

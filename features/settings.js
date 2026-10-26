@@ -32,7 +32,8 @@
     }
     host.innerHTML = _passPlanHtml();
     _wirePassPlanSection(host);
-    _iosStRender(true);   // v8.193.0: the phone card fills once the diagnostic module has loaded
+    // v8.193.0: the phone card fills once the diagnostic module has loaded (in place: keeps the entrance reveal)
+    if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ passPlanHtml: host.innerHTML });
   }
   function _ppIsPro() {
     return !!_quotaState && (_quotaState.tier === 'pro' ||
@@ -62,7 +63,7 @@
       window.certanvilSupabase.auth.getSession().then(function (r) {
         var u = r && r.data && r.data.session && r.data.session.user;
         _istEmail = (u && u.email) || null;
-        _iosStRender(true);
+        if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ email: _istEmail || '' });   // in place: keeps the reveal
       }).catch(function () {});
     }
     if (!signedIn) { _istEmail = null; _istEmailAsked = false; }
