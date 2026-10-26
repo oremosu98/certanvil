@@ -30,17 +30,77 @@
         .then(function () { renderPassPlanSection(); })
         .catch(function () { /* offline — the guards below still degrade safely */ });
     }
-    var isPro = !!_quotaState && (_quotaState.tier === 'pro' ||
+    host.innerHTML = _passPlanHtml();
+    _wirePassPlanSection(host);
+    _iosStRender(true);   // v8.193.0: the phone card fills once the diagnostic module has loaded
+  }
+  function _ppIsPro() {
+    return !!_quotaState && (_quotaState.tier === 'pro' ||
       (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
+  }
+  function _passPlanHtml() {
+    var isPro = _ppIsPro();
     // Installed app (iOS PWA) shows all certs' plans; a plain browser tab is one
     // cert per subdomain, so Settings shows only the current cert's plan.
     var standalone = document.body.classList.contains('is-standalone');
-    if (standalone) {
-      host.innerHTML = isPro ? _renderPassPlanProHtml() : _renderPassPlanFreeHtml();
-    } else {
-      host.innerHTML = isPro ? _renderPassPlanBrowserProHtml() : _renderPassPlanFreeHtml();
+    if (standalone) return isPro ? _renderPassPlanProHtml() : _renderPassPlanFreeHtml();
+    return isPro ? _renderPassPlanBrowserProHtml() : _renderPassPlanFreeHtml();
+  }
+
+  // ── v8.193.0 Lift B4: the phone page (features/ios-settings.js) ──
+  var _istEmail = null, _istEmailAsked = false;
+  function _istLocalTime(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d)) return null;
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function _iosStState(still) {
+    var signedIn = window._certanvilSignedIn === true;
+    if (signedIn && !_istEmailAsked && window.certanvilSupabase && window.certanvilSupabase.auth) {
+      _istEmailAsked = true;
+      window.certanvilSupabase.auth.getSession().then(function (r) {
+        var u = r && r.data && r.data.session && r.data.session.user;
+        _istEmail = (u && u.email) || null;
+        _iosStRender(true);
+      }).catch(function () {});
     }
-    _wirePassPlanSection(host);
+    if (!signedIn) { _istEmail = null; _istEmailAsked = false; }
+    var certs = typeof window.getAvailableCerts === 'function' ? window.getAvailableCerts() : [];
+    var active = window.CURRENT_CERT || 'netplus', c = null;
+    for (var i = 0; i < certs.length; i++) if (certs[i].id === active) c = certs[i];
+    var meta = (window.CERT_PACK && window.CERT_PACK.meta) || {};
+    var prefs = typeof loadSrPrefs === 'function' ? loadSrPrefs() : {};
+    var pro = _ppIsPro(), exam = typeof getExamDate === 'function' ? getExamDate() : '';
+    var goal = typeof getDailyGoal === 'function' ? getDailyGoal() : 15;
+    var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return {
+      signedIn: signedIn, email: _istEmail || (signedIn ? '' : null), pro: pro,
+      cert: { name: (c && c.name) || meta.name || '', code: (c && c.code) || meta.code || '' },
+      passPlanHtml: _passPlanHtml(),
+      glance: { sync: !!_quotaState, exam: exam ? { date: exam, days: typeof getDaysToExam === 'function' ? getDaysToExam() : null } : null,
+        goal: goal, today: typeof getTodayQuestionCount === 'function' ? getTodayQuestionCount() : 0 },
+      goal: goal, review: { size: pro ? (prefs.sessionSize || 'all') : 5, topUp: !!prefs.topUp },
+      backups: listAutoBackups().map(function (b) {
+        var pre = /^pre-restore-(\d+)$/.exec(b.date || ''), label = null;
+        if (pre) { var t = _istLocalTime(new Date(parseInt(pre[1], 10)).toISOString()); label = t ? 'Before restore, ' + parseInt(t.slice(8, 10), 10) + ' ' + MON[parseInt(t.slice(5, 7), 10) - 1] + ' ' + t.slice(11) : 'Before restore'; }
+        return { iso: b.date, label: label, bytes: b.bytes, capturedAt: _istLocalTime(b.capturedAt) };
+      }),
+      wrongCount: typeof loadWrongBank === 'function' ? loadWrongBank().length : 0, still: !!still
+    };
+  }
+  // The host's view of settings.js's private functions (the public ones are called by name).
+  function _iosStActions() {
+    return {
+      snapshot: function () { _takeAutoBackup(); renderAutoBackupList(); _iosStRender(true); },
+      deleteAccount: function () { _showDeleteAccountConfirmUI(); }
+    };
+  }
+  function _iosStRender(still) {
+    var page = document.getElementById('page-settings');
+    if (!window.iosSettings || typeof window.iosSettings.render !== 'function' || !page) return false;
+    if (still && !page.classList.contains('ist-on') && !page.classList.contains('active')) return false;   // only repaint a drawn page
+    return window.iosSettings.render(_iosStState(still), _iosStActions());
   }
 
   function _renderPassPlanFreeHtml() {
@@ -546,6 +606,8 @@
     // exam date / daily goal / API key / backup status in one card so
     // the user can see whether their setup is safe at a glance.
     if (typeof renderSettingsHealthCard === 'function') renderSettingsHealthCard();
+    // v8.193.0 Lift B4: phones get the June page (iosSettings.render; false on desktop)
+    _iosStRender(false);
     // Stage 6 (bug-report popup): Reports recovery surface. Appended as a
     // new section at the bottom of .settings-layout (after § 03 Danger Zone)
     // on every Settings render — idempotent via #settings-reports-section.
@@ -836,6 +898,7 @@
   // ── window re-exposure (HTML onclick/onchange/oninput) ──
   window.scrollToSettings = scrollToSettings;
   window.renderSettingsPage = renderSettingsPage;
+  window.iosSettingsRepaint = function () { return _iosStRender(true); };   // v8.193.0: still repaint (auth, tier, picks)
   window.saveSettingsDailyGoal = saveSettingsDailyGoal;
   window.pickSettingsDailyPreset = pickSettingsDailyPreset;
   window.pickSrSessionSize = pickSrSessionSize;

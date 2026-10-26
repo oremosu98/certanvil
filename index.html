@@ -1713,6 +1713,8 @@
 <!-- v8.189.0 Lift B3b2: the Sim Lab exam End dialog on phones (features/ios-simlab.js openEnd; B2 #exam-modal markup) -->
 <div id="isl-end" class="modal-overlay isl-end hidden" role="dialog" aria-modal="true" aria-labelledby="isl-end-title"></div>
 <!-- v8.190.0 Lift B3c1: the Gauntlet topic sheet on phones (features/ios-gauntlet.js pickTopic) -->
+<div id="ist-sheet-scrim" class="isl-scrim" hidden></div>
+<div id="ist-sheet" class="ix-sheet ist-sheet" role="dialog" aria-modal="true" aria-labelledby="ist-sheet-title" hidden></div>
 <div id="igt-topics-scrim" class="isl-scrim" hidden></div>
 <div id="igt-topics" class="ix-sheet igt-tsheet" role="dialog" aria-modal="true" aria-labelledby="igt-topics-title" hidden><div class="ix-sheet-grip" aria-hidden="true"></div><h3 id="igt-topics-title">Pick a topic</h3><div class="igt-tlist" role="list"></div></div>
 
@@ -1814,6 +1816,7 @@
      reached directly from the sidebar + topbar gear.
 ══════════════════════════════════════════ -->
 <div id="page-settings" class="page">
+  <section id="ios-settings" class="ios-only" aria-label="Settings"></section>
   <!-- v4.54.9: editorial treatment -->
   <div class="ed-pagehead">
     <button class="btn btn-ghost ed-pagehead-back" onclick="goSetup()" aria-label="Back to menu">&#8592; Menu</button>
@@ -2308,6 +2311,7 @@
 <script defer src="features/ios-gauntlet.js"></script>
 <script defer src="features/ios-whynot.js"></script>
 <script defer src="features/ios-decisionlab.js"></script>
+<script defer src="features/ios-settings.js"></script>
 <script defer src="features/ios-sheet.js"></script>
 <script defer src="features/sr-review.js"></script>
 <script defer src="lift-shell.js?v=7.36.0"></script>

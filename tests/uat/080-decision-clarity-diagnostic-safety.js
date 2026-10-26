@@ -391,9 +391,9 @@ test('conversion renders states', _fnBody(js, '_renderDiagnosticConversion').inc
 test('Pro teaser has no pricing link', !_fnBody(js, '_showProWaitlist').includes('certanvil.com/pricing'));
 // v7.52.0: account Pass Plan home (Free one-plan+upsell, Pro plan-per-cert)
 test('account Pass Plan section', html.includes('id="passplan-section"'));
-test('Pass Plan section tier-aware', _fnBody(js, 'renderPassPlanSection').includes('_renderPassPlanProHtml'));
+test('Pass Plan section tier-aware', _fnBody(js, '_passPlanHtml').includes('_renderPassPlanProHtml') && _fnBody(js, 'renderPassPlanSection').includes('_passPlanHtml()'));   // v8.193.0: the branch moved into _passPlanHtml, shared with the phone page
 test('Pro plan list uses snapshots', _fnBody(js, '_renderPassPlanProHtml').includes('_readReadinessSnapshots'));
-test('Pass Plan section branches on standalone vs browser', _fnBody(js, 'renderPassPlanSection').includes("classList.contains('is-standalone')"));
+test('Pass Plan section branches on standalone vs browser', _fnBody(js, '_passPlanHtml').includes("classList.contains('is-standalone')"));
 test('browser Pass Plan reuses single current-cert card helper', /_passPlanCurrentCertCardHtml/.test(js));
 // v7.52.0: weak domains open the Custom Quiz builder pre-loaded (no auto-start) + quota-aware line
 test('weak drill opens builder (no autostart)', _fnBody(js, '_drillWeakDomainToBuilder').includes('prefillDomainTopics') && !_fnBody(js, '_drillWeakDomainToBuilder').includes('startQuiz('));

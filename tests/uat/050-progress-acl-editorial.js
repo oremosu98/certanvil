@@ -1205,7 +1205,7 @@ test('v4.54.10 CSS: legacy .dg-weak-chips hidden via !important',
 
 // Settings: editable daily goal
 test('v4.54.10 HTML: Settings page has Daily Goal section with input + presets',
-  /id="page-settings"[\s\S]{0,3800}settings-daily-input[\s\S]{0,800}settings-daily-chip/.test(html));  // window 3000→3800: v7.42.0 GAP-3 pro-lock pill + comment before the input
+  /id="page-settings"[\s\S]{0,3900}settings-daily-input[\s\S]{0,800}settings-daily-chip/.test(html));  // window 3000→3800: v7.42.0 GAP-3 pro-lock pill + comment before the input; 3900: v8.193.0 #ios-settings first child
 test('v4.54.10 JS: saveSettingsDailyGoal + pickSettingsDailyPreset + syncSettingsDailyGoal defined',
   js.includes('function saveSettingsDailyGoal(') &&
   js.includes('function pickSettingsDailyPreset(') &&

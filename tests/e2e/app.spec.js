@@ -643,6 +643,8 @@ test.describe('Wrong Bank Behavior', () => {
   });
 
   test('Settings clear button triggers confirm dialog', async ({ page }) => {
+    // v8.193.0: the browser confirm() is the desktop path; phones ask in the in-app sheet (lift-b4.spec.js)
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
     // Set up wrong bank
@@ -669,6 +671,8 @@ test.describe('Wrong Bank Behavior', () => {
   });
 
   test('Settings clear button removes bank when confirmed', async ({ page }) => {
+    // v8.193.0: the browser confirm() is the desktop path; phones ask in the in-app sheet (lift-b4.spec.js)
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
     await page.evaluate(() => {

@@ -22,7 +22,7 @@
       today: Number(g.today) || 0, review: s.review || { size: 5, topUp: false }, wrongCount: Number(s.wrongCount) || 0, still: !!s.still,
       backups: (s.backups || []).map(function (b) {
         var t = String(b.capturedAt || '').slice(11, 16);
-        return { iso: b.iso, date: day(b.iso), meta: (Math.round((Number(b.bytes) || 0) / 102.4) / 10).toFixed(1) + ' KB' + (t ? ' · saved ' + t : '') };
+        return { iso: b.iso, date: b.label || day(b.iso), meta: (Math.round((Number(b.bytes) || 0) / 102.4) / 10).toFixed(1) + ' KB' + (t ? ' · saved ' + t : '') };
       })
     };
   }
@@ -138,8 +138,82 @@
       + (m.selected ? '<button type="button" class="ist-clear" data-act="cal-remove">Remove exam date</button>' : '');
   }
 
+  // ── Phone host ──
+  // render(state, actions): draws the page into #ios-settings and marks #page-settings.ist-on (the CSS hook; never a
+  // :has(:not(:empty)) rule, which WebKit misses on an in-place refill). False on desktop, where today's page shows.
+  var _acts = {}, _state = null;
+  function render(state, actions) {
+    var host = document.getElementById('ios-settings'), page = document.getElementById('page-settings');
+    if (!host || !page) return false;
+    if (!isPhone()) { host.innerHTML = ''; page.classList.remove('ist-on'); closeSheet(true); return false; }
+    _state = state; _acts = actions || {};
+    host.innerHTML = _iosStHtml(_iosStModel(state));
+    host.classList.toggle('ist-still', !!state.still);   // a redraw after a state change does not replay the reveal
+    page.classList.add('ist-on');
+    if (!host.__istBound) {
+      host.__istBound = true;
+      host.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !host.contains(b) || b.disabled) return;
+        var fn = window.iosSettings._on[b.getAttribute('data-act')];
+        if (typeof fn === 'function') fn(b, _acts, _state);
+      });
+    }
+    return true;
+  }
+  // #ist-sheet: the list / calendar sheet (two-button asks use iosSheet). Built like B3c1's #igt-topics.
+  var _sheetBack = null, _sheetKey = null;
+  function openSheet(html, onTap) {
+    var sheet = document.getElementById('ist-sheet'), scrim = document.getElementById('ist-sheet-scrim');
+    if (!sheet || !scrim) return;
+    _hookDismiss();
+    _sheetBack = document.activeElement;
+    sheet.innerHTML = html;
+    sheet.__istTap = onTap || null;
+    if (!sheet.__istBound) {
+      sheet.__istBound = true;
+      sheet.addEventListener('click', function (ev) {
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (b && sheet.contains(b) && !b.disabled && typeof sheet.__istTap === 'function') sheet.__istTap(b);
+      });
+      scrim.addEventListener('click', function () { closeSheet(); });
+    }
+    sheet.hidden = false; scrim.hidden = false;
+    void sheet.offsetWidth;
+    sheet.classList.add('open'); scrim.classList.add('open');
+    if (_sheetKey) window.removeEventListener('keydown', _sheetKey, true);
+    _sheetKey = function (e) { if (e.key === 'Escape') { e.preventDefault(); closeSheet(); } };
+    window.addEventListener('keydown', _sheetKey, true);
+    var first = sheet.querySelector('button:not([disabled])');
+    if (first) { try { first.focus({ preventScroll: true }); } catch (_) {} }
+  }
+  function closeSheet(instant) {
+    var sheet = document.getElementById('ist-sheet'), scrim = document.getElementById('ist-sheet-scrim');
+    if (!sheet || !scrim || sheet.hidden) return;
+    if (_sheetKey) { window.removeEventListener('keydown', _sheetKey, true); _sheetKey = null; }
+    sheet.classList.remove('open'); scrim.classList.remove('open');
+    var done = function () { if (!sheet.classList.contains('open')) { sheet.hidden = true; scrim.hidden = true; } };
+    if (instant) done(); else setTimeout(done, 200);   // BRAND §6: sheet out 200ms
+    if (_sheetBack && _sheetBack.isConnected && _sheetBack.focus) { try { _sheetBack.focus({ preventScroll: true }); } catch (_) {} }
+    _sheetBack = null;
+  }
+  function isSheetOpen() { var s = document.getElementById('ist-sheet'); return !!(s && !s.hidden); }
+  // iosSheet.dismiss() closes the other sheets that go with their screen; close ours too. ios-sheet.js loads after
+  // this file, so the hook attaches on first use.
+  function _hookDismiss() {
+    if (!window.iosSheet || typeof window.iosSheet.dismiss !== 'function' || window.iosSheet.dismiss.__ist) return;
+    var _dismiss = window.iosSheet.dismiss;
+    window.iosSheet.dismiss = function () { closeSheet(true); return _dismiss.apply(this, arguments); };
+    window.iosSheet.dismiss.__ist = true;
+  }
+
   window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;
   window.iosSettings = window.iosSettings || {};
   window.iosSettings.isPhone = isPhone;
+  window.iosSettings.render = render;
+  window.iosSettings.openSheet = openSheet;
+  window.iosSettings.closeSheet = closeSheet;
+  window.iosSettings.isSheetOpen = isSheetOpen;
+  window.iosSettings._on = window.iosSettings._on || {};   // data-act handlers (Tasks 3 and 4)
 })();

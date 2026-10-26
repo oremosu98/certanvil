@@ -63,6 +63,21 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('Settings phone: no em-dash or arrow glyph in any phone output',
       [out, free, pro, cs, ex].every(h => h.indexOf('—') < 0 && h.indexOf('→') < 0));
 
+    test('Settings phone: a pre-restore safety snapshot keeps its own label, so a restore can be undone',
+      H({ backups: [{ iso: 'pre-restore-1781000000000', label: 'Before restore, 8 June 18:40', bytes: 2048, capturedAt: '2026-06-08T18:40:00' }] }).indexOf('Before restore, 8 June 18:40') >= 0
+      && /data-date="pre-restore-1781000000000"/.test(H({ backups: [{ iso: 'pre-restore-1781000000000', label: 'Before restore, 8 June 18:40', bytes: 2048 }] })));
+
+    // ── Task 2: the host and the markup ──
+    const st = fs.readFileSync(path.join(ROOT, 'features', 'settings.js'), 'utf8');
+    const ios = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('index.html: #ios-settings is the first child of #page-settings; #ist-sheet and its scrim exist',
+      /<div id="page-settings" class="page">\s*<section id="ios-settings" class="ios-only" aria-label="Settings"><\/section>/.test(html)
+      && /<div id="ist-sheet-scrim" class="isl-scrim" hidden><\/div>\s*<div id="ist-sheet" class="ix-sheet ist-sheet" role="dialog" aria-modal="true" aria-labelledby="ist-sheet-title" hidden><\/div>/.test(html));
+    test('features/ios-settings.js loads deferred right after ios-decisionlab.js',
+      /<script defer src="features\/ios-decisionlab\.js"><\/script>\s*<script defer src="features\/ios-settings\.js"><\/script>/.test(html));
+    test('the phone page keys on #page-settings.ist-on, never :has(#ios-settings:not(:empty)); renderSettingsPage calls the host',
+      /#page-settings\.ist-on/.test(ios) && ios.indexOf(':has(#ios-settings') < 0 && /_iosStRender\(false\)/.test(_fnBody(st, 'renderSettingsPage') || '') && /iosSettings\.render\(/.test(_fnBody(st, '_iosStRender') || '')
+      && /window\.iosSettings\.render = /.test(src) && !/\son[a-z]+=/.test(src));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
     test('auth-state.js (gated lane) is untouched by Lift B4',
       require('crypto').createHash('sha256').update(auth).digest('hex') === '87af4f136c474b725d2144de8258597665cf6aacc0bd5b65761ffb0e0625a86d');
