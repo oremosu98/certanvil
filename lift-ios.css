@@ -2846,3 +2846,44 @@ html.ifr-offline #connectivity-banner { display: none !important; }
 }
 html.ifr-picking #ist-sheet-scrim { z-index: 9000; } html.ifr-picking #ist-sheet { z-index: 9001; }   /* the lock-in sheet sits over the full-screen picker */
 html.ifr-picking #lift-tabbar { display: none !important; }
+/* Lift C side-by-side fixes (26 Oct): June's back control, serif question, tinted keys, centred limit/capped, offline bar */
+html.ifr-capped #lift-tabbar { display: none !important; }
+.ifr-hdr .ifr-back { width: 40px; height: 40px; margin: 0; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.ifr-hdr .ifr-back svg { width: 19px; height: 19px; }
+.ifr-qtext { font: 600 22px/1.28 Fraunces, Georgia, serif; letter-spacing: -.01em; }
+.ifr-topic { padding: 6px 11px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-mid); }
+.ifr-key { background: color-mix(in oklab, var(--accent) 14%, var(--surface3)); color: var(--accent-deep); }
+.ifr-opt.sel { border-width: 1px; padding: 12px 14px; }
+.ifr-note { border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+.ifr-ac-of { font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); }
+.ifr-legend { font: 600 11.5px/1 Inter, sans-serif; }
+.ifr-legend .p { color: var(--accent-deep); font-weight: 700; }
+.ifr-aha2 { padding: 13px 14px; border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+.ifr-greet-c { text-align: center; margin-top: 26px; }
+.ifr-hi-ok { display: inline-flex; align-items: center; gap: 6px; color: var(--green); }
+.ifr-hi-ok svg { width: 13px; height: 13px; stroke-width: 2.6; }
+.ifr-greet-c h1 { font-size: 26px; }
+.ifr-hb-reset { display: inline-flex; align-items: center; gap: 6px; font: 700 11.5px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 14%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+.ifr-hb-reset svg { width: 12px; height: 12px; }
+.ifr-body-c { text-align: center; }
+.ifr-body-c .ifr-lock { width: 76px; height: 76px; border-radius: 50%; margin: 22px auto 18px; }
+.ifr-body-c .ifr-lock svg { width: 30px; height: 30px; }
+.ifr-body-c .ifr-allow { text-align: left; }
+.ifr-aico { background: color-mix(in oklab, var(--accent) 14%, var(--surface3)); }
+.ifr-aamt { font: 700 14px/1 Inter, sans-serif; color: var(--accent-deep); }
+.ifr-proline b { color: var(--text); }
+.ifr-ghost-n { border-color: var(--border); color: var(--text) !important; background: var(--surface); }
+#ist-sheet .ifr-terms { gap: 0; }
+#ist-sheet .ifr-terms li { padding: 12px 0; }
+#ist-sheet .ifr-terms li + li { border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+#ist-sheet .ifr-ti { background: color-mix(in oklab, var(--accent) 14%, var(--surface3)); }
+.ifr-pnote { border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+#ifr-offbar { left: 20px; right: 20px; transform: none; justify-content: center; background: var(--surface3); border-color: transparent; box-shadow: none; }
+#ifr-offbar .dot { background: var(--text-dim); }
+.ifr-off-glyph { background: color-mix(in oklab, var(--accent) 16%, var(--surface3)); color: var(--accent-deep); }
+.ifr-saved { color: var(--text); }
+.ifr-saved svg { color: var(--green); }
+#onb-resolve:not([hidden]) { display: block !important; padding: 0 !important; background: var(--bg) !important; }   /* phones always carry June's skeleton (features/ios-firstrun.js) */
+#onb-resolve .ifr-restore { width: 100%; max-width: none; padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 20px; }
+.ifr-limit-h em { color: var(--text); }
+.ifr-qt { color: var(--accent-deep); }

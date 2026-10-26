@@ -123,7 +123,24 @@ const SCREENS = [
   ['st-restore', 'cert-ios-settings.html?v=restore', 'st-restore'],
   ['st-clear-bank', 'cert-ios-settings.html?v=clear-bank', 'st-clear-bank'],
   ['st-delete', 'cert-ios-settings.html?v=delete', 'st-delete'],
+  // Lift C: first run (june-e2e @ ee053395, HUD "C ›")
+  ['c-restore', 'onboarding-loading-states.html?v=restore', 'c-restore'],
+  ['c-picker', 'onboarding-free-cert-picker.html', 'c-picker'],
+  ['c-lock', 'onboarding-free-cert-picker.html?v=lock', 'c-lock'],
+  ['c-picker-pro', 'onboarding-free-cert-picker.html?v=pro', 'c-picker-pro'],
+  ['c-day0', 'onboarding-free-home-day0.html', 'c-day0'],
+  ['c-day0-pro', 'onboarding-free-home-day0.html?v=pro', 'c-day0-pro'],
+  ['c-check', 'onboarding-first-run-diagnostic.html', 'c-check'],
+  ['c-score', 'onboarding-first-run-diagnostic.html?v=score', 'c-score'],
+  ['c-capped', 'onboarding-free-capped-home.html', 'c-capped'],
+  ['c-limit', 'cert-ios-daily-limit.html', 'c-limit'],
+  ['c-offline', 'onboarding-loading-states.html?v=offline', 'c-offline'],
 ];
+// Lift C: every first-run state is a brand-new user except capped Home (which has practised)
+function firstRunSeed(step) {
+  if (!/^c-/.test(step || '')) return null;
+  return { wrong: 0, fresh: step !== 'c-capped', firstRun: true };
+}
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
   if (!/^dr/.test(step || '')) return null;
@@ -200,7 +217,8 @@ async function shootReal(browser, step, theme) {
     localStorage.setItem('nplus_streak', JSON.stringify({ current: 12, best: 14, last: new Date().toISOString().slice(0, 10) }));
     if (q) localStorage.setItem('nplus_sr_queue', JSON.stringify(q));
     if (ex) localStorage.setItem('nplus_exam_state', JSON.stringify(ex));
-  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null, drillsSeed(step)]);
+    if (dr && dr.firstRun) localStorage.setItem('onb_mock', '1');   // Lift C: the check runs on mock questions (no AI)
+  }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null, drillsSeed(step) || firstRunSeed(step)]);
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
@@ -317,6 +335,27 @@ async function shootReal(browser, step, theme) {
         if (step === 'wn-leave') { await p.locator('#wn-round-root .iwn-leave').click(); await p.waitForTimeout(600); }
       }
     }
+  } else if (/^c-/.test(step || '')) {
+    // Lift C: pin the tier (the fake session is an admin), then open each state the way a person reaches it
+    const pro = /pro$/.test(step);
+    await p.evaluate(([pr, used]) => {
+      window._quotaState = pr ? { tier: 'pro', used_today: 0, daily_limit: -1 } : { tier: 'free', used_today: used, daily_limit: 15 };
+      document.body.classList.add('is-state-resolved'); document.body.classList.toggle('is-pro-tier', pr);
+      renderIosHome();
+    }, [pro, step === 'c-capped' ? 15 : 0]);
+    await p.waitForTimeout(900);
+    if (step === 'c-restore') { await p.evaluate(() => { document.getElementById('onb-resolve').hidden = false; }); await p.waitForTimeout(400); }
+    if (/^c-(picker|lock)/.test(step)) { await p.evaluate((pr) => iosFirstRun.picker({ tier: pr ? 'pro' : 'free' }), pro); await p.waitForTimeout(700); }
+    if (step === 'c-lock') { await p.locator('#onb-firstrun [data-act="lock"]').click(); await p.waitForTimeout(700); }
+    if (step === 'c-check' || step === 'c-score') {
+      await p.locator('#ios-home [data-act="check"]').click(); await p.waitForTimeout(1500);
+      const n = step === 'c-score' ? 5 : 0;
+      for (let i = 0; i < n; i++) { await p.locator('#ios-check [data-act="pick"][data-l="A"]').click(); await p.locator('#ios-check [data-act="next"]').click(); await p.waitForTimeout(200); }
+      if (step === 'c-check') await p.locator('#ios-check [data-act="pick"][data-l="B"]').click();
+      await p.waitForTimeout(1200);
+    }
+    if (step === 'c-limit') { await p.evaluate(() => _gateSessionSizeForQuota(25, { mode: 'quiz' })); await p.waitForTimeout(600); }
+    if (step === 'c-offline') { await ctx.setOffline(true); await p.waitForTimeout(900); }
   } else if (/^st/.test(step || '')) {
     // B4: the Account tab; free states pin a free tier over the fake session, Pro states keep its Pro tier
     const free = /^st-(free|cert-switch|diag|clear-bank|signed-out)$/.test(step);

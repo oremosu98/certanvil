@@ -74,8 +74,8 @@
       '<div class="ifr-hb ifr-rv"><div class="ifr-hb-top"><div class="ifr-hb-cert"><span class="ifr-mark">' + e(c.glyph) + '</span>' +
         '<span><span class="ifr-hb-name">' + e(c.name) + '</span><span class="ifr-hb-code">' + e(c.code) + '</span></span></div><span class="ifr-plan">Free</span></div>' +
         '<div class="ifr-hb-quota"><div class="ifr-hb-row"><span class="ifr-hb-rn">Daily Review</span><span class="ifr-hb-rv">' + e(due) + ' cards due</span></div>' +
-        '<div class="ifr-hb-row"><span class="ifr-hb-rn">New practice</span><span class="ifr-hb-rv">15 of 15 · resets in ' + e(h) + 'h</span></div></div></div>' +
-      '<div class="ifr-greet ifr-rv"><div class="ifr-hi">Done for today</div><h1>That\'s today\'s 15 done.</h1>' +
+        '<div class="ifr-hb-row"><span class="ifr-hb-rn">New practice</span><span class="ifr-hb-reset"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>15 of 15 · resets in ' + e(h) + 'h</span></div></div></div>' +
+      '<div class="ifr-greet ifr-greet-c ifr-rv"><div class="ifr-hi ifr-hi-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Done for today</div><h1>That\'s today\'s 15 done.</h1>' +
         '<p class="ifr-lede">Your streak is safe. Daily Review still moves your readiness, and 15 fresh questions unlock in about ' + e(h) + ' hours.</p></div>' +
       (due > 0 ? '<div class="ifr-rev ifr-rv"><div class="ifr-start-head"><div class="ifr-start-ring">' + e(due) + '</div>' +
         '<div><div class="ifr-start-t">Daily Review</div><div class="ifr-start-s">' + e(due) + ' cards from what you\'ve missed, about ' + e(mins) + ' minutes. Still free today.</div></div></div>' +
@@ -95,7 +95,7 @@
         '<span class="ifr-key">' + L[i] + '</span><span class="ifr-label">' + e(o) + '</span></button>';
     }).join('');
     return '<div class="ifr-check">' +
-      '<div class="ifr-hdr"><h1>Quick check</h1><span class="ifr-tag">' + (m.pro ? 'Pro' : 'Free') + '</span></div>' +
+      '<div class="ifr-hdr">' + '<button type="button" class="ifr-back" data-act="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>' + '<h1>Quick check</h1><span class="ifr-tag">' + (m.pro ? 'Pro' : 'Free') + '</span></div>' +
       '<div class="ifr-body">' +
         '<div class="ifr-prog"><span class="ifr-qc">Question ' + e(m.n) + ' of ' + e(total) + '</span><span class="ifr-qt">' + e(m.code) + '</span></div>' +
         '<div class="ifr-qbar"><span style="width:' + Math.round(100 * m.n / total) + '%"></span></div>' +
@@ -142,19 +142,19 @@
         ? 'You picked a <b>' + e(m.picked) + '-question</b> set, but you have <b>' + e(r) + '</b> of today\u2019s <b>' + e(lim) + '</b> free questions left.'
         : 'You picked a <b>' + e(m.picked) + '-question</b> set. Free covers <b>' + e(lim) + ' practice questions</b> a day, so this one needs Pro.');
     return '<div class="ifr-check ifr-limit">' +
-      '<div class="ifr-hdr"><button type="button" class="ifr-back" data-act="limit-back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button><span class="ifr-hdr-k">Free daily limit</span></div>' +
-      '<div class="ifr-body">' +
+      '<div class="ifr-hdr">' + '<button type="button" class="ifr-back" data-act="limit-back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg></button>' + '<h1>Free daily limit</h1></div>' +
+      '<div class="ifr-body ifr-body-c">' +
         '<span class="ifr-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>' +
         '<h1 class="ifr-limit-h">That\'s more than your <em>free</em> day</h1>' +
         '<p class="ifr-lede">' + lede + '</p>' +
         '<div class="ifr-allow">' +
-          '<div class="ifr-arow"><span class="ifr-aico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></span><span class="ifr-atx"><b>Practice</b><span>Quizzes and custom sets</span></span><span class="ifr-aamt">15 / day</span></div>' +
+          '<div class="ifr-arow"><span class="ifr-aico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span><span class="ifr-atx"><b>Practice</b><span>Quizzes and custom sets</span></span><span class="ifr-aamt">15 / day</span></div>' +
           '<div class="ifr-arow"><span class="ifr-aico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v4h-4"/></svg></span><span class="ifr-atx"><b>Daily Review</b><span>Spaced repetition</span></span><span class="ifr-aamt">5 / day</span></div>' +
         '</div>' +
         '<p class="ifr-proline"><b>Pro</b> has no daily limit, on any cert.</p>' +
       '</div>' +
       '<div class="ifr-foot"><button type="button" class="ifr-btn" data-act="limit-pro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"/></svg>Go Pro for unlimited</button>' +
-        (r > 0 ? '<button type="button" class="ifr-ghost" data-act="limit-small">Start a ' + e(r) + '-question set</button>' : '') + '</div>' +
+        (r > 0 ? '<button type="button" class="ifr-ghost ifr-ghost-n" data-act="limit-small">Start a ' + e(r) + '-question set</button>' : '') + '</div>' +
     '</div>';
   }
 
@@ -201,7 +201,7 @@
         '<li><span class="ifr-ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></span><div><div class="ifr-tt">20 questions a day</div><div class="ifr-ts"><b>15 new practice</b> questions plus <b>5 Daily Review</b> cards.</div></div></li>' +
         '<li><span class="ifr-ti"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v4h-4"/></svg></span><div><div class="ifr-tt">A fresh set each morning</div><div class="ifr-ts">Your streak and progress are always yours. A new 20 unlocks every day.</div></div></li>' +
       '</ul>' +
-      '<div class="ifr-sheet-actions"><button type="button" class="ifr-btn" data-act="lock-go">Lock in ' + n + '</button><button type="button" class="ifr-ghost" data-act="lock-back">Go back</button></div>';
+      '<div class="ifr-sheet-actions"><button type="button" class="ifr-btn" data-act="lock-go">Lock in ' + n + '</button><button type="button" class="ifr-ghost ifr-ghost-n" data-act="lock-back">Go back</button></div>';
   }
 
   function _ifrRestoreHtml() {
@@ -291,9 +291,9 @@
 
   // Called first by renderIosHome on phones. Returns true when it drew day-0, capped or offline Home.
   IFR.renderHome = function (root) {
-    if (offline()) { html().classList.remove('ifr-day0'); root.innerHTML = _ifrOfflineHtml(); return true; }
+    if (offline()) { html().classList.remove('ifr-day0'); html().classList.remove('ifr-capped'); root.innerHTML = _ifrOfflineHtml(); return true; }
     var st = IFR.homeState();
-    html().classList.toggle('ifr-day0', st === 'day0');
+    html().classList.toggle('ifr-day0', st === 'day0'); html().classList.toggle('ifr-capped', st === 'capped');
     if (!st) return false;
     var c = certInfo();
     if (st === 'day0') root.innerHTML = _ifrDay0Html({ cert: c, pro: isPro(), remaining: remaining(), scale: scale() });
@@ -345,6 +345,7 @@
     var a = b.getAttribute('data-act');
     if (a === 'pick') { chk.picked = b.getAttribute('data-l'); drawCheck(); }
     else if (a === 'next' && chk.picked) { var l = chk.picked; chk.picked = null; window._diagApi.answer(l); if (!chk.done) drawCheck(); }
+    else if (a === 'back') { if (window._diagApi) window._diagApi.quit(); closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
     else if (a === 'skip') { if (window._diagApi) window._diagApi.quit(); IFR.recordSkip(); closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
     else if (a === 'practise') { closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
   }
@@ -464,7 +465,7 @@
   }
   mountRestore();
 
-  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
+  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-capped', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.
   function boot() { var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }
