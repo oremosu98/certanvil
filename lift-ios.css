@@ -2847,7 +2847,6 @@ html.ifr-offline #connectivity-banner { display: none !important; }
 html.ifr-picking #ist-sheet-scrim { z-index: 9000; } html.ifr-picking #ist-sheet { z-index: 9001; }   /* the lock-in sheet sits over the full-screen picker */
 html.ifr-picking #lift-tabbar { display: none !important; }
 /* Lift C side-by-side fixes (26 Oct): June's back control, serif question, tinted keys, centred limit/capped, offline bar */
-html.ifr-capped #lift-tabbar { display: none !important; }
 .ifr-hdr .ifr-back { width: 40px; height: 40px; margin: 0; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .ifr-hdr .ifr-back svg { width: 19px; height: 19px; }
 .ifr-qtext { font: 600 22px/1.28 Fraunces, Georgia, serif; letter-spacing: -.01em; }

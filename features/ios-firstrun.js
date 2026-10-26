@@ -262,6 +262,8 @@
   function goPro() { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); }
   // Free "Start today's 15": a Mixed set of what is left today (the daily-limit screen's start-smaller logic).
   function startToday() {
+    var keyErr = (typeof validateApiKey === 'function') ? validateApiKey(typeof getApiKey === 'function' ? getApiKey() : '') : null;
+    if (keyErr) { if (typeof startQuiz === 'function') startQuiz(); return; }   // today's sign-in prompt; day-0 stays
     IFR.recordSkip();
     if (isPro()) { var t = document.getElementById('primaryLaunch'); if (t) t.click(); return; }
     var r = remaining();
@@ -320,6 +322,9 @@
     var h = checkHost(); if (h) { h.hidden = true; h.innerHTML = ''; }
     html().classList.remove('ifr-check'); chk = null;
   }
+  // startDiagnostic shows #page-loading before it fetches; the check never switches page, so leaving it must
+  // switch back to Home (goSetup re-renders it), or the loading page shows with no tab bar.
+  function leaveCheck() { closeCheck(); if (typeof goSetup === 'function') goSetup(); else if (typeof renderIosHome === 'function') renderIosHome(); }
   function viewQ(sess) {
     var q = sess.questions[sess.currentIdx] || {}, o = q.options || {};
     return { text: q.question, options: ['A', 'B', 'C', 'D'].map(function (k) { return o[k]; }), topic: q.topic };
@@ -345,9 +350,9 @@
     var a = b.getAttribute('data-act');
     if (a === 'pick') { chk.picked = b.getAttribute('data-l'); drawCheck(); }
     else if (a === 'next' && chk.picked) { var l = chk.picked; chk.picked = null; window._diagApi.answer(l); if (!chk.done) drawCheck(); }
-    else if (a === 'back') { if (window._diagApi) window._diagApi.quit(); closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
-    else if (a === 'skip') { if (window._diagApi) window._diagApi.quit(); IFR.recordSkip(); closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
-    else if (a === 'practise') { closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
+    else if (a === 'back') { if (window._diagApi) window._diagApi.quit(); leaveCheck(); }
+    else if (a === 'skip') { if (window._diagApi) window._diagApi.quit(); IFR.recordSkip(); leaveCheck(); }
+    else if (a === 'practise') leaveCheck();
   }
   IFR.startCheck = function () {
     var h = checkHost(); if (!h) return Promise.resolve();
@@ -423,10 +428,11 @@
   function goToCert(id) {
     closePicker();
     if (id === certId()) { if (typeof renderIosHome === 'function') renderIosHome(); return; }
-    var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-    if (local) { location.href = location.pathname + '?cert=' + encodeURIComponent(id); return; }
-    var R = window.certanvilRouter;
-    location.href = R && R.certHost ? R.certHost(id) : location.href;
+    var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname), R = window.certanvilRouter;
+    var to = local ? location.pathname + '?cert=' + encodeURIComponent(id) : (R && R.certHost ? R.certHost(id) : location.href);
+    // The new subdomain starts with empty storage: wait (up to 2s) for the saved choice to reach the cloud first.
+    var cs = window.cloudStore, flushed = cs && typeof cs.flushNow === 'function' ? Promise.resolve().then(function () { return cs.flushNow(); }) : Promise.resolve();
+    Promise.race([flushed, new Promise(function (r) { setTimeout(r, 2000); })]).catch(function () {}).then(function () { location.href = to; });
   }
   function onPickTap(ev) {
     var b = ev.target.closest('[data-act]'); if (!b || !pick) return;
@@ -468,6 +474,16 @@
   IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-capped', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.
-  function boot() { var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }
+  // _quotaState arrives from an RPC after Home has drawn; _renderQuotaChip marks it on <body>. Re-render then.
+  function watchQuota() {
+    if (!window.MutationObserver || !document.body) return;
+    var t = null;
+    new MutationObserver(function () {
+      clearTimeout(t);
+      t = setTimeout(function () { var p = document.getElementById('page-setup'); if (IFR.isPhone() && p && p.classList.contains('active') && !chk && !lim && typeof renderIosHome === 'function') renderIosHome(); }, 60);
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  }
+  function boot() {
+    watchQuota(); var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

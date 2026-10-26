@@ -54,7 +54,8 @@ for (const vp of PHONES) {
       await expect(page.locator('#lift-tabbar')).toBeHidden();
     });
     test("Start today's 15 records the skip and starts today's quiz", async ({ page }) => {
-      await boot(page, vp);
+      await boot(page, vp, { signed: true });   // signed in: the quiz can start (a signed-out tap keeps day-0, see the review fixes)
+      await setTier(page, 'free', 0);
       await page.evaluate(() => { window.__started = null; window.startQuiz = function () { window.__started = { n: qCount, topic: topic }; }; });
       await page.locator('#ios-home [data-act="today"]').click();
       expect(await page.evaluate(() => window.__started && window.__started.n === 15 && window.__started.topic === MIXED_TOPIC)).toBe(true);
@@ -366,3 +367,51 @@ test("1280 ?onb=1 keeps today's first run", async ({ page }) => {
   await expect(fr.locator('[data-fr-action="confirm-cert"]')).toHaveCount(1);
   await expect(fr.locator('.ifr-picker')).toHaveCount(0);
 });
+
+// ── Final review fix pass ──
+for (const vp of PHONES) {
+  test.describe(`Lift C review fixes @${vp.width}`, () => {
+    test('finishing the check lands on the active Home page with the tab bar', async ({ page }) => {
+      await openCheck(page, vp);
+      await answerAll(page, 5);
+      await page.locator('#ios-check [data-act="practise"]').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      await expect(page.locator('#ios-home')).toBeVisible();
+      await expect(page.locator('#lift-tabbar')).toBeVisible();
+    });
+    test('skipping the check lands on the active Home page', async ({ page }) => {
+      await openCheck(page, vp);
+      await page.locator('#ios-check [data-act="skip"]').click();
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      await expect(page.locator('#ios-home')).toBeVisible();
+    });
+    test("a signed-out Start today's 15 keeps day-0 (nothing started)", async ({ page }) => {
+      await boot(page, vp);
+      await page.locator('#ios-home [data-act="today"]').click();
+      await page.waitForTimeout(400);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_onb_skips'))).toBeNull();
+    });
+    test('Home follows the quota when it arrives after first paint', async ({ page }) => {
+      await boot(page, vp, { signed: true, seed: { nplus_history: HISTORY } });
+      await page.evaluate(() => { window._quotaState = { tier: 'free', used_today: 15, daily_limit: 15 }; document.body.classList.toggle('is-state-resolved'); document.body.classList.toggle('is-state-resolved'); });
+      await expect(page.locator('#ios-home')).toContainText("That's today's 15 done.");
+    });
+    test('capped Home keeps the tab bar', async ({ page }) => {
+      await boot(page, vp, { signed: true, seed: { nplus_history: HISTORY } });
+      await setTier(page, 'free', 15);
+      await expect(page.locator('#ios-home')).toContainText("That's today's 15 done.");
+      await expect(page.locator('#lift-tabbar')).toBeVisible();
+    });
+    test('lock-in on another cert waits for the saved choice to flush before leaving', async ({ page }) => {
+      await page.addInitScript(() => {
+        const t = setInterval(() => { if (window.cloudStore) { clearInterval(t); window.cloudStore.flushNow = () => new Promise((r) => setTimeout(() => { sessionStorage.setItem('flushed', '1'); r(); }, 300)); } }, 20);
+      });
+      page.on('dialog', (d) => d.dismiss().catch(() => {}));
+      await boot(page, vp, { signed: true, query: '?onb=1', fake: FREE_FAKE });
+      await page.locator('#onb-firstrun [data-act="cert"][data-id="secplus"]').click();
+      await page.locator('#onb-firstrun [data-act="lock"]').click();
+      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="lock-go"]').click()]);
+      expect(await page.evaluate(() => sessionStorage.getItem('flushed'))).toBe('1');
+    });
+  });
+}
