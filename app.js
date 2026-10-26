@@ -8062,8 +8062,8 @@ function setQuestionText(el, raw) {
 // Diagnostic, Topic Deep Dive, Explain Further) require the network. The
 // banner is a gentle "heads-up, AI features won't work" rather than a
 // blocker. Briefly flashes a "you're back online" success when reconnected.
-function _renderConnectivityBanner(state) {
-  // state = 'offline' | 'online' | 'hidden'
+function _renderConnectivityBanner(state) {   // state = 'offline' | 'online' | 'hidden'
+  if (window.iosFirstRun && iosFirstRun.offline && iosFirstRun.offline(state)) return;   // Lift C: phones get the calm offline state
   let el = document.getElementById('connectivity-banner');
   if (state === 'hidden') {
     if (el) { el.classList.remove('is-shown'); setTimeout(() => el.remove(), 300); }

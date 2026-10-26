@@ -243,3 +243,49 @@ test("1280 keeps today's daily-limit popup", async ({ page }) => {
   await expect(page.locator('#daily-limit-preblock')).toBeVisible();
   await expect(page.locator('#ios-check')).toBeHidden();
 });
+
+// ── Task 5: offline on phones ──
+for (const vp of PHONES) {
+  test.describe(`Lift C offline @${vp.width}`, () => {
+    test("offline on Home shows June's offline state and the tab bar", async ({ page, context }) => {
+      await boot(page, vp, { seed: { nplus_history: HISTORY } });
+      await context.setOffline(true);
+      await expect(page.locator('#ios-home')).toContainText("You're offline.");
+      await expect(page.locator('#ios-home')).toContainText('Saved locally, will sync');
+      await expect(page.locator('#ifr-offbar')).toBeVisible();
+      await expect(page.locator('#lift-tabbar')).toBeVisible();
+      await context.setOffline(false);
+    });
+    test('back online restores Home', async ({ page, context }) => {
+      await boot(page, vp, { seed: { nplus_history: HISTORY } });
+      await context.setOffline(true);
+      await expect(page.locator('#ios-home')).toContainText("You're offline.");
+      await context.setOffline(false);
+      await expect(page.locator('#ios-home')).not.toContainText("You're offline.");
+      await expect(page.locator('#ifr-offbar')).toBeHidden();
+    });
+    test('offline during a quiz shows the bar only', async ({ page, context }) => {
+      await boot(page, vp, { seed: { nplus_history: HISTORY } });
+      await page.evaluate(() => showPage('drills'));
+      await context.setOffline(true);
+      await expect(page.locator('#ifr-offbar')).toBeVisible();
+      await expect(page.locator('#page-drills')).toHaveClass(/active/);
+      await expect(page.locator('#page-drills')).not.toContainText("You're offline.");
+      await context.setOffline(false);
+    });
+    test('no orange banner on phones', async ({ page, context }) => {
+      await boot(page, vp, { seed: { nplus_history: HISTORY } });
+      await context.setOffline(true);
+      await expect(page.locator('#ifr-offbar')).toBeVisible();
+      await expect(page.locator('#connectivity-banner')).toHaveCount(0);
+      await context.setOffline(false);
+    });
+  });
+}
+test("1280 keeps today's offline banner", async ({ page, context }) => {
+  await boot(page, DESKTOP, { seed: { nplus_history: HISTORY } });
+  await context.setOffline(true);
+  await expect(page.locator('#connectivity-banner')).toBeVisible();
+  await expect(page.locator('#ifr-offbar')).toHaveCount(0);
+  await context.setOffline(false);
+});

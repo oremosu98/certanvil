@@ -272,8 +272,26 @@
     document.querySelectorAll('#count-group .chip').forEach(function (c) { c.classList.toggle('on', Number(c.dataset.v) === qCount); });
     if (typeof startQuiz === 'function') startQuiz();
   }
-  // Called first by renderIosHome on phones. Returns true when it drew day-0 or capped Home.
+  // ── Offline (phones): a small "Offline" bar on every page; Home shows June's calm offline state. ──
+  function offline() { return html().classList.contains('ifr-offline'); }
+  IFR.offline = function (s) {
+    if (!IFR.isPhone()) return false;
+    if (s === 'hidden') return true;
+    var bar = document.getElementById('ifr-offbar');
+    if (s === 'offline' && !bar) {
+      bar = document.createElement('div'); bar.id = 'ifr-offbar'; bar.setAttribute('role', 'status'); bar.setAttribute('aria-live', 'polite');
+      bar.innerHTML = '<span class="dot" aria-hidden="true"></span>Offline';
+      document.body.appendChild(bar);
+    }
+    html().classList.toggle('ifr-offline', s === 'offline');
+    var p = document.getElementById('page-setup');
+    if (p && p.classList.contains('active') && typeof renderIosHome === 'function') renderIosHome();
+    return true;
+  };
+
+  // Called first by renderIosHome on phones. Returns true when it drew day-0, capped or offline Home.
   IFR.renderHome = function (root) {
+    if (offline()) { html().classList.remove('ifr-day0'); root.innerHTML = _ifrOfflineHtml(); return true; }
     var st = IFR.homeState();
     html().classList.toggle('ifr-day0', st === 'day0');
     if (!st) return false;
