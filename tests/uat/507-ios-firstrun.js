@@ -72,6 +72,12 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       off.indexOf("You're offline.") >= 0 && off.indexOf('Saved locally, will sync') >= 0 && rs.indexOf('Picking up where you left off') >= 0);
     test('no em-dash or arrow in any Lift C output, and no inline handlers in the module',
       [d0, d0p, cap, ck, so, lim, pk, pkP, lk, off, rs].every(noDash) && !/\son[a-z]+=/.test(src));
+    const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+    const dg = fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8');
+    test('the check stays off the daily 15: the batch fetch reads _metered from the Lift C flag, app.js within its ratchet',
+      /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8302);
+    test('diagnostic.js has no 720 pass-mark fallback; the phone check hooks in through onReady and _diagApi',
+      !/:\s*720\b/.test(dg) && /opts\.onReady/.test(dg) && /window\._diagApi\s*=/.test(dg));
   } catch (err) {
     test('Lift C first run: block (threw)', false);
     results.errors.push('507 ios-firstrun block threw: ' + err.message);

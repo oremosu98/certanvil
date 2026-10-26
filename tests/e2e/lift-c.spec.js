@@ -109,3 +109,91 @@ test.describe('Lift C desktop Home @1280', () => {
     await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
   });
 });
+
+// ── Task 3: the 30-second check (mock questions: ?onbmock=1, no AI) ──
+async function openCheck(page, vp, opts) {
+  await boot(page, vp, Object.assign({ query: '?onbmock=1' }, opts || {}));
+  await page.locator('#ios-home [data-act="check"]').click();
+  await expect(page.locator('#ios-check')).toBeVisible({ timeout: 8000 });
+}
+async function answerAll(page, n) {
+  for (let i = 0; i < n; i++) {
+    await page.locator('#ios-check [data-act="pick"][data-l="A"]').click();
+    await page.locator('#ios-check [data-act="next"]').click();
+  }
+}
+for (const vp of PHONES) {
+  test.describe(`Lift C the check @${vp.width}`, () => {
+    test('the check walks 5 questions with Next disabled until a pick', async ({ page }) => {
+      await openCheck(page, vp);
+      const chk = page.locator('#ios-check');
+      await expect(chk).toContainText('Question 1 of 5');
+      await expect(chk.locator('[data-act="next"]')).toBeDisabled();
+      await chk.locator('[data-act="pick"][data-l="B"]').click();
+      await expect(chk.locator('[data-act="next"]')).toBeEnabled();
+      await chk.locator('[data-act="next"]').click();
+      await expect(chk).toContainText('Question 2 of 5');
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+    });
+    test("the score shows the cert's scale", async ({ page }) => {
+      await openCheck(page, vp);
+      await page.evaluate(() => { CERT_PACK.meta.examMaxScore = 1000; CERT_PACK.meta.examPassScore = 700; CERT_PACK.meta.examMinScore = 1; });
+      await answerAll(page, 5);
+      const chk = page.locator('#ios-check');
+      await expect(chk).toContainText('Your starting point');
+      await expect(chk).toContainText('/ 1000 readiness');
+      await expect(chk).toContainText('Pass 700');
+      await expect(chk).not.toContainText('See how readiness works');
+    });
+    test('Start practising lands on placed Home and reload keeps it', async ({ page }) => {
+      await openCheck(page, vp);
+      await answerAll(page, 5);
+      await page.locator('#ios-check [data-act="practise"]').click();
+      await expect(page.locator('#ios-check')).toBeHidden();
+      await expect(page.locator('html')).not.toHaveClass(/ifr-day0|ifr-check/);
+      await expect(page.locator('#ios-home')).not.toContainText("Let's place your readiness.");
+      await page.reload(); await page.waitForTimeout(700);
+      await expect(page.locator('#ios-home')).not.toContainText("Let's place your readiness.");
+    });
+    test("Skip the check lands on today's new-user Home", async ({ page }) => {
+      await openCheck(page, vp);
+      await page.locator('#ios-check [data-act="skip"]').click();
+      await expect(page.locator('#ios-check')).toBeHidden();
+      await expect(page.locator('#ios-home')).toContainText('Your first session sets the baseline.');
+      expect(await page.evaluate(() => !!localStorage.getItem('nplus_onb_skips'))).toBe(true);
+    });
+    test('a half check leaves no snapshot', async ({ page }) => {
+      await openCheck(page, vp);
+      await answerAll(page, 2);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_readiness_snapshots'))).toBeNull();
+      await page.goto('/'); await page.waitForTimeout(700);
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+    });
+    test('the check sends no metered call', async ({ page }) => {
+      await boot(page, vp, { signed: true });
+      const bodies = [];
+      await page.route('**/api/ai/generate*', async (r) => { bodies.push(r.request().postData() || ''); await r.fulfill({ status: 500, body: '{}' }); });
+      await page.evaluate(() => { window.validateApiKey = function () { return null; }; });
+      await page.locator('#ios-home [data-act="check"]').click();
+      await page.waitForTimeout(2500);
+      expect(bodies.length).toBeGreaterThan(0);
+      expect(bodies.some((b) => /"_metered":\s*true/.test(b))).toBe(false);
+    });
+    test('a failed check fetch leaves day-0 and the meter flag clean', async ({ page }) => {
+      await boot(page, vp, { signed: true });
+      await page.route('**/api/ai/generate*', (r) => r.fulfill({ status: 500, body: '{}' }));
+      await page.evaluate(() => { window.validateApiKey = function () { return null; }; });
+      await page.locator('#ios-home [data-act="check"]').click();
+      await page.waitForFunction(() => window._ifrUnmetered === false, null, { timeout: 20000 });   // set when the check starts, cleared when it ends
+      await expect(page.locator('#page-setup')).toHaveClass(/active/);
+      await expect(page.locator('html')).not.toHaveClass(/ifr-check/);
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      expect(await page.evaluate(() => localStorage.getItem('nplus_readiness_snapshots'))).toBeNull();
+    });
+  });
+}
+test("1280 Take the diagnostic is today's desktop flow", async ({ page }) => {
+  await boot(page, DESKTOP, { query: '?onbmock=1' });
+  await expect(page.locator('#ios-check')).toBeHidden();
+  await expect(page.locator('#ios-home [data-act="check"]')).toHaveCount(0);
+});

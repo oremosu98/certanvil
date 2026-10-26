@@ -211,6 +211,8 @@
       };
       _diagnosticStartTimer();
       _loadingProgressFinish();
+      // Lift C: the phone 30-second check draws its own screen and drives the session through _diagApi.
+      if (typeof opts.onReady === 'function') { opts.onReady(_diagnosticSession); return; }
       showPage('diagnostic-quiz');
       _renderDiagnosticQuestion();
     } catch (err) {
@@ -658,7 +660,7 @@
     _onbWriteReadinessFromPassPlan(passPlan);
     var cb = session.onComplete;
     if (typeof cb === 'function') {
-      var passScore = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+      var passScore = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : ((typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examPassScore) || null);
       try { cb({ passPlan: passPlan, session: scored, passScore: passScore }); } catch (_) {}
     }
   }
@@ -1441,6 +1443,18 @@
   window._passPlanCurrentCertCardHtml  = _passPlanCurrentCertCardHtml;
   window._passPlanLockedCertsHtml      = _passPlanLockedCertsHtml;
   window._showPassPlanCertPicker       = _showPassPlanCertPicker;
+
+  // Lift C: the phone check (features/ios-firstrun.js) answers with a fixed confidence (it has no confidence step)
+  // and leaves without the browser confirm(). answer() advances, or finishes through the onboarding path.
+  window._diagApi = {
+    answer: function (letter) {
+      if (!_diagnosticSession) return;
+      _diagnosticSession.pickedLetter = letter; _diagnosticSession.confidence = 'sure';
+      submitDiagnosticAnswer();
+      if (_diagnosticSession) { _diagnosticSession.pickedLetter = null; _diagnosticSession.confidence = null; }
+    },
+    quit: function () { _diagnosticStopTimer(); _diagnosticSession = null; }
+  };
 
   window._certanvilFeatures['diagnostic'] = {
     enter: startDiagnostic,

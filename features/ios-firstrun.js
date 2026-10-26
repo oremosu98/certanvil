@@ -290,7 +290,68 @@
     });
     return true;
   };
-  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-check', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); };
+  // ── The 30-second check (#ios-check). Its five questions never count against the free 15. ──
+  var chk = null;   // {session, picked, done}
+  function checkHost() { return document.getElementById('ios-check'); }
+  function closeCheck() {
+    var h = checkHost(); if (h) { h.hidden = true; h.innerHTML = ''; }
+    html().classList.remove('ifr-check'); chk = null;
+  }
+  function viewQ(sess) {
+    var q = sess.questions[sess.currentIdx] || {}, o = q.options || {};
+    return { text: q.question, options: ['A', 'B', 'C', 'D'].map(function (k) { return o[k]; }), topic: q.topic };
+  }
+  function drawCheck() {
+    var h = checkHost(); if (!h || !chk) return;
+    if (chk.done) {
+      var sc = scale(), score = chk.done.score;
+      h.innerHTML = _ifrScoreHtml({ score: score, scale: sc, cert: certInfo(), pro: isPro() });
+      var num = h.querySelector('.ifr-ac-num');
+      var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
+      if (num && !reduce && typeof requestAnimationFrame === 'function') {
+        var t0 = null, from = sc.min;
+        var step = function (ts) { if (t0 === null) t0 = ts; var t = Math.min((ts - t0) / 850, 1); num.textContent = Math.round(from + (score - from) * (1 - Math.pow(1 - t, 3))); if (t < 1) requestAnimationFrame(step); };
+        requestAnimationFrame(step);
+      }
+    } else {
+      h.innerHTML = _ifrCheckHtml({ n: chk.session.currentIdx + 1, total: chk.session.questions.length, q: viewQ(chk.session), picked: chk.picked, pro: isPro(), code: certInfo().code });
+    }
+  }
+  function onCheckTap(ev) {
+    var b = ev.target.closest('[data-act]'); if (!b || !chk) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'pick') { chk.picked = b.getAttribute('data-l'); drawCheck(); }
+    else if (a === 'next' && chk.picked) { var l = chk.picked; chk.picked = null; window._diagApi.answer(l); if (!chk.done) drawCheck(); }
+    else if (a === 'skip') { if (window._diagApi) window._diagApi.quit(); IFR.recordSkip(); closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
+    else if (a === 'practise') { closeCheck(); if (typeof renderIosHome === 'function') renderIosHome(); }
+  }
+  IFR.startCheck = function () {
+    var h = checkHost(); if (!h) return Promise.resolve();
+    if (!h.__ifrBound) { h.addEventListener('click', onCheckTap); h.__ifrBound = true; }
+    var mock = false; try { mock = /[?&]onbmock=1/.test(location.search) || localStorage.getItem('onb_mock') === '1'; } catch (_) {}
+    window._ifrUnmetered = true;
+    // app.js's startDiagnostic stub lazy-loads the module without returning its promise, so load it here and
+    // await the real function: the meter flag must stay set until the check's fetches are done.
+    var load = typeof _loadFeature === 'function' ? _loadFeature('diagnostic') : Promise.resolve(window._certanvilFeatures && window._certanvilFeatures.diagnostic);
+    var p;
+    try {
+      p = Promise.resolve(load).then(function (m) { var run = (m && m.startDiagnostic) || window.startDiagnostic; return run({
+        count: 5, onboarding: 'calibration', skipConfirm: true, mock: mock,
+        onReady: function (session) {
+          chk = { session: session, picked: null, done: null };
+          h.hidden = false; html().classList.add('ifr-check'); drawCheck();
+        },
+        onComplete: function (r) {
+          if (!chk) return;
+          chk.done = { score: (r && r.passPlan && typeof r.passPlan.predicted === 'number') ? r.passPlan.predicted : scale().min };
+          drawCheck();
+        }
+      }); });
+    } catch (e) { p = Promise.reject(e); }
+    return p.catch(function () {}).then(function () { window._ifrUnmetered = false; });
+  };
+
+  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.
   function boot() { var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }

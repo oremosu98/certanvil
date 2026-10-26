@@ -4793,7 +4793,7 @@ Respond ONLY with a raw JSON array - no markdown, no extra text:
       },
       // _metered: true → counts against the user's daily 20-Q quota.
       // The proxy strips this before forwarding to Anthropic.
-      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: true }),
+      body: JSON.stringify({ model: model || CLAUDE_MODEL, max_tokens: MAX_TOKENS_GENERATION, messages: [{ role: 'user', content: prompt }], _metered: !window._ifrUnmetered }),   // Lift C: the first-run check is free
       _errorSurface: errorSurface || undefined
     });
     if (!res.ok) {
