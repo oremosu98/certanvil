@@ -177,7 +177,8 @@
     });
   }
 
-  function clearWrongBank() {
+  // opts.confirmed (v8.193.0): the phone page already asked in the in-app sheet; every other caller keeps confirm().
+  function clearWrongBank(opts) {
     const bank = loadWrongBank();
     if (bank.length === 0) return;
     // v4.81.11: stronger confirmation copy (Codex r9 #3) — explicit
@@ -190,7 +191,7 @@
       'Cannot be undone via Edit menu. If you have an automatic backup ' +
       'from today (Settings → Automatic backups), you can restore from ' +
       'there if you change your mind.';
-    if (!confirm(msg)) return;
+    if (!((opts && opts.confirmed) || confirm(msg))) return;
     localStorage.removeItem(STORAGE.WRONG_BANK);
     renderWrongBankBtn();
   }
@@ -231,19 +232,41 @@
     URL.revokeObjectURL(url);
   }
 
+  // v8.193.0: parse, ask, merge. Desktop asks with confirm() and reports with alert(); the phone page asks in the
+  // in-app sheet and reports with a toast.
+  function _importParse(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (err) { return { ok: false, error: 'parse', message: err.message }; }
+    if (!data || !data.history || !Array.isArray(data.history)) return { ok: false, error: 'invalid' };
+    return { ok: true, data: data };
+  }
   function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
+    const phone = !!(window.iosSettings && window.iosSettings.isPhone && window.iosSettings.isPhone());
     const reader = new FileReader();
     reader.onload = function(e) {
+      try { event.target.value = ''; } catch (_) {}   // the same file can be picked again
+      const r = _importParse(e.target.result);
+      if (!r.ok) {
+        if (phone) showToast(r.error === 'parse' ? 'Couldn’t read that file.' : 'That isn’t a CertAnvil backup file.', 'error');
+        else alert(r.error === 'parse' ? 'Failed to parse backup file: ' + r.message : 'Invalid backup file.');
+        return;
+      }
+      const n = r.data.history.length;
+      if (phone && typeof window.iosSheet === 'function') {
+        window.iosSheet({ title: 'Import ' + n + ' history entries?', body: 'They’re added to what’s already here. Nothing gets removed.', go: 'Import', stay: 'Cancel' })
+          .then(function (go) { if (go) { showToast(_importMerge(r.data), 'success'); if (typeof window.iosSettingsRepaint === 'function') window.iosSettingsRepaint(); } });
+        return;
+      }
+      if (!confirm(`Import ${n} history entries? This will MERGE with your existing data.`)) return;
+      alert(_importMerge(r.data));
+    };
+    reader.readAsText(file);
+  }
+  // Merges a parsed backup into this device (never overwrites existing data) and returns the result line.
+  function _importMerge(data) {
       try {
-        const data = JSON.parse(e.target.result);
-        if (!data.history || !Array.isArray(data.history)) {
-          alert('Invalid backup file.');
-          return;
-        }
-        if (!confirm(`Import ${data.history.length} history entries? This will MERGE with your existing data.`)) return;
-
         const existing = loadHistory();
         const existingKeys = new Set(existing.map(e => e.date + '|' + e.topic));
         const newEntries = data.history.filter(e => !existingKeys.has(e.date + '|' + e.topic));
@@ -279,17 +302,15 @@
           });
         }
 
-        alert(`Imported ${newEntries.length} new entries` + (restoredKeys ? ` and restored ${restoredKeys} other saved item${restoredKeys === 1 ? '' : 's'}.` : '.'));
         renderHistoryPanel();
         renderStatsCard();
         renderReadinessCard();
         renderStreakBadge();
         renderWrongBankBtn();
+        return `Imported ${newEntries.length} new entries` + (restoredKeys ? ` and restored ${restoredKeys} other saved item${restoredKeys === 1 ? '' : 's'}.` : '.');
       } catch(err) {
-        alert('Failed to parse backup file: ' + err.message);
+        return 'Failed to import backup file: ' + err.message;
       }
-    };
-    reader.readAsText(file);
     event.target.value = '';
   }
 
@@ -381,7 +402,8 @@
     return out;
   }
 
-  function restoreFromAutoBackup(dateOrKey) {
+  // opts.confirmed (v8.193.0): the phone page already asked in the in-app sheet.
+  function restoreFromAutoBackup(dateOrKey, opts) {
     const key = dateOrKey.startsWith(STORAGE.AUTOBACKUP_PREFIX) ? dateOrKey : (STORAGE.AUTOBACKUP_PREFIX + dateOrKey);
     const raw = localStorage.getItem(key);
     if (!raw) {
@@ -416,7 +438,7 @@
       'safety backup, so you can roll forward again if this restore makes ' +
       'things worse.\n\n' +
       'Continue?';
-    if (!confirm(msg)) {
+    if (!(opts && opts.confirmed) && !confirm(msg)) {
       return false;
     }
     // Snapshot the CURRENT state under a "pre-restore" key so the user

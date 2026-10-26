@@ -220,10 +220,12 @@ async function gotoAnalytics(page) {
 
 test.describe('Data Export/Import', () => {
   test('export button is clickable', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });   // gotoSettings uses the sidebar, which phones hide (Lift A)
     await page.goto('/');
     // v4.54.1: Export button moved to Settings page
     await gotoSettings(page);
-    const exportBtn = page.locator('#page-settings button:has-text("Export")');
+    // v8.193.0: phones show the June page's own Export button; desktop shows today's
+    const exportBtn = page.locator('#page-settings button:visible', { hasText: 'Export' }).first();
     await expect(exportBtn).toBeVisible();
   });
 });

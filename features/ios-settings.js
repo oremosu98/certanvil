@@ -259,6 +259,43 @@
     });
   };
 
+  // ── Task 4: data, the danger zone and the Pass Plan asks (the in-app sheet, never confirm()) ──
+  function _ask(o) { return typeof window.iosSheet === 'function' ? window.iosSheet(o) : Promise.resolve(window.confirm(o.title + '\n\n' + o.body)); }
+  ON.export = function () { _call('exportData'); };
+  ON.import = function () { var i = document.getElementById('import-file-input'); if (i) i.click(); };   // today's input; importData asks on phones
+  ON.download = function () { var b = _state && _state.backups && _state.backups[0]; if (b) _call('downloadAutoBackup', b.iso); };
+  ON.snapshot = function (b, acts) { if (acts && acts.snapshot) acts.snapshot(); };
+  ON.restore = function (b) {
+    var iso = b.getAttribute('data-date'), row = null;
+    var rows = _iosStModel(_state || {}).backups;
+    for (var i = 0; i < rows.length; i++) if (rows[i].iso === iso) row = rows[i];
+    _ask({ title: 'Restore ' + (row ? row.date : iso) + '?', body: 'This replaces your history, streak, goals, review queue and drill progress with that day’s copy. Today is saved first, so you can undo it.', go: 'Restore', stay: 'Keep my data' })
+      .then(function (go) { if (go) _call('restoreFromAutoBackup', iso, { confirmed: true }); });
+  };
+  ON.clear = function () {
+    var n = (_state && _state.wrongCount) || 0;
+    if (!n) return;   // today's clearWrongBank does nothing on an empty bank
+    _ask({ title: 'Clear ' + n + ' wrong answers?', body: 'Drill Mistakes loses its questions and their review cards reset. Today’s backup can bring them back.', go: 'Clear them', stay: 'Keep them' })
+      .then(function (go) { if (go) { _call('clearWrongBank', { confirmed: true }); _repaint(); } });
+  };
+  ON.delete = function (b, acts) { if (acts && acts.deleteAccount) acts.deleteAccount(); };
+  // Today's Pass Plan markup inside the card: the same targets as settings.js _wirePassPlanSection, with the two
+  // diagnostic confirm() calls asked in the sheet first.
+  ON['pp-view'] = function () { _call('viewPassPlan'); };
+  ON['pp-pro'] = function () { _call('_showProWaitlist'); };
+  ON['pp-add'] = function () { _call('_showPassPlanCertPicker'); };
+  ON['pp-open-cert'] = function (b) { var id = b.getAttribute('data-cert'); if (id) _call('tadSwitchCert', id); };
+  ON['pp-empty'] = function () {
+    _ask({ title: 'Take the baseline diagnostic?', body: '20 questions in one sitting, about 30 minutes. If you stop partway, it won’t be saved.', go: 'Start', stay: 'Not now' })
+      .then(function (go) { if (go) _call('startDiagnostic', { skipConfirm: true }); });
+  };
+  ON['pp-retake'] = function () {
+    var ago = _call('_retakeAgoDays');
+    if (ago == null) { _call('retakeDiagnostic'); return; }   // today's retake asks nothing here either
+    _ask({ title: 'Retake the diagnostic?', body: 'Your last one was ' + ago + (ago === 1 ? ' day' : ' days') + ' ago. Waiting a week lets your Pass Plan settle, but you can retake now.', go: 'Retake', stay: 'Keep my plan' })
+      .then(function (go) { if (go) _call('retakeDiagnostic', { skipConfirm: true }); });
+  };
+
   window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;
   window.iosSettings = window.iosSettings || {};

@@ -164,6 +164,101 @@ for (const vp of PHONES) {
   });
 }
 
+for (const vp of PHONES) {
+  test.describe('Lift B4 data and danger zone @' + vp.width, () => {
+    const R = (page) => page.locator('#ios-settings');
+    const dialogs = (page) => { const d = []; page.on('dialog', (x) => { d.push(x.message()); x.dismiss().catch(() => {}); }); return d; };
+    const ask = (page) => page.locator('#exam-sheet');
+    test('Clear wrong answers asks in the sheet; Keep them keeps, Clear them clears', async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { tier: 'free' });
+      await page.evaluate(() => { saveWrongBank(Array.from({ length: 9 }, (_, i) => ({ question: 'Missed ' + i + '?', topic: 'OSPF' }))); renderSettingsPage(); });
+      await R(page).locator('[data-act="clear"]').click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Clear 9 wrong answers?');
+      await ask(page).locator('.ix-sheet-stay').click();
+      expect(await page.evaluate(() => loadWrongBank().length)).toBe(9);
+      await R(page).locator('[data-act="clear"]').click();
+      await ask(page).locator('.ix-sheet-go').click();
+      await expect.poll(() => page.evaluate(() => loadWrongBank().length)).toBe(0);
+      await expect(R(page).locator('[data-act="clear"] .ist-rv')).toHaveText('0');
+      expect(d).toEqual([]);
+    });
+    test('Restore asks once, then restores confirmed', async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { tier: 'free' });
+      await page.evaluate(() => { window._takeAutoBackup(); renderSettingsPage(); window.__rs = []; window.restoreFromAutoBackup = function (k, o) { window.__rs.push([k, o]); return true; }; });
+      await R(page).locator('[data-act="restore"]').first().click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText(/^Restore .+\?$/);
+      await expect(ask(page)).toContainText('Today is saved first, so you can undo it.');
+      await ask(page).locator('.ix-sheet-go').click();
+      const rs = await page.evaluate(() => window.__rs);
+      expect(rs.length).toBe(1); expect(rs[0][1]).toEqual({ confirmed: true });
+      expect(d).toEqual([]);
+    });
+    test('Import: a bad file toasts, a good one asks then merges', async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { tier: 'free' });
+      const input = page.locator('#import-file-input');
+      await input.setInputFiles({ name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('not json') });
+      await expect(page.getByText('Couldn’t read that file.')).toBeVisible();
+      await input.setInputFiles({ name: 'y.json', mimeType: 'application/json', buffer: Buffer.from('{"x":1}') });
+      await expect(page.getByText('That isn’t a CertAnvil backup file.')).toBeVisible();
+      const good = { history: [{ date: '2026-01-02T10:00:00.000Z', topic: 'OSPF', score: 7, total: 10, pct: 70, difficulty: 'Exam Level' }] };
+      await input.setInputFiles({ name: 'z.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(good)) });
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Import 1 history entries?');
+      await ask(page).locator('.ix-sheet-go').click();
+      await expect.poll(() => page.evaluate(() => loadHistory().some((h) => h.date === '2026-01-02T10:00:00.000Z'))).toBe(true);
+      await expect(page.getByText(/Imported 1 new entr/)).toBeVisible();
+      expect(d).toEqual([]);
+    });
+    test('Start the diagnostic asks in the sheet; Start opens it without a second ask', async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { tier: 'free' });
+      await page.evaluate(() => { window.__sd = []; window.startDiagnostic = function (o) { window.__sd.push(o || null); }; });
+      await expect(R(page).locator('.ist-pp [data-act="pp-empty"]').first()).toBeVisible({ timeout: 8000 });
+      await R(page).locator('.ist-pp [data-act="pp-empty"]').first().click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Take the baseline diagnostic?');
+      await ask(page).locator('.ix-sheet-stay').click();
+      expect(await page.evaluate(() => window.__sd)).toEqual([]);
+      await R(page).locator('.ist-pp [data-act="pp-empty"]').first().click();
+      await ask(page).locator('.ix-sheet-go').click();
+      expect(await page.evaluate(() => window.__sd)).toEqual([{ skipConfirm: true }]);
+      expect(d).toEqual([]);
+    });
+    test('Retake inside the cooldown asks; Keep my plan stays', async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { tier: 'free' });
+      await page.evaluate(() => {
+        window._retakeAgoDays = function () { return 3; }; window.__rt = []; window.retakeDiagnostic = function (o) { window.__rt.push(o || null); };
+        document.querySelector('#ios-settings .ist-pp').insertAdjacentHTML('beforeend', '<button type="button" data-act="pp-retake" id="__rtb">Retake</button>');
+      });
+      await page.locator('#__rtb').click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Retake the diagnostic?');
+      await expect(ask(page)).toContainText('Your last one was 3 days ago.');
+      await ask(page).locator('.ix-sheet-stay').click();
+      expect(await page.evaluate(() => window.__rt)).toEqual([]);
+      await page.locator('#__rtb').click();
+      await ask(page).locator('.ix-sheet-go').click();
+      expect(await page.evaluate(() => window.__rt)).toEqual([{ skipConfirm: true }]);
+      expect(d).toEqual([]);
+    });
+    test("Delete account opens today's confirm; the typed email enables it", async ({ page }) => {
+      const d = dialogs(page);
+      await openSettings(page, vp, { signed: true, tier: 'pro' });
+      await page.evaluate(() => renderSettingsPage());
+      await R(page).locator('[data-act="delete"]').click();
+      const m = page.locator('#delete-account-modal');
+      await expect(m).toBeVisible({ timeout: 5000 });
+      await expect(m.locator('#dla-confirm')).toBeDisabled();
+      await m.locator('#dla-email').fill('simi.test@example.test');
+      await expect(m.locator('#dla-confirm')).toBeEnabled();
+      const box = await m.locator('.dla-card').boundingBox();
+      expect(box.width).toBeLessThanOrEqual(vp.width);
+      expect(d).toEqual([]);
+    });
+  });
+}
+
 test.describe('Lift B4 desktop', () => {
   test("today's Settings, #ios-settings empty, no ist-on", async ({ page }) => {
     await openSettings(page, DESKTOP, { tier: 'free' });

@@ -78,6 +78,14 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('the phone page keys on #page-settings.ist-on, never :has(#ios-settings:not(:empty)); renderSettingsPage calls the host',
       /#page-settings\.ist-on/.test(ios) && ios.indexOf(':has(#ios-settings') < 0 && /_iosStRender\(false\)/.test(_fnBody(st, 'renderSettingsPage') || '') && /iosSettings\.render\(/.test(_fnBody(st, '_iosStRender') || '')
       && /window\.iosSettings\.render = /.test(src) && !/\son[a-z]+=/.test(src));
+    // ── Task 4: opt-in options; with none, today's confirm() stays ──
+    const dg = fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8');
+    const cw = _fnBody(st, 'clearWrongBank') || '', rb = _fnBody(st, 'restoreFromAutoBackup') || '', rd = _fnBody(dg, 'retakeDiagnostic') || '';
+    test('clearWrongBank / restoreFromAutoBackup / retakeDiagnostic keep confirm() unless the caller passed the opt-in',
+      /opts && opts\.confirmed\)\s*\|\|\s*confirm\(/.test(cw) && /opts && opts\.confirmed\)\s*&&\s*!confirm\(/.test(rb)
+      && /opts && opts\.skipConfirm\)\s*\|\|\s*confirm\(/.test(rd) && /window\._retakeAgoDays = /.test(dg));
+    test('importData splits into _importParse / _importMerge; the desktop path keeps confirm() and alert()',
+      /function _importParse\(/.test(st) && /function _importMerge\(/.test(st) && /confirm\(/.test(_fnBody(st, 'importData') || '') && /alert\(/.test(_fnBody(st, 'importData') || ''));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
     test('auth-state.js (gated lane) is untouched by Lift B4',
       require('crypto').createHash('sha256').update(auth).digest('hex') === '87af4f136c474b725d2144de8258597665cf6aacc0bd5b65761ffb0e0625a86d');

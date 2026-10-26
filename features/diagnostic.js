@@ -960,7 +960,8 @@
   // retake for 7 days. Now: if cooldown is active, show a soft confirm;
   // if the stored Pass Plan is detectably corrupted, bypass cooldown
   // entirely (no confirm — just retake).
-  function retakeDiagnostic() {
+  // opts.skipConfirm (v8.193.0): the phone Settings page already asked in the in-app sheet.
+  function retakeDiagnostic(opts) {
     const record = (typeof loadDiagnostic === 'function') ? loadDiagnostic() : null;
     if (_isCorruptedPassPlan(record)) {
       // Auto-bypass: the stored Plan is from a known bug version
@@ -978,9 +979,16 @@
     // Soft confirm — cooldown was a UX hint, not a hard rule
     const msg = 'Your last diagnostic was ' + (DIAGNOSTIC_RETAKE_COOLDOWN_DAYS - days) + ' day' + (DIAGNOSTIC_RETAKE_COOLDOWN_DAYS - days === 1 ? '' : 's') +
       ' ago. The 7-day cooldown is a UX hint to let your Pass Plan settle, not a hard limit. Retake anyway?';
-    if (confirm(msg)) {
+    if ((opts && opts.skipConfirm) || confirm(msg)) {
       startDiagnostic();
     }
+  }
+  // v8.193.0: how many days ago the last diagnostic was, when a retake would ask first (null when it would not).
+  function _retakeAgoDays() {
+    const record = (typeof loadDiagnostic === 'function') ? loadDiagnostic() : null;
+    if (_isCorruptedPassPlan(record)) return null;
+    const days = getDiagnosticCooldownDays();
+    return (days === null || days === 0) ? null : DIAGNOSTIC_RETAKE_COOLDOWN_DAYS - days;
   }
 
   // "Open ACL PBQ →" CTA on the Pass Plan completion screen.
@@ -1420,6 +1428,7 @@
   window.dismissDiagnosticCta          = dismissDiagnosticCta;
   window.viewPassPlan                  = viewPassPlan;
   window.retakeDiagnostic              = retakeDiagnostic;
+  window._retakeAgoDays = _retakeAgoDays;
   window.quitDiagnostic                = quitDiagnostic;
   window.setDiagnosticConfidence       = setDiagnosticConfidence;
   window.submitDiagnosticAnswer        = submitDiagnosticAnswer;
