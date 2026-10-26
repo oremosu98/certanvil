@@ -500,7 +500,9 @@
   }
 
   function gauntletExit() {
+    gauntletMode = false;   // leaving mid-run to Drills skips goSetup, so end the run here (as whyNotExit does)
     _gauntletRun = null;
+    _renderGauntletLadder();
     if (typeof renderGauntletDrillsCard === 'function') { try { renderGauntletDrillsCard(); } catch (_) {} }
     if (typeof window.renderSimLabDrillsCard === 'function') { try { window.renderSimLabDrillsCard(); } catch (_) {} }
     gauntletBack(); // v7.48.1: origin-aware — never the unstyled drills page on desktop

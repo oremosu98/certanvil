@@ -171,10 +171,20 @@
     return true;
   }
 
+  // The quiz ✕ mid-run asks first in the in-app sheet; only Leave runs today's exit (Drills or Home).
+  function confirmLeave() {
+    if (typeof window.iosSheet !== 'function') { _call('gauntletExit'); return Promise.resolve(); }
+    return window.iosSheet({ title: 'Leave the Gauntlet?', body: 'This concept won’t count as cracked.', go: 'Leave', stay: 'Keep going' })
+      .then(function (go) { if (go) _call('gauntletExit'); });
+  }
+
   // Crossing 899px (an iPhone Pro Max rotating, iPad split view): the topic sheet goes, and the entry or the
   // result re-renders in the new layout (features/flagship-drills.js owns the state).
   if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () {
     closeTopics();
+    // A leave sheet over a drill's question goes too (its styles are phone-only); the question stays.
+    var act = document.querySelector('.page.active');
+    if (act && act.id === 'page-quiz' && window.iosSheet && window.iosSheet.isOpen && window.iosSheet.isOpen()) { try { window.iosSheet.dismiss(); } catch (_) {} }
     if (typeof window._gauntletRerender === 'function') { try { window._gauntletRerender(); } catch (_) {} }
   });
 
@@ -183,6 +193,7 @@
   window.iosGauntlet.renderEntry = renderEntry;
   window.iosGauntlet.pickTopic = pickTopic;
   window.iosGauntlet.closeTopics = closeTopics;
+  window.iosGauntlet.confirmLeave = confirmLeave;
   window.iosGauntlet.renderResult = renderResult;
   window._iosGtEntryModel = _iosGtEntryModel;
   window._iosGtEntryHtml = _iosGtEntryHtml;

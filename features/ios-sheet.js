@@ -51,6 +51,15 @@
   // (an exam submit, a Sim Lab round ending), so a sheet never outlives its question.
   iosSheet.dismiss = function () { if (_open) _open(false); if (window.iosEnlarge && window.iosEnlarge.close) window.iosEnlarge.close(); if (window.iosGauntlet && window.iosGauntlet.closeTopics) window.iosGauntlet.closeTopics(); };   // both sheets go with their screen
   iosSheet.isOpen = function () { return !!_open; };
+  // The quiz ✕ during a drill on phones: Why-Not or the Gauntlet asks in this sheet and leaves the way that
+  // drill leaves (Drills or Home). True when a drill took it; false keeps today's confirm() (app.js confirmBack).
+  iosSheet.leaveDrill = function () {
+    var d = typeof whyNotMode !== 'undefined' && whyNotMode ? window.iosWhyNot
+      : typeof gauntletMode !== 'undefined' && gauntletMode ? window.iosGauntlet : null;
+    if (!d || !d.confirmLeave || !d.isPhone || !d.isPhone()) return false;
+    d.confirmLeave();
+    return true;
+  };
   window.iosSheet = iosSheet;
 
   var _enl = null;   // { close } while the enlarge sheet is open

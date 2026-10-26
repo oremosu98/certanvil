@@ -2846,7 +2846,7 @@ function renderMarathonSection() {
 }
 
 function confirmBack() {
-  if (confirm('Go back to the menu? Quiz progress will be lost.')) goSetup();
+  if (!(window.iosSheet && iosSheet.leaveDrill && iosSheet.leaveDrill()) && confirm('Go back to the menu? Quiz progress will be lost.')) goSetup();   // phones: a drill asks in the in-app sheet
 }
 
 // ══════════════════════════════════════════
