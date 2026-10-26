@@ -259,6 +259,45 @@ for (const vp of PHONES) {
   });
 }
 
+test.describe('Lift B4 repaints', () => {
+  const vp = PHONES[1];
+  const R = (page) => page.locator('#ios-settings');
+  test('the card follows a sign-out and a sign-in with Settings open', async ({ page }) => {
+    await openSettings(page, vp, { signed: true, tier: 'pro' });
+    await page.evaluate(() => renderSettingsPage());
+    await expect(R(page).locator('.ist-em')).toContainText('simi.test@example.test', { timeout: 5000 });
+    await page.evaluate(() => window.__fakeEmit('SIGNED_OUT'));
+    await expect(R(page).locator('.ist-acct h2')).toHaveText('Sign in to keep your progress', { timeout: 5000 });
+    await expect(R(page).locator('[data-act="signout"]')).toHaveCount(0);
+    await page.evaluate(() => window.__fakeEmit('SIGNED_IN'));
+    await expect(R(page).locator('[data-act="signout"]')).toBeVisible({ timeout: 5000 });
+  });
+  test('a Pro tier that arrives late repaints the free bits away', async ({ page }) => {
+    await openSettings(page, vp, { tier: 'free' });
+    await expect(R(page).locator('[data-act="gopro"]').first()).toBeAttached();
+    await setTier(page, 'pro');
+    await page.evaluate(() => renderGauntletDrillsCard());   // app.js runs this when _quotaState hydrates
+    await expect(R(page).locator('[data-act="gopro"]')).toHaveCount(0);
+    await expect(R(page).locator('[data-act="goal-pick"]')).toHaveCount(4);
+  });
+  test('a cold first visit fills the Pass Plan once the diagnostic module loads', async ({ page }) => {
+    await openSettings(page, vp, { tier: 'free' });
+    await expect(R(page).locator('.ist-pp [data-act^="pp-"]').first()).toBeAttached({ timeout: 8000 });
+  });
+  test('crossing 899px redraws: phone page off on desktop, back on phone, sheets closed', async ({ page }) => {
+    await openSettings(page, vp, { tier: 'free' });
+    await R(page).locator('[data-act="exam"]').click();
+    await expect(page.locator('#ist-sheet')).toHaveClass(/open/);
+    await page.setViewportSize(DESKTOP);
+    await expect(page.locator('#page-settings')).not.toHaveClass(/ist-on/, { timeout: 5000 });
+    await expect(page.locator('#ist-sheet')).toBeHidden();
+    await expect(page.locator('#page-settings .settings-layout')).toBeVisible();
+    await page.setViewportSize(vp);
+    await expect(page.locator('#page-settings')).toHaveClass(/ist-on/, { timeout: 5000 });
+    await expect(R(page).locator('.ist-acct')).toBeVisible();
+  });
+});
+
 test.describe('Lift B4 desktop', () => {
   test("today's Settings, #ios-settings empty, no ist-on", async ({ page }) => {
     await openSettings(page, DESKTOP, { tier: 'free' });

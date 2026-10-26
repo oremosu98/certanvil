@@ -147,6 +147,7 @@
     if (!host || !page) return false;
     if (!isPhone()) { host.innerHTML = ''; page.classList.remove('ist-on'); closeSheet(true); return false; }
     _state = state; _acts = actions || {};
+    if (typeof _subscribeAuth === 'function') _subscribeAuth();   // the client may not have existed when this file ran
     host.innerHTML = _iosStHtml(_iosStModel(state));
     host.classList.toggle('ist-still', !!state.still);   // a redraw after a state change does not replay the reveal
     page.classList.add('ist-on');
@@ -295,6 +296,35 @@
     _ask({ title: 'Retake the diagnostic?', body: 'Your last one was ' + ago + (ago === 1 ? ' day' : ' days') + ' ago. Waiting a week lets your Pass Plan settle, but you can retake now.', go: 'Retake', stay: 'Keep my plan' })
       .then(function (go) { if (go) _call('retakeDiagnostic', { skipConfirm: true }); });
   };
+
+  // ── Task 5: the page follows auth, tier and width (still repaints, only while Settings is shown) ──
+  function _settingsShown() { var p = document.getElementById('page-settings'); return !!(p && p.classList.contains('active')); }
+  function _repaintIfShown() { if (_settingsShown()) _repaint(); }
+  // Sign-in and sign-out: auth-state.js subscribes first (its init), so _certanvilSignedIn is set when ours runs.
+  // (Wrapping window.certanvilAuthState would never fire: auth-state calls its own local functions.)
+  var _authSubbed = false;
+  function _subscribeAuth() {
+    var sb = window.certanvilSupabase;
+    if (_authSubbed || !sb || !sb.auth || typeof sb.auth.onAuthStateChange !== 'function') return;
+    _authSubbed = true;
+    sb.auth.onAuthStateChange(function (ev) { if (ev !== 'INITIAL_SESSION') setTimeout(_repaintIfShown, 0); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _subscribeAuth); else _subscribeAuth();
+  // The tier hydrates after Settings may have drawn: app.js re-runs renderGauntletDrillsCard then (B3b1 / B3c3 chain).
+  (function () {
+    var f = window.renderGauntletDrillsCard;
+    if (typeof f !== 'function' || f._istChained) return;
+    var chained = function () { var r = f.apply(this, arguments); _repaintIfShown(); return r; };
+    chained._istChained = true; chained._islChained = f._islChained; chained._idlChained = f._idlChained;
+    window.renderGauntletDrillsCard = chained;
+  })();
+  // Crossing 899px on Settings: the sheets close and the page redraws in the new layout (render clears ist-on on desktop).
+  if (MQ && MQ.addEventListener) MQ.addEventListener('change', function () {
+    if (!_settingsShown()) return;
+    closeSheet(true);
+    if (window.iosSheet && typeof window.iosSheet.dismiss === 'function') { try { window.iosSheet.dismiss(); } catch (_) {} }
+    _repaint();
+  });
 
   window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;

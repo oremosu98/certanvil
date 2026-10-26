@@ -51,6 +51,8 @@
     }
   };
   window.certanvilSupabase = client;
+  // test hook: replay an auth event to every subscriber (SIGNED_OUT passes no session)
+  window.__fakeEmit = function(ev){ listeners.forEach(function(cb){ try{ cb(ev, ev==='SIGNED_OUT' ? null : session); }catch(e){} }); };
   window.certanvilSupabaseConfig = { url:'https://fake.invalid', cookieDomain:null, storageKey:null };
   window.__FAKE_PROFILE = profile;
 })();
