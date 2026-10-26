@@ -29,7 +29,7 @@
 | index.html | 2368 | 156 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (69 modules) | 32814 | — |
-UAT checks: 5621 · E2E `test(` count: 451 · APP_VERSION: 8.193.2 · stamped-at: worktree
+UAT checks: 5621 · E2E `test(` count: 451 · APP_VERSION: 8.194.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.194.0 | New users get the June first run on phones. |
 | v8.193.2 | Review forecast, Drills tab and quiz ✕ fixes on phones. |
 | v8.193.1 | Settings and Decision Lab tidy-ups on phones. |
-| v8.193.0 | Settings looks like the June design on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
