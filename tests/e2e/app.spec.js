@@ -128,6 +128,25 @@ async function startFromHome(page, kind) {
   }
 }
 
+// At phone width (≤ 899px, the lift gate) the June phone screens replace the desktop chrome:
+// no sidebar or topbar, #ios-home instead of the bento, the #lift-tabbar for navigation.
+const DESKTOP = { width: 1280, height: 800 };
+function isPhone(page) {
+  const vp = page.viewportSize();
+  return !!(vp && vp.width <= 899);
+}
+// beforeEach for tests about desktop-only DOM. They keep running on every project, at desktop width.
+const pinDesktop = async ({ page }) => { await page.setViewportSize(DESKTOP); };
+
+async function liftTab(page, name) {
+  await page.locator('#lift-tabbar .lift-tab[data-page="' + name + '"]').click();
+  await expect(page.locator('#page-' + name)).toHaveClass(/active/);
+}
+// The theme button: the topbar on desktop, the Home top bar on phones (it re-renders on toggle).
+function themeButton(page) {
+  return page.locator(isPhone(page) ? '#ios-home [data-act="theme"]' : '#topbar-theme');
+}
+
 test.describe('App Load & Setup Page', () => {
   test('loads and shows the setup page', async ({ page }) => {
     await page.goto('/');
@@ -136,12 +155,19 @@ test.describe('App Load & Setup Page', () => {
     const setupPage = page.locator('#page-setup');
     await expect(setupPage).toHaveClass(/active/);
 
-    // v7.17.0 (home bento): the greeting heading (#hero-v2-display, now a hidden
-    // legacy stub) is replaced by the bento command bar — cert identity +
-    // days-to-exam + streak chips. Assert the cmd-bar rendered with the cert.
-    await expect(page.locator('#page-setup .cmd-bar')).toBeVisible();
-    await expect(page.locator('#cb-cert')).toBeVisible();
-    await expect(page.locator('#cb-streak')).toBeVisible();
+    if (isPhone(page)) {
+      // v8.183.0 (Lift A): phones get the June Home, whose top bar carries the cert + streak
+      await expect(page.locator('#ios-home .ih-topbar')).toBeVisible();
+      await expect(page.locator('#ios-home .ih-tb-name')).toContainText(/\S/);
+      await expect(page.locator('#ios-home .ih-tb-streak')).toBeVisible();
+    } else {
+      // v7.17.0 (home bento): the greeting heading (#hero-v2-display, now a hidden
+      // legacy stub) is replaced by the bento command bar — cert identity +
+      // days-to-exam + streak chips. Assert the cmd-bar rendered with the cert.
+      await expect(page.locator('#page-setup .cmd-bar')).toBeVisible();
+      await expect(page.locator('#cb-cert')).toBeVisible();
+      await expect(page.locator('#cb-streak')).toBeVisible();
+    }
 
     // API key input is present (now type="hidden" since v4.99.3 retired BYOK
     // — stays in DOM as a vestigial bind target for legacy code paths).
@@ -171,13 +197,13 @@ test.describe('Theme Toggle', () => {
     const initial = await html.getAttribute('data-theme');
 
     // v4.54.0: theme toggle lives in the persistent topbar (#topbar-theme) — #theme-toggle
-    // still exists in the hidden legacy hero but is display:none
-    await page.locator('#topbar-theme').click();
+    // still exists in the hidden legacy hero but is display:none. Phones: the Home top bar.
+    await themeButton(page).click();
     const afterFirst = await html.getAttribute('data-theme');
     expect(afterFirst).not.toBe(initial);
 
     // Click again — should flip back
-    await page.locator('#topbar-theme').click();
+    await themeButton(page).click();
     const afterSecond = await html.getAttribute('data-theme');
     expect(afterSecond).toBe(initial);
   });
@@ -187,17 +213,21 @@ test.describe('Navigation', () => {
   test('navigates to analytics and back', async ({ page }) => {
     await page.goto('/');
 
-    // v4.53.0: nav via sidebar
-    await page.locator('.sb-item[data-sb-page="analytics"]').click();
-    await expect(page.locator('#page-analytics')).toHaveClass(/active/);
+    await gotoAnalytics(page);
 
-    await page.locator('.sb-item[data-sb-page="setup"]').click();
+    if (isPhone(page)) await liftTab(page, 'setup');
+    else await page.locator('.sb-item[data-sb-page="setup"]').click();
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
   });
 
   test('navigates to topic progress and back', async ({ page }) => {
     await page.goto('/');
 
+    if (isPhone(page)) {
+      await liftTab(page, 'progress');
+      await liftTab(page, 'setup');
+      return;
+    }
     // v4.53.0: nav via sidebar
     await page.locator('.sb-item[data-sb-page="progress"]').click();
     await expect(page.locator('#page-progress')).toHaveClass(/active/);
@@ -208,19 +238,26 @@ test.describe('Navigation', () => {
 });
 
 // v4.54.1: Settings moved to its own page — navigate via sidebar first.
+// Phones: the gear on the Home top bar (the tab bar has no Settings tab).
 async function gotoSettings(page) {
-  await page.locator('.sb-item[data-sb-page="settings"]').click();
+  if (isPhone(page)) await page.locator('#ios-home [data-act="settings"]').click();
+  else await page.locator('.sb-item[data-sb-page="settings"]').click();
   await expect(page.locator('#page-settings')).toHaveClass(/active/);
 }
 // v4.54.1: Recent Performance moved to Analytics — navigate via sidebar first.
+// Phones: Progress tab → the Analytics side of its switch (v8.185.0 B1).
 async function gotoAnalytics(page) {
-  await page.locator('.sb-item[data-sb-page="analytics"]').click();
+  if (isPhone(page)) {
+    await liftTab(page, 'progress');
+    await page.locator('#ios-progress [data-view="analytics"]').click();
+  } else {
+    await page.locator('.sb-item[data-sb-page="analytics"]').click();
+  }
   await expect(page.locator('#page-analytics')).toHaveClass(/active/);
 }
 
 test.describe('Data Export/Import', () => {
   test('export button is clickable', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });   // gotoSettings uses the sidebar, which phones hide (Lift A)
     await page.goto('/');
     // v4.54.1: Export button moved to Settings page
     await gotoSettings(page);
@@ -230,10 +267,29 @@ test.describe('Data Export/Import', () => {
   });
 });
 
+// Phones: openCustomQuizModal hands over to the June Custom quiz screen (#ios-custom), whose
+// buttons click the same hidden #topic-group / #diff-group / #count-group chips (ios-custom.js).
+// Tap the phone button, then check both the phone button and the chip it drives.
+async function tapPhoneCustom(page, act, n) {
+  const btn = page.locator('#ios-custom [data-act="' + act + '"]').nth(n);
+  const v = await btn.getAttribute('data-v');
+  await btn.click();
+  // the screen re-renders on every tap, so find the button again by its value
+  await expect(page.locator('#ios-custom [data-act="' + act + '"][data-v=' + JSON.stringify(v) + ']')).toHaveAttribute('aria-pressed', 'true');
+  return v;
+}
+// Topics live in per-domain accordions: open the first one and tap its first topic.
+async function tapPhoneTopic(page) {
+  await page.locator('#ios-custom .ic-dom-head').first().click();
+  const v = await tapPhoneCustom(page, 'topic', 0);
+  await expect(page.locator('#topic-group .chip[data-v=' + JSON.stringify(v) + ']')).toHaveClass(/\bon\b/);
+}
+
 test.describe('Chip Selectors', () => {
   test.beforeEach(openCustomQuizModal);
   test('topic chips are selectable', async ({ page }) => {
     await page.goto('/');
+    if (isPhone(page)) return tapPhoneTopic(page);
 
     // Click a topic chip
     const chips = page.locator('#topic-group .chip');
@@ -251,6 +307,11 @@ test.describe('Chip Selectors', () => {
 
     const chips = page.locator('#diff-group .chip');
     // nth(0) is Foundational (default .on). Click nth(2) to select a different one.
+    if (isPhone(page)) {
+      const v = await tapPhoneCustom(page, 'diff', 2);
+      await expect(page.locator('#diff-group .chip[data-v=' + JSON.stringify(v) + ']')).toHaveClass(/\bon\b/);
+      return;
+    }
     await chips.nth(2).click();
     await expect(chips.nth(2)).toHaveClass(/on/);
   });
@@ -260,6 +321,11 @@ test.describe('Chip Selectors', () => {
 
     const chips = page.locator('#count-group .chip');
     // nth(1) is the default-selected chip; click a different one.
+    if (isPhone(page)) {
+      const v = await tapPhoneCustom(page, 'count', 3);
+      await expect(page.locator('#count-group .chip[data-v=' + JSON.stringify(v) + ']')).toHaveClass(/\bon\b/);
+      return;
+    }
     await chips.nth(3).click();
     await expect(chips.nth(3)).toHaveClass(/on/);
   });
@@ -328,6 +394,18 @@ test.describe('Custom Quiz — Generate dismisses the picker', () => {
       window.fetchTopicBrief = () => {};
     });
     const modal = page.locator('#custom-quiz-section');
+    if (isPhone(page)) {
+      // Phones hand the opened picker straight to the Custom quiz screen (ios-custom.js _icOnToggle),
+      // so the picker to dismiss is that screen and its Start quiz button.
+      const screen = page.locator('#ios-custom');
+      await expect(screen.locator('[data-act="start"]')).toBeVisible();
+      await expect(modal).toHaveJSProperty('open', false);
+      await screen.locator('[data-act="start"]').click();
+      await expect(screen).toBeEmpty();
+      await expect(page.locator('html')).not.toHaveClass(/\bic-open\b/);
+      await expect(page.locator('#page-loading')).toHaveClass(/active/);
+      return;
+    }
     await expect(modal).toHaveJSProperty('open', true); // opened by beforeEach
     await page.locator('#custom-quiz-section button:has-text("Generate Quiz")').click();
     // The picker must close so the loading page underneath becomes visible.
@@ -412,6 +490,15 @@ test.describe('Topic Chip Count', () => {
     // Mixed is on by default
     await expect(page.locator('#topic-group .chip.on')).toHaveCount(1);
 
+    if (isPhone(page)) {
+      // the phone shows Mixed as a pressed mode card; picking a topic must release it
+      await expect(page.locator('#ios-custom [data-act="mode"][aria-pressed="true"]')).toHaveCount(1);
+      await tapPhoneTopic(page);
+      await expect(page.locator('#topic-group .chip.on')).toHaveCount(1);
+      await expect(page.locator('#ios-custom [data-act="mode"][aria-pressed="true"]')).toHaveCount(0);
+      return;
+    }
+
     // v4.43.4 fix: click nth(2) (first domain topic) instead of nth(0) which is
     // the Smart chip — clicking Smart has special behavior (spaced-rep mode) and
     // doesn't follow the standard "single-select chip-group" contract.
@@ -454,8 +541,8 @@ test.describe('Theme Persistence', () => {
   test('persists light theme across reload', async ({ page }) => {
     await page.goto('/');
 
-    // v4.54.0: theme toggle in topbar, #theme-toggle is hidden inside legacy hero
-    await page.locator('#topbar-theme').click();
+    // v4.54.0: theme toggle in topbar, #theme-toggle is hidden inside legacy hero (phones: Home top bar)
+    await themeButton(page).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 
     await page.reload();
@@ -466,8 +553,9 @@ test.describe('Theme Persistence', () => {
     await page.goto('/');
 
     // v7.28.0: topbar theme button renders a monoline SVG (sun in dark, moon in
-    // light); the icon swaps on toggle and the data-theme round-trips.
-    const btn = page.locator('#topbar-theme');
+    // light); the icon swaps on toggle and the data-theme round-trips. Phones: the Home top bar's
+    // button, which re-renders with the other icon.
+    const btn = themeButton(page);
     await expect(btn.locator('svg')).toBeVisible();
     const initialHtml = await btn.innerHTML();
     const initialTheme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
@@ -543,6 +631,7 @@ test.describe('History & Stats Rendering', () => {
   });
 
   test('bento momentum cell shows today + streak counters when history exists', async ({ page }) => {
+    await pinDesktop({ page });   // the bento is desktop Home; phones show #ios-home (lift-a.spec.js)
     // v4.54.0: #stats-card retired; hero-v2 mini cards (Today + Streak) are the replacement.
     // v4.99.65 (dg Batch 4): wrapper rebuilt to the editorial .dgh-stats strip.
     // v5.4.0 (codex-home): rebuilt again to the .stat-row 2-card grid in .col-main.
@@ -577,6 +666,8 @@ test.describe('History & Stats Rendering', () => {
 });
 
 test.describe('Readiness Card', () => {
+  // The hero-v2 readiness card is desktop Home; phones show #ios-home's readiness card (lift-a.spec.js).
+  test.beforeEach(pinDesktop);
   test('readiness card v2 shows placeholder when no history', async ({ page }) => {
     // v4.54.0: #readiness-card replaced by dark #readiness-card-v2 in hero v2 aside.
     await page.goto('/');
@@ -616,6 +707,8 @@ test.describe('Wrong Bank Behavior', () => {
   // (now an empty hidden compat shim) to #modes-wrong-tile inside the Mode
   // Ladder Quick tier. renderWrongBankBtn() toggles BOTH for back-compat.
   // Tests check the new visible element: #modes-wrong-tile + #modes-wrong-sub.
+  // Desktop Home tiles + the desktop confirm() path; phones: lift-a.spec.js / lift-b4.spec.js.
+  test.beforeEach(pinDesktop);
 
   test('Drill Mistakes tile hidden when bank is empty', async ({ page }) => {
     await page.goto('/');
@@ -646,7 +739,6 @@ test.describe('Wrong Bank Behavior', () => {
 
   test('Settings clear button triggers confirm dialog', async ({ page }) => {
     // v8.193.0: the browser confirm() is the desktop path; phones ask in the in-app sheet (lift-b4.spec.js)
-    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
     // Set up wrong bank
@@ -674,7 +766,6 @@ test.describe('Wrong Bank Behavior', () => {
 
   test('Settings clear button removes bank when confirmed', async ({ page }) => {
     // v8.193.0: the browser confirm() is the desktop path; phones ask in the in-app sheet (lift-b4.spec.js)
-    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
     await page.evaluate(() => {
@@ -785,7 +876,8 @@ test.describe('Export Data', () => {
     // v4.54.1: Export button is on the Settings page now
     await gotoSettings(page);
     const downloadPromise = page.waitForEvent('download');
-    await page.locator('#page-settings button:has-text("Export")').click();
+    // v8.193.0: phones show the June page's own Export button; desktop shows today's
+    await page.locator('#page-settings button:visible', { hasText: 'Export' }).first().click();
     const download = await downloadPromise;
 
     // Verify filename pattern (v8.150.0: certanvil-<cert>-backup-<date>.json)
@@ -799,6 +891,7 @@ test.describe('Export Data', () => {
 });
 
 test.describe('Streak Badge', () => {
+  test.beforeEach(pinDesktop);   // the sidebar is desktop chrome; phones hide it (Lift A)
   test('streak shows in sidebar when streak exists', async ({ page }) => {
     // v4.54.0: streak lives in sidebar footer (.sb-streak) + hero v2 mini card (#mc-streak-num)
     await page.goto('/');
@@ -846,6 +939,8 @@ test.describe('Meta Tags & PWA', () => {
 });
 
 test.describe('Production Monitor', () => {
+  // The triple-tap lives on the sidebar version badge, which phones hide (Lift A) — no phone entry.
+  test.beforeEach(pinDesktop);
   test('triple-tap version badge opens monitor', async ({ page }) => {
     await page.goto('/');
 
@@ -1026,6 +1121,8 @@ test.describe('Guided Terminal Lab', () => {
 // entries, navigate to the page, click through the flow, and assert the
 // rendered DOM matches the expected state at each step.
 test.describe('SR Review — MCQ happy path', () => {
+  // Enters through the desktop bento (#primaryLaunch) and drives the desktop review page.
+  test.beforeEach(pinDesktop);
   test('user picks an answer → reveal → confidence advances + completes', async ({ page }) => {
     // Seed one due MCQ card before navigation. nextReview = 0 so it's due now.
     await page.addInitScript(() => {
@@ -1133,6 +1230,7 @@ test.describe('SR Review — MCQ happy path', () => {
 });
 
 test.describe('SR Review — Multi-select happy path', () => {
+  test.beforeEach(pinDesktop);   // desktop bento entry + desktop review page, as above
   test('user toggles 2 picks → Submit enables → reveal shows correct/wrong/missed markers', async ({ page }) => {
     // Multi-select with answers C+E. We'll pick A (wrong) + C (correct), miss E.
     await page.addInitScript(() => {
@@ -1215,6 +1313,8 @@ test.describe('SR Review — Multi-select happy path', () => {
 // Uses the v4.82.0 _testInjectQuiz hook to seed quiz state without making
 // real Haiku API calls.
 test.describe('Quiz Revisit — read-only navigation', () => {
+  // The desktop quiz page's arrows, dots and score pill; phones draw their own quiz screen.
+  test.beforeEach(pinDesktop);
   // Seed a 3-question quiz with one MCQ + one multi-select + one order.
   // Each test below starts with this fixture freshly injected.
   const QUIZ_FIXTURE = [
@@ -1458,6 +1558,7 @@ test.describe('Quiz Hot-Area — click-on-diagram PBQs', () => {
   });
 
   test('revisit: a submitted hot-area answer is locked (wrong stays wrong)', async ({ page }) => {
+    await pinDesktop({ page });   // desktop quiz arrows + dots, as in Quiz Revisit above
     await page.goto('/');
     // Use a 2-question quiz so we can advance + revisit
     const TWO_Q = [
@@ -1487,6 +1588,7 @@ test.describe('Quiz Hot-Area — click-on-diagram PBQs', () => {
 });
 
 test.describe('SR Review — v4.81.31 legacy-card scrub', () => {
+  test.beforeEach(pinDesktop);   // desktop bento entry + desktop review page, as above
   test('order-type cards are filtered out of session and scrubbed from queue', async ({ page }) => {
     // Seed two cards: one valid MCQ (due) + one legacy order-type card (due).
     // Pre-v4.81.31: order card would render as empty stem-only card.
@@ -1553,6 +1655,8 @@ test.describe('SR Review — v4.81.31 legacy-card scrub', () => {
 
 test.describe('bug-report drawer', () => {
   test.beforeEach(async ({ page }) => {
+    // The drawer opens from the desktop topbar, which phones hide (Lift A) — no phone entry.
+    await pinDesktop({ page });
     // Seed a fake GH token so the form is unlocked
     await page.addInitScript(() => {
       try { localStorage.setItem('nplus_gh_monitor_token', 'ghp_test_dummy_token_value_for_e2e_only'); } catch (e) {}
@@ -1838,6 +1942,9 @@ test.describe('Per-cert milestones + Analytics Drills visibility (Task 8)', () =
   // (non-zero computed opacity, not display:none). FAILS if the rows stay
   // reveal-gated at opacity:0 (the original invisible-render bug).
   test('Analytics Drills group renders VISIBLE (not opacity:0)', async ({ page }) => {
+    // The drills group is part of the desktop Analytics bento; since v8.185.0 (B1) phones draw
+    // #ios-analytics over it instead (lift-b1.spec.js), so this guard runs at desktop width.
+    await pinDesktop({ page });
     await page.addInitScript(() => {
       try {
         localStorage.setItem('nplus_dev_cert', 'netplus');
@@ -1860,19 +1967,8 @@ test.describe('Per-cert milestones + Analytics Drills visibility (Task 8)', () =
     });
     await page.goto('/');
 
-    // Navigate to Analytics the way a user would. Desktop ( >620px ) uses the
-    // sidebar; mobile (iPhone 14 / mobile-safari) hides the sidebar and uses the
-    // bottom lift-tabbar → Progress → seg-chip Analytics. Pick by what's visible.
-    const sidebarItem = page.locator('.sb-item[data-sb-page="analytics"]');
-    if (await sidebarItem.isVisible().catch(() => false)) {
-      await sidebarItem.click();
-    } else {
-      // Mobile lift chrome: Progress tab → Analytics segment chip.
-      await page.locator('#lift-tabbar .lift-tab[data-page="progress"]').click();
-      await expect(page.locator('#page-progress')).toHaveClass(/active/);
-      await page.locator('#ios-progress [data-view="analytics"]').click();   // v8.185.0 B1: the phone screen draws the switch
-    }
-    await expect(page.locator('#page-analytics')).toHaveClass(/active/);
+    // Navigate to Analytics the way a user would (sidebar on desktop).
+    await gotoAnalytics(page);
 
     // The drills group is mounted by renderAnalytics() and revealed by _anaBtWire().
     const drillsSection = page.locator('#ana-ms-drills-section');
