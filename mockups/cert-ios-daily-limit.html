@@ -143,7 +143,7 @@
           <div class="body">
             <div class="lockmark"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></div>
             <h2 class="t">That's more than your <i>free</i> day</h2>
-            <p class="lede" id="lede">You picked a <b id="pick">25-question</b> set. On Free you study <b>15 practice questions</b> a day, so this one needs Pro.</p>
+            <p class="lede" id="lede">You picked a <b id="pick">25-question</b> set. Free covers <b>15 practice questions</b> a day, so this one needs Pro.</p>
 
             <div class="allow">
               <div class="a-row">
@@ -157,14 +157,14 @@
                 <span class="a-amt">5 / day</span>
               </div>
             </div>
-            <p class="pro-line"><b>Pro</b> is unlimited questions, every day, on every cert.</p>
+            <p class="pro-line"><b>Pro</b> has no daily limit, on any cert.</p>
           </div>
 
           <div class="flag">Concept · free-tier gate</div>
 
           <div class="footer">
-            <button class="cta" id="goPro" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"></path></svg>Go Pro — unlimited</button>
-            <button class="ghost" id="do15" type="button">Start a 15-question set instead</button>
+            <button class="cta" id="goPro" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"></path></svg>Go Pro for unlimited</button>
+            <button class="ghost" id="do15" type="button">Start a 15-question set</button>
           </div>
         </div>
       </div>
@@ -204,7 +204,7 @@
       var n = parseInt(localStorage.getItem('e2e_overcap') || '', 10);
       if (n && n > 0) {
         document.getElementById('pick').textContent = n + '-question';
-        document.getElementById('do15').textContent = 'Start a 15-question set instead';
+        document.getElementById('do15').textContent = 'Start a 15-question set';
       }
     } catch (e) {}
     // #goPro and #do15 + header .back are wired by the shell nav-bridge
