@@ -2498,6 +2498,7 @@ html[data-theme] body #page-settings.ist-on.active { padding: 0 !important; marg
 #ios-settings .ist-pp h3, #ios-settings .ist-acct h2 { text-transform: none !important; letter-spacing: -0.01em !important; }
 /* the sheet: B3c1's #igt-topics anatomy (shared rules widened below), list and calendar content */
 #ist-sheet { max-height: 82dvh; display: flex; flex-direction: column; }
+:is(#ist-sheet, #ist-sheet-scrim)[hidden] { display: none !important; }   /* the flex rule above would otherwise beat the hidden attribute */
 #ist-sheet .ist-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 13px; flex: 0 0 auto; }
 #ist-sheet > p { margin: 0 0 12px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
 #ist-sheet .ist-blank { display: block; }

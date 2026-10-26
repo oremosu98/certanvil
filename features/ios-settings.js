@@ -207,6 +207,58 @@
     window.iosSheet.dismiss.__ist = true;
   }
 
+  // ── Task 3: study setup, the account card and the cert sheet (today's functions do the work) ──
+  function _call(name) { var f = window[name]; return typeof f === 'function' ? f.apply(null, [].slice.call(arguments, 1)) : undefined; }
+  function _repaint() { if (typeof window.iosSettingsRepaint === 'function') window.iosSettingsRepaint(); }
+  function _pad(n) { return (n < 10 ? '0' : '') + n; }
+  function _todayIso() { var d = new Date(); return d.getFullYear() + '-' + _pad(d.getMonth() + 1) + '-' + _pad(d.getDate()); }
+  var _cal = null;   // {year, month, selected} while the exam sheet is open
+  function _drawExam() {
+    var sheet = document.getElementById('ist-sheet');
+    var code = (_state && _state.cert && _state.cert.code) || '';
+    var html = _iosStExamSheetHtml({ code: code, year: _cal.year, month: _cal.month, selected: _cal.selected, today: _todayIso() });
+    if (sheet && !sheet.hidden && sheet.classList.contains('open')) sheet.innerHTML = html;   // a tap redraws in place
+    else openSheet(html, _onExamTap);
+  }
+  function _onExamTap(b) {
+    var act = b.getAttribute('data-act');
+    if (act === 'cal-day') { _cal.selected = b.getAttribute('data-iso'); _drawExam(); }
+    else if (act === 'cal-prev' || act === 'cal-next') {
+      var m = _cal.month + (act === 'cal-next' ? 1 : -1);
+      _cal.year += Math.floor(m / 12); _cal.month = ((m % 12) + 12) % 12; _drawExam();
+    } else if (act === 'cal-save' && _cal.selected) { _call('setExamDate', _cal.selected); closeSheet(); _cal = null; _repaint(); }
+    else if (act === 'cal-remove') { _call('setExamDate', ''); closeSheet(); _cal = null; _repaint(); }
+  }
+  window.iosSettings = window.iosSettings || {};   // the namespace exists before the handlers attach to it
+  var ON = window.iosSettings._on = window.iosSettings._on || {};
+  ON.theme = function () { _call('toggleTheme'); _repaint(); };
+  ON.signin = function () { var u = _call('buildSignInUrl'); if (u) window.location.href = u; };
+  // Sign out is today's account-menu link: it uploads first and only clears this device once the cloud has it all.
+  ON.signout = function () { var l = document.getElementById('topbar-signout-link'); if (l) l.click(); };
+  ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
+  ON['goal-pick'] = function (b) {
+    var n = parseInt(b.getAttribute('data-n'), 10);
+    _call('pickSettingsDailyPreset', n);   // writes today's hidden #settings-daily-input; Save reads it
+    if (_state) { _state.goal = n; _state.still = true; render(_state, _acts); }
+  };
+  ON['goal-save'] = function () { _call('saveSettingsDailyGoal'); _repaint(); };
+  ON['review-pick'] = function (b) { var v = b.getAttribute('data-n'); _call('pickSrSessionSize', v === 'all' ? 'all' : parseInt(v, 10)); _repaint(); };
+  ON.topup = function () { _call('toggleSrTopUp'); _repaint(); };
+  ON.exam = function () {
+    var cur = _call('getExamDate') || null, base = cur ? cur.split('-') : null, now = new Date();
+    _cal = { year: base ? parseInt(base[0], 10) : now.getFullYear(), month: base ? parseInt(base[1], 10) - 1 : now.getMonth(), selected: cur };
+    _drawExam();
+  };
+  ON.cert = function () {
+    var certs = _call('getAvailableCerts') || [];
+    openSheet(_iosStCertSheetHtml({ certs: certs, active: window.CURRENT_CERT || 'netplus', pro: !!(_state && _state.pro) }), function (b) {
+      if (b.getAttribute('data-act') !== 'pick-cert') return;
+      var id = b.getAttribute('data-id');
+      closeSheet(true);   // never stack today's Pro gate over the sheet
+      _call('tadSwitchCert', id);
+    });
+  };
+
   window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;
   window.iosSettings = window.iosSettings || {};

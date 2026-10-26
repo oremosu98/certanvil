@@ -85,6 +85,85 @@ for (const vp of PHONES) {
   });
 }
 
+for (const vp of PHONES) {
+  test.describe('Lift B4 study setup and account @' + vp.width, () => {
+    const R = (page) => page.locator('#ios-settings');
+    test('Pro: picking 50 and Save sets the goal; the glance row follows', async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'pro' });
+      await page.evaluate(() => renderSettingsPage());
+      await R(page).locator('[data-act="goal-pick"][data-n="50"]').click();
+      await expect(R(page).locator('[data-act="goal-pick"][data-n="50"]')).toHaveAttribute('aria-pressed', 'true');
+      await R(page).locator('[data-act="goal-save"]').click();
+      await expect.poll(() => page.evaluate(() => getDailyGoal())).toBe(50);
+      await expect(R(page).locator('.ist-row', { hasText: 'Daily goal' })).toContainText('50 a day');
+    });
+    test('Pro: All due and the top-up switch persist', async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'pro' });
+      await page.evaluate(() => renderSettingsPage());
+      await R(page).locator('[data-act="review-pick"][data-n="10"]').click();
+      await expect.poll(() => page.evaluate(() => loadSrPrefs().sessionSize)).toBe(10);
+      await R(page).locator('[data-act="review-pick"][data-n="all"]').click();
+      await expect.poll(() => page.evaluate(() => loadSrPrefs().sessionSize)).toBe('all');
+      const before = await page.evaluate(() => !!loadSrPrefs().topUp);
+      await R(page).locator('[data-act="topup"]').click();
+      await expect.poll(() => page.evaluate(() => !!loadSrPrefs().topUp)).toBe(!before);
+      await expect(R(page).locator('[data-act="topup"]')).toHaveAttribute('aria-pressed', String(!before));
+    });
+    test("free: goal and review are fixed; Go Pro opens today's pricing page", async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'free' });
+      await page.evaluate(() => { renderSettingsPage(); window.__opened = []; window.open = function (u) { window.__opened.push(u); return null; }; });
+      await expect(R(page).locator('[data-act="goal-pick"], [data-act="review-pick"]')).toHaveCount(0);
+      await R(page).locator('.ist-row[data-act="gopro"]').click();
+      expect(await page.evaluate(() => window.__opened)).toEqual(['https://certanvil.com/pricing']);
+    });
+    test('exam date: the sheet saves the 14th of next month, then Remove clears it', async ({ page }) => {
+      await openSettings(page, vp, { tier: 'free' });
+      const iso = await page.evaluate(() => { const d = new Date(); const n = new Date(d.getFullYear(), d.getMonth() + 1, 14); return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-14'; });
+      await R(page).locator('[data-act="exam"]').click();
+      const sheet = page.locator('#ist-sheet');
+      await expect(sheet).toHaveClass(/open/);
+      await sheet.locator('[data-act="cal-next"]').click();
+      await sheet.locator('[data-iso="' + iso + '"]').click();
+      await expect(sheet.locator('[data-act="cal-save"]')).toContainText('Save 14 ');
+      await sheet.locator('[data-act="cal-save"]').click();
+      await expect.poll(() => page.evaluate(() => getExamDate())).toBe(iso);
+      await expect(sheet).toBeHidden();
+      await R(page).locator('[data-act="exam"]').click();
+      await sheet.locator('[data-act="cal-remove"]').click();
+      await expect.poll(() => page.evaluate(() => getExamDate() || '')).toBe('');
+      await expect(R(page).locator('.ist-row', { hasText: 'Exam date' })).toContainText('Not set');
+    });
+    test("cert sheet: free sees Pro tags; picking a Pro cert closes the sheet then calls today's switch; the active cert does nothing", async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'free' });
+      await page.evaluate(() => { renderSettingsPage(); window.__sw = []; window.tadSwitchCert = function (id) { window.__sw.push([id, document.getElementById('ist-sheet').classList.contains('open')]); return false; }; });
+      await R(page).locator('[data-act="cert"]').click();
+      const sheet = page.locator('#ist-sheet');
+      await expect(sheet.locator('.ist-cert')).toHaveCount(8);
+      await expect(sheet.locator('.ist-pro-tag')).toHaveCount(7);
+      await expect(sheet.locator('.ist-cert.on')).toHaveCount(1);
+      await sheet.locator('[data-act="pick-cert"][data-id="secplus"]').click();
+      expect(await page.evaluate(() => window.__sw)).toEqual([['secplus', false]]);
+    });
+    test("Sign out goes through today's handler and the row clears nothing itself", async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'pro' });
+      await page.evaluate(() => {
+        renderSettingsPage(); window.__so = 0; window.__keys = localStorage.length;
+        document.getElementById('topbar-signout-link').addEventListener('click', function (e) { window.__so++; e.stopImmediatePropagation(); e.preventDefault(); }, true);
+      });
+      await R(page).locator('[data-act="signout"]').click();
+      expect(await page.evaluate(() => [window.__so, localStorage.length === window.__keys])).toEqual([1, true]);
+    });
+    test('the reveal plays once; a pick repaints still', async ({ page }) => {
+      await openSettings(page, vp, { signed: true, tier: 'pro' });
+      await page.evaluate(() => renderSettingsPage());
+      await page.waitForTimeout(800);
+      await R(page).locator('[data-act="goal-pick"][data-n="20"]').click();
+      await expect(R(page).locator('[data-act="goal-pick"][data-n="20"]')).toHaveAttribute('aria-pressed', 'true');
+      expect(await page.evaluate(() => Array.from(document.querySelectorAll('#ios-settings .reveal')).reduce((n, el) => n + el.getAnimations().length, 0))).toBe(0);
+    });
+  });
+}
+
 test.describe('Lift B4 desktop', () => {
   test("today's Settings, #ios-settings empty, no ist-on", async ({ page }) => {
     await openSettings(page, DESKTOP, { tier: 'free' });
