@@ -15,7 +15,8 @@ async function boot(page, viewport, opts) {
   opts = opts || {};
   await page.setViewportSize(viewport);
   if (opts.signed) {
-    await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"role":"user"};' + FAKE }));
+    const fake = JSON.stringify(Object.assign({ role: 'user' }, opts.fake || {}));
+    await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + fake + ';' + FAKE }));
   }
   await page.addInitScript((seed) => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
@@ -288,4 +289,80 @@ test("1280 keeps today's offline banner", async ({ page, context }) => {
   await expect(page.locator('#connectivity-banner')).toBeVisible();
   await expect(page.locator('#ifr-offbar')).toHaveCount(0);
   await context.setOffline(false);
+});
+
+// ── Task 6: behind the onboarding switch (?onb=1) ──
+const FREE_FAKE = { noResults: true, metaOverride: { tier: 'free', entitlements: {} } };   // a free account with no logged results
+for (const vp of PHONES) {
+  test.describe(`Lift C first run behind the switch @${vp.width}`, () => {
+    async function onb(page, seed) {
+      page.__dialogs = [];
+      page.on('dialog', (d) => { page.__dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+      await boot(page, vp, { signed: true, query: '?onb=1', seed: seed, fake: FREE_FAKE });
+    }
+    test('a never-activated phone user gets the picker with AI-901', async ({ page }) => {
+      await onb(page);
+      const fr = page.locator('#onb-firstrun');
+      await expect(fr).toBeVisible({ timeout: 10000 });
+      await expect(fr).toContainText('Pick your exam');
+      await expect(fr).toContainText('AI-901');
+      await expect(fr).not.toContainText('AI-900');
+    });
+    test('Lock in opens the sheet, never confirm()', async ({ page }) => {
+      await onb(page);
+      await page.locator('#onb-firstrun [data-act="lock"]').click();
+      await expect(page.locator('#ist-sheet')).toBeVisible();
+      await expect(page.locator('#ist-sheet')).toContainText('Lock in Network+?');
+      expect(page.__dialogs).toEqual([]);
+    });
+    test('Lock in on the current cert saves it, survives reload, lands on day-0', async ({ page }) => {
+      await onb(page);
+      await page.locator('#onb-firstrun [data-act="lock"]').click();
+      await page.locator('#ist-sheet [data-act="lock-go"]').click();
+      await expect(page.locator('#onb-firstrun')).toBeHidden();
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
+      await page.reload(); await page.waitForTimeout(1200);
+      await expect(page.locator('#onb-firstrun')).toBeHidden();
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+    });
+    test('Lock in on another cert saves it and navigates there', async ({ page }) => {
+      await onb(page);
+      await page.locator('#onb-firstrun [data-act="cert"][data-id="secplus"]').click();
+      await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveText('Lock in Security+');
+      await page.locator('#onb-firstrun [data-act="lock"]').click();
+      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="lock-go"]').click()]);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('secplus');
+    });
+    test('a not-activated user with a saved cert lands on day-0', async ({ page }) => {
+      await onb(page, { nplus_freeCertId: 'netplus' });
+      await page.waitForTimeout(800);
+      await expect(page.locator('#onb-firstrun')).toBeHidden();
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+    });
+    test('a user who practised is never routed into first run', async ({ page }) => {
+      await onb(page, { nplus_history: HISTORY });
+      await page.waitForTimeout(800);
+      await expect(page.locator('#onb-firstrun')).toBeHidden();
+    });
+    test('Pro picker has no sheet', async ({ page }) => {
+      await onb(page);
+      await page.evaluate(() => window.iosFirstRun.picker({ tier: 'pro' }));
+      await expect(page.locator('#onb-firstrun [data-act="start"]')).toHaveText('Start with Network+');
+      await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveCount(0);
+    });
+    test("restore shows June's skeleton on phones", async ({ page }) => {
+      await boot(page, vp, { query: '?onb=1' });
+      await expect(page.locator('#onb-resolve .ifr-restore')).toHaveCount(1);
+      await expect(page.locator('#onb-resolve .ifr-restore')).toContainText('Picking up where you left off');
+    });
+  });
+}
+test("1280 ?onb=1 keeps today's first run", async ({ page }) => {
+  page.on('dialog', (d) => d.dismiss().catch(() => {}));
+  await boot(page, DESKTOP, { signed: true, query: '?onb=1', fake: FREE_FAKE });
+  const fr = page.locator('#onb-firstrun');
+  await expect(fr).toBeVisible({ timeout: 10000 });
+  await expect(fr.locator('[data-fr-action="confirm-cert"]')).toHaveCount(1);
+  await expect(fr.locator('.ifr-picker')).toHaveCount(0);
 });

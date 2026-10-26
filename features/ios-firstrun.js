@@ -404,6 +404,66 @@
     return true;
   };
 
+  // ── Behind the onboarding switch: June's picker in #onb-firstrun, the lock-in sheet in B4's #ist-sheet. ──
+  var PICK_IDS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2', 'az900', 'ai900', 'sc900', 'clfc02'];
+  var PICK_NAMES = { netplus: 'Network+', secplus: 'Security+', 'aplus-core1': 'A+ Core 1', 'aplus-core2': 'A+ Core 2', az900: 'Azure Fundamentals', ai900: 'Azure AI Fundamentals', sc900: 'Security Fundamentals', clfc02: 'Cloud Practitioner' };
+  var PICK_CODES = { netplus: 'N10-009', secplus: 'SY0-701', 'aplus-core1': '220-1101', 'aplus-core2': '220-1102', az900: 'AZ-900', ai900: 'AI-901', sc900: 'SC-900', clfc02: 'CLF-C02' };
+  var pick = null;   // {selected, pro}
+  function pickHost() { return document.getElementById('onb-firstrun'); }
+  function drawPicker() {
+    var h = pickHost(); if (!h || !pick) return;
+    h.innerHTML = _ifrPickerHtml({ certs: PICK_IDS.map(function (id) { return { id: id, glyph: MARKS[id], name: PICK_NAMES[id], code: PICK_CODES[id] }; }), selected: pick.selected, pro: pick.pro });
+  }
+  function closePicker() {
+    var h = pickHost(); if (h) { h.hidden = true; h.innerHTML = ''; h.classList.remove('ifr-on'); }
+    html().classList.remove('ifr-picking'); pick = null;
+  }
+  // The chosen cert, then its Home: this page when it is the current cert, else that cert's address.
+  function goToCert(id) {
+    closePicker();
+    if (id === certId()) { if (typeof renderIosHome === 'function') renderIosHome(); return; }
+    var local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+    if (local) { location.href = location.pathname + '?cert=' + encodeURIComponent(id); return; }
+    var R = window.certanvilRouter;
+    location.href = R && R.certHost ? R.certHost(id) : location.href;
+  }
+  function onPickTap(ev) {
+    var b = ev.target.closest('[data-act]'); if (!b || !pick) return;
+    var a = b.getAttribute('data-act');
+    if (a === 'cert') { pick.selected = b.getAttribute('data-id'); drawPicker(); }
+    else if (a === 'start') {   // Pro: no lock-in
+      var id = pick.selected;
+      if (id !== certId() && typeof window.tadSwitchCert === 'function') { closePicker(); window.tadSwitchCert(id); } else goToCert(id);
+    } else if (a === 'lock' && window.iosSettings && window.iosSettings.openSheet) {
+      var chosen = pick.selected;
+      window.iosSettings.openSheet(_ifrLockSheetHtml({ name: PICK_NAMES[chosen] }), function (btn) {
+        var act = btn.getAttribute('data-act');
+        if (act === 'lock-back') { window.iosSettings.closeSheet(); return; }
+        if (act === 'lock-go') {
+          window.iosSettings.closeSheet(true);
+          if (window.onbFirstRun && window.onbFirstRun.persistFreeCert) window.onbFirstRun.persistFreeCert(chosen);
+          goToCert(chosen);
+        }
+      });
+    }
+  }
+  IFR.picker = function (decision) {
+    var h = pickHost(); if (!h) return;
+    decision = decision || {};
+    pick = { selected: (decision.certId && PICK_NAMES[decision.certId]) ? decision.certId : (PICK_NAMES[certId()] ? certId() : 'netplus'), pro: decision.tier === 'pro' };
+    if (!h.__ifrBound) { h.addEventListener('click', onPickTap); h.__ifrBound = true; }
+    h.classList.add('ifr-on'); html().classList.add('ifr-picking'); h.hidden = false;
+    drawPicker();
+  };
+
+  // The session-restore skeleton: June's two cards inside #onb-resolve (shown by lib/onboarding-boot.js).
+  function mountRestore() {
+    var r = document.getElementById('onb-resolve');
+    if (!r || !IFR.isPhone() || r.querySelector('.ifr-restore')) return;
+    r.insertAdjacentHTML('beforeend', _ifrRestoreHtml());
+  }
+  mountRestore();
+
   IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.

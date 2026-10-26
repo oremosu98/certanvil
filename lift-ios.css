@@ -2844,3 +2844,5 @@ html.ifr-offline #connectivity-banner { display: none !important; }
   .ifr-sk { animation: ifrPulse 1.4s ease-in-out infinite; }
   @keyframes ifrPulse { 50% { opacity: .55; } }
 }
+html.ifr-picking #ist-sheet-scrim { z-index: 9000; } html.ifr-picking #ist-sheet { z-index: 9001; }   /* the lock-in sheet sits over the full-screen picker */
+html.ifr-picking #lift-tabbar { display: none !important; }

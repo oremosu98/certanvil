@@ -78,6 +78,18 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8302);
     test('diagnostic.js has no 720 pass-mark fallback; the phone check hooks in through onReady and _diagApi',
       !/:\s*720\b/.test(dg) && /opts\.onReady/.test(dg) && /window\._diagApi\s*=/.test(dg));
+    const R = require(path.join(ROOT, 'lib', 'router.js'));
+    const free = (meta) => ({ metadata: meta || {} });
+    test('router (free): a detected cert with no saved choice and no activation is first-run "no-cert"; a saved choice is used',
+      R.routeOnLaunch({ isLoggedIn: true, profile: free({}), detectedCert: 'netplus' }).reason === 'no-cert'
+      && R.routeOnLaunch({ isLoggedIn: true, profile: free({ freeCertId: 'secplus' }), detectedCert: 'netplus' }).certId === 'secplus');
+    test('router (free): an already-activated detected cert is cert-home, never the picker',
+      R.routeOnLaunch({ isLoggedIn: true, profile: free({ activated: { netplus: true } }), detectedCert: 'netplus' }).kind === 'cert-home'
+      && R.routeOnLaunch({ isLoggedIn: true, profile: free({ readiness_snapshots: { netplus: { score: 500 } } }), detectedCert: 'netplus' }).kind === 'cert-home');
+    const fr = fs.readFileSync(path.join(ROOT, 'lib', 'onboarding-firstrun.js'), 'utf8');
+    const ob = fs.readFileSync(path.join(ROOT, 'lib', 'onboarding-boot.js'), 'utf8');
+    test('first run: no 720 fallback; boot marks a cert with history as activated and carries the saved free cert',
+      !/\|\|\s*720\b/.test(fr) && /STORAGE\.HISTORY|nplus_history/.test(ob) && /freeCertId/.test(ob));
   } catch (err) {
     test('Lift C first run: block (threw)', false);
     results.errors.push('507 ios-firstrun block threw: ' + err.message);
