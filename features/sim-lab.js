@@ -3074,55 +3074,84 @@
     return { pairs: pairList, families: familyList };
   }
 
+  // The phone results' data (features/ios-decisionlab.js _iosDlResultModel). Analyze steps show the pick and the
+  // right call by their line text; other step types show only the tell.
+  function _dlResultData() {
+    var agg = _slAggregateSession(_dlSession.results), clusters = _dlVerdictClusters(_dlSession.results);
+    var meta = (window.CERT_PACK && window.CERT_PACK.meta) || {};
+    function lineText(step, id) {
+      var ls = (step.payload && step.payload.lines) || [];
+      for (var i = 0; i < ls.length; i++) if (ls[i].id === id) return ls[i].text;
+      return null;
+    }
+    return {
+      mode: _dlSession.mode, code: meta.code || '', timeUp: !!_dlSession.timeUp, passed: agg.passed, rounds: agg.rounds, back: _dlOrigin,
+      pairs: clusters.pairs, families: clusters.families,
+      decisions: _dlSession.results.map(function (r) {
+        var scn = r.scenario || {}, step = (scn.steps && scn.steps[0]) || {};
+        var kind = step.type === 'analyze' ? 'pick' : 'other';
+        var sel = (r.responses && r.responses[step.id] && r.responses[step.id].selected) || [];
+        var want = (step.answer && step.answer.selected) || [];
+        return { title: scn.title, family: scn.family, right: !!r.passed, kind: kind,
+          pick: kind === 'pick' && sel.length ? lineText(step, sel[0]) : null,
+          rightCall: kind === 'pick' && want.length ? (lineText(step, want[0]) || '') : '', tell: step.explanation || '' };
+      })
+    };
+  }
   function _dlRenderResult() {
     if (_dlSession && _dlSession.mode === 'exam') _slStopCountdown();
     var agg = _slAggregateSession(_dlSession.results);
     var clusters = _dlVerdictClusters(_dlSession.results);
     var root = document.getElementById('dl-result-root');
     root.innerHTML = '';
-    var sbar = _el('div', 'dl-sbar');
-    sbar.innerHTML = '<span class="dl-sbar-strip">Decision Lab</span>' +
-      '<span class="dl-round-pill">' + (_dlSession.timeUp ? "Time's up" : 'Set complete') + '</span>';
-    root.appendChild(sbar);
-    var scoreRow = _el('div', 'dl-score-row');
-    scoreRow.innerHTML = '<span class="dl-score-fig" data-count="' + agg.passed + '">' + agg.passed +
-      '<small>/' + agg.rounds + '</small></span>' +
-      '<span><span class="dl-score-cap">Right calls</span></span>';
-    root.appendChild(scoreRow);
-    if (clusters.pairs.length) {
-      var vs = _el('div', 'dl-vsec');
-      vs.appendChild(_el('div', 'dl-vsec-k', 'Look-alikes you still confuse'));
-      clusters.pairs.forEach(function (p) {
-        var parts = String(p.label).split(' vs ');
-        var row = _el('div', 'dl-confrow');
-        row.innerHTML = '<span class="vs">' + _esc(parts[0] || p.label) + '</span>' +
-          (parts[1] ? ' vs <span class="vs">' + _esc(parts[1]) + '</span>' : '') +
-          '<span class="tag">missed &times;' + p.count + '</span>';
-        vs.appendChild(row);
-      });
-      root.appendChild(vs);
+    // v8.192.0 Lift B3c3: phones get the June results; desktop keeps today's.
+    var phoneDone = !!(window.iosDecisionLab && typeof window.iosDecisionLab.renderResult === 'function'
+      && window.iosDecisionLab.renderResult(root, _dlResultData()));
+    if (!phoneDone) {
+      var sbar = _el('div', 'dl-sbar');
+      sbar.innerHTML = '<span class="dl-sbar-strip">Decision Lab</span>' +
+        '<span class="dl-round-pill">' + (_dlSession.timeUp ? "Time's up" : 'Set complete') + '</span>';
+      root.appendChild(sbar);
+      var scoreRow = _el('div', 'dl-score-row');
+      scoreRow.innerHTML = '<span class="dl-score-fig" data-count="' + agg.passed + '">' + agg.passed +
+        '<small>/' + agg.rounds + '</small></span>' +
+        '<span><span class="dl-score-cap">Right calls</span></span>';
+      root.appendChild(scoreRow);
+      if (clusters.pairs.length) {
+        var vs = _el('div', 'dl-vsec');
+        vs.appendChild(_el('div', 'dl-vsec-k', 'Look-alikes you still confuse'));
+        clusters.pairs.forEach(function (p) {
+          var parts = String(p.label).split(' vs ');
+          var row = _el('div', 'dl-confrow');
+          row.innerHTML = '<span class="vs">' + _esc(parts[0] || p.label) + '</span>' +
+            (parts[1] ? ' vs <span class="vs">' + _esc(parts[1]) + '</span>' : '') +
+            '<span class="tag">missed &times;' + p.count + '</span>';
+          vs.appendChild(row);
+        });
+        root.appendChild(vs);
+      }
+      if (clusters.families.length) {
+        var wf = _el('div', 'dl-vsec');
+        wf.appendChild(_el('div', 'dl-vsec-k', 'Weak service families'));
+        var weak = _el('div', 'dl-weak');
+        clusters.families.forEach(function (f) { weak.appendChild(_el('span', 'w', _esc(f))); });
+        wf.appendChild(weak);
+        root.appendChild(wf);
+      }
+      var ctaRow = _el('div', 'dl-cta-row');
+      var drill = _el('button', 'btn btn-primary', 'Drill your 3 look-alikes →');
+      drill.setAttribute('type', 'button'); drill.setAttribute('data-action', 'decisionLabSessionStart');
+      var back = _el('button', 'btn gnt-ghost', 'Back to Practice');
+      back.setAttribute('type', 'button'); back.setAttribute('data-action', 'decisionLabExit');
+      ctaRow.appendChild(drill); ctaRow.appendChild(back);
+      root.appendChild(ctaRow);
     }
-    if (clusters.families.length) {
-      var wf = _el('div', 'dl-vsec');
-      wf.appendChild(_el('div', 'dl-vsec-k', 'Weak service families'));
-      var weak = _el('div', 'dl-weak');
-      clusters.families.forEach(function (f) { weak.appendChild(_el('span', 'w', _esc(f))); });
-      wf.appendChild(weak);
-      root.appendChild(wf);
-    }
-    var ctaRow = _el('div', 'dl-cta-row');
-    var drill = _el('button', 'btn btn-primary', 'Drill your 3 look-alikes →');
-    drill.setAttribute('type', 'button'); drill.setAttribute('data-action', 'decisionLabSessionStart');
-    var back = _el('button', 'btn gnt-ghost', 'Back to Practice');
-    back.setAttribute('type', 'button'); back.setAttribute('data-action', 'decisionLabExit');
-    ctaRow.appendChild(drill); ctaRow.appendChild(back);
-    root.appendChild(ctaRow);
     // Pro cross-session persistence of look-alike clusters (free = current set only)
     if (typeof window._dlRecordWeakSpots === 'function') {
       window._dlRecordWeakSpots(clusters.pairs.map(function (p) { return p.label; }));
     }
     // score count-up (reduced-motion → instant; CSS shows final already)
-    if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    if (!phoneDone && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
       var fig = root.querySelector('.dl-score-fig');
       if (fig) {
         var target = agg.passed, t0 = null;

@@ -98,6 +98,32 @@
     return true;
   }
 
+  // Renders the phone results into root (#dl-result-root) and wires it: rows open, Run another set, Back. False on desktop.
+  function renderResult(root, s) {
+    if (!root) return false;
+    root.classList.toggle('idl-results', isPhone());
+    if (!isPhone()) return false;
+    root.innerHTML = _iosDlResultHtml(_iosDlResultModel(s));
+    if (!root.__idlBound) {
+      root.__idlBound = true;
+      root.addEventListener('click', function (ev) {
+        if (!root.classList.contains('idl-results')) return;   // desktop draws its own buttons here
+        var row = ev.target.closest && ev.target.closest('.idl-srow');
+        if (row && root.contains(row)) {
+          var open = row.getAttribute('aria-expanded') !== 'true', d = document.getElementById(row.getAttribute('aria-controls'));
+          row.setAttribute('aria-expanded', String(open)); if (d) d.hidden = !open;
+          return;
+        }
+        var b = ev.target.closest && ev.target.closest('[data-act]');
+        if (!b || !root.contains(b)) return;
+        var act = b.getAttribute('data-act');
+        if (act === 'again') _call('decisionLabSessionStart');
+        else if (act === 'exit') _call('decisionLabExit');
+      });
+    }
+    return true;
+  }
+
   // ‹ mid practice set: asks in the in-app sheet; Leave runs decisionLabExit confirmed. free = today's set is spent.
   function confirmLeave(free) {
     var exit = function () { if (typeof window.decisionLabExit === 'function') window.decisionLabExit({ confirmed: true }); };
@@ -112,4 +138,5 @@
   window.iosDecisionLab.isPhone = isPhone;
   window.iosDecisionLab.renderEntry = renderEntry;
   window.iosDecisionLab.confirmLeave = confirmLeave;
+  window.iosDecisionLab.renderResult = renderResult;
 })();

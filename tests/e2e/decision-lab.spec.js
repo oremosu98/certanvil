@@ -305,9 +305,11 @@ test('dl verdict: clusters missed look-alikes + weak families; Pro persists acro
     const live = window._simLab.dlSession();
     live.results = results; live.rounds = 4; live.idx = 4;
     window._simLab.dlRenderResult();
-    const pairRows = document.querySelectorAll('#dl-result-root .dl-confrow').length;
-    const firstTag = document.querySelector('#dl-result-root .dl-confrow .tag').textContent;
-    const families = Array.from(document.querySelectorAll('#dl-result-root .dl-weak .w')).map(e => e.textContent);
+    // v8.192.0: phones (the mobile-safari project) draw the June results (idl-), desktop today's (dl-)
+    const ph = !!document.querySelector('#dl-result-root.idl-results');
+    const pairRows = document.querySelectorAll(ph ? '#dl-result-root .idl-conf' : '#dl-result-root .dl-confrow').length;
+    const firstTag = document.querySelector(ph ? '#dl-result-root .idl-conf .idl-tag' : '#dl-result-root .dl-confrow .tag').textContent.toLowerCase();
+    const families = Array.from(document.querySelectorAll(ph ? '#dl-result-root .idl-chips span' : '#dl-result-root .dl-weak .w')).map(e => e.textContent);
     const persisted = JSON.parse(localStorage.getItem('nplus_dl_weak') || '{}');
     return {
       topPair: clusters.pairs[0].label, topPairCount: clusters.pairs[0].count,

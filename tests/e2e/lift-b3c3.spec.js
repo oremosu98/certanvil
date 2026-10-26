@@ -16,16 +16,15 @@ async function boot(page, viewport, tier) {
   await page.waitForLoadState('load');
   await page.evaluate(() => new Promise((res) => { window.CURRENT_CERT = 'az900'; window._ensureDecisionLabLoaded(res); }));
   await installSeedFixture(page, 20);
+  await page.evaluate(() => { window.CERT_PACK = Object.assign({}, window.CERT_PACK, { meta: Object.assign({}, (window.CERT_PACK || {}).meta, { name: 'Azure Fundamentals', code: 'AZ-900' }) }); });
   await setTier(page, tier || 'pro');
 }
 function installSeedFixture(page, count) {
   return page.evaluate((count) => {
-    const PAIRS = ['Pricing Calculator vs TCO Calculator', 'SQL Database vs SQL Managed Instance'];
-    const FAMS = ['Cost & pricing tools', 'Databases'];
     function scn(i) {
       return {
         id: 'DL-FX-' + i, cert: 'az900', objective: '1.1', topic: 'Cost tools', title: 'Decision ' + i, scenario: 'A team needs X.',
-        estMinutes: 2, pair: PAIRS[i % 2], family: FAMS[i % 2],
+        estMinutes: 2, pair: 'Pricing Calculator vs TCO Calculator', family: 'Cost & pricing tools',   // one pair: the set's start rotates by the minute
         steps: [{
           id: 's1', type: 'analyze', points: 1, prompt: 'Pick the best service', explanation: 'Compare two worlds.',
           payload: { multi: false, lines: [
@@ -272,6 +271,77 @@ for (const vp of PHONES) {
   });
 }
 
+// Plays a practice set of n, right on even decisions, wrong (the first wrong line, "Pricing Calculator") on odd ones.
+async function playPractice(page, n) {
+  for (let i = 0; i < n; i++) {
+    await pickLine(page, i % 2 === 0);
+    await page.locator('#dl-body .sl-actions [data-action="simLabSubmitScenario"]').click();
+    await page.locator('#dl-body .sl-actions button').click();
+  }
+  await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+}
+for (const vp of PHONES) {
+  test.describe('Lift B3c3 results @' + vp.width, () => {
+    test('results: N of M right calls, look-alikes, families, decision rows that open', async ({ page }) => {
+      await startPractice(page, vp, 'pro', 5);
+      await playPractice(page, 5);
+      const R = page.locator('#dl-result-root');
+      await expect(R.locator('.idl-vkick')).toHaveText('Decision Lab · Practice · AZ-900');
+      await expect(R.locator('.idl-vtitle')).toHaveText('3 of 5 right calls');
+      await expect(R.locator('.idl-conf .idl-pr')).toHaveText('Pricing Calculator vs TCO Calculator');
+      await expect(R.locator('.idl-conf .idl-tag')).toHaveText('Missed ×2');
+      await expect(R.locator('.idl-chips span')).toHaveText(['Cost & pricing tools']);
+      await expect(R.locator('.idl-srow')).toHaveCount(5);
+      await expect(R.locator('.idl-srow .idl-sv')).toHaveText(['Right', 'Wrong', 'Right', 'Wrong', 'Right']);
+      const t1 = await page.evaluate(() => window._simLab.dlSession().results[1].scenario.title);
+      await expect(R.locator('.idl-srow .idl-st').nth(1)).toHaveText(t1);
+      await expect(page.locator('#dl-result-root .dl-score-row')).toHaveCount(0);
+      await expect(page.locator('#lift-tabbar')).toBeHidden();
+      const row = R.locator('.idl-srow').nth(1);
+      await row.click();
+      await expect(row).toHaveAttribute('aria-expanded', 'true');
+      const det = R.locator('#idl-sdet-1');
+      await expect(det).toBeVisible();
+      await expect(det.locator('.idl-lab')).toHaveText(['Your pick', 'Right call', 'The tell']);
+      await expect(det.locator('.idl-val')).toHaveText(['Pricing Calculator', 'TCO Calculator']);
+      await row.click();
+      await expect(det).toBeHidden();
+      await expect(R.locator('.idl-vdock [data-act="again"]')).toHaveText('Run another set');
+      await expect(R.locator('.idl-vdock [data-act="exit"]')).toHaveText('Back to Drills');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+    test('Run another set starts a new set; Back goes to the origin', async ({ page }) => {
+      await startPractice(page, vp, 'pro', 5);
+      await playPractice(page, 5);
+      await page.locator('#dl-result-root [data-act="again"]').click();
+      await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
+      await expect(page.locator('#dl-round-pill')).toHaveText('Decision 1 of 5');
+      await playPractice(page, 5);
+      await page.locator('#dl-result-root [data-act="exit"]').click();
+      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
+    });
+    test("free Run another set opens today's gate", async ({ page }) => {
+      await startPractice(page, vp, 'free');
+      await page.evaluate(() => window._simLab.dlExamSubmit(false));   // ends the set: unreached decisions score as missed
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+      await page.evaluate(() => { window.__gates = []; window._gateProOnly = function (f, o) { window.__gates.push(o && o.title); return false; }; });
+      await page.locator('#dl-result-root [data-act="again"]').click();
+      expect(await page.evaluate(() => window.__gates)).toEqual(['That’s today’s free set'.replace(/’/g, "'")]);
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/);
+    });
+    test("Exam-style time-up: the kicker says Time's up and unreached decisions read No answer", async ({ page }) => {
+      await startExam(page, vp, 5);
+      await pickLine(page, true); await page.locator('#dl-body .sl-actions [data-action="simLabSubmitScenario"]').click();
+      await page.evaluate(() => { window._simLab.dlSession().deadlineMs = Date.now() - 1; window._simLab.dlTick(); });
+      const R = page.locator('#dl-result-root');
+      await expect(R.locator('.idl-vkick')).toHaveText('Decision Lab · Exam-style · Time’s up', { timeout: 10000 });
+      await expect(R.locator('.idl-vtitle')).toHaveText('1 of 5 right calls');
+      await R.locator('.idl-srow').nth(3).click();
+      await expect(R.locator('#idl-sdet-3 .idl-val').first()).toHaveText('No answer');
+    });
+  });
+}
+
 test.describe('Lift B3c3 desktop', () => {
   test("today's entry; Leave on the runner now leaves", async ({ page }) => {
     await openEntry(page, DESKTOP, 'pro', 'drills');
@@ -294,5 +364,14 @@ test.describe('Lift B3c3 desktop', () => {
     await sub.click();
     await expect(page.locator('#dl-body .dl-correct .dl-verdict')).toHaveText('✓ Best');
     await expect(page.locator('#dl-body .dl-cta-row .dl-cta')).toHaveText(['Flag', 'Next decision →']);
+  });
+  test("results are today's; Back to Practice now leaves", async ({ page }) => {
+    await openEntry(page, DESKTOP, 'pro', 'drills');
+    await page.evaluate(() => { decisionLabPickDecisions(5); decisionLabSessionStart(); window._simLab.dlExamSubmit(false); });
+    await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+    await expect(page.locator('#dl-result-root .dl-score-row')).toHaveCount(1);
+    await expect(page.locator('#dl-result-root .idl-vbody')).toHaveCount(0);
+    await page.locator('#dl-result-root [data-action="decisionLabExit"]').click();
+    await expect(page.locator('#page-setup')).toHaveClass(/active/, { timeout: 10000 });
   });
 });
