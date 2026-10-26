@@ -6,16 +6,15 @@
 <title>CertAnvil · Settings (iOS)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
 <style>
-  /* Forged-bronze tokens (matches dg-system.css + the onboarding mockups). */
+  /* Forged-bronze tokens (matches dg-system.css + the cert-ios mockups). */
   :root {
     --bg: oklch(0.15 0.010 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.255 0.010 275);
     --ink: oklch(0.97 0.006 275); --ink-soft: oklch(0.80 0.010 275); --muted: oklch(0.62 0.013 275);
     --border: oklch(0.34 0.009 275);
     --accent: oklch(0.82 0.150 66); --accent-bright: oklch(0.88 0.140 72); --accent-deep: oklch(0.72 0.150 62);
     --on-accent: oklch(0.18 0.020 275); --pass: oklch(0.78 0.150 152); --miss: oklch(0.68 0.165 25); --track: oklch(0.30 0.010 275);
-    --danger: oklch(0.62 0.190 25); --danger-deep: oklch(0.55 0.200 26); --on-danger: oklch(0.98 0.010 30);
     --page-bg: oklch(0.22 0.012 275); --page-ink: oklch(0.92 0.008 275); --page-dim: oklch(0.66 0.012 275);
   }
   [data-theme="light"] {
@@ -24,597 +23,755 @@
     --border: oklch(0.85 0.010 85);
     --accent: oklch(0.55 0.155 55); --accent-bright: oklch(0.62 0.150 58); --accent-deep: oklch(0.46 0.150 52);
     --on-accent: oklch(0.99 0.008 85); --pass: oklch(0.52 0.13 150); --miss: oklch(0.55 0.18 25); --track: oklch(0.88 0.010 85);
-    --danger: oklch(0.52 0.195 26); --danger-deep: oklch(0.45 0.200 27); --on-danger: oklch(0.99 0.010 30);
     --page-bg: oklch(0.93 0.010 84); --page-ink: oklch(0.28 0.015 280); --page-dim: oklch(0.46 0.013 280);
   }
-  :root { --ease: cubic-bezier(0.16,1,0.3,1); --ease-drawer: cubic-bezier(0.32,0.72,0,1); }
-
+  :root { --ease: cubic-bezier(0.16,1,0.3,1); }
   * { box-sizing: border-box; }
   html { color-scheme: light dark; }
-  body { margin: 0; background: var(--page-bg); color: var(--page-ink);
-    font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px;
-    transition: background .35s var(--ease), color .35s var(--ease); }
+  body { margin: 0; background: var(--page-bg); color: var(--page-ink); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 30px 20px 64px; transition: background .35s var(--ease), color .35s var(--ease); }
   .stage { max-width: 520px; margin: 0 auto; }
   .stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
   .stage-eyebrow { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-bright); margin: 0 0 7px; }
   .stage-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 24px; letter-spacing: -0.012em; margin: 0; color: var(--page-ink); }
   .stage-sub { color: var(--page-dim); font-size: 13px; margin: 7px 0 0; max-width: 48ch; line-height: 1.5; }
-  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright);
-    background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; transition: transform .15s var(--ease), background .2s; }
+  .theme-toggle { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1 Inter, sans-serif; color: var(--accent-bright); background: transparent; border: 1px solid color-mix(in oklab, var(--accent-bright) 38%, var(--page-dim)); border-radius: 999px; padding: 8px 13px; cursor: pointer; }
   .theme-toggle svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .theme-toggle:active { transform: scale(0.97); }
-
   .phone-wrap { display: flex; flex-direction: column; align-items: center; }
-  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto;
-    background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
-  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink);
-    display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
-  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 6; }
+  .phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: 0 0 auto; background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+  .screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; transition: background .35s var(--ease), color .35s var(--ease); }
+  .notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 12; }
   .statusbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 26px 0; font: 700 13px/1 Inter, sans-serif; color: var(--ink); }
   .sb-icons { display: inline-flex; gap: 6px; align-items: center; }
   .sb-icons svg { width: 17px; height: 12px; fill: var(--ink); }
+  svg.i { stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* header (back + title + plan tag) */
-  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 22px 10px; }
-  .hdr .back { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink-soft); transition: transform .14s var(--ease), border-color .18s; }
-  .hdr .back:active { transform: scale(0.94); }
-  @media (hover:hover) and (pointer:fine) { .hdr .back:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); } }
-  .hdr .back svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
-  .hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
-  .hdr .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: color-mix(in oklab, var(--ink) 6%, transparent); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
-  .app-theme { flex:0 0 auto; width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--surface); display:grid; place-items:center; cursor:pointer; color:var(--ink-soft); transition:transform .14s var(--ease), border-color .18s; }
-  .app-theme:active{ transform:scale(.94); }
-  @media (hover:hover) and (pointer:fine){ .app-theme:hover{ border-color:color-mix(in oklab,var(--accent) 36%,var(--border)); } }
-  .app-theme svg{ width:17px; height:17px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
-
-  .body { flex: 1; overflow-y: auto; padding: 4px 22px 22px; }
+  .body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 20px 20px; }
   .body::-webkit-scrollbar { width: 0; }
-  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 11px; }
-  .sect:first-child { margin-top: 12px; }
-
-  /* generic card + card head */
   .card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-bottom: 11px; }
-  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-  .card-title { font: 650 14.5px/1.2 Inter, sans-serif; color: var(--ink); }
-  .card-note { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 11px 0 0; }
-  .card-note b { color: var(--ink-soft); font-weight: 650; }
+  .sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 18px 2px 10px; }
 
-  /* at-a-glance rows — iOS-settings anatomy: label left, value right,
-     chevron only on tappable rows, state carried by value text + color */
-  .ag-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 3px 0; }
-  .ag-row + .ag-row { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
-  .ag-l { flex: 1 1 auto; min-width: 0; font: 600 13.5px/1.3 Inter, sans-serif; color: var(--ink); text-align: left; }
-  .ag-v { flex: 0 0 auto; font: 600 13px/1.3 Inter, sans-serif; color: var(--ink-soft); }
-  .ag-v.ok { color: var(--pass); }
-  .ag-v.unset { color: var(--muted); }
-  .ag-v.num { font: 600 12.5px/1.3 'Roboto Mono', monospace; }
-  button.ag-row { background: none; border: none; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); margin: 0; cursor: pointer; font: inherit; color: inherit; transition: transform .14s var(--ease); }
-  button.ag-row:active { transform: scale(0.985); }
-  .ag-chev { flex: 0 0 auto; width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; margin-right: -2px; }
-  .ag-row.col { flex-direction: column; align-items: stretch; gap: 8px; padding: 11px 0 13px; }
-  .ag-line { display: flex; align-items: center; gap: 10px; }
-  .ag-bar { height: 5px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; }
-  .ag-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transition: width .7s var(--ease); }
+  /* ── start screen ── */
+  .hdr { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+  .back { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+  .back svg { width: 16px; height: 16px; }
+  .hdr h1 { font: 600 21px/1 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); flex: 1; }
+  .plan-tag { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; }
+  .hero { text-align: center; padding: 10px 6px 4px; }
+  .hero-i { width: 58px; height: 58px; border-radius: 999px; margin: 6px auto 14px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface)); }
+  .hero-i svg { width: 26px; height: 26px; }
+  .hero h2 { font: 600 26px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.014em; margin: 0; color: var(--ink); }
+  .hero h2 em { font-style: italic; color: var(--accent); }
+  .hero p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px auto 0; max-width: 32ch; }
+  .seg { display: flex; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); }
+  .seg button { flex: 1 1 0; text-align: left; border: 1px solid transparent; border-radius: 11px; background: none; padding: 10px 11px; cursor: pointer; font: inherit; color: var(--ink); transition: background-color .18s, border-color .18s, transform .14s var(--ease); }
+  .seg button:active { transform: scale(0.98); }
+  .seg b { display: flex; align-items: center; gap: 6px; font: 700 14px/1.2 Inter, sans-serif; }
+  .seg button > span { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 3px; }
+  .seg .on { background: color-mix(in oklab, var(--accent) 9%, var(--bg)); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .seg .on b { color: var(--accent-deep); }
+  .lock-pill { display: inline-flex; align-items: center; gap: 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); border-radius: 999px; padding: 4px 7px; }
+  .lock-pill svg { width: 10px; height: 10px; stroke-width: 2.4; }
+  .target .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .target .v { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rchip { min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 0 16px; font: 650 14px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: transform .14s var(--ease); }
+  .rchip:active { transform: scale(0.97); }
+  .rchip.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .rchip.locked { color: var(--muted); }
+  .rchip svg { width: 12px; height: 12px; stroke-width: 2.4; }
+  /* entry, rebuilt in the custom-quiz language */
+  .en-hdr { align-items: flex-start; }
+  .en-title { flex: 1 1 auto; min-width: 0; padding-top: 1px; }
+  .en-title h1 { font: 600 21px/1.05 Fraunces, Georgia, serif; letter-spacing: -0.01em; margin: 0; color: var(--ink); }
+  .en-title span { display: block; font: 500 11.5px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .cert-strip { display: flex; align-items: center; gap: 10px; margin: 10px 2px 4px; }
+  .cert-strip .cm { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; background: color-mix(in oklab, var(--accent) 13%, var(--surface-2)); color: var(--accent-deep); display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; }
+  .cert-strip .cn b { display: block; font: 650 13.5px/1.05 Inter, sans-serif; color: var(--ink); }
+  .cert-strip .cn span { display: block; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 2px; }
+  .en-lead { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 12px 2px 0; max-width: 36ch; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .mode { text-align: left; border: 1.5px solid var(--border); background: var(--surface); border-radius: 15px; padding: 13px 13px 12px; cursor: pointer; font: inherit; color: var(--ink); transition: border-color .18s, background-color .18s, transform .12s var(--ease); }
+  .mode:active { transform: scale(0.985); }
+  .mode .mi { width: 34px; height: 34px; border-radius: 10px; background: color-mix(in oklab, var(--accent) 10%, var(--surface-2)); display: grid; place-items: center; margin-bottom: 10px; color: var(--accent-deep); }
+  .mode .mi svg { width: 18px; height: 18px; }
+  .mode b { display: flex; align-items: center; gap: 6px; font: 650 14px/1.1 Inter, sans-serif; color: var(--ink); }
+  .mode > span:last-child { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .mode .tick { margin-left: auto; display: grid; color: var(--accent-deep); opacity: 0; }
+  .mode .tick svg { width: 16px; height: 16px; stroke-width: 2.6; }
+  .mode[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+  .mode[aria-pressed="true"] .tick { opacity: 1; }
+  .pro-tag { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); border-radius: 999px; padding: 4px 7px; }
+  .pro-tag svg { width: 9px; height: 9px; stroke-width: 2.6; }
+  .count-echo { display: flex; align-items: baseline; gap: 9px; margin: 2px 2px 8px; }
+  .count-echo .bn { font: 600 44px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .count-echo .bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .cseg { display: flex; gap: 5px; background: color-mix(in oklab, var(--ink) 5%, var(--surface-2)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
+  .cseg button { flex: 1 1 0; min-height: 40px; border: none; background: transparent; cursor: pointer; border-radius: 9px; font: 700 14px/1 Inter, sans-serif; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 5px; transition: background-color .2s var(--ease), color .2s, transform .14s var(--ease); }
+  .cseg button:active { transform: scale(0.96); }
+  .cseg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
+  .cseg button.locked { color: color-mix(in oklab, var(--muted) 75%, transparent); }
+  .cseg button svg { width: 11px; height: 11px; stroke-width: 2.4; }
+  .cap-note { margin: 9px 2px 0; font: 600 12px/1.45 Inter, sans-serif; color: var(--muted); }
+  .cap-note b { color: var(--ink-soft); }
+  .en-dock { flex-direction: column; gap: 0; }
+  .en-dock .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .en-dock .btn-primary svg { width: 14px; height: 14px; fill: currentColor; stroke: none; }
+  .en-dock .qc { font: 700 12px/1 'Roboto Mono', monospace; opacity: 0.82; }
+  .foot-note { text-align: center; font: 500 10.5px/1.3 Inter, sans-serif; color: var(--muted); margin: 9px 0 0; }
+  .free-note { font: 500 11.5px/1.45 Inter, sans-serif; color: var(--muted); text-align: center; margin: 14px 8px 2px; }
 
-  /* big-number display (daily goal) */
-  .bignum { display: flex; align-items: baseline; gap: 9px; margin: 2px 0 13px; }
-  .bignum .bn { font: 600 44px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
-  .bignum .bl { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  /* ── session top bar (Leave · Round pill · timer) + ticks ── */
+  .rbar { display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; }
+  .leave { flex: 0 0 auto; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 9px 13px; cursor: pointer; }
+  .rpill { font: 800 10.5px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 999px; padding: 6px 10px; }
+  .rspace { flex: 1; }
+  .timer { display: inline-flex; align-items: center; gap: 5px; font: 700 14px/1 'Roboto Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .timer svg { width: 13px; height: 13px; stroke: var(--accent-deep); }
+  .ticks { display: flex; gap: 5px; padding: 2px 18px 6px; }
+  .ticks i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track); }
+  .ticks i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .ticks i.cur { background: var(--accent); }
 
-  /* segmented preset control */
-  .seg { display: flex; gap: 5px; background: color-mix(in oklab, var(--ink) 5%, var(--surface-2)); border: 1px solid var(--border); border-radius: 13px; padding: 4px; }
-  .seg button { flex: 1 1 0; border: none; background: transparent; cursor: pointer; border-radius: 9px; padding: 9px 4px; font: 700 13px/1 Inter, sans-serif; color: var(--muted); transition: background .2s var(--ease), color .2s, transform .14s var(--ease); }
-  .seg button:active { transform: scale(0.96); }
-  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); box-shadow: 0 6px 14px -8px color-mix(in oklab, var(--accent) 70%, transparent); }
-  @media (hover:hover) and (pointer:fine) { .seg button:not([aria-pressed="true"]):hover { color: var(--ink-soft); } }
+  /* ── round ── */
+  .scen .k { display: inline-flex; align-items: center; gap: 7px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); margin-bottom: 8px; }
+  .scen p { margin: 0; font: 500 13.5px/1.55 Inter, sans-serif; color: var(--ink); }
+  .scen mark { background: color-mix(in oklab, var(--accent) 18%, transparent); color: inherit; border-radius: 4px; padding: 0 2px; }
+  .con { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; margin-bottom: 11px; }
+  .con-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); font: 700 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .con-bar b { color: var(--ink-soft); font-weight: 700; }
+  .reset-pill { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--ink-soft); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .reset-pill svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .con-body { padding: 11px 12px; font: 500 11.5px/1.65 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .con-body .ln { display: block; white-space: pre; overflow-x: auto; }
+  .con-body .ln.hit { color: var(--accent-deep); font-weight: 700; }
+  .con-body .pr { color: var(--accent-deep); font-weight: 700; }
+  .ref .ref-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .ref .ref-head span { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--muted); }
+  .enlarge { border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--accent-deep); font: 700 11px/1 Inter, sans-serif; padding: 7px 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .enlarge svg { width: 12px; height: 12px; stroke-width: 2.2; }
+  .net { width: 100%; height: auto; display: block; }
+  .net rect { fill: var(--surface-2); stroke: var(--border); }
+  .net .zone { fill: none; stroke: var(--border); stroke-dasharray: 4 4; }
+  .net text { fill: var(--ink-soft); font: 600 9px Inter, sans-serif; }
+  .net text.z { fill: var(--muted); font: 800 7.5px Inter, sans-serif; letter-spacing: 1px; }
+  .net text.ip { fill: var(--muted); font: 500 8px 'Roboto Mono', monospace; }
+  .net line { stroke: var(--muted); stroke-width: 1.2; }
+  .net .dev { fill: color-mix(in oklab, var(--accent) 14%, var(--surface)); stroke: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .step .sk { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .step h3 { font: 600 15.5px/1.35 Inter, sans-serif; color: var(--ink); margin: 8px 0 12px; letter-spacing: -0.005em; }
+  .pick { display: grid; gap: 8px; }
+  .pick button { min-height: 44px; border: 1px solid var(--border); border-radius: 11px; background: var(--bg); padding: 0 12px; font: 600 12px/1.2 'Roboto Mono', monospace; color: var(--ink-soft); cursor: pointer; display: flex; width: 100%; align-items: center; gap: 7px; text-align: left; transition: background-color .16s, border-color .16s, transform .12s var(--ease); }
+  .pick button:active { transform: scale(0.98); }
+  .pick button .ck { width: 16px; height: 16px; border-radius: 5px; border: 1.5px solid var(--border); display: grid; place-items: center; flex: 0 0 auto; }
+  .pick button.on { border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); color: var(--ink); }
+  .pick button.on .ck { background: var(--accent); border-color: var(--accent); }
+  .pick button.on .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .fld { margin-top: 12px; }
+  .fld label { display: block; font: 700 11.5px/1 Inter, sans-serif; color: var(--ink-soft); margin-bottom: 7px; }
+  .sel { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 0 14px; display: flex; align-items: center; justify-content: space-between; font: 500 13.5px/1.3 Inter, sans-serif; color: var(--muted); }
+  .sel.set { color: var(--ink); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); }
+  .sel svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .ord { display: flex; flex-direction: column; gap: 8px; }
+  .ord .row { min-height: 48px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); padding: 10px 12px; font: 500 13px/1.35 Inter, sans-serif; color: var(--ink); }
+  .ord .n { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, var(--surface)); }
+  .ord .grip { margin-left: auto; flex: 0 0 auto; width: 18px; height: 18px; color: var(--muted); }
 
-  /* save button inside a card */
-  .btn-save { width: 100%; margin-top: 12px; border: none; border-radius: 12px; padding: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif;
-    box-shadow: 0 10px 22px -13px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
-  .btn-save:active { transform: scale(0.985); }
-  @media (hover:hover) and (pointer:fine) { .btn-save:hover { filter: brightness(1.05); } }
-
-  /* free/pro plan visibility — free users see locked values + a Pro upsell;
-     Pro users get the live controls. Driven by .plan-free / .plan-pro on .screen */
-  .screen.plan-free .pro-only { display: none !important; }
-  .screen.plan-pro  .free-only { display: none !important; }
-  .pro-lock { font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.12em; color: var(--accent-deep);
-    background: color-mix(in oklab, var(--accent) 14%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 32%, var(--border));
-    border-radius: 999px; padding: 4px 8px; display: inline-flex; align-items: center; gap: 4px; }
-  .pro-lock svg { width: 10px; height: 10px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-  .lock-note { display: flex; align-items: flex-start; gap: 9px; margin-top: 13px; padding: 11px 13px;
-    border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)); border-radius: 13px; background: color-mix(in oklab, var(--accent) 5%, var(--surface));
-    font-size: 12.5px; line-height: 1.45; color: var(--ink-soft); }
-  .lock-note b { color: var(--ink); font-weight: 700; }
-  .lock-note svg { flex: 0 0 auto; width: 15px; height: 15px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; }
-  .btn-pro { width: 100%; margin-top: 11px; border: none; border-radius: 12px; padding: 13px; cursor: pointer; background: var(--accent); color: var(--on-accent);
-    font: 700 14px/1 Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 10px 22px -13px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
-  .btn-pro svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .btn-pro:active { transform: scale(0.985); }
-  @media (hover:hover) and (pointer:fine) { .btn-pro:hover { filter: brightness(1.05); } }
-
-  /* paired action buttons (export/import, snapshot footer) */
-  .pair { display: flex; gap: 9px; }
-  .btn-ghost { flex: 1 1 0; border: 1px solid var(--border); border-radius: 12px; padding: 12px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 13.5px/1 Inter, sans-serif; transition: background .2s, border-color .18s, transform .15s var(--ease); }
+  /* ── dock ── */
+  .dock { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .btn-primary { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .btn-primary:active { transform: scale(0.985); }
+  .btn-ghost { flex: 0 0 auto; border: 1px solid var(--border); border-radius: 13px; padding: 13px 16px; cursor: pointer; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; display: inline-flex; align-items: center; gap: 7px; transition: transform .15s var(--ease); }
   .btn-ghost:active { transform: scale(0.98); }
-  @media (hover:hover) and (pointer:fine) { .btn-ghost:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); border-color: color-mix(in oklab, var(--accent) 32%, var(--border)); } }
+  .btn-ghost svg { width: 14px; height: 14px; stroke-width: 2.2; }
+  @media (hover:hover) and (pointer:fine) { .btn-primary:hover { filter: brightness(1.05); } }
 
-  /* toggle row (top up on light days) */
-  .toggle-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding-top: 13px; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
-  .toggle-row .tr-txt { flex: 1 1 auto; min-width: 0; }
-  .toggle-row .tr-l { font: 650 13.5px/1.25 Inter, sans-serif; color: var(--ink); }
-  .switch { flex: 0 0 auto; width: 46px; height: 28px; border-radius: 999px; border: none; background: var(--track); cursor: pointer; padding: 0; position: relative; transition: background .22s var(--ease); }
-  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 999px; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform .22s var(--ease-drawer); }
-  .switch[aria-pressed="true"] { background: var(--accent); }
-  .switch[aria-pressed="true"]::after { transform: translateX(18px); }
-  .switch:active::after { transform: scale(0.92); }
-  .switch[aria-pressed="true"]:active::after { transform: translateX(18px) scale(0.92); }
-
-  /* snapshot list */
-  .snaps { max-height: 196px; overflow-y: auto; margin: 13px -4px 0; padding: 0 4px; }
-  .snaps::-webkit-scrollbar { width: 0; }
-  .snap { display: flex; align-items: center; gap: 11px; padding: 11px 0; }
-  .snap + .snap { border-top: 1px solid color-mix(in oklab, var(--border) 58%, transparent); }
-  .snap .sd { flex: 1 1 auto; min-width: 0; }
-  .snap .sdate { font: 600 13px/1.1 'Roboto Mono', monospace; color: var(--ink); }
-  .snap .smeta { font: 500 11px/1.3 'Roboto Mono', monospace; color: var(--muted); margin-top: 4px; }
-  .snap .sact { flex: 0 0 auto; display: inline-flex; gap: 6px; }
-  .snap .sbtn { border: 1px solid var(--border); background: transparent; border-radius: 9px; padding: 7px; cursor: pointer; color: var(--ink-soft); display: grid; place-items: center; transition: border-color .18s, background .18s, transform .14s var(--ease); }
-  .snap .sbtn:active { transform: scale(0.93); }
-  @media (hover:hover) and (pointer:fine) { .snap .sbtn:hover { border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); background: color-mix(in oklab, var(--ink) 4%, transparent); } }
-  .snap .sbtn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .snap-foot { display: flex; gap: 9px; margin-top: 13px; padding-top: 13px; border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
-
-  /* danger zone */
-  .card.danger { border-color: color-mix(in oklab, var(--danger) 26%, var(--border)); background: color-mix(in oklab, var(--danger) 5%, var(--surface)); }
-  .btn-danger { width: 100%; border: 1px solid color-mix(in oklab, var(--danger) 40%, var(--border)); border-radius: 12px; padding: 12px; cursor: pointer; background: color-mix(in oklab, var(--danger) 9%, var(--surface)); color: var(--danger-deep); font: 700 14px/1 Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .2s, transform .15s var(--ease); }
-  .btn-danger:active { transform: scale(0.985); }
-  @media (hover:hover) and (pointer:fine) { .btn-danger:hover { background: color-mix(in oklab, var(--danger) 14%, var(--surface)); } }
-  .btn-danger svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-
-  /* reports empty state */
-  .rep-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-  .rep-count { font: 600 12px/1 'Roboto Mono', monospace; color: var(--muted); }
-  .rep-empty { font-size: 12.5px; line-height: 1.45; color: var(--muted); margin: 12px 0 0; padding: 11px 13px; border: 1px dashed color-mix(in oklab, var(--border) 90%, transparent); border-radius: 11px; text-align: center; }
-
-  /* bottom tab bar */
-  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
-  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; padding: 5px 0; color: var(--muted); transition: color .18s, transform .14s var(--ease); }
-  .tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-  .tab span { font: 700 10px/1 Inter, sans-serif; letter-spacing: 0.01em; }
-  .tab.on { color: var(--accent-deep); }
-  .tab:active { transform: scale(0.94); }
-
+  /* ── loader (the quiz's generating treatment) ── */
+  .skel { border-radius: 12px; background: var(--surface-2); }
+  .gen-line { font: 600 16px/1.4 Fraunces, Georgia, serif; letter-spacing: -0.008em; color: var(--ink); text-align: center; margin: 22px 14px 6px; }
+  .gen-cap { display: block; text-align: center; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted); }
+  .gen-track { height: 4px; border-radius: 999px; background: var(--track); overflow: hidden; position: relative; margin: 14px 40px 0; }
+  .gen-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 999px; background: var(--accent); transform: translateX(-100%); }
   @media (prefers-reduced-motion: no-preference) {
-    .reveal { opacity: 0; transform: translateY(9px); animation: rise .5s var(--ease) forwards; }
-    .reveal:nth-child(1){animation-delay:.04s}.reveal:nth-child(2){animation-delay:.08s}.reveal:nth-child(3){animation-delay:.12s}
-    .reveal:nth-child(4){animation-delay:.16s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.24s}
-    .reveal:nth-child(7){animation-delay:.28s}.reveal:nth-child(8){animation-delay:.32s}.reveal:nth-child(9){animation-delay:.36s}
-    .reveal:nth-child(10){animation-delay:.40s}.reveal:nth-child(11){animation-delay:.44s}.reveal:nth-child(12){animation-delay:.48s}
-    @keyframes rise { to { opacity: 1; transform: none; } }
+    .shimmer { position: relative; overflow: hidden; }
+    .shimmer::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--ink) 9%, transparent), transparent); animation: shim 1.35s var(--ease) infinite; }
+    .gen-bar { animation: ind 1.5s var(--ease) infinite; }
+    @keyframes shim { to { transform: translateX(100%); } }
+    @keyframes ind { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
   }
-  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
-  @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
-  /* ── exam-date bottom sheet ── */
-  .sheet-scrim { position: absolute; inset: 0; z-index: 30; background: color-mix(in oklab, #000 44%, transparent);
-    opacity: 0; pointer-events: none; transition: opacity .32s var(--ease); }
-  .sheet-scrim.on { opacity: 1; pointer-events: auto; }
-  .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 31; background: var(--surface);
-    border: 1px solid var(--border); border-bottom: none; border-radius: 22px 22px 0 0;
-    padding: 10px 18px calc(16px + env(safe-area-inset-bottom));
-    transform: translateY(104%); transition: transform .42s var(--ease-drawer);
-    box-shadow: 0 -18px 50px -18px color-mix(in oklab, #000 50%, transparent); }
-  .sheet.on { transform: translateY(0); }
-  .sheet-grab { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, var(--surface)); margin: 0 auto 13px; }
-  .sheet-title { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 18px; color: var(--ink); margin: 0 0 2px; }
-  .sheet-sub { font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); margin: 0 0 13px; }
-  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .cal-month { font: 700 13.5px/1 Inter, sans-serif; color: var(--ink); }
+
+  /* ── verdict (the exam results' language) ── */
+  .done-kick { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; margin: 8px 0 11px; }
+  .done-kick svg { width: 14px; height: 14px; stroke-width: 2.4; }
+  .done-title { font: 600 32px/1.05 Fraunces, serif; letter-spacing: -0.016em; color: var(--ink); margin: 0; }
+  .done-title em { font-style: normal; color: var(--accent); }
+  .done-sub { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 10px 0 0; }
+  .vscore { display: flex; align-items: baseline; gap: 6px; margin-top: 16px; }
+  .vscore b { font: 600 52px/0.95 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .vscore span { font: 700 13px/1 Inter, sans-serif; color: var(--muted); }
+  .vmeter { height: 7px; border-radius: 999px; background: var(--track); margin-top: 12px; overflow: hidden; }
+  .vmeter i { display: block; height: 100%; border-radius: 999px; background: var(--pass); }
+  .srow { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 9px; cursor: pointer; font: inherit; color: inherit; min-height: 56px; transition: transform .14s var(--ease); }
+  .srow:active { transform: scale(.99); }
+  .srow .sn2 { flex: 1 1 auto; min-width: 0; }
+  .srow .st { display: block; font: 600 14px/1.25 Inter, sans-serif; color: var(--ink); }
+  .srow .ss { display: block; font: 500 11px/1 'Roboto Mono', monospace; color: var(--muted); margin-top: 5px; }
+  .srow .sv { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 6px 9px; }
+  .srow .sv.ok { color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); }
+  .srow .sv.part { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); }
+  .srow .sv.no { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); }
+  .srow > svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--muted); transition: transform .2s var(--ease); }
+  .srow[aria-expanded="true"] > svg { transform: rotate(90deg); }
+  .sdet { display: none; margin: -4px 0 10px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); }
+  .srow[aria-expanded="true"] + .sdet { display: block; }
+  .sdet .q { font: 600 12.5px/1.4 Inter, sans-serif; color: var(--ink); margin: 0 0 8px; }
+  .sdet .lab { font: 800 9px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; margin: 10px 0 5px; }
+  .sdet .lab.a { color: var(--pass); } .sdet .lab.y { color: var(--miss); }
+  .sdet .val { font: 500 11.5px/1.55 'Roboto Mono', monospace; color: var(--ink-soft); }
+  .sdet .why { font: 500 12px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  /* stage 3: accordion choreography, content part only (BRAND §6: transform + opacity). Open settles in 220ms; close is instant. */
+  @media (prefers-reduced-motion: no-preference) { .srow[aria-expanded="true"] + .sdet { animation: sdetIn .22s cubic-bezier(0.16,1,0.3,1); } @keyframes sdetIn { from { opacity: 0; transform: translateY(-4px); } } }
+  @media (prefers-reduced-motion: reduce) { .srow[aria-expanded="true"] + .sdet { animation: sdetFade .2s ease; } @keyframes sdetFade { from { opacity: 0; } } }
+  .slip { border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 14px; margin-top: 6px; }
+  .slip .k { display: inline-flex; align-items: center; gap: 6px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); }
+  .slip .k svg, .scen .k svg { width: 13px; height: 13px; flex: 0 0 auto; }
+  .slip p { margin: 7px 0 0; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  /* today's free-user upsell, quiet: a row under the slip card, never in the dock */
+  .upsell { width: 100%; min-height: 44px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border); border-radius: 13px; background: transparent; padding: 0 14px; cursor: pointer; font: 650 13px/1.3 Inter, sans-serif; color: var(--accent-deep); text-align: left; transition: transform .15s var(--ease); }
+  .upsell:active { transform: scale(0.98); }
+  .upsell svg { width: 15px; height: 15px; stroke: currentColor; flex: 0 0 auto; }
+
+  /* ── sheets: confirm (B2's) and enlarge ── */
+  .scrim { position: absolute; inset: 0; z-index: 8; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .scrim.open { opacity: 1; pointer-events: auto; transition: opacity .26s var(--ease); }
+  .lsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .lsheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .ls-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, transparent); margin: 0 auto 16px; }
+  .lsheet h3 { font: 600 21px/1.2 Fraunces, serif; color: var(--ink); margin: 0 0 6px; }
+  .lsheet p { font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 0 0 18px; }
+  .ls-stay { width: 100%; border: none; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; }
+  .ls-go { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 12px; font: 650 13.5px/1 Inter, sans-serif; color: var(--miss); }
+  .esheet { position: absolute; left: 0; right: 0; bottom: 0; top: 48px; z-index: 9; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; transform: translateY(100%); visibility: hidden; transition: transform .2s var(--ease), visibility 0s linear .2s; }
+  .esheet.open { transform: none; visibility: visible; transition: transform .36s var(--ease), visibility 0s; }
+  .es-head { display: flex; align-items: center; gap: 10px; padding: 10px 16px 12px; border-bottom: 1px solid var(--border); }
+  .es-head .ls-grip { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); margin: 0; }
+  .es-head h3 { flex: 1; font: 600 18px/1.2 Fraunces, serif; color: var(--ink); margin: 14px 0 0; }
+  .es-close { margin-top: 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--ink-soft); font: 650 12.5px/1 Inter, sans-serif; padding: 9px 13px; cursor: pointer; }
+  .es-body { flex: 1; overflow: auto; padding: 16px; }
+  .es-body .net { width: 640px; max-width: none; }
+  .es-hint { font: 500 11px/1.4 Inter, sans-serif; color: var(--muted); text-align: center; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); }
+  /* stage 2: 44pt hit areas + press feedback on small pills and sheet buttons */
+  .enlarge, .reset-pill, .es-close { position: relative; transition: transform .15s var(--ease); }
+  .enlarge::after, .reset-pill::after, .es-close::after { content: ""; position: absolute; inset: -7px; }
+  .ls-stay, .ls-go { transition: transform .15s var(--ease); }
+  .enlarge:active, .reset-pill:active, .es-close:active, .ls-stay:active, .ls-go:active { transform: scale(0.97); }
+  @media (prefers-reduced-motion: reduce) { .lsheet, .esheet { transform: none; opacity: 0; transition: opacity .2s ease, visibility 0s linear .2s; } .lsheet.open, .esheet.open { opacity: 1; transition: opacity .2s ease, visibility 0s; } }
+
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .tab { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 5px 0; color: var(--muted); }
+  .tab svg { width: 22px; height: 22px; }
+  .tab span { font: 700 10px/1 Inter, sans-serif; }
+  .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; max-width: 44ch; margin-left: auto; margin-right: auto; }
+  @media (prefers-reduced-motion: no-preference) {
+    /* rests visible, animates from hidden (CLAUDE.md gotcha) */ .reveal { animation: rise .5s var(--ease) backwards; }
+    .reveal:nth-child(2){animation-delay:.05s}.reveal:nth-child(3){animation-delay:.10s}.reveal:nth-child(4){animation-delay:.15s}.reveal:nth-child(5){animation-delay:.20s}.reveal:nth-child(6){animation-delay:.25s}
+    @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+  }
+
+  /* ── B3b2 · Sim Lab exam: the B2 exam bar, round strip, dock and End dialog (lifted from cert-ios-exam.html; .timer/.ticks renamed) ── */
+  .ebar { display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; }
+  .xtimer { flex: 0 0 auto; min-width: 0; }
+  .xtimer .tl { display: block; font: 800 8.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .xtimer .tv { display: inline-flex; align-items: center; gap: 5px; font: 700 17px/1 'Roboto Mono', monospace; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .xtimer .tv svg { width: 13px; height: 13px; stroke: var(--accent-deep); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .xtimer.low .tv { color: var(--accent-deep); }
+  .xtimer.low .tv svg { stroke: var(--accent-deep); }
+  .ecount { flex: 1 1 auto; text-align: center; min-width: 0; }
+  .ecount .cn { display: block; font: 700 13.5px/1 Inter, sans-serif; color: var(--ink); }
+  .ecount .cs { display: block; font: 500 10.5px/1 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  .end-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ease), background .18s; }
+  .end-btn:active { transform: scale(.96); }
+  .emap { padding: 2px 18px 0; }
+  .xticks { display: flex; gap: 2px; align-items: flex-end; height: 12px; }
+  .xticks i { flex: 1 1 0; height: 5px; border-radius: 2px; background: var(--track); }
+  .xticks i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .xticks i.cur { height: 12px; background: var(--accent); }
+  .xticks i.flag { background: var(--accent-deep); }
+  .efoot { flex: 0 0 auto; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+  .flag-btn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); font: 650 13px/1 Inter, sans-serif; padding: 0 16px; cursor: pointer; transition: background .18s, border-color .18s, color .18s, transform .14s var(--ease); }
+  .flag-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .flag-btn:active { transform: scale(.97); }
+  .flag-btn.on { color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); background: color-mix(in oklab, var(--accent) 9%, transparent); }
+  .flag-btn.on svg { fill: currentColor; }
+  .next-btn { flex: 1 1 auto; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .next-btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .next-btn:active { transform: scale(0.985); }
+  .modal { position: absolute; z-index: 9; left: 22px; right: 22px; top: 50%; transform: translateY(-50%) scale(0.96); opacity: 0; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 20px 19px 18px; box-shadow: 0 30px 70px -28px rgba(0,0,0,.6); transition: transform .2s var(--ease), opacity .2s var(--ease); }
+  .modal { max-height: calc(100% - 96px); overflow-y: auto; }
+  .modal.open { transform: translateY(-50%) scale(1); opacity: 1; pointer-events: auto; transition: transform .26s var(--ease), opacity .2s var(--ease); }
+  /* a sheet stacked over the dialog: the dialog recedes so the sheet holds the decision */
+  .modal::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; background: var(--bg); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .modal.open.under { transform: translateY(-50%) scale(0.98); pointer-events: none; }
+  .modal.open.under::after { opacity: .55; }
+  @media (prefers-reduced-motion: reduce) { .modal, .modal.open, .modal.open.under { transform: translateY(-50%); transition: opacity .2s ease; } }
+  .modal-kick { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+  .modal-kick svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .modal h2 { font: 600 23px/1.1 Fraunces, serif; letter-spacing: -0.012em; color: var(--ink); margin: 11px 0 0; }
+  .modal h2 em { font-style: normal; color: var(--accent); }
+  .msum { display: flex; gap: 8px; margin: 16px 0; }
+  .msum-cell { flex: 1 1 0; border: 1px solid var(--border); border-radius: 13px; background: var(--bg); padding: 12px 8px; text-align: center; }
+  .msum-cell .mn { display: block; font: 600 24px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .msum-cell.flag .mn { color: var(--accent-deep); }
+  .msum-cell.skip .mn { color: var(--miss); }
+  .msum-cell .ml { display: block; font: 700 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 7px; }
+  .m-review { width: 100%; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); font: 650 13.5px/1 Inter, sans-serif; padding: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background .18s, border-color .18s, transform .14s var(--ease); margin-bottom: 9px; }
+  .m-review svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .m-review:active { transform: scale(.99); }
+  .m-submit { width: 100%; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease), filter .2s; }
+  .m-submit:active { transform: scale(.985); }
+  .m-abandon { width: 100%; margin-top: 6px; border: none; background: transparent; cursor: pointer; padding: 11px; font: 650 13px/1 Inter, sans-serif; color: var(--miss); transition: opacity .15s var(--ease); }
+  .m-abandon:active { opacity: .6; }
+  .ecount .cp { display: block; font: 600 10px/1 'Roboto Mono', monospace; color: var(--pass); margin-top: 4px; }
+  .ecount .cp.behind { color: var(--miss); }
+  .prev-btn { flex: 0 0 auto; width: 48px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 13px; background: transparent; color: var(--ink-soft); cursor: pointer; transition: transform .14s var(--ease), border-color .18s; }
+  .prev-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .prev-btn:active { transform: scale(.97); }
+  .prev-btn:disabled { opacity: .35; cursor: default; }
+  .jump { margin-top: 4px; }
+  .jump-t { width: 100%; display: flex; align-items: center; justify-content: space-between; border: 0; background: none; padding: 10px 2px 6px; cursor: pointer; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .jump-t svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease); }
+  .jump.open .jump-t svg { transform: rotate(180deg); }
+  .jgrid { display: none; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; max-height: 236px; overflow-y: auto; scrollbar-width: thin; padding: 4px 3px 2px 1px; }
+  .jump.open .jgrid { display: grid; }
+  .jgrid button { aspect-ratio: 1; min-height: 40px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: 700 12px/1 'Roboto Mono', monospace; cursor: pointer; padding: 0; }
+  .jgrid button.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; color: var(--ink-soft); }
+  .jgrid button.f { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .jgrid button.c { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+  .jkey { display: flex; gap: 12px; margin-top: 8px; font: 600 10.5px/1 Inter, sans-serif; color: var(--muted); }
+  .jkey i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+  .jkey i.a { background: color-mix(in oklab, var(--accent) 16%, var(--surface)); border-color: transparent; }
+  .jkey i.f { background: var(--accent); border-color: var(--accent); }
+  .xticks { height: 10px; }
+  .xticks i { border-radius: 3px; }
+  .ex-loader { padding-top: 34px; }
+  /* reset pill in the console bar / step 1 (as the full exam's Sim Lab questions) */
+  .step { position: relative; }
+  .step .reset-pill.at-step { position: absolute; top: 11px; right: 12px; }
+  .step:has(.at-step) .sk { padding-right: 86px; }
+  /* pace card (today's contents, June look) */
+  .pace { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 15px 16px; margin-top: 16px; }
+  .pace .pk { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .pace .ph { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; }
+  .pace .pt { font: 600 28px/1 Fraunces, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .pace .pv { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 6px 9px; color: var(--pass); background: color-mix(in oklab, var(--pass) 14%, transparent); }
+  .pace .pv.over { color: var(--miss); background: color-mix(in oklab, var(--miss) 13%, transparent); }
+  .pace .ps { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 9px 0 0; }
+  .pace .ptrack { position: relative; height: 7px; border-radius: 999px; background: var(--track); margin: 16px 0 0; }
+  .pace .pfill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--pass); }
+  .pace .pfill.over { background: var(--miss); }
+  .pace .ptick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); border-radius: 2px; }
+  .pace .ptick b { position: absolute; top: -16px; right: -2px; white-space: nowrap; font: 700 9.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .pscale { display: flex; justify-content: space-between; margin-top: 7px; font: 500 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .prows { margin-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); padding-top: 9px; display: grid; gap: 7px; }
+  .pace .prow { display: flex; align-items: baseline; gap: 10px; font: 500 12px/1.3 Inter, sans-serif; color: var(--ink-soft); }
+  .pace .prow .rn { flex: 1 1 auto; min-width: 0; }
+  .pace .prow .rt { font: 600 11.5px/1 'Roboto Mono', monospace; color: var(--ink); }
+  .pace .prow .rp { font: 500 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .pace .prow .rt.over { color: var(--miss); }
+
+  /* ═══ B3c3 · Decision Lab (cert-ios-decisionlab.html) ═══ */
+  /* pieces shared with the Gauntlet / Why-Not drawings */
+  .dock.stack { flex-direction: column; gap: 8px; }
+  .dock.stack .btn-primary, .dock.stack .btn-ghost { width: 100%; justify-content: center; }
+  .miss-call { font: 500 13.5px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  .srow .ss.t { font: 500 11.5px/1.3 Inter, sans-serif; margin-top: 4px; }
+  .sdet .lab.ok { color: var(--pass); } .sdet .lab.no { color: var(--miss); } .sdet .lab.n { color: var(--muted); }
+  .sdet .val.rs { font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink); }
+  .sdet .dwhy { font: 500 12px/1.5 Inter, sans-serif; color: var(--ink-soft); margin: 10px 0 0; }
+  .tab.on { color: var(--accent-deep); }
+  /* entry: today's target card */
+  .tgt .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tgt .v { font: 650 16px/1.3 Inter, sans-serif; color: var(--ink); margin-top: 8px; }
+  .tgt .w { font: 500 12px/1.4 Inter, sans-serif; color: var(--muted); margin-top: 4px; }
+  /* run header (practice): back, Decision N of M, the dots */
+  .dlbar { display: flex; align-items: center; gap: 11px; padding: 14px 20px 6px; }
+  .dlbar .rpill { margin-left: 0; }
+  .dots { display: flex; gap: 5px; padding: 2px 20px 8px; }
+  .dots i { flex: 1 1 0; height: 5px; border-radius: 3px; background: var(--track); }
+  .dots i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+  .dots i.cur { background: var(--accent); transform: scaleY(1.4); }
+  /* the pick, single choice */
+  .pick.one button { font: 550 14px/1.3 Inter, sans-serif; }   /* service names read as words, not commands */
+  .pick.one button .ck { border-radius: 999px; }
+  .pick button.best { border-color: color-mix(in oklab, var(--pass) 55%, var(--border)); background: color-mix(in oklab, var(--pass) 9%, var(--surface)); color: var(--ink); }
+  .pick button.best .ck { background: var(--pass); border-color: var(--pass); }
+  .pick button.best .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .pick button.miss { border-color: color-mix(in oklab, var(--miss) 50%, var(--border)); background: color-mix(in oklab, var(--miss) 8%, var(--surface)); color: var(--ink); }
+  .pick button.miss .ck { background: var(--miss); border-color: var(--miss); }
+  .pick button.miss .ck svg { width: 11px; height: 11px; stroke: var(--on-accent); stroke-width: 3; }
+  .pick button.dim { opacity: 0.55; }
+  .pick button .vd { margin-left: auto; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; }
+  .pick button.best .vd { color: var(--pass); } .pick button.miss .vd { color: var(--miss); }
+  .pick button[disabled] { cursor: default; }
+  .tell { border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); border-radius: 14px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 13px 14px; margin-top: 11px; }
+  .tell .k { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; color: var(--accent-deep); }
+  .tell p { margin: 7px 0 0; font: 500 12.5px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  /* results: look-alike rows and family chips */
+  .confrow .pr { flex: 1 1 auto; min-width: 0; }
+  .confrow { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 14px; margin-bottom: 8px; font: 500 13px/1.35 Inter, sans-serif; color: var(--ink-soft); }
+  .confrow b { color: var(--ink); font-weight: 650; }
+  .confrow .tag { flex: 0 0 auto; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; color: var(--miss); background: color-mix(in oklab, var(--miss) 12%, transparent); border-radius: 999px; padding: 6px 9px; }
+  .chipset { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chipset span { border: 1px solid var(--border); border-radius: 999px; background: var(--surface); padding: 8px 12px; font: 650 12.5px/1 Inter, sans-serif; color: var(--ink-soft); }
+  .score-sub { font: 700 13px/1 Inter, sans-serif; color: var(--muted); margin-top: 6px; }
+  /* exam End dialog without Flagged / Review / Jump: two count cells */
+  .msum.two { grid-template-columns: 1fr 1fr; }
+  /* stage 2: a decision swaps with a short fade, never a re-stagger (5-20 a set); the tell follows the marks */
+  .pick button { transition: background-color .18s var(--ease), border-color .18s var(--ease), opacity .2s var(--ease), transform .12s var(--ease); }
+  .xtimer .tv { transition: color .2s var(--ease); }
+  /* stage 3: the next dot lights on the same beat as the decision swap */
+  .dots i { transition: background-color .15s var(--ease); }
+  @media (prefers-reduced-motion: no-preference) {
+    .runbody .reveal { animation: dlswap .15s var(--ease) backwards; }
+    @keyframes dlswap { from { opacity: 0; } }
+    .tell { animation: dltell .2s var(--ease) .08s backwards; }
+    @keyframes dltell { from { opacity: 0; transform: translateY(4px); } }
+  }
+  @media (prefers-reduced-motion: reduce) { .tell { animation: dlfade .2s ease backwards; } @keyframes dlfade { from { opacity: 0; } } }
+
+  /* ═════ B4 Settings (st-) ═════ */
+  .st-hdr { display: flex; align-items: center; gap: 12px; padding: 14px 20px 6px; }
+  .st-hdr .tt { flex: 1 1 auto; min-width: 0; }
+  .st-hdr h1 { font: 600 24px/1.05 Fraunces, Georgia, serif; letter-spacing: -0.012em; margin: 0; color: var(--ink); }
+  .st-hdr .cc { display: block; margin-top: 4px; font: 600 11px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .st-theme { position: relative; flex: 0 0 auto; width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); display: grid; place-items: center; cursor: pointer; transition: transform .14s var(--ease); }
+  .st-theme::after { content: ""; position: absolute; inset: -4px; }
+  .st-theme:active { transform: scale(0.96); }
+  .st-theme svg { width: 18px; height: 18px; }
+  .st-body { flex: 1; min-height: 0; overflow-y: auto; padding: 6px 20px 26px; }
+  .st-body::-webkit-scrollbar { width: 0; }
+  .st-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 22px 2px 10px; }
+  .st-sect:first-child { margin-top: 8px; }
+  .st-sect.danger { color: var(--miss); }
+  /* account card */
+  .st-acct { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 16px; }
+  .st-acct.out { background: color-mix(in oklab, var(--accent) 7%, var(--surface)); border-color: color-mix(in oklab, var(--accent) 30%, var(--border)); }
+  .st-acct h2 { font: 600 19px/1.2 Fraunces, Georgia, serif; margin: 0; color: var(--ink); letter-spacing: -0.01em; }
+  .st-acct p { margin: 7px 0 0; font: 500 13px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  .st-who { display: flex; align-items: center; gap: 12px; }
+  .st-av { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 999px; display: grid; place-items: center; font: 700 16px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); }
+  .st-who .em { flex: 1 1 auto; min-width: 0; font: 650 14.5px/1.25 Inter, sans-serif; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st-who .em span { display: block; margin-top: 3px; font: 500 11.5px/1.2 Inter, sans-serif; color: var(--muted); }
+  .st-plan { flex: 0 0 auto; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 5px 8px; color: var(--ink-soft); background: color-mix(in oklab, var(--ink) 8%, transparent); }
+  .st-plan.pro { color: var(--on-accent); background: var(--accent); }
+  .st-signin { width: 100%; margin-top: 14px; border: none; border-radius: 12px; padding: 13px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; cursor: pointer; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease); }
+  .st-signin:active { transform: scale(0.985); }
+  /* iOS rows */
+  .st-group { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: hidden; }
+  .st-acct + .st-group { margin-top: 10px; }
+  .st-row { width: 100%; min-height: 50px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 0; background: transparent; color: var(--ink); text-align: left; font: 600 14px/1.25 Inter, sans-serif; cursor: pointer; transition: background-color .15s var(--ease); }
+  .st-row + .st-row, .st-group > * + .st-row { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-row:active { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+  .st-row .ri { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 11%, var(--surface-2)); }
+  .st-row .ri svg { width: 16px; height: 16px; }
+  .st-row .rl { flex: 1 1 0; min-width: 0; }
+  .st-row .rl span { display: block; margin-top: 3px; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--muted); }
+  .st-row .rv { flex: 0 0 auto; font: 500 13px/1.2 Inter, sans-serif; color: var(--muted); text-align: right; }
+  .st-row .rv.ok { color: var(--pass); } .st-row .rv.warn { color: var(--accent-deep); }
+  .st-row > svg.chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--muted); }
+  .st-row.static { cursor: default; } .st-row.static:active { background: transparent; }
+  .st-row.pro .rl { color: var(--accent-deep); }
+  .st-row.danger .rl { color: var(--miss); } .st-row.danger .ri { color: var(--miss); background: color-mix(in oklab, var(--miss) 11%, var(--surface-2)); }
+  .st-row.out { justify-content: center; color: var(--miss); font-weight: 650; }
+  /* pass plan */
+  .st-pp h3 { font: 600 17px/1.25 Fraunces, Georgia, serif; margin: 0; color: var(--ink); }
+  .st-pp p { margin: 7px 0 0; font: 500 13px/1.5 Inter, sans-serif; color: var(--ink-soft); }
+  .st-pp .pp-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  .st-pp .pp-stats div { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: var(--bg); }
+  .st-pp .pp-stats b { display: block; font: 600 20px/1 Fraunces, Georgia, serif; color: var(--ink); }
+  .st-pp .pp-stats span { display: block; margin-top: 5px; font: 700 9px/1.2 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .st-pp .pp-locked { margin-top: 14px; padding-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-pp .pp-locked .k { font: 650 12.5px/1.35 Inter, sans-serif; color: var(--ink); }
+  .st-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+  .st-chips span { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 6px 9px; font: 600 11.5px/1 Inter, sans-serif; color: var(--muted); }
+  .st-chips svg { width: 10px; height: 10px; }
+  .st-btns { display: flex; gap: 9px; margin-top: 13px; }
+  .st-pri { flex: 1 1 0; min-height: 44px; border: none; border-radius: 12px; padding: 12px; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; cursor: pointer; transition: transform .15s var(--ease); }
+  .st-sec { flex: 1 1 0; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: transparent; color: var(--ink-soft); font: 650 14px/1 Inter, sans-serif; cursor: pointer; transition: transform .15s var(--ease); }
+  .st-pri:active, .st-sec:active { transform: scale(0.985); }
+  .st-pri:disabled { opacity: .45; cursor: default; }
+  /* goal / review cards */
+  .st-k { display: flex; align-items: center; gap: 8px; font: 650 14px/1.2 Inter, sans-serif; color: var(--ink); }
+  .st-k .lock-pill { margin-left: auto; }
+  .st-big { display: flex; align-items: baseline; gap: 9px; margin: 10px 0 11px; }
+  .st-big b { font: 600 40px/1 Fraunces, Georgia, serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; }
+  .st-big span { font: 700 11px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .st-note { margin: 10px 0 0; font: 500 12px/1.5 Inter, sans-serif; color: var(--muted); }
+  .st-note b { color: var(--ink-soft); }
+  .st-free { margin-top: 11px; border-radius: 12px; padding: 11px 12px; background: color-mix(in oklab, var(--accent) 8%, var(--bg)); font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); }
+  .st-free b { color: var(--ink); }
+  .st-tog { display: flex; align-items: center; gap: 12px; margin-top: 13px; padding-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-tog .tl { flex: 1 1 auto; min-width: 0; font: 650 13.5px/1.25 Inter, sans-serif; color: var(--ink); }
+  .st-tog .tl span { display: block; margin-top: 3px; font: 500 11.5px/1.4 Inter, sans-serif; color: var(--muted); }
+  .st-sw { position: relative; flex: 0 0 auto; width: 48px; height: 30px; border-radius: 999px; border: none; background: var(--track); cursor: pointer; padding: 0; transition: background-color .2s var(--ease); }
+  .st-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s var(--ease); }
+  .st-sw[aria-pressed="true"] { background: var(--accent); }
+  .st-sw[aria-pressed="true"]::after { transform: translateX(18px); }
+  /* backups */
+  .st-bk { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; min-height: 52px; }
+  .st-bk + .st-bk { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-bk:active { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+  .st-bk .bl { flex: 1 1 0; min-width: 0; font: 650 13.5px/1.2 Inter, sans-serif; }
+  .st-bk .bl span { display: block; margin-top: 4px; font: 500 11px/1.3 'Roboto Mono', monospace; color: var(--muted); }
+  .st-bk .bv { flex: 0 0 auto; font: 650 12px/1 Inter, sans-serif; color: var(--accent-deep); }
+  /* the bottom sheet for lists and the calendar (#ist-sheet) */
+  .st-sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 9; max-height: 82%; display: flex; flex-direction: column; background: var(--surface); border-radius: 22px 22px 0 0; border-top: 1px solid var(--border); padding: 10px 20px calc(20px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .2s var(--ease); }
+  .st-sheet.open { transform: translateY(0); transition: transform .36s var(--ease); }   /* B2 sheet timings: in .36s, out .2s */
+  .st-sheet h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; margin: 4px 0 4px; color: var(--ink); }
+  .st-sheet > p { margin: 0 0 12px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); }
+  .st-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -6px; }
+  .st-cert { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 9px 6px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; border-radius: 12px; }
+  .st-cert:active { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+  .st-cert .g { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface-2)); }
+  .st-cert .n { flex: 1 1 0; min-width: 0; font: 650 14px/1.2 Inter, sans-serif; }
+  .st-cert .n span { display: block; margin-top: 3px; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--muted); }
+  .st-cert .pro-tag { margin-left: 0; }
+  .st-cert .tick { flex: 0 0 auto; width: 20px; height: 20px; color: var(--accent-deep); }
+  .st-cert.on { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 8px; }
+  .cal-month { font: 700 14px/1 Inter, sans-serif; color: var(--ink); }
   .cal-nav { display: inline-flex; gap: 6px; }
-  .cal-nav button { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--ink); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-  .cal-nav button:disabled { opacity: .35; cursor: default; }
-  .cal-nav svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .cal-dow { text-align: center; font: 700 10px/1 Inter, sans-serif; letter-spacing: .08em; color: var(--muted); padding: 5px 0 7px; text-transform: uppercase; }
-  .cal-day { aspect-ratio: 1; border: none; background: transparent; border-radius: 10px; font: 600 13px/1 Inter, sans-serif; color: var(--ink); cursor: pointer; font-variant-numeric: lining-nums tabular-nums; }
+  .cal-nav button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+  .cal-nav svg { width: 14px; height: 14px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  .cal-dow { text-align: center; font: 700 10px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 0 7px; }
+  .cal-day { aspect-ratio: 1; border: 0; background: transparent; border-radius: 10px; font: 600 13.5px/1 Inter, sans-serif; color: var(--ink); cursor: pointer; }
   .cal-day:disabled { color: color-mix(in oklab, var(--ink) 26%, transparent); cursor: default; }
-  .cal-day.sel { background: var(--accent); color: var(--on-accent); font-weight: 800; }
   .cal-day.today { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 65%, transparent); }
-  .sheet .btn-save:disabled { opacity: .45; cursor: default; }
-  .sheet-clear { width: 100%; margin-top: 9px; background: none; border: none; font: 600 12.5px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; padding: 9px; }
+  .cal-day { transition: transform .12s var(--ease); } .cal-day:active:not(:disabled) { transform: scale(0.95); }
+  .cal-day.sel { background: var(--accent); color: var(--on-accent); font-weight: 800; }
+  .st-sheet .st-pri { width: 100%; margin-top: 12px; flex: 0 0 auto; }
+  .st-clear { width: 100%; margin-top: 6px; border: 0; background: none; padding: 11px; font: 650 13px/1 Inter, sans-serif; color: var(--ink-soft); cursor: pointer; }
+  /* delete confirm (today's modal, restyled as a sheet) */
+  .st-del .dr { display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); font: 650 13px/1.3 Inter, sans-serif; color: var(--ink); }
+  .st-del .dr span { font: 500 12px/1.4 Inter, sans-serif; color: var(--muted); }
+  .st-del .grace { margin: 10px 0 0; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); }
+  .st-del label { display: block; margin: 12px 0 6px; font: 600 12px/1.4 Inter, sans-serif; color: var(--ink-soft); }
+  .st-del input { width: 100%; min-height: 46px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--ink); padding: 0 13px; font: 500 15px/1 Inter, sans-serif; }
+  .st-danger-btn { width: 100%; min-height: 46px; margin-top: 12px; border: 0; border-radius: 12px; background: var(--miss); color: #fff; font: 700 14.5px/1 Inter, sans-serif; cursor: pointer; }
+  .st-danger-btn:disabled { opacity: .4; cursor: default; }
+  .toast { position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 12; border-radius: 12px; padding: 12px 14px; background: var(--ink); color: var(--bg); font: 600 13px/1.35 Inter, sans-serif; }
+  .st-body > .reveal:nth-child(n+7) { animation-delay: .25s; }   /* reading order: everything past the sixth item rises on the last beat, never before the ones above it */
+  .st-still .reveal { animation: none !important; }   /* a redraw after a state change does not replay the entrance */
+  @media (prefers-reduced-motion: reduce) { .st-sheet, .st-sheet.open { transition: none; } }
 </style>
 </head>
 <body>
   <div class="stage">
     <div class="stage-head">
       <div>
-        <p class="stage-eyebrow">Cert app · iOS</p>
+        <p class="stage-eyebrow">Cert app · iOS · B4</p>
         <h1 class="stage-title">Settings</h1>
-        <p class="stage-sub">Study cadence, your data, and the danger zone, rebuilt in the onboarding language. Every capability of the live desktop Settings, carried into one calm scrollable phone layout.</p>
+        <p class="stage-sub">The Account tab: your account, your Pass Plan, study setup, your data and the danger zone. States: <code>?v=signed-out</code>, <code>free</code>, <code>pro</code>, <code>exam-date</code>, <code>cert-switch</code>, <code>diag</code>, <code>restore</code>, <code>clear-bank</code>, <code>delete</code>.</p>
       </div>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
-        <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-        <span id="themeLabel">Dark</span>
-      </button>
+      <button class="theme-toggle" id="themeToggle" type="button"><svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg><span id="themeLabel">Dark</span></button>
     </div>
-
     <div class="phone-wrap">
       <div class="phone">
-        <div class="screen plan-free">
+        <div class="screen" id="screen">
           <div class="notch"></div>
-          <div class="statusbar">
-            <span>9:41</span>
-            <span class="sb-icons">
-              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity="0.4"/></svg>
-              <svg viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="2" width="14" height="8" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="2.6" y="3.6" width="9" height="4.8" rx="1.2"/><rect x="16" y="4.6" width="1.4" height="2.8" rx="0.7"/></svg>
-            </span>
-          </div>
-
-          <div class="hdr">
-            <button class="back" type="button" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
-            <h1>Settings</h1>
-            <span class="plan-tag">N10-009</span>
-            <button class="app-theme" id="appTheme" type="button" aria-label="Switch theme"><svg id="appThemeIcon" viewBox="0 0 24 24" aria-hidden="true"></svg></button>
-          </div>
-
-          <div class="body">
-            <!-- ── Study setup ── -->
-            <div class="sect reveal">Study setup</div>
-
-            <div class="card reveal">
-              <div class="ag-row">
-                <span class="ag-l">Cloud sync</span>
-                <span class="ag-v ok">Active</span>
-              </div>
-              <button class="ag-row" id="glanceExamRow" type="button" aria-label="Set your exam date">
-                <span class="ag-l">Exam date</span>
-                <span class="ag-v unset" id="glanceExam">Not set</span>
-                <svg class="ag-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-              </button>
-              <div class="ag-row">
-                <span class="ag-l">Daily goal</span>
-                <span class="ag-v" id="glanceGoal">15 a day</span>
-              </div>
-              <div class="ag-row col">
-                <div class="ag-line">
-                  <span class="ag-l">Today</span>
-                  <span class="ag-v num" id="glanceToday">0 of 15</span>
-                </div>
-                <div class="ag-bar"><span id="todayBar" style="width:0%"></span></div>
-              </div>
-            </div>
-
-            <div class="card reveal">
-              <div class="card-head"><span class="card-title">Exam date</span></div>
-              <button class="btn-save" id="examDateBtn" type="button">Set your exam date</button>
-              <p class="card-note">Powers the days-until-exam countdown on Home and Analytics, and the marker on the 365-day study heatmap.</p>
-            </div>
-
-            <div class="card reveal">
-              <div class="card-head"><span class="card-title">Daily goal</span><span class="pro-lock free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></div>
-              <div class="bignum"><span class="bn" id="goalBn">15</span><span class="bl">questions per day</span></div>
-              <div class="seg pro-only" role="group" aria-label="Daily goal preset">
-                <button type="button" aria-pressed="false">10</button>
-                <button type="button" aria-pressed="true">20</button>
-                <button type="button" aria-pressed="false">30</button>
-                <button type="button" aria-pressed="false">50</button>
-              </div>
-              <button class="btn-save pro-only" type="button">Save</button>
-              <p class="card-note pro-only">The count behind the Today card on your home page. Aim for something you can hit every day without burning out.</p>
-              <div class="lock-note free-only">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 2"></path></svg>
-                <p>Free is fixed at <b>15 questions a day</b> — that's your daily allowance. Go Pro to set a higher goal.</p>
-              </div>
-              <button class="btn-pro free-only" id="goProGoal" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>Go Pro to raise your goal</button>
-            </div>
-
-            <div class="card reveal">
-              <div class="card-head"><span class="card-title">Daily Review</span><span class="pro-lock free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></div>
-              <div class="seg pro-only" role="group" aria-label="Daily review size">
-                <button type="button" aria-pressed="false">10</button>
-                <button type="button" aria-pressed="false">20</button>
-                <button type="button" aria-pressed="false">30</button>
-                <button type="button" aria-pressed="true">All due</button>
-              </div>
-              <div class="toggle-row pro-only">
-                <span class="tr-txt"><span class="tr-l">Top up on light days</span></span>
-                <button class="switch" type="button" role="switch" aria-pressed="true" aria-label="Top up on light days"></button>
-              </div>
-              <p class="card-note pro-only">When few cards are due, offer extra practice on your weakest topics.</p>
-              <div class="bignum free-only"><span class="bn">5</span><span class="bl">cards a day</span></div>
-              <div class="lock-note free-only">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4l3 2"></path></svg>
-                <p>Free review is capped at <b>5 cards a day</b>, with no light-day top-ups. Go Pro for custom sizes, All-due sessions, and top-ups.</p>
-              </div>
-              <button class="btn-pro free-only" id="goProReview" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>Go Pro for full review control</button>
-            </div>
-
-            <!-- ── Data and backups ── -->
-            <div class="sect reveal">Data and backups</div>
-
-            <div class="card reveal">
-              <div class="card-head"><span class="card-title">Manual export and import</span></div>
-              <div class="pair">
-                <button class="btn-ghost" type="button">Export data</button>
-                <button class="btn-ghost" type="button">Import data</button>
-              </div>
-              <p class="card-note">Exports all quiz history, streaks, drill stats, topology saves, and ACL state to a JSON file. Import merges into your current local data.</p>
-            </div>
-
-            <div class="card reveal">
-              <div class="card-head"><span class="card-title">Automatic backups</span></div>
-              <p class="card-note" style="margin-top:0">Daily rolling snapshots kept for the last 7 days plus pre-restore safety snapshots. Restore rolls back all of your data to that day's state; current state is auto-snapshotted first, so you can roll forward again.</p>
-              <div class="snaps">
-                <div class="snap">
-                  <div class="sd"><div class="sdate">2026-06-08</div><div class="smeta">36 keys · 193.8 KB · v7.35.0 · captured 18:36</div></div>
-                  <div class="sact">
-                    <button class="sbtn" type="button" aria-label="Download 2026-06-08 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5"></path><path d="M5 21h14"></path></svg></button>
-                    <button class="sbtn" type="button" aria-label="Restore 2026-06-08 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></button>
-                  </div>
-                </div>
-                <div class="snap">
-                  <div class="sd"><div class="sdate">2026-06-07</div><div class="smeta">32 keys · 169.5 KB · captured 21:04</div></div>
-                  <div class="sact">
-                    <button class="sbtn" type="button" aria-label="Download 2026-06-07 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5"></path><path d="M5 21h14"></path></svg></button>
-                    <button class="sbtn" type="button" aria-label="Restore 2026-06-07 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></button>
-                  </div>
-                </div>
-                <div class="snap">
-                  <div class="sd"><div class="sdate">2026-06-06</div><div class="smeta">30 keys · 158.2 KB · captured 19:48</div></div>
-                  <div class="sact">
-                    <button class="sbtn" type="button" aria-label="Download 2026-06-06 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5"></path><path d="M5 21h14"></path></svg></button>
-                    <button class="sbtn" type="button" aria-label="Restore 2026-06-06 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></button>
-                  </div>
-                </div>
-                <div class="snap">
-                  <div class="sd"><div class="sdate">2026-06-05</div><div class="smeta">33 keys · 171.0 KB · captured 22:10</div></div>
-                  <div class="sact">
-                    <button class="sbtn" type="button" aria-label="Download 2026-06-05 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5"></path><path d="M5 21h14"></path></svg></button>
-                    <button class="sbtn" type="button" aria-label="Restore 2026-06-05 snapshot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg></button>
-                  </div>
-                </div>
-              </div>
-              <div class="snap-foot">
-                <button class="btn-ghost" type="button">Download latest snapshot</button>
-                <button class="btn-ghost" type="button">Snapshot now</button>
-              </div>
-            </div>
-
-            <!-- ── Account (Apple lifecycle) ── -->
-            <div class="sect reveal">Account</div>
-            <div class="card reveal" style="padding:4px;">
-              <button id="setManageSub" type="button" style="display:flex;align-items:center;width:100%;gap:10px;background:none;border:none;border-radius:11px;padding:13px 12px;cursor:pointer;font:600 14.5px/1.25 Inter,sans-serif;color:var(--ink);text-align:left;">
-                <span style="flex:1;">Manage subscription</span>
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--muted)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-              </button>
-              <div style="height:1px;background:color-mix(in oklab,var(--border) 70%,transparent);margin:0 12px;"></div>
-              <button id="setRestore" type="button" style="display:flex;align-items:center;width:100%;gap:10px;background:none;border:none;border-radius:11px;padding:13px 12px;cursor:pointer;font:600 14.5px/1.25 Inter,sans-serif;color:var(--ink);text-align:left;">
-                <span style="flex:1;">Restore purchases</span>
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--muted)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-              </button>
-              <div style="height:1px;background:color-mix(in oklab,var(--border) 70%,transparent);margin:0 12px;"></div>
-              <button id="setDeleteAcct" type="button" style="display:flex;align-items:center;width:100%;gap:10px;background:none;border:none;border-radius:11px;padding:13px 12px;cursor:pointer;font:600 14.5px/1.25 Inter,sans-serif;color:var(--miss,#c0392b);text-align:left;">
-                <span style="flex:1;">Delete account</span>
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--miss,#c0392b)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
-              </button>
-            </div>
-
-            <!-- ── Danger zone ── -->
-            <div class="sect reveal">Danger zone</div>
-            <div class="card danger reveal">
-              <button class="btn-danger" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
-                Clear wrong answers bank (9)
-              </button>
-              <p class="card-note">Removes all saved mistakes. The Drill Mistakes preset on the home page fires a drill from this bank.</p>
-            </div>
-
-            <!-- ── Reports ── -->
-            <div class="sect reveal">Reports</div>
-            <div class="card reveal">
-              <div class="rep-head"><span class="card-title">Pending reports</span><span class="rep-count">0 queued</span></div>
-              <p class="card-note" style="margin-top:9px">Drains on next page load.</p>
-              <p class="rep-empty">No queued reports.</p>
-            </div>
-          </div>
-
-          <div class="tabbar">
-            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path></svg><span>Home</span></button>
-            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"></path></svg><span>Drills</span></button>
-            <button class="tab" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-7"></path></svg><span>Progress</span></button>
-            <button class="tab on" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg><span>Account</span></button>
-          </div>
-
-          <!-- ── exam-date bottom sheet ── -->
-          <div class="sheet-scrim" id="examScrim"></div>
-          <div class="sheet" id="examSheet" role="dialog" aria-modal="true" aria-label="Set your exam date">
-            <div class="sheet-grab"></div>
-            <h2 class="sheet-title">Set your exam date</h2>
-            <p class="sheet-sub">Pick the day you sit N10-009. You can change it any time.</p>
-            <div class="cal-head">
-              <span class="cal-month" id="calMonth"></span>
-              <span class="cal-nav">
-                <button type="button" id="calPrev" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
-                <button type="button" id="calNext" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
-              </span>
-            </div>
-            <div class="cal-grid" id="calGrid"></div>
-            <button class="btn-save" id="examSave" type="button" disabled>Save exam date</button>
-            <button class="sheet-clear" id="examClear" type="button" hidden>Remove exam date</button>
-          </div>
+          <div class="statusbar"><span>9:41</span><span class="sb-icons"><svg viewBox="0 0 18 12" aria-hidden="true"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1" width="3" height="11" rx="1" opacity=".35"/></svg><svg viewBox="0 0 24 12" aria-hidden="true"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="currentColor"/><rect x="2" y="2" width="14" height="8" rx="1.5"/></svg></span></div>
+          <div id="app" style="display:contents"></div>
         </div>
       </div>
-      <p class="hint">Phase 1 mockup. Tap a preset to switch the daily goal; the light-day toggle and theme toggle are live.</p>
+      <p class="hint" id="hint"></p>
     </div>
   </div>
-
   <script>
     (function () {
-      var html = document.documentElement, label = document.getElementById('themeLabel'), icon = document.getElementById('themeIcon');
-      var appIcon = document.getElementById('appThemeIcon');
-      var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
-      var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
-      var sun = SUN, moon = MOON;
-      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
-      function paint(){
-        var light = html.getAttribute('data-theme') === 'light';
-        label.textContent = light ? 'Dark' : 'Light';
-        icon.innerHTML = light ? sun : moon;
-        if (appIcon) appIcon.innerHTML = light ? MOON : SUN;
-      }
-      function toggleTheme(){
-        var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-        html.setAttribute('data-theme', next);
-        try { localStorage.setItem('ca-theme', next); } catch (e) {}
-        paint();
-      }
-      document.getElementById('themeToggle').addEventListener('click', toggleTheme);
-      document.getElementById('appTheme').addEventListener('click', toggleTheme);
-      paint();
+      var qv = new URLSearchParams(location.search).get('v'), v = qv || 'free';
+      var I = {
+        back: '<path d="M15 6l-6 6 6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', left: '<path d="M15 6l-6 6 6 6"/>',
+        lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', check: '<path d="M20 6L9 17l-5-5"/>',
+        sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+        moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+        cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.8A3.6 3.6 0 0 1 17.5 18z"/>', cal: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+        goal: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.8"/>', today: '<path d="M4 19l5-6 4 3 7-9"/>',
+        swap: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>', star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>',
+        up: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 20h14"/>', down: '<path d="M12 4v12M7 11l5 5 5-5"/><path d="M5 20h14"/>',
+        trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>', bin: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
+        snap: '<circle cx="12" cy="13" r="4"/><path d="M4 8h3l2-3h6l2 3h3v11H4z"/>',
+        home: '<path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/>', drills: '<path d="M4 6h16M4 12h16M4 18h10"/>', prog: '<path d="M5 19V9M12 19V4M19 19v-7"/>', acct: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'
+      };
+      function ic(k, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>'; }
+      function $(id) { return document.getElementById(id); }
+      var TAB = '<div class="tabbar">' + [['home','Home'],['drills','Drills'],['prog','Progress'],['acct','Account']].map(function (t) { return '<button class="tab' + (t[0] === 'acct' ? ' on' : '') + '" type="button">' + ic(t[0]) + '<span>' + t[1] + '</span></button>'; }).join('') + '</div>';
+      var CERTS = [['N+','Network+','N10-009',0],['S+','Security+','SY0-701',1],['AZ','Microsoft Azure Fundamentals','AZ-900',1],['AI','Microsoft Azure AI Fundamentals','AI-901',1],['SC','Microsoft SC-900','SC-900',1],['AWS','AWS Cloud Practitioner','CLF-C02',1],['A+','CompTIA A+ Core 1','220-1201',1],['A+','CompTIA A+ Core 2','220-1202',1]];
+      var BACKUPS = [['8 June','193.8 KB · saved 18:36'],['7 June','169.5 KB · saved 21:04'],['6 June','158.2 KB · saved 19:48'],['5 June','171.0 KB · saved 22:10']];
 
-      // segmented preset controls — Pro only. Selections persist across screens
-      // via localStorage and rehydrate on load, so a chosen value sticks.
-      var glanceGoal = document.getElementById('glanceGoal'), glanceToday = document.getElementById('glanceToday');
-      function setGlance(v){
-        if (glanceGoal) glanceGoal.textContent = v + ' a day';
-        if (glanceToday) glanceToday.textContent = '0 of ' + v;
-      }
-      function lsGet(k, d){ try { var v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }
-      function lsSet(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+      var out = v === 'signed-out', pro = v === 'pro' || v === 'exam-date' || v === 'restore' || v === 'delete';
+      // the E2E shell's Pro demo toggle drives the default state only; ?v= states are fixed
+      window.setPlan = function (p) { if (qv) return; pro = !!p; draw(true); };
 
-      var goalSeg    = document.querySelector('.seg[aria-label="Daily goal preset"]');
-      var reviewSeg  = document.querySelector('.seg[aria-label="Daily review size"]');
-      var topupSwitch = document.querySelector('.toggle-row .switch');
-      var goalBnEl   = document.getElementById('goalBn');
-
-      function pressInSeg(seg, value){
-        if (!seg) return;
-        seg.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b.textContent.trim() === value ? 'true' : 'false'); });
+      function row(icon, label, sub, val, opts) {
+        opts = opts || {};
+        return '<button class="st-row' + (opts.cls ? ' ' + opts.cls : '') + '" type="button"' + (opts.id ? ' id="' + opts.id + '"' : '') + '>'
+          + (icon ? '<span class="ri">' + ic(icon) + '</span>' : '')
+          + '<span class="rl">' + label + (sub ? '<span>' + sub + '</span>' : '') + '</span>'
+          + (val ? '<span class="rv' + (opts.vcls ? ' ' + opts.vcls : '') + '">' + val + '</span>' : '')
+          + (opts.nochev ? '' : ic('right', 'chev')) + '</button>';
       }
-      // rehydrate the Pro controls from storage; returns the stored daily goal
-      function hydrateControls(){
-        var goal = lsGet('e2e_daily_goal', '20');
-        pressInSeg(goalSeg, goal);
-        pressInSeg(reviewSeg, lsGet('e2e_review_size', 'All due'));
-        if (topupSwitch) topupSwitch.setAttribute('aria-pressed', lsGet('e2e_topup', '1') === '1' ? 'true' : 'false');
-        return goal;
+      function seg(vals, on, locked) {
+        return '<div class="cseg" role="group">' + vals.map(function (x) { return '<button type="button" aria-pressed="' + (x === on) + '"' + (locked && x !== on ? ' class="locked">' + ic('lock') : '>') + x + '</button>'; }).join('') + '</div>';
       }
 
-      if (goalSeg) goalSeg.addEventListener('click', function(e){
-        var btn = e.target.closest('button'); if (!btn) return;
-        var v = btn.textContent.trim();
-        pressInSeg(goalSeg, v);
-        if (goalBnEl) goalBnEl.textContent = v;
-        setGlance(v);
-        lsSet('e2e_daily_goal', v);
-      });
-      if (reviewSeg) reviewSeg.addEventListener('click', function(e){
-        var btn = e.target.closest('button'); if (!btn) return;
-        var v = btn.textContent.trim();
-        pressInSeg(reviewSeg, v);
-        lsSet('e2e_review_size', v);
-      });
-      if (topupSwitch) topupSwitch.addEventListener('click', function(){
-        var on = topupSwitch.getAttribute('aria-pressed') !== 'true';
-        topupSwitch.setAttribute('aria-pressed', on ? 'true' : 'false');
-        lsSet('e2e_topup', on ? '1' : '0');
-      });
-
-      // ── Free/Pro plan state ──────────────────────────────────────────────
-      //  Free: daily goal locked at 15/day, daily review capped at 5/day, no
-      //  top-up — all customisation behind Pro. Pro: live controls that persist.
-      //  The shell shares the demo-pro flag via localStorage and also calls
-      //  setPlan() on toggle (see shell.js applyProState).
-      function setPlan(isPro){
-        var screen = document.querySelector('.screen');
-        if (!screen) return;
-        screen.classList.toggle('plan-pro', !!isPro);
-        screen.classList.toggle('plan-free', !isPro);
-        if (isPro){
-          var goal = hydrateControls();
-          if (goalBnEl) goalBnEl.textContent = goal;
-          setGlance(goal);
+      function draw(still) {
+        var h = '<div class="st-hdr"><span class="tt"><h1>Settings</h1><span class="cc">Network+ · N10-009</span></span>'
+          + '<button class="st-theme" type="button" id="stTheme" aria-label="Switch theme">' + ic(document.documentElement.getAttribute('data-theme') === 'light' ? 'moon' : 'sun') + '</button></div>'
+          + '<div class="st-body">';
+        // ── account ──
+        h += '<div class="st-sect reveal">Account</div>';
+        if (out) {
+          h += '<div class="st-acct out reveal"><h2>Sign in to keep your progress</h2>'
+            + '<p>Right now your progress lives only on this phone, so deleting the app would lose it. Sign in to back it up and carry on from any device.</p>'
+            + '<button class="st-signin" type="button" id="stSignIn">Sign in</button></div>';
         } else {
-          if (goalBnEl) goalBnEl.textContent = '15';
-          setGlance('15');
+          h += '<div class="st-group reveal"><div class="st-row static"><span class="st-av">S</span><span class="rl" style="font-weight:650">simi@example.com<span>Signed in</span></span>'
+            + '<span class="st-plan' + (pro ? ' pro">Pro' : '">Free') + '</span></div>'
+            + row('swap', 'Cert', null, 'Network+', { id: 'stCert' })
+            + (pro ? '' : row('star', 'Go Pro', 'Unlimited questions and every cert', null, { id: 'goProRow', cls: 'pro' }))
+            + '</div>';
         }
+        // ── pass plan ──
+        h += '<div class="st-sect reveal">Your Pass Plan</div><div class="card st-pp reveal">';
+        if (pro) {
+          h += '<h3>Network+ Pass Plan</h3><p>From your baseline diagnostic on 12 October.</p>'
+            + '<div class="pp-stats"><div><b>64%</b><span>Readiness</span></div><div><b>3</b><span>Focus topics</span></div><div><b>14 days</b><span>Since taken</span></div></div>'
+            + '<div class="st-btns"><button class="st-pri" type="button">View plan</button><button class="st-sec" type="button" id="stRetake">Retake</button></div>';
+        } else {
+          h += '<h3>Take the baseline diagnostic</h3><p>20 questions across every domain, about 30 minutes. It builds your Pass Plan and shows which topics to drill first.</p>'
+            + '<div class="st-btns"><button class="st-pri" type="button" id="stDiag">Start the diagnostic</button></div>'
+            + '<div class="pp-locked"><div class="k">Every other cert gets its own plan with Pro</div><div class="st-chips">'
+            + CERTS.slice(1, 6).map(function (c) { return '<span>' + ic('lock') + c[1].replace('Microsoft ', '') + '</span>'; }).join('') + '</div></div>';
+        }
+        h += '</div>';
+        // ── study setup ──
+        h += '<div class="st-sect reveal">Study setup</div><div class="st-group reveal">'
+          + row('cloud', 'Cloud sync', null, out ? 'Off' : 'On', { vcls: out ? 'warn' : 'ok', nochev: true, cls: 'static' })
+          + row('cal', 'Exam date', null, pro ? '14 Dec · 49 days' : 'Not set', { id: 'stExam' })
+          + row('goal', 'Daily goal', null, pro ? '30 a day' : '15 a day', { nochev: true, cls: 'static' })
+          + row('today', 'Today', null, pro ? '12 of 30' : '6 of 15', { nochev: true, cls: 'static' })
+          + '</div>';
+        h += '<div class="card reveal" style="margin-top:10px"><div class="st-k">Daily goal' + (pro ? '' : '<span class="lock-pill">' + ic('lock') + 'Pro</span>') + '</div>'
+          + '<div class="st-big"><b>' + (pro ? 30 : 15) + '</b><span>questions a day</span></div>'
+          + (pro ? seg([10, 20, 30, 50], 30) + '<button class="st-pri" type="button" style="width:100%;margin-top:11px">Save</button><p class="st-note">This sets the Today card on Home. Pick a number you can hit every day.</p>'
+                 : '<div class="st-free">Free is fixed at <b>15 questions a day</b>. Go Pro to set a higher goal.</div><button class="st-sec" type="button" id="goProGoal" style="width:100%;margin-top:10px">Go Pro</button>')
+          + '</div>';
+        h += '<div class="card reveal"><div class="st-k">Daily Review' + (pro ? '' : '<span class="lock-pill">' + ic('lock') + 'Pro</span>') + '</div>'
+          + '<div class="st-big"><b>' + (pro ? 'All' : 5) + '</b><span>' + (pro ? 'due cards' : 'cards a day') + '</span></div>'
+          + (pro ? seg([10, 20, 30, 'All due'], 'All due') + '<div class="st-tog"><span class="tl">Top up on light days<span>When few cards are due, add practice on your weakest topics.</span></span><button class="st-sw" type="button" aria-pressed="true" aria-label="Top up on light days"></button></div>'
+                 : '<div class="st-free">Free review is <b>5 cards a day</b>. Pro lets you review everything that’s due and top up on light days.</div><button class="st-sec" type="button" id="goProReview" style="width:100%;margin-top:10px">Go Pro</button>')
+          + '</div>';
+        // ── data ──
+        h += '<div class="st-sect reveal">Data and backups</div><div class="card reveal"><div class="st-k">Export and import</div>'
+          + '<div class="st-btns"><button class="st-sec" type="button">' + 'Export data</button><button class="st-sec" type="button" id="stImport">Import data</button></div>'
+          + '<p class="st-note">Export saves your history, streaks, drill stats and saved work as a JSON file. Import merges a file into what’s here.</p></div>'
+          + '<div class="st-group reveal">' + BACKUPS.map(function (b, i) { return '<button class="st-bk" type="button"' + (i === 0 ? ' id="stBk0"' : '') + '><span class="bl">' + b[0] + '<span>' + b[1] + '</span></span><span class="bv">Restore</span></button>'; }).join('') + '</div>'
+          + '<div class="st-btns reveal"><button class="st-sec" type="button">Download latest</button><button class="st-sec" type="button">Snapshot now</button></div>'
+          + '<p class="st-note reveal">We keep a snapshot from each of the last 7 days. Restoring one saves today first, so you can undo it.</p>';
+        // ── danger ──
+        h += '<div class="st-sect danger reveal">Danger zone</div><div class="st-group reveal">'
+          + row('bin', 'Clear wrong answers bank', 'Drill Mistakes uses these', '9', { id: 'stClear', cls: 'danger' })
+          + (out ? '' : row('trash', 'Delete account', 'Deleted 7 days after you confirm', null, { id: 'stDelete', cls: 'danger' }))
+          + '</div>';
+        if (!out) h += '<div class="st-group reveal" style="margin-top:22px"><button class="st-row out" type="button" id="stSignOut">Sign out</button></div>';
+        h += '</div>' + TAB;
+        // ── sheets ──
+        h += '<div class="scrim" id="scrim"></div>'
+          + '<div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="ls-grip"></div><h3 id="lsT"></h3><p id="lsP"></p><button class="ls-stay" type="button" id="lsStay"></button><button class="ls-go" type="button" id="lsGo"></button></div>'
+          + '<div class="st-sheet" id="istSheet" role="dialog" aria-modal="true" aria-labelledby="istT"></div>';
+        $('app').innerHTML = h;
+        $('screen').classList.toggle('st-still', !!still);
+        wire();
       }
-      window.setPlan = setPlan;   // let the shell flip plan state on the Pro toggle
-      var startPro = false;
-      try { startPro = localStorage.getItem('e2e_demo_pro') === '1'; } catch (e) {}
-      setPlan(startPro);
 
-      // ── Exam date: bottom-sheet calendar + At-a-glance countdown ────────
-      var EXAM_KEY = 'e2e_exam_date';
-      var examBtn = document.getElementById('examDateBtn'), examSheet = document.getElementById('examSheet'),
-          examScrim = document.getElementById('examScrim'), examSave = document.getElementById('examSave'),
-          examClear = document.getElementById('examClear'), calGrid = document.getElementById('calGrid'),
-          calMonth = document.getElementById('calMonth'), calPrev = document.getElementById('calPrev'),
-          calNext = document.getElementById('calNext'),
-          glanceExam = document.getElementById('glanceExam'), glanceExamRow = document.getElementById('glanceExamRow');
-      var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-      var DOWS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
-      function dayStart(d){ var x = new Date(d); x.setHours(0,0,0,0); return x; }
-      var today = dayStart(new Date());
-      var selISO = lsGet(EXAM_KEY, '');
-      var viewY = today.getFullYear(), viewM = today.getMonth();
-      function iso(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
-      function fromISO(s){ var p = s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
-      function fmt(d){ return d.getDate() + ' ' + MONTHS[d.getMonth()].slice(0,3) + ' ' + d.getFullYear(); }
-
-      function renderCal(){
-        calMonth.textContent = MONTHS[viewM] + ' ' + viewY;
-        calPrev.disabled = (viewY === today.getFullYear() && viewM === today.getMonth());
-        var html = DOWS.map(function(d){ return '<span class="cal-dow">' + d + '</span>'; }).join('');
-        var first = new Date(viewY, viewM, 1);
-        var lead = (first.getDay() + 6) % 7;            // Monday-start offset
-        for (var i = 0; i < lead; i++) html += '<span></span>';
-        var days = new Date(viewY, viewM + 1, 0).getDate();
-        for (var d = 1; d <= days; d++){
-          var dt = new Date(viewY, viewM, d), dISO = iso(dt);
-          var cls = 'cal-day' + (dISO === selISO ? ' sel' : '') + (dt.getTime() === today.getTime() ? ' today' : '');
-          html += '<button type="button" class="' + cls + '" data-iso="' + dISO + '"' + (dt < today ? ' disabled' : '') + '>' + d + '</button>';
-        }
-        calGrid.innerHTML = html;
-        examSave.disabled = !selISO;
+      function openScrim() { $('scrim').classList.add('open'); }
+      function closeAll() { $('scrim').classList.remove('open'); $('lsheet').classList.remove('open'); $('istSheet').classList.remove('open'); }
+      function ask(t, p, go, stay) { $('lsT').textContent = t; $('lsP').textContent = p; $('lsGo').textContent = go; $('lsStay').textContent = stay; openScrim(); $('lsheet').classList.add('open'); }
+      function certSheet() {
+        $('istSheet').innerHTML = '<div class="ls-grip"></div><h3 id="istT">Switch cert</h3><p>Your progress stays with each cert.</p><div class="st-list">'
+          + CERTS.map(function (c, i) { return '<button class="st-cert' + (i === 0 ? ' on' : '') + '" type="button"><span class="g">' + c[0] + '</span><span class="n">' + c[1] + '<span>' + c[2] + '</span></span>'
+            + (i === 0 ? ic('check', 'tick') : (c[3] && !pro ? '<span class="pro-tag">' + ic('lock') + 'Pro</span>' : '')) + '</button>'; }).join('') + '</div>';
+        openScrim(); $('istSheet').classList.add('open');
       }
-      function openSheet(){
-        if (selISO){ var s = fromISO(selISO); viewY = s.getFullYear(); viewM = s.getMonth(); }
-        else { viewY = today.getFullYear(); viewM = today.getMonth(); }
-        renderCal();
-        examScrim.classList.add('on'); examSheet.classList.add('on');
+      function examSheet() {
+        var days = '', sel = 14;
+        for (var d = 1; d <= 31; d++) days += '<button class="cal-day' + (d === sel ? ' sel' : '') + '" type="button">' + d + '</button>';
+        $('istSheet').innerHTML = '<div class="ls-grip"></div><h3 id="istT">Set your exam date</h3><p>Pick the day you sit N10-009. You can change it any time.</p>'
+          + '<div class="cal-head"><span class="cal-month">December 2026</span><span class="cal-nav"><button type="button" aria-label="Previous month">' + ic('left') + '</button><button type="button" aria-label="Next month">' + ic('right') + '</button></span></div>'
+          + '<div class="cal-grid">' + ['M','T','W','T','F','S','S'].map(function (x) { return '<span class="cal-dow">' + x + '</span>'; }).join('') + '<span></span>' + days + '</div>'
+          + '<button class="st-pri" type="button">Save 14 December</button><button class="st-clear" type="button">Remove exam date</button>';
+        openScrim(); $('istSheet').classList.add('open');
       }
-      function closeSheet(){ examScrim.classList.remove('on'); examSheet.classList.remove('on'); }
-      function applyExam(){
-        var set = !!selISO;
-        if (glanceExam){
-          glanceExam.classList.toggle('ok', set);
-          glanceExam.classList.toggle('unset', !set);
-          if (set){
-            var d = fromISO(selISO), n = Math.round((d - today) / 864e5);
-            glanceExam.textContent = fmt(d) + ' · ' + (n === 0 ? 'today' : n === 1 ? 'tomorrow' : n + ' days');
-          } else {
-            glanceExam.textContent = 'Not set';
-          }
-        }
-        if (examBtn) examBtn.textContent = set ? 'Change exam date' : 'Set your exam date';
-        if (examClear) examClear.hidden = !set;
+      function deleteSheet() {
+        $('istSheet').innerHTML = '<div class="ls-grip"></div><div class="st-del"><h3 id="istT">Delete your account?</h3><p style="margin:0 0 8px;font:500 12.5px/1.45 Inter,sans-serif;color:var(--ink-soft)">This is what goes after the 7-day grace window:</p>'
+          + '<div class="dr">Progress and history<span>Quiz history, streaks and readiness scores</span></div><div class="dr">Review queue<span>Saved cards and their schedule</span></div><div class="dr">Your profile<span>Email, exam date and cert results</span></div>'
+          + '<p class="grace">Sign in any time in the next <b>7 days</b> to cancel. After that it’s gone for good.</p>'
+          + '<label for="delEmail">Type <b>simi@example.com</b> to confirm</label><input id="delEmail" type="email" placeholder="Your email" autocomplete="off" />'
+          + '<button class="st-danger-btn" type="button" id="setDeleteAcct" disabled>Delete account</button><button class="st-clear" type="button" id="delCancel">Cancel</button></div>';
+        openScrim(); $('istSheet').classList.add('open');
+        $('delEmail').addEventListener('input', function () { $('setDeleteAcct').disabled = $('delEmail').value.trim().toLowerCase() !== 'simi@example.com'; });
+        $('delCancel').addEventListener('click', closeAll);
       }
-      if (examBtn){
-        examBtn.addEventListener('click', openSheet);
-        if (glanceExamRow) glanceExamRow.addEventListener('click', openSheet);
-        examScrim.addEventListener('click', closeSheet);
-        calPrev.addEventListener('click', function(){ if (--viewM < 0){ viewM = 11; viewY--; } renderCal(); });
-        calNext.addEventListener('click', function(){ if (++viewM > 11){ viewM = 0; viewY++; } renderCal(); });
-        calGrid.addEventListener('click', function(e){
-          var b = e.target.closest('.cal-day'); if (!b || b.disabled) return;
-          selISO = b.getAttribute('data-iso'); renderCal();
-        });
-        examSave.addEventListener('click', function(){ lsSet(EXAM_KEY, selISO); closeSheet(); applyExam(); });
-        examClear.addEventListener('click', function(){ selISO = ''; try { localStorage.removeItem(EXAM_KEY); } catch (e) {} closeSheet(); applyExam(); });
-        applyExam();
+      var ASK = {
+        diag: ['Take the baseline diagnostic?', '20 questions in one sitting, about 30 minutes. If you stop partway, it won’t be saved.', 'Start', 'Not now'],
+        retake: ['Retake the diagnostic?', 'Your last one was 3 days ago. Waiting a week lets your Pass Plan settle, but you can retake now.', 'Retake', 'Keep my plan'],
+        restore: ['Restore 8 June?', 'This replaces your history, streak, goals, review queue and drill progress with that day’s copy. Today is saved first, so you can undo it.', 'Restore', 'Keep my data'],
+        clear: ['Clear 9 wrong answers?', 'Drill Mistakes loses its questions and their review cards reset. Today’s backup can bring them back.', 'Clear them', 'Keep them'],
+        import: ['Import 214 history entries?', 'They’re added to what’s already here. Nothing gets removed.', 'Import', 'Cancel']
+      };
+      function wire() {
+        $('scrim').addEventListener('click', closeAll);
+        $('lsStay').addEventListener('click', closeAll);
+        $('lsGo').addEventListener('click', closeAll);
+        $('stTheme').addEventListener('click', function () { $('themeToggle').click(); });
+        if ($('stCert')) $('stCert').addEventListener('click', certSheet);
+        $('stExam').addEventListener('click', examSheet);
+        if ($('stDiag')) $('stDiag').addEventListener('click', function () { ask.apply(null, ASK.diag); });
+        if ($('stRetake')) $('stRetake').addEventListener('click', function () { ask.apply(null, ASK.retake); });
+        [].slice.call(document.querySelectorAll('.st-bk')).forEach(function (b) { b.addEventListener('click', function () { ask.apply(null, ASK.restore); }); });
+        $('stClear').addEventListener('click', function () { ask.apply(null, ASK.clear); });
+        $('stImport').addEventListener('click', function () { ask.apply(null, ASK.import); });
+        if ($('stDelete')) $('stDelete').addEventListener('click', deleteSheet);
+        [].slice.call(document.querySelectorAll('.cseg')).forEach(function (g) { [].slice.call(g.children).forEach(function (b) { b.addEventListener('click', function () { if (b.classList.contains('locked')) return; [].slice.call(g.children).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }); }); });
+        [].slice.call(document.querySelectorAll('.st-sw')).forEach(function (s) { s.addEventListener('click', function () { s.setAttribute('aria-pressed', String(s.getAttribute('aria-pressed') !== 'true')); }); });
       }
+      var HINT = {
+        'signed-out': 'Signed out: the account card asks you to sign in, Cloud sync reads Off, and there is no Delete account or Sign out.',
+        free: 'Free, signed in: email, the Free pill, Switch cert, Go Pro, the diagnostic call to action, and the free lines on Daily goal and Daily Review.',
+        pro: 'Pro: the Pro pill, the Pass Plan with Retake, live goal and review controls, the top-up switch.',
+        'exam-date': 'Exam date opens the bottom-sheet calendar. Remove exam date shows once one is set.',
+        'cert-switch': 'Switch cert: today’s list and rules. Pro certs carry a Pro tag for free users and open today’s gate.',
+        diag: 'Start the diagnostic asks in the in-app sheet, not a browser pop-up.',
+        restore: 'Tapping a backup asks before restoring. Today is snapshotted first, as it is now.',
+        'clear-bank': 'Clear wrong answers asks in the in-app sheet first.',
+        delete: 'Delete account: today’s terms, the 7-day grace window, type your email to confirm.'
+      };
+      $('hint').textContent = HINT[v] || '';
+      setTimeout(function () {
+        if (v === 'exam-date') examSheet();
+        if (v === 'cert-switch') certSheet();
+        if (v === 'diag') ask.apply(null, ASK.diag);
+        if (v === 'restore') ask.apply(null, ASK.restore);
+        if (v === 'clear-bank') ask.apply(null, ASK.clear);
+        if (v === 'delete') deleteSheet();
+      }, 40);
+      // theme
+      var html = document.documentElement, label = $('themeLabel'), icon = $('themeIcon');
+      var SUN = I.sun, MOON = I.moon;
+      try { var saved = localStorage.getItem('ca-theme'); if (saved) html.setAttribute('data-theme', saved); } catch (e) {}
+      function paint() { var dark = html.getAttribute('data-theme') !== 'light'; icon.innerHTML = dark ? SUN : MOON; label.textContent = dark ? 'Light' : 'Dark'; }
+      $('themeToggle').addEventListener('click', function () { var n = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'; html.setAttribute('data-theme', n); try { localStorage.setItem('ca-theme', n); } catch (e) {} paint(); var t = $('stTheme'); if (t) t.innerHTML = ic(n === 'light' ? 'moon' : 'sun'); });
+      paint(); draw();
     })();
   </script>
 </body>

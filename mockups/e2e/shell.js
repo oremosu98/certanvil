@@ -108,7 +108,16 @@
     'analytics'         : 'cert-ios-analytics.html',
     'report'            : 'cert-ios-report.html',
     'cross-cert'        : 'cert-ios-cross-cert.html',
-    'settings'          : 'cert-ios-settings.html',
+    'settings'          : 'cert-ios-settings.html',                     // B4 (26 Oct): Settings, the Account tab
+    'st-signed-out'     : 'cert-ios-settings.html?v=signed-out',
+    'st-free'           : 'cert-ios-settings.html?v=free',
+    'st-pro'            : 'cert-ios-settings.html?v=pro',
+    'st-exam-date'      : 'cert-ios-settings.html?v=exam-date',
+    'st-cert-switch'    : 'cert-ios-settings.html?v=cert-switch',
+    'st-diag'           : 'cert-ios-settings.html?v=diag',
+    'st-restore'        : 'cert-ios-settings.html?v=restore',
+    'st-clear-bank'     : 'cert-ios-settings.html?v=clear-bank',
+    'st-delete'         : 'cert-ios-settings.html?v=delete',
     'log-result'        : 'cert-ios-log-result.html',
     'review'            : 'cert-ios-review.html',
     'review-answers'    : 'cert-ios-review-answers.html',
@@ -182,9 +191,10 @@
     'restore-purchase' : [ {text:'Continue to CertAnvil', to:'home'} ],
     'account-deletion' : [ {sel:'#restartBtn', to:'native-welcome'} ],
     // settings Account section -> the Apple lifecycle screens
-    'settings'         : [ {sel:'#setManageSub',  to:'manage-sub'},
-                           {sel:'#setRestore',    to:'restore-purchase'},
+    // B4: Sign in, the delete confirm and the Go Pro rows (Manage subscription / Restore purchases left out until payments exist)
+    'settings'         : [ {sel:'#stSignIn',      to:'signup-signin'},
                            {sel:'#setDeleteAcct', to:'account-deletion'},
+                           {sel:'#goProRow',      to:'upgrade-sheet'},
                            // free users: the locked daily-goal / daily-review upsells -> paywall
                            {sel:'#goProGoal',     to:'upgrade-sheet'},
                            {sel:'#goProReview',   to:'upgrade-sheet'} ],
@@ -434,7 +444,7 @@
       }
 
       // per-screen forward routes (rule.sel OR rule.text label match)
-      (NAV[id] || []).forEach(function (rule) {
+      (NAV[id] || (/^st-/.test(id) ? NAV.settings : null) || []).forEach(function (rule) {   // B4: every Settings state shares its links
         var els;
         if (rule.text) {
           els = [].slice.call(doc.querySelectorAll(rule.sel || 'button, a')).filter(function (e) {
@@ -668,6 +678,12 @@
     if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
       b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
       b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
+    });
+    var LIFT_B4 = ['st-signed-out','st-free','st-pro','st-exam-date','st-cert-switch','st-diag','st-restore','st-clear-bank','st-delete'];
+    var b4Btn = document.getElementById('hud-liftb4'), b4I = -1;
+    if (b4Btn) b4Btn.addEventListener('click', function () {
+      b4I = (b4I + 1) % LIFT_B4.length; resetTo(LIFT_B4[b4I]);
+      b4Btn.textContent = 'B4 ' + (b4I + 1) + '/' + LIFT_B4.length + ' \u203a';
     });
     var LIFT_B3C3 = ['dl','dl-free','dl-practice','dl-graded','dl-exam','dl-exam-amber','dl-exam-end','dl-results','dl-results-open','dl-results-timeup','dl-leave'];
     var b3c3Btn = document.getElementById('hud-liftb3c3'), b3c3I = -1;
