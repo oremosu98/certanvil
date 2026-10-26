@@ -49,6 +49,7 @@ for (const vp of PHONES) {
       await expect(page.locator('#page-sim-lab-entry .gnt-shell')).toBeHidden();
       await expect(page.locator('#app-topbar')).toBeHidden();
       await expect(page.locator('#lift-tabbar')).toBeVisible();
+      await expect(page.locator('#lift-tabbar .lift-tab.on')).toHaveAttribute('data-page', 'drills');   // Drills lit, as drawn
       await expect(entry.locator('.isl-cap')).toContainText('Free covers one Sim Lab session a day');
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(0);

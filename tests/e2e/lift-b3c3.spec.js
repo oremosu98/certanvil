@@ -93,6 +93,7 @@ for (const vp of PHONES) {
       await expect(page.locator('#idl-entry .idl-start')).toBeVisible();
       await expect(page.locator('#page-decision-lab-entry .gnt-shell')).toBeHidden();
       await expect(page.locator('#lift-tabbar')).toBeVisible();
+      await expect(page.locator('#lift-tabbar .lift-tab.on')).toHaveAttribute('data-page', 'drills');   // Drills lit, as drawn
       await expect(page.locator('#app-topbar')).toBeHidden();
       await expect(page.locator('#idl-entry .idl-mode')).toHaveCount(2);
       await expect(page.locator('#idl-entry .idl-seg button')).toHaveCount(3);

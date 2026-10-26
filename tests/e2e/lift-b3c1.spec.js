@@ -52,6 +52,7 @@ for (const vp of PHONES) {
       await expect(page.locator('#igt-entry .igt-start')).toBeVisible();
       await expect(page.locator('#page-gauntlet .gnt-shell')).toBeHidden();
       await expect(page.locator('#lift-tabbar')).toBeVisible();
+      await expect(page.locator('#lift-tabbar .lift-tab.on')).toHaveAttribute('data-page', 'drills');   // Drills lit, as drawn
       await expect(page.locator('#app-topbar')).toBeHidden();
       await expect(page.locator('#igt-entry .igt-rg')).toHaveCount(5);
       await expect(page.locator('#igt-entry .igt-cap')).toHaveCount(0);

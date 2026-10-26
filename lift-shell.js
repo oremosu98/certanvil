@@ -36,7 +36,11 @@
   };
 
   /* tab to light when a non-tab page is active */
-  var LIGHT_AS = { 'analytics': 'progress', 'topic-dive': 'progress', 'diagnostic-result': 'setup' };
+  var LIGHT_AS = {
+    'analytics': 'progress', 'topic-dive': 'progress', 'diagnostic-result': 'setup',
+    /* drill entries light Drills whether opened from Home or Drills (cert-ios-gauntlet/whynot/decisionlab) */
+    'gauntlet': 'drills', 'whynot': 'drills', 'sim-lab-entry': 'drills', 'decision-lab-entry': 'drills'
+  };
 
   function init() {
     if (document.getElementById('lift-tabbar')) return;

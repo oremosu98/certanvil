@@ -10,7 +10,7 @@
 .is-dimmed { opacity: 0.5; }
 
 /* ── SKIP LINK ── */
-.skip-link { position: absolute; top: 0; left: 50%; transform: translateX(-50%) translateY(-100%); background: var(--accent); color: #fff; padding: 10px 24px; border-radius: 0 0 8px 8px; font-size: 14px; font-weight: 700; z-index: 10000; transition: transform .2s; text-decoration: none; }
+.skip-link { position: absolute; top: 0; left: 50%; transform: translateX(-50%) translateY(calc(-100% - 4px)); background: var(--accent); color: #fff; padding: 10px 24px; border-radius: 0 0 8px 8px; font-size: 14px; font-weight: 700; z-index: 10000; transition: transform .2s; text-decoration: none; }
 .skip-link:focus { transform: translateX(-50%) translateY(0); outline: none; }
 
 /* ── FOCUS INDICATORS ── */

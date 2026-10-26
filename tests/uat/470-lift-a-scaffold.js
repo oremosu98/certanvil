@@ -38,6 +38,10 @@ const { dgCss, fs, html, path, ROOT, results, test } = require('./_context');
       IN_FLOW.every(s => rules(s).length > 0 && rules(s).every(r => !r.includes('safe-area-inset-top'))));
     test('Fixed full-screen phone pages (Progress, Analytics, Exam, Exam results) still pad their header by the top safe area',
       FIXED.every(s => rules(s).some(r => r.includes('env(safe-area-inset-top)'))));
+    // Founder side-by-sides (26 Oct): parked at exactly -100%, the skip link's antialiased edge drew a 1px accent line on screens without the app top bar
+    const css = fs.readFileSync(path.join(ROOT, 'styles.css'), 'utf8');
+    test('The parked skip link sits fully above the screen edge (no accent hairline at y=0)',
+      /\.skip-link \{[^}]*translateY\(calc\(-100% - \d+px\)\)/.test(css) && /\.skip-link:focus \{[^}]*translateY\(0\)/.test(css));
   } catch (err) {
     test('Lift A scaffold: block (threw)', false);
     results.errors.push('470 lift-a-scaffold block threw: ' + err.message);

@@ -70,6 +70,7 @@ for (const vp of PHONES) {
       await expect(page.locator('#iwn-entry .iwn-start')).toBeVisible();
       await expect(page.locator('#page-whynot .gnt-shell')).toBeHidden();
       await expect(page.locator('#lift-tabbar')).toBeVisible();
+      await expect(page.locator('#lift-tabbar .lift-tab.on')).toHaveAttribute('data-page', 'drills');   // Drills lit, as drawn
       await expect(page.locator('#app-topbar')).toBeHidden();
       await expect(page.locator('#iwn-entry .iwn-rd')).toHaveCount(3);
       await expect(page.locator('#iwn-entry .iwn-pro')).toHaveCount(0);
