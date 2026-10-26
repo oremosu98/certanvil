@@ -2754,7 +2754,7 @@
   };
   function _dlGateCopy(which) { return _DL_GATE[which]; }
 
-  function _dlSyncEntry() {
+  function _dlSyncEntry(fresh) {
     var opts = document.querySelectorAll('#dl-mode .dl-seg-opt');
     Array.prototype.forEach.call(opts, function (o) {
       var on = o.getAttribute('data-mode') === _dlPickedMode;
@@ -2766,17 +2766,54 @@
       var on = parseInt(c.getAttribute('data-decisions'), 10) === _dlPickedDecisions;
       c.classList.toggle('is-on', on);
       c.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });    _dlRenderPhoneEntry();
+    });
+    _dlRenderPhoneEntry(!fresh);   // a pick repaints the phone entry still: the reveal plays once, on open
   }
   // v8.192.0: the June entry on phones (features/ios-decisionlab.js); false on desktop, which keeps today's card.
   var _dlOrigin = 'setup';
-  function _dlRenderPhoneEntry() {
+  function _dlRenderPhoneEntry(still) {
     if (!window.iosDecisionLab || typeof window.iosDecisionLab.renderEntry !== 'function') return false;
     var meta = (window.CERT_PACK && window.CERT_PACK.meta) || {};   // the cert alone: the June card already says "Mixed services"
     var cert = [meta.name, meta.code].filter(Boolean).join(' ');
     return window.iosDecisionLab.renderEntry({ mode: _dlPickedMode, decisions: _dlPickedDecisions, target: cert,
-      back: _dlOrigin, free: !_slIsPro() });
+      back: _dlOrigin, free: !_slIsPro(), still: !!still });
   }
+  // The tier hydrates after the entry may have drawn (app.js re-runs renderGauntletDrillsCard then): repaint it still.
+  (function () {
+    var f = window.renderGauntletDrillsCard;
+    if (typeof f !== 'function' || f._idlChained) return;
+    var chained = function () {
+      var r = f.apply(this, arguments);
+      var host = document.getElementById('idl-entry');
+      if (host && host.innerHTML) _dlRenderPhoneEntry(true);
+      return r;
+    };
+    chained._idlChained = true; chained._islChained = f._islChained;
+    window.renderGauntletDrillsCard = chained;
+  })();
+  // Crossing 899px (an iPad split view, a Pro Max rotating): Decision Lab redraws in the new layout. Mid-run the
+  // dialog and any sheet close, the exam bar follows the width (one clock) and the decision re-renders; an
+  // unsubmitted pick is lost, as Sim Lab accepts.
+  (function () {
+    var mq = window.matchMedia && window.matchMedia('(max-width: 899px)');
+    if (!mq || !mq.addEventListener) return;
+    mq.addEventListener('change', function () {
+      var act = document.querySelector('.page.active');
+      if (!act) return;
+      if (act.id === 'page-decision-lab-entry') { _dlRenderPhoneEntry(true); return; }
+      if (act.id !== 'page-decision-lab' || !_dlSession || _dlSession.__submitted || !_dlSession.scenarios.length) return;
+      var isl = window.iosSimLab;
+      if (window.iosSheet && window.iosSheet.dismiss) window.iosSheet.dismiss();
+      if (isl && isl.isEndOpen && isl.isEndOpen()) isl.closeEnd();
+      if (_dlSession.mode === 'exam' && isl && isl.examBar) {
+        if (_dlPhone() && !_dlSession.examBar) {
+          _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot', home: '.dl-sbar' };
+          isl.examBar.mount(_dlOpenEnd, _dlSession.examBar);
+        } else if (!_dlPhone() && _dlSession.examBar) { isl.examBar.unmount(_dlSession.examBar); _dlSession.examBar = null; }
+      }
+      _dlRunRound();
+    });
+  })();
 
   function _dlBindModeToggle() {
     var host = document.getElementById('dl-mode');
@@ -3198,7 +3235,7 @@
     _dlPickedMode = 'practice';
     _dlPickedDecisions = 10;
     var tgt = document.getElementById('dl-target'); if (tgt) tgt.textContent = _dlTargetLabel();
-    _dlBindModeToggle(); _dlBindDecisionChips(); _dlSyncEntry();
+    _dlBindModeToggle(); _dlBindDecisionChips(); _dlSyncEntry(true);
     if (typeof showPage === 'function') showPage('decision-lab-entry');
   }
   function _dlGoOrigin() {

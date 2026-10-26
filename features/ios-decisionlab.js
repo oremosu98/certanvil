@@ -83,6 +83,7 @@
     var host = document.getElementById('idl-entry');
     if (!host) return false;
     if (!isPhone()) { host.innerHTML = ''; return false; }
+    host.classList.toggle('idl-static', !!s.still);   // a re-render after a pick does not replay the reveal
     host.innerHTML = _iosDlEntryHtml(_iosDlEntryModel(s));
     if (!host.__idlBound) {
       host.__idlBound = true;

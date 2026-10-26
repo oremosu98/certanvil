@@ -354,6 +354,50 @@ for (const vp of PHONES) {
   });
 }
 
+test.describe('Lift B3c3 final review', () => {
+  test('the entry reveal plays once, not on every Mode or count tap', async ({ page }) => {
+    await openEntry(page, PHONES[1], 'pro');
+    await page.waitForTimeout(700);
+    await page.locator('#idl-entry [data-n="5"]').click();
+    expect(await page.locator('#idl-entry .idl-hero').evaluate((el) => el.getAnimations().length)).toBe(0);
+    await page.locator('#idl-entry [data-mode="exam"]').click();
+    expect(await page.locator('#idl-entry .idl-modes').evaluate((el) => el.getAnimations().length)).toBe(0);
+  });
+  test('a Pro tier that arrives after the entry opened repaints it', async ({ page }) => {
+    await openEntry(page, PHONES[1], 'free');
+    await expect(page.locator('#idl-entry .idl-cap')).toHaveCount(1);
+    await setTier(page, 'pro');
+    await page.evaluate(() => renderGauntletDrillsCard());   // app.js runs this when _quotaState hydrates
+    await expect(page.locator('#idl-entry .idl-cap')).toHaveCount(0);
+    await expect(page.locator('#idl-entry .idl-pro')).toHaveCount(0);
+  });
+  test('Exam-style widening to phone mid-set mounts the bar (clock and End)', async ({ page }) => {
+    await openEntry(page, DESKTOP, 'pro');
+    await page.evaluate(() => { decisionLabPickMode('exam'); decisionLabSessionStart(); });
+    await expect(page.locator('#dl-body .sl-analyze-line').first()).toBeVisible({ timeout: 10000 });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator('#isl-xbar .sl-clock')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#isl-xbar .isl-xend')).toBeVisible();
+    await expect(page.locator('#page-decision-lab')).toHaveClass(/idl-exam/);
+  });
+  test('Exam-style narrowing to desktop mid-set takes the bar down and gives the clock back', async ({ page }) => {
+    await startExam(page, PHONES[0], 10);
+    await page.locator('#isl-xbar .isl-xend').click();
+    await expect(page.locator('#isl-end')).toBeVisible();
+    await page.setViewportSize(DESKTOP);
+    await expect(page.locator('#isl-xbar')).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator('#isl-end')).toBeHidden();
+    await expect(page.locator('#page-decision-lab .dl-sbar #dl-clock-slot .sl-clock')).toBeVisible();
+    await expect(page.locator('#page-decision-lab')).not.toHaveClass(/idl-exam/);
+  });
+  test('the entry clears its phone markup when the window widens past 899px', async ({ page }) => {
+    await openEntry(page, PHONES[0], 'pro');
+    await page.setViewportSize(DESKTOP);
+    await expect.poll(() => page.evaluate(() => document.getElementById('idl-entry').innerHTML)).toBe('');
+    await expect(page.locator('#page-decision-lab-entry .gnt-shell')).toBeVisible();
+  });
+});
+
 test.describe('Lift B3c3 desktop', () => {
   test("today's entry; Leave on the runner now leaves", async ({ page }) => {
     await openEntry(page, DESKTOP, 'pro', 'drills');
