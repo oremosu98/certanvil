@@ -29,7 +29,7 @@
 | index.html | 2362 | 155 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (67 modules) | 32553 | — |
-UAT checks: 5579 · E2E `test(` count: 371 · APP_VERSION: 8.191.0 · stamped-at: worktree
+UAT checks: 5579 · E2E `test(` count: 371 · APP_VERSION: 8.192.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.192.0 | Decision Lab looks like the June design on phones. |
 | v8.191.0 | Why-Not looks like the June design on phones. |
 | v8.190.1 | Home no longer goes blank after switching tabs in the iOS app. |
-| v8.190.0 | Reword Gauntlet looks like the June design on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
