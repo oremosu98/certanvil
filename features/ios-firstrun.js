@@ -77,9 +77,9 @@
         '<div class="ifr-hb-row"><span class="ifr-hb-rn">New practice</span><span class="ifr-hb-rv">15 of 15 · resets in ' + e(h) + 'h</span></div></div></div>' +
       '<div class="ifr-greet ifr-rv"><div class="ifr-hi">Done for today</div><h1>That\'s today\'s 15 done.</h1>' +
         '<p class="ifr-lede">Your streak is safe. Daily Review still moves your readiness, and 15 fresh questions unlock in about ' + e(h) + ' hours.</p></div>' +
-      '<div class="ifr-rev ifr-rv"><div class="ifr-start-head"><div class="ifr-start-ring">' + e(due) + '</div>' +
+      (due > 0 ? '<div class="ifr-rev ifr-rv"><div class="ifr-start-head"><div class="ifr-start-ring">' + e(due) + '</div>' +
         '<div><div class="ifr-start-t">Daily Review</div><div class="ifr-start-s">' + e(due) + ' cards from what you\'ve missed, about ' + e(mins) + ' minutes. Still free today.</div></div></div>' +
-        '<button type="button" class="ifr-btn" data-act="review">Start review</button></div>' +
+        '<button type="button" class="ifr-btn" data-act="review">Start review</button></div>' : '') +
       '<div class="ifr-see ifr-rv"><div><div class="ifr-see-t">Hitting the cap a lot?</div><div class="ifr-see-s">Pro removes the daily limit.</div></div>' +
         '<button type="button" class="ifr-see-btn" data-act="gopro">See Pro</button></div>' +
     '</div>';
@@ -217,6 +217,82 @@
   window._ifrRestoreHtml = _ifrRestoreHtml;
 
   var PHONE = '(max-width: 899px)';
-  window.iosFirstRun = window.iosFirstRun || {};
-  window.iosFirstRun.isPhone = function () { try { return window.matchMedia(PHONE).matches; } catch (_) { return false; } };
+  var IFR = window.iosFirstRun = window.iosFirstRun || {};
+  IFR.isPhone = function () { try { return window.matchMedia(PHONE).matches; } catch (_) { return false; } };
+  function html() { return document.documentElement; }
+  function readJSON(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (_) { return d; } }
+  function certId() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || window.CURRENT_CERT || 'netplus'; }
+  var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+  function packMeta() { var p = (typeof CERT_PACK === 'object' && CERT_PACK) || window.CERT_PACK; return (p && p.meta) || {}; }
+  // Same labels as Home (ios-home.js): vendor prefix dropped, the pack's code.
+  function certInfo(id) {
+    id = id || certId();
+    var packs = window.CERT_PACKS || {}, meta = (packs[id] && packs[id].meta) || (id === certId() ? packMeta() : {});
+    return { id: id, glyph: MARKS[id] || 'CA', name: String(meta.name || id).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: meta.code || '' };
+  }
+  function scale() { return _ifrScale(packMeta()); }
+  function isPro() { var q = window._quotaState; return !!(q && q.tier === 'pro'); }
+  function remaining() { try { return typeof _quotaRemainingToday === 'function' ? _quotaRemainingToday() : Infinity; } catch (_) { return Infinity; } }
+  function state() {
+    var hist = readJSON(STORAGE.HISTORY, []), split = typeof isHistorySplitRow === 'function' ? isHistorySplitRow : function () { return false; };
+    var snaps = readJSON(STORAGE.READINESS_SNAPSHOTS, {}) || {};
+    return _ifrState({
+      cert: certId(), historyRows: (Array.isArray(hist) ? hist : []).filter(function (r) { return !split(r); }).length,
+      snapshot: snaps[certId()] != null ? snaps[certId()] : null, skipped: !!localStorage.getItem(STORAGE.ONB_SKIPS),
+      pro: isPro(), signedIn: window._certanvilSignedIn === true, remaining: remaining()
+    });
+  }
+  // 'day0' | 'capped' | null (today's Home)
+  IFR.homeState = function () {
+    if (!IFR.isPhone()) return null;
+    var st = state();
+    return st.day0 ? 'day0' : (st.capped ? 'capped' : null);
+  };
+  IFR.recordSkip = function () {
+    try {
+      localStorage.setItem(STORAGE.ONB_SKIPS, JSON.stringify({ at: Date.now() }));
+      if (window.cloudStore && window.cloudStore.flush) window.cloudStore.flush(STORAGE.ONB_SKIPS);
+    } catch (_) {}
+  };
+  function goPro() { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); }
+  // Free "Start today's 15": a Mixed set of what is left today (the daily-limit screen's start-smaller logic).
+  function startToday() {
+    IFR.recordSkip();
+    if (isPro()) { var t = document.getElementById('primaryLaunch'); if (t) t.click(); return; }
+    var r = remaining();
+    if (r <= 0) { if (typeof _showQuotaExceededUI === 'function') _showQuotaExceededUI({}); return; }
+    topic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
+    qCount = Math.min(15, isFinite(r) ? r : 15);
+    document.querySelectorAll('#topic-group .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.v === topic); });
+    document.querySelectorAll('#count-group .chip').forEach(function (c) { c.classList.toggle('on', Number(c.dataset.v) === qCount); });
+    if (typeof startQuiz === 'function') startQuiz();
+  }
+  // Called first by renderIosHome on phones. Returns true when it drew day-0 or capped Home.
+  IFR.renderHome = function (root) {
+    var st = IFR.homeState();
+    html().classList.toggle('ifr-day0', st === 'day0');
+    if (!st) return false;
+    var c = certInfo();
+    if (st === 'day0') root.innerHTML = _ifrDay0Html({ cert: c, pro: isPro(), remaining: remaining(), scale: scale() });
+    else {
+      var plan = typeof window.getSrTodayPlan === 'function' ? window.getSrTodayPlan() : { todo: 0 };
+      root.innerHTML = _ifrCappedHtml({ cert: c, due: plan.todo || 0, hours: state().hoursToReset });
+    }
+    var ACT = {
+      check: function () { if (IFR.startCheck) IFR.startCheck(); },
+      today: startToday,
+      review: function () { if (typeof window.startSrReview === 'function') window.startSrReview(); },
+      gopro: goPro
+    };
+    root.querySelectorAll('[data-act]').forEach(function (el) {
+      var f = ACT[el.getAttribute('data-act')];
+      if (f) el.addEventListener('click', function () { try { f(); } catch (_) {} });
+    });
+    return true;
+  };
+  IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-check', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); };
+
+  // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.
+  function boot() { var p = document.getElementById('page-setup'); if (IFR.isPhone() && typeof renderIosHome === 'function' && (!p || p.classList.contains('active'))) renderIosHome(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

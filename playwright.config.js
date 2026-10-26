@@ -8,6 +8,9 @@ module.exports = defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:3131',
+    // Lift C (v8.194.0): a brand-new user now meets day-0 Home (no tab bar). Every spec boots past it with a
+    // recorded day-0 skip, so they keep today's Home; tests/e2e/lift-c.spec.js opts out to test day-0 itself.
+    storageState: { cookies: [], origins: [{ origin: 'http://localhost:3131', localStorage: [{ name: 'nplus_onb_skips', value: '{"at":1}' }] }] },
     screenshot: 'only-on-failure',
     serviceWorkers: 'block', // Prevent SW caching interference in tests
   },

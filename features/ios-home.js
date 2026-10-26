@@ -257,7 +257,8 @@
   function renderIosHome() {
     var root = document.getElementById('ios-home');
     if (!root) return;
-    if (!(window.matchMedia && matchMedia('(max-width: 899px)').matches)) { root.innerHTML = ''; return; }
+    if (!(window.matchMedia && matchMedia('(max-width: 899px)').matches)) { root.innerHTML = ''; if (window.iosFirstRun && iosFirstRun.clearPhoneState) iosFirstRun.clearPhoneState(); return; }
+    if (window.iosFirstRun && iosFirstRun.renderHome) { try { if (iosFirstRun.renderHome(root)) return; } catch (_) {} }   // Lift C: day-0 / capped Home
     var m;
     try { m = _iosHomeModel(new Date()); root.innerHTML = _iosHomeHtml(m); } catch (err) { root.innerHTML = ''; return; }   // empty = desktop Home shows
     var tab = function (p) { var b = document.querySelector('.lift-tab[data-page="' + p + '"]'); if (b) b.click(); else if (typeof showPage === 'function') showPage(p); };

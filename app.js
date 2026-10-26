@@ -1183,7 +1183,7 @@ const STORAGE = {
   // { netplus: { score, computed_at }, secplus: { ... } }. Written after
   // every quiz/exam completion by _writeReadinessSnapshot(); cloud-flushed
   // via Phase C′ pattern so landing's /analytics page can read live values.
-  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots',
+  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots', ONB_SKIPS: 'nplus_onb_skips',   // Lift C: day-0 skip (lib/onboarding-firstrun.js writes the same key)
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
