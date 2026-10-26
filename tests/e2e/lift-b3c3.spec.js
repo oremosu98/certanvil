@@ -132,8 +132,9 @@ for (const vp of PHONES) {
       await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
       await page.evaluate(() => decisionLabExit());
       await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
-      await page.waitForTimeout(1300);
-      expect(await page.evaluate(() => !!document.querySelector('#page-decision-lab-result.active'))).toBe(false);
+      // v8.193.1: assert the teardown itself, not just that a 20-minute clock didn't fire in 1.3s
+      expect(await page.evaluate(() => ({ s: window._simLab.dlSession(), bar: !!document.getElementById('isl-xbar'), clock: !!document.querySelector('#page-decision-lab .sl-clock.is-running, #isl-xbar .sl-clock') })))
+        .toEqual({ s: null, bar: false, clock: false });
       await page.evaluate(() => decisionLabOpenEntry());
       await page.locator('#idl-entry [data-mode="practice"]').click();
       await page.locator('#idl-entry .idl-start').click();
@@ -400,6 +401,29 @@ test.describe('Lift B3c3 final review', () => {
     await page.setViewportSize(DESKTOP);
     await expect.poll(() => page.evaluate(() => document.getElementById('idl-entry').innerHTML)).toBe('');
     await expect(page.locator('#page-decision-lab-entry .gnt-shell')).toBeVisible();
+  });
+});
+
+test.describe('Lift B3c3 deferred minors', () => {
+  const vp = PHONES[1];
+  test('leaving Exam-style by another route takes the bar, the End dialog and any sheet down', async ({ page }) => {
+    await startExam(page, vp, 10);
+    await page.locator('#isl-xbar .isl-xend').click();
+    await expect(page.locator('#isl-end')).toBeVisible();
+    await page.evaluate(() => { window.iosSimLab.closeEnd(); showPage('setup'); });
+    await page.waitForTimeout(2600);   // two off-page clock ticks abandon the set
+    expect(await page.evaluate(() => ({ s: window._simLab.dlSession(), bar: !!document.getElementById('isl-xbar') }))).toEqual({ s: null, bar: false });
+    await expect(page.locator('#isl-end')).toBeHidden();
+  });
+  test('the results follow the 899px crossing without counting the set twice', async ({ page }) => {
+    await startPractice(page, vp, 'pro', 5);
+    await playPractice(page, 5);
+    await page.evaluate(() => { window.__bumps = 0; const f = window.bumpDrillStat; window.bumpDrillStat = function () { window.__bumps++; return f.apply(this, arguments); }; });
+    await expect(page.locator('#dl-result-root .idl-vbody')).toHaveCount(1);
+    await page.setViewportSize(DESKTOP);
+    await expect(page.locator('#dl-result-root .dl-score-row')).toHaveCount(1, { timeout: 5000 });
+    await expect(page.locator('#dl-result-root .idl-vbody')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__bumps)).toBe(0);
   });
 });
 

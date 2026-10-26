@@ -90,6 +90,8 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       && endV.indexOf('Submit <em>set?</em>') >= 0 && endV.indexOf('Decision Lab · Exam-style') >= 0 && endV.indexOf('>Answered<') >= 0 && endV.indexOf('>Skipped<') >= 0
       && JSON.parse(vm.runInContext('JSON.stringify(_iosSlExamBarModel(D))', xc)).cn === 'Decision 4 of 10'
       && JSON.parse(vm.runInContext('JSON.stringify(_iosSlExamBarModel(D))', xc)).cs === '3 answered');
+    test('v8.193.1: the Decision Lab exam bar options carry no unused home field',
+      fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8').indexOf("home: '.dl-sbar'") < 0);
   } catch (err) {
     test('Lift B3c3 Decision Lab: block (threw)', false);
     results.errors.push('505 ios-decisionlab block threw: ' + err.message);

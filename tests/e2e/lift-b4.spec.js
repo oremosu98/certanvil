@@ -328,6 +328,56 @@ test.describe('Lift B4 final review', () => {
   });
 });
 
+test.describe('Lift B4 deferred minors', () => {
+  const vp = PHONES[1];
+  const R = (page) => page.locator('#ios-settings');
+  test('a sign-out while Settings is closed resets the email, so the next account shows its own', async ({ page }) => {
+    await openSettings(page, vp, { signed: true, tier: 'pro' });
+    await page.evaluate(() => renderSettingsPage());
+    await expect(R(page).locator('.ist-em')).toContainText('simi.test@example.test', { timeout: 5000 });
+    await page.locator('#lift-tabbar .lift-tab[data-page="setup"]').click();
+    await page.evaluate(async () => {
+      window.__fakeEmit('SIGNED_OUT');
+      const r = await window.certanvilSupabase.auth.getSession(); r.data.session.user.email = 'other@example.test';
+      window.__fakeEmit('SIGNED_IN');
+    });
+    await page.waitForTimeout(300);
+    await page.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
+    await expect(R(page).locator('.ist-em')).toContainText('other@example.test', { timeout: 5000 });
+  });
+  test('Sign out says so when the account menu is missing, never a silent tap', async ({ page }) => {
+    await openSettings(page, vp, { signed: true, tier: 'pro' });
+    await page.evaluate(() => { renderSettingsPage(); const l = document.getElementById('topbar-signout-link'); if (l) l.remove(); window.__toasts = []; window.showToast = function (m, t) { window.__toasts.push([m, t || '']); }; });
+    await R(page).locator('[data-act="signout"]').click();
+    expect(await page.evaluate(() => window.__toasts)).toEqual([['Couldn’t sign out here. Reload the app and try again.', 'error']]);
+  });
+  test('an import that fails mid-merge shows an error toast', async ({ page }) => {
+    await openSettings(page, vp, { tier: 'free' });
+    await page.evaluate(() => { window.__toasts = []; window.showToast = function (m, t) { window.__toasts.push([m, t || '']); }; window.loadHistory = function () { throw new Error('boom'); }; });
+    await page.locator('#import-file-input').setInputFiles({ name: 'z.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ history: [{ date: '2026-01-02T10:00:00.000Z', topic: 'OSPF' }] })) });
+    await page.locator('#exam-sheet .ix-sheet-go').click();
+    await expect.poll(() => page.evaluate(() => window.__toasts.length)).toBe(1);
+    expect((await page.evaluate(() => window.__toasts))[0][1]).toBe('error');
+  });
+  test('Restore runs the real function once, with no browser confirm', async ({ page }) => {
+    const d = []; page.on('dialog', (x) => { d.push(x.message()); x.dismiss().catch(() => {}); });
+    await openSettings(page, vp, { tier: 'free' });
+    await page.evaluate(() => { window._takeAutoBackup(); renderSettingsPage(); });
+    await R(page).locator('[data-act="restore"]').first().click();
+    await page.locator('#exam-sheet .ix-sheet-go').click();
+    await expect(page.getByText(/Restored \d+ keys/)).toBeVisible({ timeout: 3000 });
+    expect(d).toEqual([]);
+  });
+  test('keyboard focus stays on a preset after it repaints', async ({ page }) => {
+    await openSettings(page, vp, { signed: true, tier: 'pro' });
+    await page.evaluate(() => renderSettingsPage());
+    await R(page).locator('[data-act="goal-pick"][data-n="20"]').focus();
+    await page.keyboard.press('Enter');
+    await expect(R(page).locator('[data-act="goal-pick"][data-n="20"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => { const a = document.activeElement; return a && a.getAttribute('data-act') + ':' + a.getAttribute('data-n'); })).toBe('goal-pick:20');
+  });
+});
+
 test.describe('Lift B4 desktop', () => {
   test("today's Settings, #ios-settings empty, no ist-on", async ({ page }) => {
     await openSettings(page, DESKTOP, { tier: 'free' });

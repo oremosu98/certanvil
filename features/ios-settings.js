@@ -126,7 +126,7 @@
     for (var b = 0; b < blanks; b++) cells += '<span class="ist-blank"></span>';
     for (var d = 1; d <= days; d++) {
       var iso = m.year + '-' + pad(m.month + 1) + '-' + pad(d);
-      cells += '<button type="button" class="ist-day' + (iso === m.selected ? ' sel' : '') + (iso === m.today ? ' today' : '') + '" data-act="cal-day" data-iso="' + iso + '"' + (iso < m.today ? ' disabled' : '') + '>' + d + '</button>';
+      cells += '<button type="button" class="ist-day' + (iso === m.selected ? ' sel' : '') + (iso === m.today ? ' today' : '') + '" data-act="cal-day" data-iso="' + iso + '" aria-label="' + d + ' ' + MON[m.month] + ' ' + m.year + '"' + (iso < m.today ? ' disabled' : '') + '>' + d + '</button>';
     }
     var sel = m.selected ? m.selected.split('-') : null;
     var CH = function (p) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="' + p + '"></path></svg>'; };
@@ -148,7 +148,14 @@
     if (!isPhone()) { host.innerHTML = ''; page.classList.remove('ist-on'); closeSheet(true); return false; }
     _state = state; _acts = actions || {};
     if (typeof _subscribeAuth === 'function') _subscribeAuth();   // the client may not have existed when this file ran
+    // a still repaint keeps keyboard focus on the control that caused it
+    var f = document.activeElement, fk = (f && host.contains(f) && f.getAttribute('data-act')) ? [f.getAttribute('data-act'), f.getAttribute('data-n'), f.getAttribute('data-date')] : null;
     host.innerHTML = _iosStHtml(_iosStModel(state));
+    if (fk) {
+      var sel = '[data-act="' + fk[0] + '"]' + (fk[1] != null ? '[data-n="' + fk[1] + '"]' : '') + (fk[2] != null ? '[data-date="' + fk[2] + '"]' : '');
+      var back = host.querySelector(sel);
+      if (back) { try { back.focus({ preventScroll: true }); } catch (_) {} }
+    }
     host.classList.toggle('ist-still', !!state.still);   // a redraw after a state change does not replay the reveal
     page.classList.add('ist-on');
     if (!host.__istBound) {
@@ -255,7 +262,11 @@
   ON.theme = function () { _call('toggleTheme'); _repaint(); };
   ON.signin = function () { var u = _call('buildSignInUrl'); if (u) window.location.href = u; };
   // Sign out is today's account-menu link: it uploads first and only clears this device once the cloud has it all.
-  ON.signout = function () { var l = document.getElementById('topbar-signout-link'); if (l) l.click(); };
+  ON.signout = function () {
+    var l = document.getElementById('topbar-signout-link');
+    if (l) l.click();
+    else _call('showToast', 'Couldn’t sign out here. Reload the app and try again.', 'error');   // never a silent tap
+  };
   ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
   ON['goal-pick'] = function (b) {
     var n = parseInt(b.getAttribute('data-n'), 10);
@@ -327,7 +338,11 @@
     var sb = window.certanvilSupabase;
     if (_authSubbed || !sb || !sb.auth || typeof sb.auth.onAuthStateChange !== 'function') return;
     _authSubbed = true;
-    sb.auth.onAuthStateChange(function (ev) { if (ev !== 'INITIAL_SESSION') setTimeout(_repaintIfShown, 0); });
+    sb.auth.onAuthStateChange(function (ev) {
+      if (ev === 'INITIAL_SESSION') return;
+      if (typeof window.iosSettingsAuthChanged === 'function') window.iosSettingsAuthChanged();   // the next account shows its own email
+      setTimeout(_repaintIfShown, 0);
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _subscribeAuth); else _subscribeAuth();
   // The tier hydrates after Settings may have drawn: app.js re-runs renderGauntletDrillsCard then (B3b1 / B3c3 chain).
@@ -335,7 +350,7 @@
     var f = window.renderGauntletDrillsCard;
     if (typeof f !== 'function' || f._istChained) return;
     var chained = function () { var r = f.apply(this, arguments); _repaintIfShown(); return r; };
-    chained._istChained = true; chained._islChained = f._islChained; chained._idlChained = f._idlChained;
+    chained._istChained = true; chained._islChained = f._islChained; chained._idChained = f._idChained;   // keep B3b1's and ios-drills' marks
     window.renderGauntletDrillsCard = chained;
   })();
   // Crossing 899px on Settings: the sheets close and the page redraws in the new layout (render clears ist-on on desktop).

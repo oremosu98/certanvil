@@ -2801,13 +2801,14 @@
       var act = document.querySelector('.page.active');
       if (!act) return;
       if (act.id === 'page-decision-lab-entry') { _dlRenderPhoneEntry(true); return; }
+      if (act.id === 'page-decision-lab-result') { if (_dlSession) _dlRenderResult(true); return; }
       if (act.id !== 'page-decision-lab' || !_dlSession || _dlSession.__submitted || !_dlSession.scenarios.length) return;
       var isl = window.iosSimLab;
       if (window.iosSheet && window.iosSheet.dismiss) window.iosSheet.dismiss();
       if (isl && isl.isEndOpen && isl.isEndOpen()) isl.closeEnd();
       if (_dlSession.mode === 'exam' && isl && isl.examBar) {
         if (_dlPhone() && !_dlSession.examBar) {
-          _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot', home: '.dl-sbar' };
+          _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot' };
           isl.examBar.mount(_dlOpenEnd, _dlSession.examBar);
         } else if (!_dlPhone() && _dlSession.examBar) { isl.examBar.unmount(_dlSession.examBar); _dlSession.examBar = null; }
       }
@@ -3044,7 +3045,7 @@
     _dlPhoneChrome();
     var isl = window.iosSimLab;
     if (_dlPhone() && isl && isl.examBar) {   // v8.192.0 Lift B3c3: the B3b2 bar holds the one clock on phones
-      _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot', home: '.dl-sbar' };
+      _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot' };
       isl.examBar.mount(_dlOpenEnd, _dlSession.examBar);
     }
     _slStartCountdown(_dlSession.deadlineMs);   // shared wall-clock countdown
@@ -3138,7 +3139,8 @@
       })
     };
   }
-  function _dlRenderResult() {
+  // redraw (v8.193.1): the 899px crossing redraws the results in the new layout without recording the set again.
+  function _dlRenderResult(redraw) {
     if (_dlSession && _dlSession.mode === 'exam') _slStopCountdown();
     var agg = _slAggregateSession(_dlSession.results);
     var clusters = _dlVerdictClusters(_dlSession.results);
@@ -3186,6 +3188,7 @@
       ctaRow.appendChild(drill); ctaRow.appendChild(back);
       root.appendChild(ctaRow);
     }
+    if (redraw) return;
     // Pro cross-session persistence of look-alike clusters (free = current set only)
     if (typeof window._dlRecordWeakSpots === 'function') {
       window._dlRecordWeakSpots(clusters.pairs.map(function (p) { return p.label; }));
@@ -3253,15 +3256,20 @@
       window.iosDecisionLab.confirmLeave(!_slIsPro());
       return;
     }
+    _dlTeardown();
+    _dlGoOrigin();
+  }
+  // Stops the clock, takes down the phone exam chrome (bar, End dialog, any sheet) and drops the session. Shared by
+  // Leave and by the clock's off-page abandon (v8.193.1: that path used to leave the bar and dialog behind).
+  function _dlTeardown() {
     _slStopCountdown();
     var isl = window.iosSimLab;
     if (isl && isl.isEndOpen && isl.isEndOpen() && isl.closeEnd) isl.closeEnd();
     if (window.iosSheet && typeof window.iosSheet.dismiss === 'function') window.iosSheet.dismiss();
     if (_dlSession && _dlSession.examBar && isl && isl.examBar && typeof isl.examBar.unmount === 'function') {
-      try { isl.examBar.unmount(_dlSession.examBar); } catch (_) {}
+      try { isl.examBar.unmount(); } catch (_) {}   // unmount puts the clock slot back where mount found it
     }
     _dlSession = null;
-    _dlGoOrigin();
   }
 
   // Spec §4 — the revenue tap. EXACT copy; do not paraphrase.
@@ -3471,7 +3479,7 @@
       sess.offPageTicks = (sess.offPageTicks || 0) + 1;
       if (sess.offPageTicks >= 2) {
         _slStopCountdown();
-        if (sess === _slSession) { _slSession = null; _slMode = null; } else { _dlSession = null; }
+        if (sess === _slSession) { _slSession = null; _slMode = null; } else { _dlTeardown(); }
         return;
       }
     } else {

@@ -63,8 +63,9 @@
       window.certanvilSupabase.auth.getSession().then(function (r) {
         var u = r && r.data && r.data.session && r.data.session.user;
         _istEmail = (u && u.email) || null;
+        if (!_istEmail) _istEmailAsked = false;   // ask again next time rather than keep a blank row
         if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ email: _istEmail || '' });   // in place: keeps the reveal
-      }).catch(function () {});
+      }).catch(function () { _istEmailAsked = false; });
     }
     if (!signedIn) { _istEmail = null; _istEmailAsked = false; }
     var certs = typeof window.getAvailableCerts === 'function' ? window.getAvailableCerts() : [];
@@ -100,6 +101,7 @@
   function _iosStRender(still) {
     var page = document.getElementById('page-settings');
     if (!window.iosSettings || typeof window.iosSettings.render !== 'function' || !page) return false;
+    if (!(window.iosSettings.isPhone && window.iosSettings.isPhone())) return window.iosSettings.render({}, {});   // desktop: clear only, build nothing
     if (still && !page.classList.contains('ist-on') && !page.classList.contains('active')) return false;   // only repaint a drawn page
     return window.iosSettings.render(_iosStState(still), _iosStActions());
   }
@@ -257,11 +259,19 @@
       const n = r.data.history.length;
       if (phone && typeof window.iosSheet === 'function') {
         window.iosSheet({ title: 'Import ' + n + ' history entries?', body: 'They’re added to what’s already here. Nothing gets removed.', go: 'Import', stay: 'Cancel' })
-          .then(function (go) { if (go) { showToast(_importMerge(r.data), 'success'); if (typeof window.iosSettingsRepaint === 'function') window.iosSettingsRepaint(); } });
+          .then(function (go) {
+            if (!go) return;
+            const res = _importMerge(r.data);
+            showToast(res.message, res.ok ? 'success' : 'error');
+            if (res.ok) _importRender();
+            if (typeof window.iosSettingsRepaint === 'function') window.iosSettingsRepaint();
+          });
         return;
       }
       if (!confirm(`Import ${n} history entries? This will MERGE with your existing data.`)) return;
-      alert(_importMerge(r.data));
+      const res = _importMerge(r.data);
+      alert(res.message);   // today's order: the result first, then the re-renders
+      if (res.ok) _importRender();
     };
     reader.readAsText(file);
   }
@@ -303,16 +313,18 @@
           });
         }
 
-        renderHistoryPanel();
-        renderStatsCard();
-        renderReadinessCard();
-        renderStreakBadge();
-        renderWrongBankBtn();
-        return `Imported ${newEntries.length} new entries` + (restoredKeys ? ` and restored ${restoredKeys} other saved item${restoredKeys === 1 ? '' : 's'}.` : '.');
+        return { ok: true, message: `Imported ${newEntries.length} new entries` + (restoredKeys ? ` and restored ${restoredKeys} other saved item${restoredKeys === 1 ? '' : 's'}.` : '.') };
       } catch(err) {
-        return 'Failed to import backup file: ' + err.message;
+        return { ok: false, message: 'Failed to parse backup file: ' + err.message };   // today's wording
       }
-    event.target.value = '';
+  }
+  // The re-renders today's import ran after its result alert.
+  function _importRender() {
+    renderHistoryPanel();
+    renderStatsCard();
+    renderReadinessCard();
+    renderStreakBadge();
+    renderWrongBankBtn();
   }
 
   function _captureSnapshot() {
@@ -921,7 +933,9 @@
   // ── window re-exposure (HTML onclick/onchange/oninput) ──
   window.scrollToSettings = scrollToSettings;
   window.renderSettingsPage = renderSettingsPage;
-  window.iosSettingsRepaint = function () { return _iosStRender(true); };   // v8.193.0: still repaint (auth, tier, picks)
+  window.iosSettingsRepaint = function () { return _iosStRender(true); };
+  // v8.193.1: an auth change forgets the cached email even when Settings is not on screen
+  window.iosSettingsAuthChanged = function () { _istEmail = null; _istEmailAsked = false; };   // v8.193.0: still repaint (auth, tier, picks)
   window.saveSettingsDailyGoal = saveSettingsDailyGoal;
   window.pickSettingsDailyPreset = pickSettingsDailyPreset;
   window.pickSrSessionSize = pickSrSessionSize;

@@ -86,6 +86,20 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       && /opts && opts\.skipConfirm\)\s*\|\|\s*confirm\(/.test(rd) && /window\._retakeAgoDays = /.test(dg));
     test('importData splits into _importParse / _importMerge; the desktop path keeps confirm() and alert()',
       /function _importParse\(/.test(st) && /function _importMerge\(/.test(st) && /confirm\(/.test(_fnBody(st, 'importData') || '') && /alert\(/.test(_fnBody(st, 'importData') || ''));
+    // ── v8.193.1: the final review's deferred minors ──
+    const im = _fnBody(st, 'importData') || '', mg = _fnBody(st, '_importMerge') || '', ir = _fnBody(st, '_iosStRender') || '';
+    test('desktop import: the result alert comes before the re-renders; a merge throw keeps "Failed to parse backup file"; _importMerge has no stray event line',
+      im.indexOf('alert(') >= 0 && im.indexOf('alert(') < im.indexOf('_importRender(') && mg.indexOf('Failed to parse backup file: ') >= 0 && mg.indexOf('event.') < 0);
+    test('still repaints check the width before building state',
+      ir.indexOf('isPhone') >= 0 && ir.indexOf('isPhone') < ir.indexOf('_iosStState('));
+    test('the tier chain carries ios-drills\' _idChained, not a flag nobody sets',
+      /_idChained = f\._idChained/.test(src) && src.indexOf('_idlChained') < 0);
+    test('exam sheet days carry the full date as their accessible name',
+      /aria-label="14 December 2026"/.test(run('_iosStExamSheetHtml(__s)', { code: 'N10-009', year: 2026, month: 11, selected: null, today: '2026-12-01' })));
+    const b4css = ios.slice(ios.indexOf('LIFT B4 · SETTINGS'));
+    const bare = b4css.split('\n').filter(l => /^\s*\.ist-/.test(l));
+    test('the B4 CSS is scoped to #ios-settings / #ist-sheet and carries no dead rules',
+      bare.length === 0 && !/\.ist-(del|danger-btn)|\.ist-k \.lock-pill|\.ist-row\.(static|out)\b|\.ist-chips/.test(b4css));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
     test('auth-state.js (gated lane) is untouched by Lift B4',
       require('crypto').createHash('sha256').update(auth).digest('hex') === '87af4f136c474b725d2144de8258597665cf6aacc0bd5b65761ffb0e0625a86d');
