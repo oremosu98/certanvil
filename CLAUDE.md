@@ -29,7 +29,7 @@
 | index.html | 2366 | 155 KB |
 | dg-system.css | 5624 | 532 KB |
 | tests/uat.js + tests/uat/ (68 modules) | 32716 | — |
-UAT checks: 5603 · E2E `test(` count: 409 · APP_VERSION: 8.193.1 · stamped-at: worktree
+UAT checks: 5603 · E2E `test(` count: 409 · APP_VERSION: 8.193.2 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.193.2 | Review forecast, Drills tab and quiz ✕ fixes on phones. |
 | v8.193.1 | Settings and Decision Lab tidy-ups on phones. |
 | v8.193.0 | Settings looks like the June design on phones. |
-| v8.192.1 | Long Decision Lab options no longer wrap under their marker on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
