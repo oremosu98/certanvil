@@ -56,29 +56,46 @@ Account tab, tab bar visible, no web top bar, plain top padding (v8.188.1). Top 
    - Signed in: the email (from the Supabase session, as `_showDeleteAccountConfirmUI` reads it), a Free or
      Pro pill (`_quotaState.tier`), and a Switch cert row showing the active cert. The row opens an in-app
      sheet listing `getAvailableCerts(role)` with today's rules: the active cert ticked, a "Pro" tag on Pro
-     certs for free users, a tap on another cert calls `tadSwitchCert(id)` (which applies today's gates).
+     certs for free users. A tap on another cert closes the sheet first, then calls `tadSwitchCert(id)`
+     (which applies today's Pro gate and reloads); a tap on the active cert does nothing.
+   - The email arrives from an async `getSession()`; until then the row shows a quiet placeholder, and a
+     signed-in user may briefly see the Sign in card before auth resolves (accepted: it repaints).
    - Free users only: a "Go Pro" row that opens today's Pro offer (`_showProOnlyUI` with the existing
      upgrade copy; no new pricing copy).
-3. **Your Pass Plan.** Today's content (`_renderPassPlanFreeHtml` / `_renderPassPlanProHtml` data), as a
+3. **Your Pass Plan.** Today's content (`_renderPassPlanFreeHtml` / `_renderPassPlanProHtml` output), as a
    June card. Free: the current cert's plan and the locked-certs chips. Pro: the plan and its snapshots.
    When there is no plan yet: today's "take the baseline diagnostic" call to action.
+   - The host routes the `pp-*` actions itself, to the same targets `_wirePassPlanSection` uses
+     (`viewPassPlan`, `_showProWaitlist`, `_showPassPlanCertPicker`, the open-cert path), with two phone
+     changes: `pp-empty` asks "Take the Baseline Diagnostic?" in the in-app sheet and then calls
+     `startDiagnostic({ skipConfirm: true })`; `pp-retake` asks its cooldown question in the sheet and then
+     calls `retakeDiagnostic({ skipConfirm: true })` (a new option in `features/diagnostic.js`, default off,
+     so every other caller keeps its `confirm()`). Copy for both sheets is today's, shortened in the drawing.
+   - `renderPassPlanSection`'s lazy-load callback (it loads the diagnostic module, then re-renders) also
+     re-renders the phone card (still), so a cold first visit fills in (the v8.7.1 regression class).
 4. **Study setup.**
    - "At a glance" iOS rows (label left, value right): Cloud sync, Exam date, Daily goal, Today, values
      from today's `renderSettingsHealthCard` model.
-   - **Exam date:** a row that opens the drawn bottom-sheet calendar; Save calls today's `setExamDate(iso)`;
+   - **Exam date:** a row that opens the drawn bottom-sheet calendar (in `#ist-sheet`, Architecture); Save calls today's `setExamDate(iso)`;
      "Remove exam date" when one is set. Copy as drawn.
    - **Daily goal:** the big number, presets 10/20/30/50 and Save (today's `pickSettingsDailyPreset` /
-     `saveSettingsDailyGoal`). Free: "Free is fixed at 15 questions a day" line and "Go Pro to raise your goal".
+     `saveSettingsDailyGoal`, which read and write the hidden desktop `#settings-daily-input`; the phone keeps
+     using it, then re-renders still). Free: "Free is fixed at 15 questions a day" line and "Go Pro to raise
+     your goal".
    - **Daily Review:** sizes 10/20/30/All due (`pickSrSessionSize`), "Top up on light days" switch
-     (`toggleSrTopUp`). Free: the 5-card cap line and "Go Pro for full review control".
+     (`toggleSrTopUp`); both repaint only the desktop chips today, so the host re-renders still after each.
+     Free: the 5-card cap line and "Go Pro for full review control".
 5. **Data and backups.**
-   - Export data / Import data (today's `exportData` / `importData`). On phones Import's "merge N entries?"
-     asks in the in-app sheet and the result shows as a toast, not `alert()`.
+   - Export data / Import data (today's `exportData` / `importData`). On phones Import splits into parse,
+     ask, merge: "Invalid backup file", the parse failure and the result each show as a toast, and "Import N
+     history entries? This merges with your data" asks in the in-app sheet. Desktop keeps `confirm()` and
+     `alert()`.
    - Automatic backups: one row per snapshot (date, keys, size, version, time) that opens "Restore to
-     <date>?" in the in-app sheet, then today's `restoreFromAutoBackup`; Download latest snapshot and
+     <date>?" in the in-app sheet (the body keeps today's "what gets replaced" line, shortened in the drawing),
+     then `restoreFromAutoBackup(date, { confirmed: true })`, a new option that skips its own `confirm()`; Download latest snapshot and
      Snapshot now (today's functions). Empty state: today's "No automatic backups yet" line.
-6. **Danger zone.** "Clear wrong answers bank (N)" asks in the in-app sheet, then today's `clearWrongBank`
-   (its `confirm()` is skipped on phones). Delete account (signed in only) opens today's
+6. **Danger zone.** "Clear wrong answers bank (N)" asks in the in-app sheet, then
+   `clearWrongBank({ confirmed: true })`, a new option that skips its `confirm()`. Delete account (signed in only) opens today's
    `_showDeleteAccountConfirmUI` flow with its 7-day-grace copy, restyled for phones.
 7. **Sign out** (signed in only): the last row; it activates today's `#topbar-signout-link` handler, which
    uploads first and only clears the device once the cloud has everything (v8.151.0).
@@ -104,15 +121,24 @@ are instant state swaps. Touch targets ≥ 44px. BRAND §6 tokens.
   (`saveSettingsDailyGoal`, `setExamDate`, `restoreFromAutoBackup`, …) are called by name. The
   three `confirm()` / `alert()` paths gain a phone branch through `iosSheet` and the toast. Desktop paths are
   unchanged.
+- Small opt-in options on today's functions, default off so every other caller is unchanged:
+  `clearWrongBank({confirmed})`, `restoreFromAutoBackup(date, {confirmed})` (settings.js) and
+  `retakeDiagnostic({skipConfirm})` (features/diagnostic.js; `startDiagnostic` already takes `skipConfirm`).
 - **No edits to `auth-state.js`** (gated lane). The card reads `window._certanvilSignedIn`, the Supabase
   session, `buildSignInUrl`, `getAvailableCerts`, `tadSwitchCert`, and activates `#topbar-signout-link`.
-  Sign-in state changes repaint the card: the host re-renders (still) when `renderSignedIn` /
-  `renderAnonymous` run, by wrapping the `window.certanvilAuthState` functions from `ios-settings.js`
-  (the B3b1 / B3c3 chaining pattern), and when `_quotaState` hydrates (`renderGauntletDrillsCard` chain).
+  Sign-in state changes repaint the card: `ios-settings.js` subscribes to
+  `window.certanvilSupabase.auth.onAuthStateChange` (auth-state's own subscriber registers first in its
+  `init`, so `_certanvilSignedIn` is already set when ours runs) and re-renders still while Settings is
+  shown. Wrapping `window.certanvilAuthState` would never fire: auth-state calls its local functions
+  directly. The tier repaints through the `renderGauntletDrillsCard` chain when `_quotaState` hydrates.
+- **Sheets.** Two-button asks use `iosSheet` (`#exam-sheet`). The cert list and the exam-date calendar need
+  their own content, so they live in a new bottom sheet `#ist-sheet` in `index.html`, built like B3c1's
+  `#igt-topics` (sharing its `lift-ios.css` sheet rules, scrim, focus return and Escape), closed on page exit
+  and by `iosSheet.dismiss()`.
 - `lift-ios.css`: a `B4 · SETTINGS` section (prefix `ist-`), hiding the web top bar and today's sections
-  beside a filled `#ios-settings`. The host fills while its page enters (renderSettingsPage before showPage),
-  so the `:has(#ios-settings:not(:empty))` rule is safe per the CLAUDE.md WebKit gotcha; any in-place refill
-  is still, not a re-entry.
+  while `#page-settings` carries the class `ist-on`, which the host toggles from JS. Not a
+  `:has(#ios-settings:not(:empty))` rule: several paths call `showPage('settings')` before the render, and
+  the 899px crossing fills the host in place on a shown page, which WebKit misses (CLAUDE.md gotcha).
 - Crossing 899px redraws in the new layout (MQ listener, Settings active only).
 
 ## Process
@@ -130,7 +156,8 @@ are instant state swaps. Touch targets ≥ 44px. BRAND §6 tokens.
 - Every action does exactly what today's does: goal save, review size, top-up, exam date set and remove,
   export, import, restore, download, snapshot, clear wrong bank, delete account, cert switch (gates
   included), sign out (upload before clear).
-- No browser `confirm()` / `alert()` on phones in Settings.
+- No browser `confirm()` / `alert()` from any action on the phone Settings page, including the two Pass Plan
+  diagnostic paths.
 - Desktop Settings unchanged (a desktop E2E pins it). `auth-state.js` untouched (UAT pins its hash or a
   diff check in review).
 - No horizontal scroll; tab bar visible; no web top bar.
