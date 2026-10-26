@@ -69,6 +69,13 @@ async function startPractice(page, vp, tier, n) {
   await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
   await expect(page.locator('#dl-body .sl-analyze-line').first()).toBeVisible();
 }
+// Starts an Exam-style set of n decisions (Pro).
+async function startExam(page, vp, n) {
+  await openEntry(page, vp, 'pro');
+  await page.evaluate((k) => { decisionLabPickMode('exam'); if (k !== 10) decisionLabPickDecisions(k); decisionLabSessionStart(); }, n || 10);
+  await expect(page.locator('#page-decision-lab')).toHaveClass(/active/, { timeout: 10000 });
+  await expect(page.locator('#dl-body .sl-analyze-line').first()).toBeVisible();
+}
 // Clicks an analyze line: the right one, or the first wrong one.
 async function pickLine(page, right) {
   const ids = await page.evaluate(() => { const s = window._simLab.dlSession(); const st = s.scenarios[s.idx].steps[0]; return (st.answer && st.answer.selected) || []; });
@@ -188,6 +195,79 @@ for (const vp of PHONES) {
       await page.locator('#exam-sheet .ix-sheet-go').click();
       await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
       expect(await page.evaluate(() => window._simLab.dlSession())).toBeNull();
+    });
+  });
+}
+
+for (const vp of PHONES) {
+  test.describe('Lift B3c3 Exam-style @' + vp.width, () => {
+    const SUB = '#dl-body .sl-actions [data-action="simLabSubmitScenario"]';
+    test('Exam-style: the bar, Decision N of M, answered count; Submit moves on with no reveal', async ({ page }) => {
+      await startExam(page, vp, 10);
+      await expect(page.locator('#page-decision-lab')).toHaveClass(/idl-exam/);
+      await expect(page.locator('#isl-xbar .isl-xtl')).toHaveText('Time left');
+      await expect(page.locator('#isl-xbar .sl-clock')).toBeVisible();
+      await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Decision 1 of 10');
+      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText('0 answered');
+      await expect(page.locator('#isl-xstrip i')).toHaveCount(10);
+      await expect(page.locator('#page-decision-lab .dl-sbar')).toBeHidden();
+      await expect(page.locator(SUB)).toHaveText('Submit');
+      await pickLine(page, false);
+      await page.locator(SUB).click();
+      await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Decision 2 of 10');
+      await expect(page.locator('#isl-xbar .isl-xcs')).toHaveText('1 answered');
+      await expect(page.locator('#dl-body .dl-graded')).toHaveCount(0);
+      await expect(page.locator(SUB)).toHaveText('Submit');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+    test('the last decision says Submit and see results', async ({ page }) => {
+      await startExam(page, vp, 5);
+      for (let i = 0; i < 4; i++) { await pickLine(page, true); await page.locator(SUB).click(); await expect(page.locator('#isl-xbar .isl-xcn')).toHaveText('Decision ' + (i + 2) + ' of 5'); }
+      await expect(page.locator(SUB)).toHaveText('Submit and see results');
+      await page.locator(SUB).click();
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+      await expect(page.locator('#isl-xbar')).toHaveCount(0);
+    });
+    test('End opens the variant dialog; Submit and see results ends the set', async ({ page }) => {
+      await startExam(page, vp, 10);
+      await pickLine(page, true); await page.locator(SUB).click();
+      await page.locator('#isl-xbar .isl-xend').click();
+      const end = page.locator('#isl-end');
+      await expect(end).toBeVisible();
+      await expect(end.locator('.ed-modalhead-eyebrow')).toHaveText('Decision Lab · Exam-style');
+      await expect(end.locator('#isl-end-title')).toHaveText('Submit set?');
+      await expect(end.locator('.ms-lbl')).toHaveText(['Answered', 'Skipped']);
+      await expect(end.locator('.ms-val')).toHaveText(['1', '9']);
+      await expect(end.locator('[data-act="review"], .ix-jump')).toHaveCount(0);
+      await expect(end.locator('[data-act="abandon"]')).toHaveText('Abandon set');
+      await end.locator('[data-act="submit"]').click();
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+      await expect(end).toBeHidden();
+    });
+    test('Abandon set asks, Abandon leaves', async ({ page }) => {
+      await startExam(page, vp, 10);
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await expect(page.locator('#exam-sheet-title')).toHaveText('Abandon this set?');
+      await expect(page.locator('#exam-sheet')).toContainText('Nothing from it will count.');
+      await page.locator('#exam-sheet .ix-sheet-go').click();
+      await expect(page.locator('#page-drills')).toHaveClass(/active/, { timeout: 10000 });
+      await expect(page.locator('#isl-end')).toBeHidden();
+      await expect(page.locator('#isl-xbar')).toHaveCount(0);
+      expect(await page.evaluate(() => window._simLab.dlSession())).toBeNull();
+    });
+    test('time-up closes the End dialog and the sheet', async ({ page }) => {
+      await startExam(page, vp, 10);
+      await pickLine(page, true); await page.locator(SUB).click();
+      await page.locator('#isl-xbar .isl-xend').click();
+      await page.locator('#isl-end [data-act="abandon"]').click();
+      await expect(page.locator('#exam-sheet')).toBeVisible();
+      await page.evaluate(() => { window._simLab.dlSession().deadlineMs = Date.now() - 1; window._simLab.dlTick(); });
+      await expect(page.locator('#page-decision-lab-result')).toHaveClass(/active/, { timeout: 10000 });
+      await expect(page.locator('#isl-end')).toBeHidden();
+      await expect(page.locator('#exam-sheet')).toBeHidden();
+      const r = await page.evaluate(() => { const s = window._simLab.dlSession(); return { up: s.timeUp, n: s.results.length, unreached: s.results.slice(1).every((x) => !x.passed) }; });
+      expect(r).toEqual({ up: true, n: 10, unreached: true });
     });
   });
 }

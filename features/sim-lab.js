@@ -2927,7 +2927,9 @@
     });
     if (phone) {
       var sub = body.querySelector('[data-action="simLabSubmitScenario"]');
-      if (sub) sub.textContent = 'Submit';
+      var lastX = _dlSession.mode === 'exam' && _dlSession.idx + 1 >= _dlSession.rounds;
+      if (sub) sub.textContent = lastX ? 'Submit and see results' : 'Submit';
+      _dlExamBarSync();
       body.classList.remove('idl-swap'); void body.offsetWidth; body.classList.add('idl-swap');   // a new decision fades in (150ms)
     }
     // Shared-responsibility sorter: if the round's step is a categorize with a
@@ -2999,8 +3001,40 @@
   function _dlStartExamStyle() {
     _dlSession.budgetMs = _dlExamBudgetMs(_dlSession.scenarios);
     _dlSession.deadlineMs = Date.now() + _dlSession.budgetMs;
+    _dlPhoneChrome();
+    var isl = window.iosSimLab;
+    if (_dlPhone() && isl && isl.examBar) {   // v8.192.0 Lift B3c3: the B3b2 bar holds the one clock on phones
+      _dlSession.examBar = { shell: '#page-decision-lab .dl-shell', slot: 'dl-clock-slot', home: '.dl-sbar' };
+      isl.examBar.mount(_dlOpenEnd, _dlSession.examBar);
+    }
     _slStartCountdown(_dlSession.deadlineMs);   // shared wall-clock countdown
     _dlRunRound();                               // feedback suppressed inside (mode==='exam')
+  }
+  // Phone Exam-style: K answered = decisions submitted with a pick. The set only goes forward, so nothing is flagged.
+  function _dlExamFlags() {
+    var answered = _dlSession.results.map(function (r) {
+      var rs = r.responses || {};
+      return Object.keys(rs).some(function (k) { var x = rs[k]; return !!(x && (!x.selected || x.selected.length)); });
+    });
+    return { idx: Math.min(_dlSession.idx, _dlSession.rounds - 1), rounds: _dlSession.rounds, answered: answered, flagged: [], noun: 'Decision' };
+  }
+  function _dlExamBarSync() {
+    var isl = window.iosSimLab;
+    if (!_dlSession || _dlSession.mode !== 'exam' || !_dlSession.examBar || !isl || !isl.examBar) return;
+    isl.examBar.update(window._iosSlExamBarModel(_dlExamFlags()));
+  }
+  var _DL_END = { eyebrow: 'Decision Lab · Exam-style', title: 'Submit <em>set?</em>', abandon: 'Abandon set', noFlag: true, noReview: true, noJump: true };
+  function _dlOpenEnd() {
+    var isl = window.iosSimLab;
+    if (!_dlSession || _dlSession.mode !== 'exam' || _dlSession.__submitted || !isl || !isl.openEnd) return;
+    isl.openEnd(window._iosSlEndModel(_dlExamFlags(), _DL_END), {
+      onSubmit: function () { _dlExamSubmit(false); },
+      onAbandon: function () {
+        if (!window.iosSheet) return Promise.resolve(false);
+        return window.iosSheet({ title: 'Abandon this set?', body: 'Nothing from it will count.', go: 'Abandon', stay: 'Keep going' })
+          .then(function (ok) { if (ok && _dlSession && _dlSession.mode === 'exam' && !_dlSession.__submitted) decisionLabExit({ confirmed: true }); return ok; });
+      }
+    });
   }
 
   // Time-up or last-round submit → score everything + route to verdict (retro-reveal lives there).
@@ -3008,6 +3042,11 @@
     if (!_dlSession || _dlSession.__submitted) return;
     _dlSession.__submitted = true;
     _slStopCountdown();
+    // v8.192.0: the End dialog, an abandon sheet and the bar never outlive the set (time-up lands here with them open)
+    var isl = window.iosSimLab;
+    if (isl && isl.isEndOpen && isl.isEndOpen()) isl.closeEnd();
+    if (window.iosSheet && typeof window.iosSheet.dismiss === 'function') window.iosSheet.dismiss();
+    if (_dlSession.examBar && isl && isl.examBar) { isl.examBar.unmount(_dlSession.examBar); _dlSession.examBar = null; }
     // any rounds not yet answered score as missed (responses absent)
     while (_dlSession.results.length < _dlSession.rounds) {
       var i = _dlSession.results.length;

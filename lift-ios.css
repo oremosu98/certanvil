@@ -1965,27 +1965,27 @@ html[data-theme] body #page-sim-lab.isl-exam.active { padding: 0 !important; mar
 #page-sim-lab.isl-exam #sl-body { padding: 12px 20px calc(96px + env(safe-area-inset-bottom)); }
 #page-sim-lab.isl-exam:has(#isl-xbar) #sl-body { padding-top: 76px; }
 /* bar: plain top padding (the iOS web view already clears the status bar, v8.188.1) */
-#page-sim-lab.isl-exam #isl-xbar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; background: var(--bg); }
-#page-sim-lab.isl-exam .isl-xt { flex: 0 0 auto; min-width: 0; }
-#page-sim-lab.isl-exam .isl-xtl { display: block; font: 800 8.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 12px 18px 8px; background: var(--bg); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xt { flex: 0 0 auto; min-width: 0; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xtl { display: block; font: 800 8.5px/1 Inter, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px; }
 #page-sim-lab.isl-exam #sl-clock-slot { display: block; }
-#page-sim-lab.isl-exam #isl-xbar .sl-clock { display: inline-flex; align-items: center; gap: 5px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; font: 700 17px/1 'Roboto Mono', monospace; color: var(--text); font-variant-numeric: tabular-nums; }
-#page-sim-lab.isl-exam #isl-xbar .sl-clock svg { width: 13px; height: 13px; fill: none; stroke: var(--accent-deep); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-#page-sim-lab.isl-exam #isl-xbar .sl-clock .cap { display: none; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar .sl-clock { display: inline-flex; align-items: center; gap: 5px; min-height: 0; padding: 0; border: 0; border-radius: 0; background: none; font: 700 17px/1 'Roboto Mono', monospace; color: var(--text); font-variant-numeric: tabular-nums; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar .sl-clock svg { width: 13px; height: 13px; fill: none; stroke: var(--accent-deep); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar .sl-clock .cap { display: none; }
 /* the one-way latch in the last 10%: amber, never red (spec) */
-#page-sim-lab.isl-exam #isl-xbar .sl-clock.is-low { color: var(--accent-deep); border: 0; }
-#page-sim-lab.isl-exam #isl-xbar .sl-clock.is-low svg { stroke: var(--accent-deep); }
-#page-sim-lab.isl-exam .isl-xmid { flex: 1 1 auto; min-width: 0; text-align: center; }
-#page-sim-lab.isl-exam .isl-xcn { display: block; font: 700 13.5px/1 Inter, sans-serif; color: var(--text); }
-#page-sim-lab.isl-exam .isl-xcs { display: block; font: 500 10.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
-#page-sim-lab.isl-exam .isl-xend { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 0; margin: 0; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ios-ease), background-color .18s; }
-#page-sim-lab.isl-exam .isl-xend::after { content: ""; position: absolute; inset: -7px -4px; }
-#page-sim-lab.isl-exam .isl-xend:active { transform: scale(0.97); }
-#page-sim-lab.isl-exam #isl-xstrip { position: fixed; top: 56px; left: 0; right: 0; z-index: 60; display: flex; gap: 2px; align-items: flex-end; height: 12px; padding: 0 18px 6px; background: var(--bg); }
-#page-sim-lab.isl-exam #isl-xstrip i { flex: 1 1 0; height: 5px; border-radius: 2px; background: var(--track); }
-#page-sim-lab.isl-exam #isl-xstrip i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
-#page-sim-lab.isl-exam #isl-xstrip i.cur { height: 12px; background: var(--accent); }
-#page-sim-lab.isl-exam #isl-xstrip i.flag { background: var(--accent-deep); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar .sl-clock.is-low { color: var(--accent-deep); border: 0; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar .sl-clock.is-low svg { stroke: var(--accent-deep); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xmid { flex: 1 1 auto; min-width: 0; text-align: center; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xcn { display: block; font: 700 13.5px/1 Inter, sans-serif; color: var(--text); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xcs { display: block; font: 500 10.5px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xend { position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 0; margin: 0; font: 700 12px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 10%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ios-ease), background-color .18s; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xend::after { content: ""; position: absolute; inset: -7px -4px; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) .isl-xend:active { transform: scale(0.97); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip { position: fixed; top: 56px; left: 0; right: 0; z-index: 60; display: flex; gap: 2px; align-items: flex-end; height: 12px; padding: 0 18px 6px; background: var(--bg); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip i { flex: 1 1 0; height: 5px; border-radius: 2px; background: var(--track); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip i.done { background: color-mix(in oklab, var(--accent) 55%, var(--track)); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip i.cur { height: 12px; background: var(--accent); }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip i.flag { background: var(--accent-deep); }
 /* dock: ‹ · Flag · Next (Review on the last round) */
 #page-sim-lab.isl-exam .isl-xdock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; display: flex; gap: 10px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
 #page-sim-lab.isl-exam .isl-xdock button { min-height: 48px; margin: 0; cursor: pointer; }
@@ -2401,3 +2401,10 @@ html[data-theme] body #page-decision-lab:is(.idl-practice, .idl-exam).active { p
   @keyframes idl-tell { from { opacity: 0; transform: translateY(4px); } }
 }
 @media (prefers-reduced-motion: reduce) { #page-decision-lab.idl-practice .dl-teach { animation: idl-fade .2s ease backwards; } @keyframes idl-fade { from { opacity: 0; } } }
+
+/* ═════════════════════ LIFT B3c3 · DECISION LAB EXAM (cert-ios-decisionlab.html ?v=exam, exam-amber, exam-end) · idl- ═════════════════════ */
+/* The B3b2 bar (Time left · Decision N of M · End) and End dialog, widened above; the run bar and dots step aside. */
+#page-decision-lab.idl-exam .dl-sbar, #page-decision-lab.idl-exam #dl-dots { display: none !important; }
+#page-decision-lab.idl-exam #isl-xbar .sl-clock .sl-clock-t, #page-decision-lab.idl-exam #isl-xbar .sl-clock { transition: color .2s var(--ios-ease); }
+#page-decision-lab.idl-exam:has(#isl-xbar) #dl-body { padding-top: 76px; }
+html[data-theme] body #isl-end .modal-stats.isl-two .modal-stat { flex: 1 1 0 !important; }

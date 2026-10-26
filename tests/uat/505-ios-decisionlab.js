@@ -69,6 +69,24 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     test('ios-decisionlab.js: confirmLeave asks with the sheet copy (free adds the spent-set line), then exits confirmed',
       /title: 'Leave Decision Lab\?'/.test(src) && src.indexOf('Your decisions so far won’t count.') >= 0 && src.indexOf(' Today’s free set is already used.') >= 0
       && /decisionLabExit\(\{ confirmed: true \}\)/.test(src));
+
+    // ── Task 4: the shared B3b2 exam bar and End dialog take options; with none, Sim Lab's output is byte-identical ──
+    const slsrc = fs.readFileSync(path.join(ROOT, 'features', 'ios-simlab.js'), 'utf8');
+    const xc = vm.createContext({});
+    vm.runInContext(['_iosSlExamBarModel', '_iosSlEndModel', '_iosSlEndHtml'].map(n => _fnBody(slsrc, n) || '').join('\n'), xc);
+    xc.S = { idx: 1, rounds: 3, answered: [true, false, true], flagged: [false, false, true] };
+    const BAR_TODAY = "{\"cn\":\"Round 2 of 3\",\"cs\":\"2 answered\",\"ticks\":[\"done\",\"cur\",\"flag\"]}";
+    const END_TODAY = "<div class=\"modal-box\"><div class=\"ed-modalhead\"><div class=\"ed-modalhead-eyebrow\">Sim Lab exam · end of session</div><h2 class=\"ed-modalhead-title\" id=\"isl-end-title\">Submit <em>exam?</em></h2></div><div class=\"modal-stats\"><div class=\"modal-stat\"><div class=\"ms-val\">2</div><div class=\"ms-lbl\">Answered</div></div><div class=\"modal-stat\"><div class=\"ms-val isl-ms-skip\">1</div><div class=\"ms-lbl\">Skipped</div></div><div class=\"modal-stat\"><div class=\"ms-val isl-ms-flag\">1</div><div class=\"ms-lbl\">Flagged</div></div></div><div class=\"modal-actions\"><button type=\"button\" class=\"ix-review\" data-act=\"review\">Review the 1 you skipped first</button><button type=\"button\" class=\"btn btn-primary\" data-act=\"submit\">Submit and see results</button><button type=\"button\" class=\"btn btn-danger\" data-act=\"abandon\">Abandon exam</button></div><div class=\"ix-jump\"><button type=\"button\" class=\"ix-jump-t\" aria-expanded=\"false\" aria-controls=\"isl-jgrid\">Jump to a round</button><div class=\"ix-jgrid\" id=\"isl-jgrid\" role=\"list\"><button type=\"button\" role=\"listitem\" class=\"a\" data-i=\"0\" aria-label=\"Round 1, answered\">1</button><button type=\"button\" role=\"listitem\" class=\"c\" data-i=\"1\" aria-label=\"Round 2, current\">2</button><button type=\"button\" role=\"listitem\" class=\"f\" data-i=\"2\" aria-label=\"Round 3, flagged\">3</button></div><div class=\"ix-jkey\" aria-hidden=\"true\"><span><i class=\"a\"></i>Answered</span><span><i></i>Skipped</span><span><i class=\"f\"></i>Flagged</span></div></div></div>";
+    test('ios-simlab: with no options the exam bar model and End dialog are exactly today\'s (Sim Lab)',
+      vm.runInContext('JSON.stringify(_iosSlExamBarModel(S))', xc) === BAR_TODAY && vm.runInContext('_iosSlEndHtml(_iosSlEndModel(S))', xc) === END_TODAY);
+    xc.V = { eyebrow: 'Decision Lab · Exam-style', title: 'Submit <em>set?</em>', abandon: 'Abandon set', noFlag: true, noReview: true, noJump: true };
+    const endV = vm.runInContext('_iosSlEndHtml(_iosSlEndModel(S, V))', xc);
+    xc.D = { idx: 3, rounds: 10, answered: [true, true, true], flagged: [], noun: 'Decision' };
+    test('ios-simlab: the Decision Lab variant drops Flagged, Review and Jump, says Abandon set, Submit set?; the bar says Decision 4 of 10',
+      endV.indexOf('Flagged') < 0 && endV.indexOf('data-act="review"') < 0 && endV.indexOf('ix-jump') < 0 && endV.indexOf('>Abandon set<') >= 0
+      && endV.indexOf('Submit <em>set?</em>') >= 0 && endV.indexOf('Decision Lab · Exam-style') >= 0 && endV.indexOf('>Answered<') >= 0 && endV.indexOf('>Skipped<') >= 0
+      && JSON.parse(vm.runInContext('JSON.stringify(_iosSlExamBarModel(D))', xc)).cn === 'Decision 4 of 10'
+      && JSON.parse(vm.runInContext('JSON.stringify(_iosSlExamBarModel(D))', xc)).cs === '3 answered');
   } catch (err) {
     test('Lift B3c3 Decision Lab: block (threw)', false);
     results.errors.push('505 ios-decisionlab block threw: ' + err.message);

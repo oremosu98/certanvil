@@ -153,7 +153,7 @@
       if (s.answered[i]) k++;
       ticks.push(i === s.idx ? 'cur' : s.flagged[i] ? 'flag' : s.answered[i] ? 'done' : '');
     }
-    return { cn: 'Round ' + (s.idx + 1) + ' of ' + s.rounds, cs: k + ' answered', ticks: ticks };
+    return { cn: (s.noun || 'Round') + ' ' + (s.idx + 1) + ' of ' + s.rounds, cs: k + ' answered', ticks: ticks };   // v8.192.0: Decision Lab says Decision
   }
   function _iosSlExamBarHtml(m) {
     return { mid: '<span class="isl-xcn">' + m.cn + '</span><span class="isl-xcs">' + m.cs + '</span>',
@@ -165,7 +165,8 @@
       + '<button type="button" class="isl-xflag' + (d.flagged ? ' is-on' : '') + '" data-act="flag" aria-pressed="' + (d.flagged ? 'true' : 'false') + '">' + svg('<path d="M5 21V4h11l-1.5 4L16 12H5"></path>', 15) + (d.flagged ? 'Flagged' : 'Flag') + '</button>'
       + '<button type="button" class="isl-xnext" data-act="next">' + (d.last ? 'Review' : 'Next' + svg('<path d="M5 12h14M13 6l6 6-6 6"></path>', 17)) + '</button>';
   }
-  function _iosSlEndModel(s) {
+  // v8.192.0 Lift B3c3: v (optional) = {eyebrow, title, abandon, noFlag, noReview, noJump} for Decision Lab's forward-only set.
+  function _iosSlEndModel(s, v) {
     var answered = 0, flagged = 0, firstSkip = -1, firstFlag = -1, grid = [];
     for (var i = 0; i < s.rounds; i++) {
       var a = !!s.answered[i], f = !!s.flagged[i], cur = i === s.idx;
@@ -177,22 +178,25 @@
     var skipped = s.rounds - answered, review = null;
     if (skipped) review = { label: 'Review the ' + skipped + ' you skipped first', target: firstSkip };
     else if (flagged) review = { label: 'Review the ' + flagged + ' you flagged first', target: firstFlag };
-    return { answered: answered, skipped: skipped, flagged: flagged, review: review, grid: grid };
+    var m = { answered: answered, skipped: skipped, flagged: flagged, review: review, grid: grid };
+    if (v) { m.v = v; if (v.noReview) m.review = null; }
+    return m;
   }
   function _iosSlEndHtml(m) {
+    var v = m.v || {};   // variant copy is fixed strings from the caller, never data
     return '<div class="modal-box">'
-      + '<div class="ed-modalhead"><div class="ed-modalhead-eyebrow">Sim Lab exam · end of session</div><h2 class="ed-modalhead-title" id="isl-end-title">Submit <em>exam?</em></h2></div>'
-      + '<div class="modal-stats"><div class="modal-stat"><div class="ms-val">' + m.answered + '</div><div class="ms-lbl">Answered</div></div>'
+      + '<div class="ed-modalhead"><div class="ed-modalhead-eyebrow">' + (v.eyebrow || 'Sim Lab exam · end of session') + '</div><h2 class="ed-modalhead-title" id="isl-end-title">' + (v.title || 'Submit <em>exam?</em>') + '</h2></div>'
+      + '<div class="modal-stats' + (v.noFlag ? ' isl-two' : '') + '"><div class="modal-stat"><div class="ms-val">' + m.answered + '</div><div class="ms-lbl">Answered</div></div>'
       + '<div class="modal-stat"><div class="ms-val isl-ms-skip">' + m.skipped + '</div><div class="ms-lbl">Skipped</div></div>'
-      + '<div class="modal-stat"><div class="ms-val isl-ms-flag">' + m.flagged + '</div><div class="ms-lbl">Flagged</div></div></div>'
+      + (v.noFlag ? '' : '<div class="modal-stat"><div class="ms-val isl-ms-flag">' + m.flagged + '</div><div class="ms-lbl">Flagged</div></div>') + '</div>'
       + '<div class="modal-actions">' + (m.review ? '<button type="button" class="ix-review" data-act="review">' + m.review.label + '</button>' : '')
       + '<button type="button" class="btn btn-primary" data-act="submit">Submit and see results</button>'
-      + '<button type="button" class="btn btn-danger" data-act="abandon">Abandon exam</button></div>'
-      + '<div class="ix-jump"><button type="button" class="ix-jump-t" aria-expanded="false" aria-controls="isl-jgrid">Jump to a round</button>'
+      + '<button type="button" class="btn btn-danger" data-act="abandon">' + (v.abandon || 'Abandon exam') + '</button></div>'
+      + (v.noJump ? '' : '<div class="ix-jump"><button type="button" class="ix-jump-t" aria-expanded="false" aria-controls="isl-jgrid">Jump to a round</button>'
       + '<div class="ix-jgrid" id="isl-jgrid" role="list">' + m.grid.map(function (g, i) {
         return '<button type="button" role="listitem"' + (g.cls ? ' class="' + g.cls + '"' : '') + ' data-i="' + i + '" aria-label="' + g.label + '">' + g.n + '</button>';
       }).join('') + '</div>'
-      + '<div class="ix-jkey" aria-hidden="true"><span><i class="a"></i>Answered</span><span><i></i>Skipped</span><span><i class="f"></i>Flagged</span></div></div>'
+      + '<div class="ix-jkey" aria-hidden="true"><span><i class="a"></i>Answered</span><span><i></i>Skipped</span><span><i class="f"></i>Flagged</span></div></div>')
       + '</div>';
   }
 
@@ -253,11 +257,13 @@
     var first = Array.prototype.find.call(el.querySelectorAll('button:not([disabled])'), function (b) { return b.offsetParent !== null; });
     if (first) first.focus();
   }
-  // The bar is built once per exam; the real #sl-clock-slot moves into it so _slTickClock keeps one clock.
+  // The bar is built once per exam; the real clock slot moves into it so _slTickClock keeps one clock.
+  // v8.192.0: opts = {shell, slot} lets Decision Lab mount it (default: Sim Lab's #page-sim-lab .sl-shell / #sl-clock-slot).
   var examBar = {
-    mount: function (onEnd) {
-      var shell = document.querySelector('#page-sim-lab .sl-shell'); if (!shell) return;
+    mount: function (onEnd, opts) {
+      var shell = document.querySelector((opts && opts.shell) || '#page-sim-lab .sl-shell'); if (!shell) return;
       var bar = document.getElementById('isl-xbar');
+      if (bar && !shell.contains(bar)) { examBar.unmount(); bar = null; }   // a bar left in the other drill's shell
       if (!bar) {
         bar = document.createElement('div'); bar.id = 'isl-xbar'; bar.className = 'isl-xbar';
         bar.innerHTML = '<div class="isl-xt"><span class="isl-xtl">Time left</span></div><div class="isl-xmid" aria-live="polite"></div><button type="button" class="isl-xend">End</button>';
@@ -267,8 +273,12 @@
         bar.querySelector('.isl-xend').addEventListener('click', function () { if (typeof bar._onEnd === 'function') bar._onEnd(); });
       }
       bar._onEnd = onEnd;
-      var slot = document.getElementById('sl-clock-slot'), xt = bar.querySelector('.isl-xt');
-      if (slot && slot.parentNode !== xt) xt.appendChild(slot);
+      var slot = document.getElementById((opts && opts.slot) || 'sl-clock-slot'), xt = bar.querySelector('.isl-xt');
+      if (slot && slot.parentNode !== xt) {
+        if (opts) slot._islHome = { parent: slot.parentNode, next: slot.nextSibling };   // put back on unmount
+        xt.appendChild(slot);
+      }
+      bar._islSlot = slot;
     },
     update: function (m) {
       var bar = document.getElementById('isl-xbar'), strip = document.getElementById('isl-xstrip'); if (!bar || !strip) return;
@@ -277,6 +287,11 @@
       strip.innerHTML = v.strip;
     },
     unmount: function () {
+      var bar = document.getElementById('isl-xbar'), own = bar && bar._islSlot;
+      if (own && own._islHome) {
+        var home = own._islHome; own._islHome = null;
+        if (home.parent && home.parent.isConnected) home.parent.insertBefore(own, home.next && home.next.parentNode === home.parent ? home.next : null);
+      }
       var slot = document.getElementById('sl-clock-slot'), tslot = document.getElementById('sl-timer-slot');
       if (slot && tslot && slot.nextElementSibling !== tslot) tslot.parentNode.insertBefore(slot, tslot);
       ['isl-xbar', 'isl-xstrip'].forEach(function (id) { var n = document.getElementById(id); if (n) n.remove(); });
