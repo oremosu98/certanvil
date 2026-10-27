@@ -24,6 +24,16 @@ const { fs, path, ROOT, test, results } = require('./_context');
       /<script src="native-shell\.js"><\/script>/.test(head) && /if \(!native\) return;/.test(ns) && /CertAnvilApp/.test(ns));
     const off = read('native-shell/index.html');
     test('the offline page has no inline handlers', off.length > 0 && !/\son[a-z]+=/.test(off));
+    // Task 4: Apple Guideline 3.1.1 — no web purchase link inside the app
+    const dg = read('dg-system.css');
+    const SEL = ['.a2hs-banner', '#ios-settings [data-act="gopro"]', '.ifr-see', '#ios-check [data-act="limit-pro"]', '.settings-go-pro-btn', 'a[href*="certanvil.com/pricing"]', 'a[href*="manage-subscription"]'];
+    test('every web purchase link is hidden under html.is-native in the app (3.1.1)',
+      SEL.every((x) => dg.indexOf('html.is-native ' + x) >= 0));
+    const lh = read('landing/native-hide.js'), ldg = read('landing/dg-system.css');
+    const pages = ['index.html', 'pricing.html', 'account.html', 'manage-subscription.html'].map((f) => read('landing/' + f));
+    test('the landing pages load their own native-hide.js (same CertAnvilApp UA test) and hide purchase links in the app',
+      /CertAnvilApp/.test(lh) && /is-native/.test(lh) && /html\.is-native a\[href\*="pricing"\]/.test(ldg)
+      && pages.every((h) => { const head = h.slice(0, h.indexOf('</head>')); return /<script src="native-hide\.js"><\/script>/.test(head); }));
   } catch (err) {
     test('Stage 5a native shell: block (threw)', false);
     results.errors.push('508 native-shell block threw: ' + err.message);

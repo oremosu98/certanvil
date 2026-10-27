@@ -781,3 +781,5 @@ html[data-theme] body .er-row.is-expanded>.er-glyph{display:grid!important;flex:
 html[data-theme] body .er-row.is-expanded>.er-info{display:block!important;flex:1 1 0!important;min-width:0!important;}
 html[data-theme] body .er-row.is-expanded>.er-form{flex:1 1 100%!important;}
 html[data-theme] body .er-row.is-expanded>.er-action-cluster{display:none!important;}
+/* Stage 5a (27 Oct): inside the iOS app (html.is-native, set by native-hide.js) no web purchase link shows (Apple 3.1.1). */
+html.is-native a[href*="pricing"],html.is-native a[href*="manage-subscription"]{display:none!important;}

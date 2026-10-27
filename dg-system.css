@@ -5626,4 +5626,4 @@ html[data-theme] body .topbar-countdown.is-hidden{display:none!important;}
    Apple Guideline 3.1.1 bars links to web purchase in an iOS app, so every Go-Pro / pricing
    link is hidden until in-app purchase replaces them (G-3). The add-to-home-screen banner is
    meaningless inside an installed app. */
-html.is-native a[href*="certanvil.com/pricing"],html.is-native .settings-go-pro-btn,html.is-native .a2hs-banner{display:none!important;}
+html.is-native a[href*="certanvil.com/pricing"],html.is-native a[href*="manage-subscription"],html.is-native .settings-go-pro-btn,html.is-native .a2hs-banner,html.is-native #ios-settings [data-act="gopro"],html.is-native .ifr-see,html.is-native #ios-check [data-act="limit-pro"]{display:none!important;}   /* Stage 5a: the Lift B/C Go Pro paths too (Settings rows and secondaries, capped Home, the daily limit) */

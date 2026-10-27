@@ -120,3 +120,35 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     expect(h.filter((x) => x === 'notify:SUCCESS').length).toBe(1);
   });
 });
+
+// ── Task 4: no web purchase links inside the app (Guideline 3.1.1) ──
+test.describe('Stage 5a: no web purchase links in the app', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  const LOCKED = { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' };
+  const HIST = JSON.stringify([{ topic: 'Ports', score: 7, total: 10, pct: 70, date: new Date().toISOString(), questions: [] }]);
+  async function free(page, used) {
+    await page.evaluate((u) => { window._quotaState = { tier: 'free', used_today: u, daily_limit: 15 }; document.body.classList.add('is-state-resolved'); renderIosHome(); }, used);
+  }
+  test('no Go Pro on Settings', async ({ page }) => {
+    await bootNative(page, { signed: true, prefs: LOCKED, seed: { nplus_history: HIST, nplus_onb_skips: '{"at":1}' } });
+    await free(page, 0);
+    await page.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
+    await page.waitForTimeout(800);
+    expect(await page.locator('#ios-settings [data-act="gopro"]').count()).toBeGreaterThan(0);
+    for (const el of await page.locator('#ios-settings [data-act="gopro"]').all()) await expect(el).toBeHidden();
+  });
+  test('no See Pro on capped Home', async ({ page }) => {
+    await bootNative(page, { signed: true, prefs: LOCKED, seed: { nplus_history: HIST } });
+    await free(page, 15);
+    await expect(page.locator('#ios-home')).toContainText("That's today's 15 done.");
+    await expect(page.locator('#ios-home .ifr-see')).toBeHidden();
+  });
+  test('no Go Pro for unlimited on the daily limit; the smaller set stays', async ({ page }) => {
+    await bootNative(page, { signed: true, prefs: LOCKED, seed: { nplus_history: HIST } });
+    await free(page, 8);
+    await page.evaluate(() => _gateSessionSizeForQuota(25, { mode: 'quiz' }));
+    await expect(page.locator('#ios-check')).toBeVisible();
+    await expect(page.locator('#ios-check [data-act="limit-pro"]')).toBeHidden();
+    await expect(page.locator('#ios-check [data-act="limit-small"]')).toBeVisible();
+  });
+});
