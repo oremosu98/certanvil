@@ -434,13 +434,21 @@
     var cs = window.cloudStore, flushed = cs && typeof cs.flushNow === 'function' ? Promise.resolve().then(function () { return cs.flushNow(); }) : Promise.resolve();
     Promise.race([flushed, new Promise(function (r) { setTimeout(r, 2000); })]).catch(function () {}).then(function () { location.href = to; });
   }
+  // Stage 5a: in the iOS app the choice is saved app-wide first (window.caNative, native-shell.js), up to 2s.
+  function saveChoice(id, locked) {
+    var N = window.caNative;
+    if (!N || !N.choose) return Promise.resolve();
+    return Promise.race([N.choose(id, { locked: locked }), new Promise(function (r) { setTimeout(r, 2000); })]).catch(function () {});
+  }
   function onPickTap(ev) {
     var b = ev.target.closest('[data-act]'); if (!b || !pick) return;
     var a = b.getAttribute('data-act');
     if (a === 'cert') { pick.selected = b.getAttribute('data-id'); drawPicker(); }
     else if (a === 'start') {   // Pro: no lock-in
       var id = pick.selected;
-      if (id !== certId() && typeof window.tadSwitchCert === 'function') { closePicker(); window.tadSwitchCert(id); } else goToCert(id);
+      saveChoice(id, false).then(function () {
+        if (id !== certId() && typeof window.tadSwitchCert === 'function') { closePicker(); window.tadSwitchCert(id); } else goToCert(id);
+      });
     } else if (a === 'lock' && window.iosSettings && window.iosSettings.openSheet) {
       var chosen = pick.selected;
       window.iosSettings.openSheet(_ifrLockSheetHtml({ name: PICK_NAMES[chosen] }), function (btn) {
@@ -449,7 +457,7 @@
         if (act === 'lock-go') {
           window.iosSettings.closeSheet(true);
           if (window.onbFirstRun && window.onbFirstRun.persistFreeCert) window.onbFirstRun.persistFreeCert(chosen);
-          goToCert(chosen);
+          saveChoice(chosen, true).then(function () { goToCert(chosen); });
         }
       });
     }
