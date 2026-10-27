@@ -92,7 +92,7 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await expect(page.locator('#cl-wall .cl-wall-cta')).toHaveText('Back to Security+');
     await expect(page.locator('#cl-wall .cl-wall-pro')).toBeHidden();   // web pricing hidden in the app (3.1.1)
   });
-  test('the lock waits for a signed-in tier', async ({ page }) => {
+  test("a signed-in user's lock is left to the account's cert lock (no shell wall, whatever the tier)", async ({ page }) => {
     // Hold the tier as "still loading": the app's own quota writes are ignored until the test lets one through.
     await page.addInitScript(() => {
       let q = null;
@@ -102,7 +102,8 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await page.waitForTimeout(3500);
     await expect(page.locator('#cl-wall')).toHaveCount(0);
     await page.evaluate(() => { window.__allowQ = true; window._quotaState = { tier: 'free', used_today: 0, daily_limit: 15 }; });
-    await expect(page.locator('#cl-wall')).toBeVisible({ timeout: 6000 });
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#cl-wall')).toHaveCount(0);   // FREE_FAKE has no freeCertId, so cert-lock.js claims rather than walls
   });
   test("the locked cert's page records the free cert itself", async ({ page }) => {
     await bootNative(page, { prefs: { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' } });
@@ -178,5 +179,35 @@ test.describe("Stage 5a: the app's offline page", () => {
     await openOffline(page, 'none');
     const [req] = await Promise.all([page.waitForRequest(/networkplus\.certanvil\.com/), page.locator('button', { hasText: 'Try again' }).click()]);
     expect(req.url()).toBe('https://networkplus.certanvil.com/');
+  });
+});
+
+// ── Final review fixes ──
+test.describe('Stage 5a review fixes', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  test('the launch redirect reopens the last cert only on a cold launch, never after an in-app cert switch', async ({ page }) => {
+    await bootNative(page, { prefs: { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' } });
+    const r = await page.evaluate(() => {
+      const f = window.caNative._shouldReopen;
+      return [
+        f('secplus.certanvil.com', 'networkplus.certanvil.com', '', false),                                      // cold launch -> reopen last
+        f('secplus.certanvil.com', 'networkplus.certanvil.com', 'https://networkplus.certanvil.com/', false),    // in-app switch -> stay
+        f('secplus.certanvil.com', 'networkplus.certanvil.com', '', true),                                       // already launched -> stay
+        f('networkplus.certanvil.com', 'networkplus.certanvil.com', '', false),                                  // same host -> stay
+        f('secplus.certanvil.com', 'evil.example.com', '', false)                                                // never off our hosts
+      ];
+    });
+    expect(r).toEqual([true, false, false, false, false]);
+  });
+  test('a signed-out user is walled only once sign-in has settled as signed out', async ({ page }) => {
+    await page.addInitScript(() => {
+      let v;   // hold sign-in "unresolved" until the test settles it
+      Object.defineProperty(window, '_certanvilSignedIn', { configurable: true, get: () => v, set: (x) => { if (window.__allowSI) v = x; } });
+    });
+    await bootNative(page, { prefs: { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' } });
+    await page.waitForTimeout(3500);
+    await expect(page.locator('#cl-wall')).toHaveCount(0);
+    await page.evaluate(() => { window.__allowSI = true; window._certanvilSignedIn = false; });
+    await expect(page.locator('#cl-wall')).toBeVisible({ timeout: 6000 });
   });
 });

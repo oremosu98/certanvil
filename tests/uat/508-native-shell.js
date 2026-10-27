@@ -39,6 +39,9 @@ const { fs, path, ROOT, test, results } = require('./_context');
       off.indexOf("You're offline.") >= 0 && off.indexOf('Your progress is <b>saved on this device</b> and will sync when you') >= 0
       && off.indexOf('Saved locally, will sync') >= 0 && />Try again</.test(off) && !/<link[^>]+https?:/.test(off) && !/fetch\(/.test(off)
       && /lastCertHost/.test(off) && /networkplus\.certanvil\.com/.test(off));
+    const all = fs.readdirSync(path.join(ROOT, 'landing')).filter((f) => /\.html$/.test(f)).map((f) => [f, read('landing/' + f)]);
+    const missing = all.filter(([, h]) => /href="dg-system\.css/.test(h) && !/<script src="native-hide\.js"><\/script>/.test(h.slice(0, h.indexOf('</head>')))).map(([f]) => f);
+    test('every landing page that loads dg-system.css also loads native-hide.js (no pricing link anywhere in the app)', missing.length === 0);
   } catch (err) {
     test('Stage 5a native shell: block (threw)', false);
     results.errors.push('508 native-shell block threw: ' + err.message);

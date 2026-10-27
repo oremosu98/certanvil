@@ -41,29 +41,33 @@
     }
   };
 
-  // Reopen the last cert. The first page of a launch (no session flag yet on this origin) jumps to the remembered
-  // subdomain if it differs. Only on our own hosts, never on a local test server.
+  // Reopen the last cert, on a cold launch only: the first page of this origin in the session, reached with no
+  // certanvil.com referrer (an in-app cert switch arrives with one and must not bounce back). Only on our own hosts.
+  function shouldReopen(here, last, referrer, launched) {
+    if (launched || !last || last === here || !OURS.test(last) || !OURS.test(here)) return false;
+    var ref = ''; try { ref = referrer ? new URL(referrer).hostname : ''; } catch (_) { ref = ''; }
+    return !(ref && OURS.test(ref));
+  }
+  window.caNative._shouldReopen = shouldReopen;
   try {
-    if (P.Preferences && OURS.test(host) && host !== 'certanvil.com' && !sessionStorage.getItem('ca_launched')) {
+    if (P.Preferences && OURS.test(host) && host !== 'certanvil.com') {
+      var launched = !!sessionStorage.getItem('ca_launched');
       sessionStorage.setItem('ca_launched', '1');
-      pget('lastCertHost').then(function (last) { if (last && last !== host && OURS.test(last)) location.replace('https://' + last + '/'); });
+      pget('lastCertHost').then(function (last) { if (shouldReopen(host, last, document.referrer, launched)) location.replace('https://' + last + '/'); });
     }
   } catch (_) {}
 
   // ── First launch, the lock, and the free cert record (once the page's own scripts have run) ──
-  function signedIn() { return window._certanvilSignedIn === true; }
   function tier() { var q = window._quotaState; return q && q.tier ? q.tier : null; }
-  // A free user's lock: signed out, or signed in and known free. A signed-in user whose tier is still loading
-  // passes (fail open, as lib/cert-lock.js does) until the tier lands.
+  // The shell holds the lock for SIGNED-OUT users only, once sign-in has settled (auth-state.js sets
+  // _certanvilSignedIn = false on every anonymous render). Signed-in users are lib/cert-lock.js's (it reads the
+  // account's freeCertId), so the two walls can never disagree. Unresolved after 15s: fail open.
   function holdLock(locked) {
-    var done = false, t0 = Date.now();
+    var t0 = Date.now();
     function decide() {
-      if (done) return;
-      if (signedIn()) {
-        var t = tier();
-        if (t === 'pro' || t === 'admin') { done = true; return; }
-        if (t === 'free') { done = true; wall(locked); return; }
-      } else if (Date.now() - t0 > 2500) { done = true; wall(locked); return; }   // settled as signed out
+      var s = window._certanvilSignedIn;
+      if (s === true) return;
+      if (s === false) { wall(locked); return; }
       if (Date.now() - t0 < 15000) setTimeout(decide, 250);
     }
     decide();
