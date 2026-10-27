@@ -152,3 +152,31 @@ test.describe('Stage 5a: no web purchase links in the app', () => {
     await expect(page.locator('#ios-check [data-act="limit-small"]')).toBeVisible();
   });
 });
+
+// ── Task 5: June's offline page in the app (native-shell/index.html, the errorPath) ──
+test.describe("Stage 5a: the app's offline page", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  async function openOffline(page, stored) {
+    await page.setViewportSize(PHONE);
+    await page.route(/https:\/\/[a-z]+\.certanvil\.com\/.*/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>ok</p>' }));
+    await page.addInitScript((h) => {
+      if (h === 'none') return;   // no bridge at all
+      window.Capacitor = { isNativePlatform: () => true, Plugins: { Preferences: { get: () => Promise.resolve({ value: h }) } } };
+    }, stored);
+    // Serve the bundled page at its own address (the local test server's SPA rewrite would hand back index.html).
+    const OFFLINE = fs.readFileSync(path.join(__dirname, '..', '..', 'native-shell', 'index.html'), 'utf8');
+    await page.route('http://capacitor.local/offline', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: OFFLINE }));
+    await page.goto('http://capacitor.local/offline');
+  }
+  test('Try again goes to the stored cert', async ({ page }) => {
+    await openOffline(page, 'secplus.certanvil.com');
+    await expect(page.locator('h1, h2').first()).toHaveText("You're offline.");
+    const [req] = await Promise.all([page.waitForRequest(/secplus\.certanvil\.com/), page.locator('button', { hasText: 'Try again' }).click()]);
+    expect(req.url()).toBe('https://secplus.certanvil.com/');
+  });
+  test('Try again with no bridge goes to Network+', async ({ page }) => {
+    await openOffline(page, 'none');
+    const [req] = await Promise.all([page.waitForRequest(/networkplus\.certanvil\.com/), page.locator('button', { hasText: 'Try again' }).click()]);
+    expect(req.url()).toBe('https://networkplus.certanvil.com/');
+  });
+});

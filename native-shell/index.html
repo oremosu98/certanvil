@@ -4,22 +4,52 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CertAnvil</title>
+<!-- Stage 5a (27 Oct 2026): the app's own page when the live site cannot load (Capacitor errorPath).
+     June's offline screen (june-e2e onboarding-loading-states.html?v=offline-native). Self-contained: it shows
+     exactly when there is no connection, so no web fonts or remote files. -->
 <style>
-  :root { --bg: oklch(0.17 0.008 275); --text: oklch(0.96 0.006 275); --dim: oklch(0.725 0.013 275); --accent: oklch(0.80 0.155 64); --ink: oklch(0.20 0.045 64); }
-  @media (prefers-color-scheme: light) { :root { --bg: oklch(0.975 0.007 85); --text: oklch(0.26 0.015 280); --dim: oklch(0.50 0.013 280); --accent: oklch(0.50 0.155 55); --ink: oklch(0.98 0.012 70); } }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, "Inter", system-ui, sans-serif; }
-  main { min-height: 100%; display: grid; place-content: center; gap: 14px; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); text-align: center; }
-  h1 { font: 600 26px/1.15 Georgia, serif; margin: 0; }
-  p { margin: 0; color: var(--dim); max-width: 30ch; }
-  button { justify-self: center; margin-top: 6px; min-height: 44px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--accent); color: var(--ink); font: 700 15px -apple-system, system-ui, sans-serif; }
+  :root { --bg: oklch(0.975 0.007 85); --surface3: oklch(0.92 0.010 84); --text: oklch(0.22 0.015 280); --text-mid: oklch(0.38 0.014 280);
+    --accent: oklch(0.55 0.155 55); --accent-deep: oklch(0.46 0.150 52); --on-accent: oklch(0.99 0.008 85); --green: oklch(0.52 0.13 150); --border: oklch(0.85 0.010 85); }
+  @media (prefers-color-scheme: dark) { :root { --bg: oklch(0.15 0.010 275); --surface3: oklch(0.255 0.010 275); --text: oklch(0.97 0.006 275); --text-mid: oklch(0.80 0.010 275);
+    --accent: oklch(0.82 0.150 66); --accent-deep: oklch(0.72 0.150 62); --on-accent: oklch(0.18 0.020 275); --green: oklch(0.78 0.150 152); --border: oklch(0.34 0.009 275); } }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+    padding: max(40px, env(safe-area-inset-top)) 28px max(40px, env(safe-area-inset-bottom)); }
+  .glyph { width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center; margin-bottom: 18px;
+    background: color-mix(in oklab, var(--accent) 16%, var(--surface3)); color: var(--accent-deep); }
+  .glyph svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { font: 600 24px/1.15 "Fraunces", Georgia, serif; margin: 0 0 10px; }
+  p { margin: 0; max-width: 30ch; font-size: 14px; line-height: 1.5; color: var(--text-mid); }
+  p b { color: var(--text); }
+  .saved { margin-top: 18px; display: inline-flex; align-items: center; gap: 7px; font: 700 12px/1 -apple-system, system-ui, sans-serif; color: var(--text);
+    background: color-mix(in oklab, var(--green) 12%, transparent); border: 1px solid color-mix(in oklab, var(--green) 30%, var(--border)); border-radius: 999px; padding: 7px 11px; }
+  .saved svg { width: 13px; height: 13px; fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  button { margin-top: 22px; min-width: 180px; min-height: 48px; border: 0; border-radius: 13px; padding: 0 22px; cursor: pointer;
+    background: var(--accent); color: var(--on-accent); font: 700 15px/1 -apple-system, system-ui, sans-serif;
+    box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s cubic-bezier(0.16, 1, 0.3, 1); }
+  button:active { transform: scale(0.985); }
 </style>
 </head>
 <body>
 <main>
-  <h1>You're offline</h1>
-  <p>CertAnvil writes your questions live, so it needs a connection. Your progress is saved.</p>
+  <span class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 8.8a16 16 0 0 1 20 0"/><path d="M5 12.5a11 11 0 0 1 14 0"/><path d="M8.5 16a6 6 0 0 1 7 0"/><path d="M12 20h.01"/><path d="M3 3l18 18"/></svg></span>
+  <h1>You're offline.</h1>
+  <p>Your progress is <b>saved on this device</b> and will sync when you're back. Nothing is lost, so you can keep going or pick up later.</p>
+  <span class="saved"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><span>Saved locally, will sync</span></span>
   <button type="button" id="retry">Try again</button>
 </main>
-<script>document.getElementById('retry').addEventListener('click', function () { location.replace('https://networkplus.certanvil.com/'); });</script>
+<script>
+  // Try again reopens the last cert (Preferences, through the Capacitor bridge); Network+ when it is missing or unreadable.
+  document.getElementById('retry').addEventListener('click', function () {
+    var FALLBACK = 'https://networkplus.certanvil.com/';
+    var go = function (host) { location.replace(host && /(^|\.)certanvil\.com$/i.test(host) ? 'https://' + host + '/' : FALLBACK); };
+    try {
+      var P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Preferences;
+      if (!P) { go(null); return; }
+      P.get({ key: 'lastCertHost' }).then(function (r) { go(r && r.value); }, function () { go(null); });
+    } catch (_) { go(null); }
+  });
+</script>
 </body>
 </html>

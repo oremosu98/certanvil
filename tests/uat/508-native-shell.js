@@ -34,6 +34,11 @@ const { fs, path, ROOT, test, results } = require('./_context');
     test('the landing pages load their own native-hide.js (same CertAnvilApp UA test) and hide purchase links in the app',
       /CertAnvilApp/.test(lh) && /is-native/.test(lh) && /html\.is-native a\[href\*="pricing"\]/.test(ldg)
       && pages.every((h) => { const head = h.slice(0, h.indexOf('</head>')); return /<script src="native-hide\.js"><\/script>/.test(head); }));
+    // Task 5: June's offline page (the app's errorPath)
+    test("the app's offline page is June's: exact copy, Try again, no network fetch",
+      off.indexOf("You're offline.") >= 0 && off.indexOf('Your progress is <b>saved on this device</b> and will sync when you') >= 0
+      && off.indexOf('Saved locally, will sync') >= 0 && />Try again</.test(off) && !/<link[^>]+https?:/.test(off) && !/fetch\(/.test(off)
+      && /lastCertHost/.test(off) && /networkplus\.certanvil\.com/.test(off));
   } catch (err) {
     test('Stage 5a native shell: block (threw)', false);
     results.errors.push('508 native-shell block threw: ' + err.message);
