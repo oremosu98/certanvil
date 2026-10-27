@@ -320,6 +320,7 @@ for (const vp of PHONES) {
       await onb(page);
       await page.locator('#onb-firstrun [data-act="lock"]').click();
       await page.locator('#ist-sheet [data-act="lock-go"]').click();
+      await page.locator('#ist-sheet [data-act="last-go"]').click();
       await expect(page.locator('#onb-firstrun')).toBeHidden();
       await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
       expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
@@ -332,7 +333,8 @@ for (const vp of PHONES) {
       await page.locator('#onb-firstrun [data-act="cert"][data-id="secplus"]').click();
       await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveText('Lock in Security+');
       await page.locator('#onb-firstrun [data-act="lock"]').click();
-      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="lock-go"]').click()]);
+      await page.locator('#ist-sheet [data-act="lock-go"]').click();
+      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="last-go"]').click()]);
       expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('secplus');
     });
     test('a not-activated user with a saved cert lands on day-0', async ({ page }) => {
@@ -410,8 +412,44 @@ for (const vp of PHONES) {
       await boot(page, vp, { signed: true, query: '?onb=1', fake: FREE_FAKE });
       await page.locator('#onb-firstrun [data-act="cert"][data-id="secplus"]').click();
       await page.locator('#onb-firstrun [data-act="lock"]').click();
-      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="lock-go"]').click()]);
+      await page.locator('#ist-sheet [data-act="lock-go"]').click();
+      await Promise.all([page.waitForURL(/cert=secplus/), page.locator('#ist-sheet [data-act="last-go"]').click()]);
       expect(await page.evaluate(() => sessionStorage.getItem('flushed'))).toBe('1');
+    });
+  });
+}
+
+// ── Stage 5a: the last check (reminder 2) ──
+for (const vp of PHONES) {
+  test.describe(`Stage 5a the last check @${vp.width}`, () => {
+    async function toLast(page) {
+      page.on('dialog', (d) => d.dismiss().catch(() => {}));
+      await boot(page, vp, { signed: true, query: '?onb=1', fake: FREE_FAKE });
+      await page.locator('#onb-firstrun [data-act="lock"]').click();
+      await expect(page.locator('#ist-sheet')).toContainText('Lock in Network+?');
+      await page.locator('#ist-sheet [data-act="lock-go"]').click();
+    }
+    test('Lock in → the last check replaces the sheet in place', async ({ page }) => {
+      await toLast(page);
+      const sheet = page.locator('#ist-sheet');
+      await expect(sheet).toBeVisible();
+      await expect(sheet).toContainText('One last check');
+      await expect(sheet).toContainText("Network+ will be your exam on Free. You can't switch to another exam unless you go Pro.");
+      await expect(sheet).not.toContainText('A fresh set each morning');
+      await expect(sheet.locator('[data-act="last-go"]')).toHaveText('Yes, lock in Network+');
+    });
+    test('Go back on the last check saves nothing', async ({ page }) => {
+      await toLast(page);
+      await page.locator('#ist-sheet [data-act="last-back"]').click();
+      await expect(page.locator('#ist-sheet')).toBeHidden();
+      await expect(page.locator('#onb-firstrun')).toBeVisible();
+      expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBeNull();
+    });
+    test('Yes, lock in lands on day-0', async ({ page }) => {
+      await toLast(page);
+      await page.locator('#ist-sheet [data-act="last-go"]').click();
+      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
     });
   });
 }

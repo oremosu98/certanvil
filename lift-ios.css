@@ -2886,3 +2886,14 @@ html.ifr-picking #lift-tabbar { display: none !important; }
 #onb-resolve .ifr-restore { width: 100%; max-width: none; padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 20px; }
 .ifr-limit-h em { color: var(--text); }
 .ifr-qt { color: var(--accent-deep); }
+/* Stage 5a: the last check replaces the lock-in sheet's content in place (BRAND §6 ease). */
+#ist-sheet .ifr-last-body { margin: 6px 0 20px; font-size: 14.5px; line-height: 1.5; color: var(--text); }
+#ist-sheet .ifr-last-body b { font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  #ist-sheet.ifr-step-in > :not(.ist-grab) { animation: ifrStepIn .25s var(--ios-ease) backwards; }
+  @keyframes ifrStepIn { from { opacity: 0; transform: translateX(8px); filter: blur(3px); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ist-sheet.ifr-step-in > :not(.ist-grab) { animation: ifrStepFade .2s ease backwards; }
+  @keyframes ifrStepFade { from { opacity: 0; } }
+}

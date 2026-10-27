@@ -204,6 +204,16 @@
       '<div class="ifr-sheet-actions"><button type="button" class="ifr-btn" data-act="lock-go">Lock in ' + n + '</button><button type="button" class="ifr-ghost ifr-ghost-n" data-act="lock-back">Go back</button></div>';
   }
 
+  // Stage 5a (27 Oct): reminder 2, the last check before a free exam is locked. m = {name}
+  function _ifrLastCheckHtml(m) {
+    function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    var n = e(m.name);
+    return '<div class="ist-grab"></div>' +
+      '<div class="ifr-sheet-head"><span class="ifr-sheet-lock"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5h.01"/></svg></span><h2 id="ist-sheet-title">One last check</h2></div>' +
+      '<p class="ifr-last-body"><b>' + n + '</b> will be your exam on Free. You can\'t switch to another exam unless you go Pro.</p>' +
+      '<div class="ifr-sheet-actions"><button type="button" class="ifr-btn" data-act="last-go">Yes, lock in ' + n + '</button><button type="button" class="ifr-ghost ifr-ghost-n" data-act="last-back">Go back</button></div>';
+  }
+
   function _ifrRestoreHtml() {
     return '<div class="ifr-restore" aria-label="Picking up where you left off">' +
       '<div class="ifr-skb"><div class="ifr-skb-top"><span class="ifr-sk ifr-sk-mark"></span><span class="ifr-sk-stack"><span class="ifr-sk" style="width:96px"></span><span class="ifr-sk sm" style="width:60px"></span></span><span class="ifr-sk ifr-sk-plan"></span></div>' +
@@ -219,7 +229,7 @@
   window._ifrCheckHtml = _ifrCheckHtml; window._ifrScoreHtml = _ifrScoreHtml;
   window._ifrLimitHtml = _ifrLimitHtml; window._ifrOfflineHtml = _ifrOfflineHtml;
   window._ifrPickerHtml = _ifrPickerHtml; window._ifrLockSheetHtml = _ifrLockSheetHtml;
-  window._ifrRestoreHtml = _ifrRestoreHtml;
+  window._ifrRestoreHtml = _ifrRestoreHtml; window._ifrLastCheckHtml = _ifrLastCheckHtml;
 
   var PHONE = '(max-width: 899px)';
   var IFR = window.iosFirstRun = window.iosFirstRun || {};
@@ -453,9 +463,19 @@
       var chosen = pick.selected;
       window.iosSettings.openSheet(_ifrLockSheetHtml({ name: PICK_NAMES[chosen] }), function (btn) {
         var act = btn.getAttribute('data-act');
-        if (act === 'lock-back') { window.iosSettings.closeSheet(); return; }
-        if (act === 'lock-go') {
+        if (act === 'lock-back' || act === 'last-back') { window.iosSettings.closeSheet(); return; }
+        if (act === 'lock-go') {   // reminder 2 replaces reminder 1 in the same sheet (no second slide)
+          var sh = document.getElementById('ist-sheet');
+          if (sh) {
+            sh.innerHTML = _ifrLastCheckHtml({ name: PICK_NAMES[chosen] });
+            sh.classList.remove('ifr-step-in'); void sh.offsetWidth; sh.classList.add('ifr-step-in');
+            var go = sh.querySelector('[data-act="last-go"]'); if (go) { try { go.focus({ preventScroll: true }); } catch (_) {} }
+          }
+          return;
+        }
+        if (act === 'last-go') {
           window.iosSettings.closeSheet(true);
+          var shc = document.getElementById('ist-sheet'); if (shc) shc.classList.remove('ifr-step-in');
           if (window.onbFirstRun && window.onbFirstRun.persistFreeCert) window.onbFirstRun.persistFreeCert(chosen);
           saveChoice(chosen, true).then(function () { goToCert(chosen); });
         }

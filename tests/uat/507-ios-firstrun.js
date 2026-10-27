@@ -7,7 +7,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     const p = path.join(ROOT, 'features', 'ios-firstrun.js');
     const src = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
     const NAMES = ['_ifrState', '_ifrScale', '_ifrDay0Html', '_ifrCappedHtml', '_ifrCheckHtml', '_ifrScoreHtml',
-      '_ifrLimitHtml', '_ifrOfflineHtml', '_ifrPickerHtml', '_ifrLockSheetHtml', '_ifrRestoreHtml'];
+      '_ifrLimitHtml', '_ifrOfflineHtml', '_ifrPickerHtml', '_ifrLockSheetHtml', '_ifrLastCheckHtml', '_ifrRestoreHtml'];
     const ctx = vm.createContext({ Math, String, Array, Object, JSON, Number, Date });
     vm.runInContext(NAMES.map(n => _fnBody(src, n) || '').join('\n'), ctx);
     const run = (expr, s) => { ctx.__s = s; return vm.runInContext(expr, ctx); };
@@ -67,6 +67,10 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       lk.indexOf('Lock in Network+?') >= 0 && lk.indexOf('20 questions a day') >= 0 && lk.indexOf('A fresh set each morning') >= 0
       && /data-act="lock-go"/.test(lk) && /data-act="lock-back"/.test(lk));
 
+    const lc = run('_ifrLastCheckHtml(__s)', { name: 'A&B' });
+    test('stage 5a: the last check before a free exam is locked (escaped, exact copy, both actions)',
+      lc.indexOf('One last check') >= 0 && lc.indexOf("<b>A&amp;B</b> will be your exam on Free. You can't switch to another exam unless you go Pro.") >= 0
+      && />Yes, lock in A&amp;B</.test(lc) && /data-act="last-go"/.test(lc) && /data-act="last-back"[^>]*>Go back</.test(lc) && lc.indexOf('—') < 0);
     const off = run('_ifrOfflineHtml()', {}), rs = run('_ifrRestoreHtml()', {});
     test('offline and restore: June copy',
       off.indexOf("You're offline.") >= 0 && off.indexOf('Saved locally, will sync') >= 0 && rs.indexOf('Picking up where you left off') >= 0);
