@@ -135,6 +135,8 @@
   }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
   @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
+  .retry { margin-top: 22px; min-width: 180px; min-height: 48px; border: none; border-radius: 13px; padding: 0 22px; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; cursor: pointer; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ease); }
+  .retry:active { transform: scale(0.985); }
 </style>
 </head>
 <body>
@@ -240,6 +242,8 @@
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
                   <span>Saved locally, will sync</span>
                 </span>
+                <!-- Stage 5a (27 Oct): the app's own page when nothing could load (cold start, no signal) -->
+                <button class="retry" id="retryBtn" type="button" hidden>Try again</button>
               </div>
             </section>
           </div>
@@ -272,7 +276,12 @@
       // Lift C (26 Oct): ?v=offline / ?v=restore open on one state with the designer chips hidden
       var v = new URLSearchParams(location.search).get('v');
       if (v) chips.style.display = 'none';
-      show(v === 'offline' || v === 'content' ? v : 'restore');
+      show(v === 'offline' || v === 'offline-native' ? 'offline' : (v === 'content' ? v : 'restore'));
+      // Stage 5a: offline-native = the app could not load at all, so no Offline bar (nothing loaded) and a Try again button
+      if (v === 'offline-native') {
+        var bar = document.querySelector('.off-bar'); if (bar) bar.style.display = 'none';
+        document.getElementById('retryBtn').hidden = false;
+      }
     })();
   </script>
 </body>

@@ -30,6 +30,8 @@
     'first-run-diag'    : 'onboarding-first-run-diagnostic.html',
     'picker-lock'       : 'onboarding-free-cert-picker.html?v=lock',       // Lift C (26 Oct): the lock-in sheet open
     'picker-pro'        : 'onboarding-free-cert-picker.html?v=pro',        // Lift C: a Pro user picks, no lock-in
+    'picker-last'       : 'onboarding-free-cert-picker.html?v=last',       // Stage 5a (27 Oct): reminder 2, "One last check"
+    'offline-native'    : 'onboarding-loading-states.html?v=offline-native', // Stage 5a: the app's own offline page
     'day0-pro'          : 'onboarding-free-home-day0.html?v=pro',          // Lift C: Pro day 0, no quota rows
     'check-score'       : 'onboarding-first-run-diagnostic.html?v=score',  // Lift C: "Your starting point"
     'restore'           : 'onboarding-loading-states.html?v=restore',      // Lift C: session restore skeleton
@@ -160,7 +162,8 @@
     'signup-signin'    : [ {sel:'.btn-apple',   to:'free-cert-picker'},
                            {sel:'.btn-primary', to:'free-cert-picker'} ],
     // Lift C (26 Oct): Lock in opens the lock-in sheet (the mockup's own JS); only its confirm moves on
-    'free-cert-picker' : [ {sel:'#confirmBtn',  to:'free-home-day0'} ],
+    // Stage 5a: Lock in -> sheet 1 -> sheet 2 (mockup JS); only "Yes, lock in" moves on
+    'free-cert-picker' : [ {sel:'#lastGo',      to:'free-home-day0'} ],
     'picker-pro'       : [ {sel:'#lockBtn',     to:'day0-pro'} ],
     'day0-pro'         : [ {sel:'.btn-primary', to:'first-run-diag'}, {sel:'.btn-ghost', to:'quiz'} ],
     // day-0 free home: the primary CTA places a readiness score (the 30-sec
@@ -254,7 +257,7 @@
   // Wire it generically by label so every screen that has it navigates.
   // post-June variant screens reuse their base screen's routes
   NAV['quiz-short-set'] = NAV['quiz']; NAV['quiz-answered'] = NAV['quiz']; NAV['results-milestone'] = NAV['results'];
-  NAV['picker-lock'] = NAV['free-cert-picker'];
+  NAV['picker-lock'] = NAV['free-cert-picker']; NAV['picker-last'] = NAV['free-cert-picker'];
   NAV['custom-quiz-topic'] = NAV['custom-quiz']; NAV['custom-quiz-caught-up'] = NAV['custom-quiz'];
   // B1 (21 Oct): the Progress | Analytics view switch
   NAV['progress'] = (NAV['progress'] || []).concat([{sel:'[data-view="analytics"]', to:'analytics'}]);
@@ -687,6 +690,13 @@
     if (b3c1Btn) b3c1Btn.addEventListener('click', function () {
       b3c1I = (b3c1I + 1) % LIFT_B3C1.length; resetTo(LIFT_B3C1[b3c1I]);
       b3c1Btn.textContent = 'B3c1 ' + (b3c1I + 1) + '/' + LIFT_B3C1.length + ' \u203a';
+    });
+    // Stage 5a (27 Oct): the native shell's first launch and offline page
+    var LIFT_5A = ['free-cert-picker','picker-lock','picker-last','offline-native'];
+    var s5Btn = document.getElementById('hud-5a'), s5I = -1;
+    if (s5Btn) s5Btn.addEventListener('click', function () {
+      s5I = (s5I + 1) % LIFT_5A.length; resetTo(LIFT_5A[s5I]);
+      s5Btn.textContent = '5a ' + (s5I + 1) + '/' + LIFT_5A.length + ' \u203a';
     });
     // Lift C (26 Oct): first run on phones
     var LIFT_C = ['restore','free-cert-picker','picker-lock','picker-pro','free-home-day0','day0-pro','first-run-diag','check-score','free-capped-home','daily-limit','offline'];
