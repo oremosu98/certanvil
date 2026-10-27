@@ -1,0 +1,18 @@
+{
+  "appId": "com.certanvil.app",
+  "appName": "CertAnvil",
+  "webDir": "native-shell",
+  "server": {
+    "url": "https://networkplus.certanvil.com",
+    "allowNavigation": ["certanvil.com", "*.certanvil.com"],
+    "errorPath": "index.html"
+  },
+  "ios": {
+    "appendUserAgent": "CertAnvilApp",
+    "contentInset": "never",
+    "scrollEnabled": true
+  },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 600, "launchAutoHide": true, "backgroundColor": "#1b1b22", "showSpinner": false }
+  }
+}

@@ -5621,3 +5621,9 @@ html[data-theme] body .topbar-countdown.is-hidden{display:none!important;}
 
 /* v8.183.0 Lift A: phone-only containers. lift-ios.css (phone width) shows them. */
 .ios-only{display:none!important;}
+
+/* ADR-004 (19 Oct 2026): inside the iOS app (html.is-native, set by native-shell.js).
+   Apple Guideline 3.1.1 bars links to web purchase in an iOS app, so every Go-Pro / pricing
+   link is hidden until in-app purchase replaces them (G-3). The add-to-home-screen banner is
+   meaningless inside an installed app. */
+html.is-native a[href*="certanvil.com/pricing"],html.is-native .settings-go-pro-btn,html.is-native .a2hs-banner{display:none!important;}

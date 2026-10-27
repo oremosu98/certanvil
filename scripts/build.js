@@ -26,10 +26,12 @@ const DENY_DIRS = new Set([
   '.planning', '.superpowers', '.agents', '.design-reference',
   'docs', 'scripts', 'tests', 'test-results', 'playwright-report',
   'dist', 'api', 'supabase', 'landing', 'design', 'tablet-audit', 'mockups',
+  'ios', 'native-shell',   // ADR-004: the native iOS project + its offline page never ship to the website
 ]);
 const DENY_FILES = new Set([
   '.DS_Store', '.gitignore', '.lighthouserc.json', 'package.json',
   'package-lock.json', 'playwright.config.js', 'skills-lock.json', 'vercel.json',
+  'capacitor.config.json',
 ]);
 function isDenied(name) {
   if (DENY_DIRS.has(name) || DENY_FILES.has(name)) return true;
