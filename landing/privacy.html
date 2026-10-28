@@ -275,7 +275,7 @@
 
 <h3>2.1 · Account data (when you sign up)</h3>
 <ul>
-  <li><strong>Email address</strong>:&#160;required. We sign you in with a one-time code: you type your email, we email you a 6-digit code, and you enter it in CertAnvil. No passwords means no password resets and no leaked-password breaches. Your email is the only identity we hold.</li>
+  <li><strong>Email address</strong>:&#160;required. We sign you in with a one-time code. You type your email, we send you a 6-digit code, and you enter it in CertAnvil. There's no password, so there's nothing to reset and nothing to leak. Your email is the only identity we hold.</li>
   <li><strong>Display name</strong>:&#160;optional, set in account settings. Shown only to you, used to personalise greetings.</li>
   <li><strong>Active cert preference</strong>:&#160;which CompTIA exam you're studying (Network+ N10-009, Security+ SY0-701, etc.). Used to load the right content pack.</li>
   <li><strong>Exam date</strong>:&#160;optional. Used to calculate "days until exam" countdowns and pace your daily plan.</li>
@@ -364,7 +364,7 @@
     <tr><td><strong>Supabase</strong></td><td>Database (account, quiz history, subscription state, telemetry) and authentication (one-time email codes)</td><td>EU (Frankfurt) by default; see <a href="https://supabase.com/privacy" rel="noopener">supabase.com/privacy</a></td></tr>
     <tr><td><strong>Stripe</strong></td><td>Payments, card processing, subscription billing, and invoices</td><td>US and EU; see <a href="https://stripe.com/privacy" rel="noopener">stripe.com/privacy</a></td></tr>
     <tr><td><strong>Anthropic</strong></td><td>The AI model behind Generate Quiz, Diagnostic, Topic Deep Dive, etc. Receives the question-generation prompt; never receives your email, name, or other identifying data.</td><td>US; see <a href="https://www.anthropic.com/legal/privacy" rel="noopener">anthropic.com/legal/privacy</a></td></tr>
-    <tr><td><strong>Resend</strong></td><td>Sends sign-in code emails and (later) transactional emails like billing receipts. Receives your email address only.</td><td>US; see <a href="https://resend.com/legal/privacy-policy" rel="noopener">resend.com</a></td></tr>
+    <tr><td><strong>Resend</strong></td><td>Sends sign-in codes and, later, emails like billing receipts. Receives your email address only.</td><td>US; see <a href="https://resend.com/legal/privacy-policy" rel="noopener">resend.com</a></td></tr>
     <tr><td><strong>Vercel</strong></td><td>Hosting for the CertAnvil website and serverless API endpoints. Sees request metadata (IP, UA) but doesn't access database content.</td><td>Global edge network; see <a href="https://vercel.com/legal/privacy-policy" rel="noopener">vercel.com</a></td></tr>
     <tr><td><strong>Hostinger</strong></td><td>Email inbox provider for <code class="legal-inline">hello@certanvil.com</code> and aliases. Receives any email you send us directly.</td><td>EU; see <a href="https://www.hostinger.com/privacy-policy" rel="noopener">hostinger.com</a></td></tr>
   </tbody>
@@ -433,7 +433,7 @@
 <ul>
   <li><strong>Encryption in transit</strong>:&#160;all traffic between your browser and our servers uses TLS 1.2 or above. The certificate is auto-rotated by Vercel.</li>
   <li><strong>Encryption at rest</strong>:&#160;Supabase and Stripe both encrypt stored data at rest using industry-standard AES-256.</li>
-  <li><strong>Authentication</strong>:&#160;one-time email codes only. No passwords means no leaked-password breaches. Each code works once and expires after 15 minutes.</li>
+  <li><strong>Authentication</strong>:&#160;one-time email codes only. There are no passwords to leak. Each code works once and expires after 15 minutes.</li>
   <li><strong>Row-level security</strong>:&#160;Supabase RLS policies enforce that your data is only readable by you (and by the founder for admin tasks like subscription support).</li>
   <li><strong>Service-role keys</strong>:&#160;held only in server-side environment variables, never in client code.</li>
   <li><strong>No card data</strong>:&#160;Stripe handles all PCI scope. We never see card numbers, CVCs, or expiration dates.</li>
@@ -448,7 +448,7 @@
 <p>If we make a meaningful change to this policy (adding a new sub-processor, expanding what we collect, or changing retention), we'll update the version date at the top of this page and send signed-in users an email summarising the change. Minor edits (typos, link fixes, clarifications that don't change substance) won't trigger an email.</p>
 <p>This is <strong>v1.1</strong>. Versions so far:</p>
 <ul>
-  <li><strong>v1.1</strong> (28 October 2026): sign-in now uses a one-time 6-digit email code instead of an emailed link. What we collect and who we share it with have not changed.</li>
+  <li><strong>v1.1</strong> (28 October 2026): you now sign in with a one-time 6-digit code sent to your email. What we collect and who we share it with haven't changed.</li>
   <li><strong>v1.0</strong> (11 May 2026): first publication.</li>
 </ul>
 
