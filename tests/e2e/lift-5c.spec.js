@@ -101,3 +101,104 @@ test.describe('Stage 5c: caNative.social', () => {
     expect(await page.evaluate(() => window.caNative.socialReady('google'))).toBe(true);
   });
 });
+
+// ── Task 2: Apple and Google on the sign-in screen ──
+const crypto = require('crypto');
+const idCalls = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__idTokenCalls') || '[]'));
+const IDS = () => { window.CA_SOCIAL_IDS = { googleIOS: 'ios-id', googleWeb: 'web-id' }; };
+const SECPLUS = { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' };
+async function openIn(page) { await page.evaluate(() => window.iosSignIn.open({ from: 'settings' })); await expect(page.locator('#ios-signin')).toBeVisible(); }
+
+test.describe('Stage 5c: Apple and Google on the sign-in screen', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('Continue with Apple signs in and runs the lock rule', async ({ page }) => {
+    await page.addInitScript(IDS);
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await openIn(page);
+    await expect(page.locator('#ios-signin [data-act="apple"]')).toBeVisible();
+    await page.click('#ios-signin [data-act="apple"]');
+    await page.waitForURL(/cert=netplus/, { timeout: 10000 });
+    expect((await idCalls(page))[0]).toMatchObject({ provider: 'apple', token: 'tok-apple' });
+    await expect(page.locator('.isi-toast')).toContainText('Your free exam on this account is Network+', { timeout: 6000 });
+  });
+
+  test('the Apple sheet gets the plugin\'s nonce form and Supabase the raw one', async ({ page }) => {
+    await boot(page);
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect.poll(async () => (await idCalls(page)).length).toBe(1);
+    const sheetNonce = (await socialCalls(page))[0].options.nonce, raw = (await idCalls(page))[0].nonce;
+    expect(raw).toMatch(/^[0-9a-f]{64}$/);
+    expect(sheetNonce).toBe(crypto.createHash('sha256').update(raw).digest('hex'));
+  });
+
+  test('Continue with Google signs in', async ({ page }) => {
+    await page.addInitScript(IDS);
+    await boot(page);
+    await openIn(page);
+    await page.click('#ios-signin [data-act="google"]');
+    await expect.poll(async () => (await idCalls(page)).map((c) => c.provider)).toEqual(['google']);
+    expect((await socialCalls(page))[0]).toMatchObject({ provider: 'google' });
+  });
+
+  test('a cancelled sheet keeps the phone\'s pick', async ({ page }) => {
+    await boot(page, { seed: { nplus_freeCertId: 'netplus', __social: JSON.stringify({ mode: 'cancel' }) } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await page.waitForTimeout(600);
+    expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
+    expect(await idCalls(page)).toEqual([]);
+    await expect(page.locator('#isi-perr')).toHaveCount(0);
+  });
+
+  test('a failed sheet shows the line', async ({ page }) => {
+    await boot(page, { seed: { __social: JSON.stringify({ mode: 'fail' }) } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect(page.locator('#isi-perr')).toHaveText("Apple sign-in didn't finish. Try again, or use your email.");
+  });
+
+  test('a token Supabase refuses restores the phone\'s pick', async ({ page }) => {
+    await page.addInitScript(IDS);
+    await boot(page, { fake: { idTokenError: 'Invalid token' }, seed: { nplus_freeCertId: 'netplus' } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="google"]');
+    await expect(page.locator('#isi-perr')).toHaveText("Google sign-in didn't finish. Try again, or use your email.");
+    expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
+  });
+
+  test('Apple\'s first-time name is saved once', async ({ page }) => {
+    await boot(page, { fake: { displayName: null }, seed: { __social: JSON.stringify({ mode: 'ok', givenName: 'Simi', familyName: 'Oremosu' }) } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('__fakeDisplayName')), { timeout: 8000 }).toBe('Simi Oremosu');
+  });
+
+  test('a name already set is left alone', async ({ page }) => {
+    await boot(page, { fake: { displayName: 'Simi' }, seed: { __social: JSON.stringify({ mode: 'ok', givenName: 'Other' }) } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect.poll(async () => (await idCalls(page)).length).toBe(1);
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => localStorage.getItem('__fakeDisplayName'))).toBeNull();
+  });
+
+  test('Google stays hidden while its client IDs are empty', async ({ page }) => {
+    await page.addInitScript(() => { window.CA_SOCIAL_IDS = { googleIOS: '', googleWeb: '' }; });
+    await boot(page);
+    await openIn(page);
+    await expect(page.locator('#ios-signin [data-act="apple"]')).toBeVisible();
+    await expect(page.locator('#ios-signin [data-act="google"]')).toHaveCount(0);
+  });
+});
+
+test.describe('Stage 5c on the phone website', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('no provider buttons on the phone website', async ({ page }) => {
+    await boot(page, { native: false });
+    await page.evaluate(() => window.iosSignIn.open({ from: 'settings' }));
+    expect(await page.evaluate(() => window.CA_NATIVE)).toBe(false);
+    await expect(page.locator('#ios-signin [data-act="apple"]:visible, #ios-signin [data-act="google"]')).toHaveCount(0);
+  });
+});

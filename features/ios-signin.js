@@ -10,7 +10,8 @@
   'use strict';
 
   // June's welcome (onboarding-native-welcome). 5c turns the line into "Sign in with Apple or email".
-  function _isiWelcomeHtml() {
+  // m = {apple, google}: the providers ready in this app (Stage 5c); none = 5b's email line
+  function _isiWelcomeHtml(m) {
     var BRAND = '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>'
       + '<line x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.55"/>'
       + '<path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -23,16 +24,17 @@
       + '<div class="isi-g-pass">Pass mark 720</div></div>'
       + '<div class="isi-copy isi-rv"><h1>Know when you\'re ready</h1><p>Real exam questions and a readiness score that climbs as you study, so exam day is never a guess.</p></div>'
       + '<div class="isi-cta isi-rv"><button class="isi-primary" type="button" data-act="start">Get started</button>'
-      + '<div class="isi-cta-sub">Sign in with email</div>'
+      + '<div class="isi-cta-sub">Sign in with ' + (m && m.apple ? (m.google ? 'Apple, Google or email' : 'Apple or email') : (m && m.google ? 'Google or email' : 'email')) + '</div>'
       + '<button class="isi-link" type="button" data-act="signin">Already have an account? <b>Sign in</b></button></div>'
       + '</div>';
   }
 
-  // m = {email, typo: {fix} | null, msg (a send failure)}
+  // m = {email, typo: {fix} | null, msg (a send failure), apple, google (Stage 5c: providers ready), providerErr: 'apple' | 'google'}
   function _isiSignInHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     var BRAND_SM = '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><line x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.55"/><path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var APPLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"/></svg>';
+    var GOOGLE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg>';   // Google's own G mark, unaltered (brand rules)
     var typo = m && m.typo;
     return '<div class="isi-screen isi-auth">'
       + '<div class="isi-top isi-rv"><button class="isi-back" type="button" data-act="back" aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>'
@@ -41,7 +43,9 @@
       + '<p class="isi-sub isi-rv"><b>Free to start.</b> No password to remember.</p>'
       + '<div class="isi-form isi-rv">'
       // 5c removes `hidden` (the provider and its divider stay out of the way until then)
-      + '<button class="isi-apple" type="button" data-act="apple" hidden>' + APPLE + 'Continue with Apple</button>'
+      + '<button class="isi-apple" type="button" data-act="apple"' + (m && m.apple ? '' : ' hidden') + '>' + APPLE + 'Continue with Apple</button>'
+      + (m && m.google ? '<button class="isi-google" type="button" data-act="google">' + GOOGLE + 'Continue with Google</button>' : '')
+      + (m && m.providerErr ? '<p class="isi-perr" id="isi-perr" role="alert">' + (m.providerErr === 'google' ? 'Google' : 'Apple') + ' sign-in didn\'t finish. Try again, or use your email.</p>' : '')
       + '<div class="isi-field"><label for="isi-email">Email</label><input id="isi-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="' + e(m && m.email) + '"' + (typo ? ' aria-invalid="true"' : '') + '></div>'
       + (typo ? '<div class="isi-typo" role="alert"><p>Did you mean <b>' + e(typo.fix) + '</b>?</p><div class="isi-typo-row">'
           + '<button class="isi-primary" type="button" data-act="fix-yes">Yes, fix it</button><button class="isi-outline" type="button" data-act="fix-no">No, keep mine</button></div></div>'
@@ -125,6 +129,11 @@
   var st = { view: null, from: null, email: '', typo: null }, timer = null, busy = false;
 
   function hostEl() { return document.getElementById('ios-signin'); }
+  // Stage 5c: which providers this app can offer (native, plugin present, Google client IDs set)
+  function providers() {
+    var N = window.caNative, ok = !!(window.CA_NATIVE && N && N.socialReady);
+    return { apple: ok && N.socialReady('apple'), google: ok && N.socialReady('google') };
+  }
   function sb() { return window.certanvilSupabase || null; }
   // The Supabase chain loads after window.load, so an early tap waits for it (up to 10s) instead of doing nothing.
   function withClient(fn, fail) {
@@ -148,8 +157,9 @@
   function show(view, extra) {
     var h = hostEl(); if (!h) return;
     st.view = view; clearInterval(timer);
-    if (view === 'welcome') h.innerHTML = _isiWelcomeHtml();
-    else if (view === 'signin') h.innerHTML = _isiSignInHtml({ email: st.email, typo: st.typo, msg: extra && extra.msg });
+    var pv = providers();
+    if (view === 'welcome') h.innerHTML = _isiWelcomeHtml(pv);
+    else if (view === 'signin') h.innerHTML = _isiSignInHtml({ email: st.email, typo: st.typo, msg: extra && extra.msg, apple: pv.apple, google: pv.google, providerErr: extra && extra.providerErr });
     else h.innerHTML = _isiCodeHtml(Object.assign({ email: st.email, left: leftSec(), msg: '', kind: '', expired: false }, extra || {}));
     h.hidden = false; document.documentElement.classList.add('isi-open');
     if (view === 'code') wireBoxes(extra && extra.keep);
@@ -248,6 +258,7 @@
     else if (a === 'fix-yes') send(st.typo.fix);
     else if (a === 'fix-no') send(st.email.toLowerCase());
     else if (a === 'change') { clearPending(); st.typo = null; show('signin'); }
+    else if (a === 'apple' || a === 'google') IS._provider(a);
     else if (a === 'resend' || a === 'send-new') send(st.email, true);
   }
 
@@ -342,6 +353,53 @@
       setTimeout(function () { t.classList.add('out'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 260); }, 5450);
     });
   }
+
+  // ── Stage 5c: Sign in with Apple / Google (spec §App sign-in flow) ──
+  // A raw nonce for Supabase and its SHA-256 for the native sheet (the plugin passes it to Apple/Google untouched).
+  function _isiNonce() {
+    var b = new Uint8Array(32); crypto.getRandomValues(b);
+    var raw = Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw)).then(function (d) {
+      return { raw: raw, hashed: Array.prototype.map.call(new Uint8Array(d), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('') };
+    });
+  }
+  IS._nonce = _isiNonce;
+  // Apple shares the name only on the very first authorization: keep it when the profile has none yet.
+  function saveName(c, r) {
+    var name = [r.givenName, r.familyName].filter(Boolean).join(' ').trim();
+    if (!name) return;
+    c.auth.getUser().then(function (u) {
+      var id = u && u.data && u.data.user && u.data.user.id; if (!id) return;
+      return c.from('profiles').select('display_name').eq('id', id).single().then(function (p) {
+        if (p && p.data && p.data.display_name) return;
+        return c.from('profiles').update({ display_name: name }).eq('id', id);
+      });
+    }).catch(function () {});
+  }
+  IS._provider = function (name) {
+    var N = window.caNative;
+    if (busy || !N || !N.social) return Promise.resolve();
+    busy = true;
+    function failed() { busy = false; show('signin', { providerErr: name }); }
+    var n;
+    return _isiNonce().then(function (x) { n = x; return N.social(name, { nonce: n.hashed }); }).then(function (r) {
+      // Only now, with a token in hand, is the phone's pick set aside (a cancelled sheet never touches it).
+      return new Promise(function (res) { withClient(res, function () { res(null); }); }).then(function (c) {
+        if (!c) { failed(); return; }
+        var y = IS._beforeVerify();
+        return Promise.resolve().then(function () { return c.auth.signInWithIdToken({ provider: name, token: r.idToken, nonce: n.raw }); }).then(function (res) {
+          busy = false;
+          if (res && res.error) { IS._verifyFailed(y); failed(); return; }
+          if (name === 'apple') saveName(c, r);
+          return IS._afterVerify(y);
+        }, function () { IS._verifyFailed(y); failed(); });
+      });
+    }, function (e) {
+      busy = false;
+      if (e && e.cancelled) return;   // cancel = silence
+      failed();
+    });
+  };
 
   // from: 'welcome' | 'home' | 'settings' | 'custom' | 'diagnostic'
   IS.open = function (o) {

@@ -3013,3 +3013,11 @@ html.isi-open { overflow: hidden; }
 
 /* 28 Oct: Settings → About rows are links (they open in the in-app browser sheet); match the button rows */
 #ios-settings a.ist-row { text-decoration: none; color: var(--text); -webkit-tap-highlight-color: transparent; }
+
+/* Stage 5c (28 Oct): Continue with Google (outlined, Google's own G mark) and the provider failure line */
+.isi-google { display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 50px; border: 1px solid var(--border); border-radius: 14px; padding: 0 15px;
+  background: var(--surface); color: var(--text); font: 600 15px/1 Inter, sans-serif; cursor: pointer; transition: transform .15s var(--ios-ease), border-color .2s; }
+.isi-google svg { width: 18px; height: 18px; }
+.isi-google:active { transform: scale(0.985); }
+@media (hover: hover) and (pointer: fine) { .isi-google:hover { border-color: color-mix(in oklab, var(--text) 30%, var(--border)); } }
+.isi-perr { margin: 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--red, oklch(0.62 0.17 28)); }
