@@ -369,9 +369,11 @@
     var name = [r.givenName, r.familyName].filter(Boolean).join(' ').trim();
     if (!name) return;
     c.auth.getUser().then(function (u) {
-      var id = u && u.data && u.data.user && u.data.user.id; if (!id) return;
+      var usr = u && u.data && u.data.user, id = usr && usr.id; if (!id) return;
+      var placeholder = String((usr.email || '').split('@')[0]);   // the signup trigger's default (supabase/schema.sql)
       return c.from('profiles').select('display_name').eq('id', id).single().then(function (p) {
-        if (p && p.data && p.data.display_name) return;
+        var cur = p && p.data && p.data.display_name;
+        if (cur && cur !== placeholder) return;
         return c.from('profiles').update({ display_name: name }).eq('id', id);
       });
     }).catch(function () {});
@@ -407,17 +409,21 @@
   function logRevoke(out) { try { if (typeof logError === 'function') logError('apple-revoke', 'apple-revoke: ' + out); } catch (_) {} }
   IS._appleRevoke = function () {
     var N = window.caNative, c = sb();
-    if (!N || !N.social || !c) return Promise.resolve('failed');
-    var timeout = new Promise(function (r) { setTimeout(function () { r('failed'); }, 15000); });
-    var run = N.social('apple', {}).then(function (r) {
-      if (!r.authorizationCode) return 'failed';
-      return c.auth.getSession().then(function (s) {
-        var t = s && s.data && s.data.session && s.data.session.access_token;
-        return fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ code: r.authorizationCode }) })
+    if (!N || !N.social || !c) { logRevoke('failed'); return Promise.resolve('failed'); }
+    // The access token is read before the sheet: the user may take their time on Apple's sheet, and the timeout
+    // below covers only the network call after it (a stuck network never holds up the deletion).
+    return c.auth.getSession().then(function (s) {
+      var t = s && s.data && s.data.session && s.data.session.access_token;
+      return N.social('apple', {}).then(function (r) {
+        if (!r.authorizationCode || !t) return 'failed';
+        var call = fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ code: r.authorizationCode }) })
           .then(function (res) { return res.json().then(function (j) { return (j && j.result) || 'failed'; }, function () { return 'failed'; }); }, function () { return 'failed'; });
-      });
-    }, function (e) { var out = e && e.cancelled ? 'cancelled' : 'failed'; logRevoke(out); return out; });
-    return Promise.race([run, timeout]).catch(function () { return 'failed'; });
+        return Promise.race([call, new Promise(function (r2) { setTimeout(function () { r2('failed'); }, IS._revokeWait || 15000); })]);
+      }, function (e) { return e && e.cancelled ? 'cancelled' : 'failed'; });
+    }).catch(function () { return 'failed'; }).then(function (out) {
+      if (out !== 'ok' && out !== 'sub-mismatch') logRevoke(out);   // the server logs ok / sub-mismatch itself
+      return out;
+    });
   };
   // true when this signed-in user has an Apple identity and the app can ask Apple
   IS._hasApple = function (user) {

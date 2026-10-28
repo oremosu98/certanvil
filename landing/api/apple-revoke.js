@@ -12,7 +12,8 @@ const CLIENT_ID = 'com.certanvil.app';
 const APPLE = 'https://appleid.apple.com';
 
 function allowedOrigin(origin) {
-  return !!origin && /^https:\/\/([a-z0-9-]+\.)?certanvil\.com$/.test(origin);
+  // certanvil.com and its cert subdomains; http://localhost:3140 is the founder's local test build (a bearer token is still required)
+  return !!origin && (/^https:\/\/([a-z0-9-]+\.)?certanvil\.com$/.test(origin) || origin === 'http://localhost:3140');
 }
 function cors(req) {
   const h = { 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Vary': 'Origin' };
@@ -68,7 +69,7 @@ export default async function handler(req) {
 
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) return json({ result: 'unauthorized' }, 401, req);
+  if (!token) { log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
   let body = null;
   try { body = await req.json(); } catch (_) { body = null; }
   const code = body && typeof body.code === 'string' ? body.code : '';
@@ -78,7 +79,7 @@ export default async function handler(req) {
   const ures = await fetch(process.env.SUPABASE_URL + '/auth/v1/user', {
     headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
   }).catch(() => null);
-  if (!ures || ures.status !== 200) return json({ result: 'unauthorized' }, 401, req);
+  if (!ures || ures.status !== 200) { log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
   const user = await ures.json().catch(() => null);
   const ident = ((user && user.identities) || []).filter((i) => i && i.provider === 'apple')[0];
   const accountSub = ident ? (ident.id || (ident.identity_data && ident.identity_data.sub) || null) : null;

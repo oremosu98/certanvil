@@ -107,3 +107,20 @@ test.describe('Stage 5c website in the app', () => {
     await expect(page.locator('#auth-google')).toBeHidden();
   });
 });
+
+test.describe('Stage 5c website: return= is checked after sign-in', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('I5: a return= off certanvil.com is not followed after a sign-in', async ({ page }) => {
+    const F = { signedOut: true };
+    await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + JSON.stringify(F) + ';' + FAKE }));
+    let evil = false;
+    await page.route('https://evil.example/**', (r) => { evil = true; r.fulfill({ contentType: 'text/html', body: 'evil' }); });
+    await page.goto('/?action=signin&return=' + encodeURIComponent('https://evil.example/phish'));
+    await page.waitForLoadState('load');
+    await expect(page.locator('#auth-modal')).toBeVisible();
+    await page.fill('#auth-email', 'sam@example.test'); await page.click('#auth-submit');
+    await page.locator('#auth-otp-boxes input').first().focus(); await page.keyboard.type('123456', { delay: 30 });
+    await page.waitForTimeout(1500);
+    expect(evil).toBe(false);
+  });
+});

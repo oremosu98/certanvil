@@ -36,7 +36,8 @@
   function socialPlugin() { return P.SocialLogin || null; }
   function initSocial() {
     if (socialInit) return socialInit;
-    var ids = socialIds(), cfg = { apple: { clientId: 'com.certanvil.app' } };
+    // useProperTokenExchange: Apple's authorization code comes back as authorizationCode (the revoke needs it)
+    var ids = socialIds(), cfg = { apple: { clientId: 'com.certanvil.app', useProperTokenExchange: true } };
     if (ids.googleIOS && ids.googleWeb) cfg.google = { iOSClientId: ids.googleIOS, iOSServerClientId: ids.googleWeb };
     socialInit = Promise.resolve(socialPlugin().initialize(cfg));
     return socialInit;
@@ -52,7 +53,8 @@
       return initSocial().then(function () { return socialPlugin().login({ provider: provider, options: o }); }).then(function (res) {
         var r = (res && res.result) || {}, pf = r.profile || {};
         if (!r.idToken) throw { cancelled: false, message: 'no token' };
-        return { idToken: r.idToken, authorizationCode: r.authorizationCode, givenName: pf.givenName || null, familyName: pf.familyName || null };
+        var code = r.authorizationCode || (provider === 'apple' && r.accessToken && r.accessToken.token) || undefined;   // legacy envelope
+        return { idToken: r.idToken, authorizationCode: code, givenName: pf.givenName || null, familyName: pf.familyName || null };
       }, function (e) {
         throw { cancelled: !!(e && e.code === 'USER_CANCELLED'), message: (e && e.message) || 'failed' };
       });

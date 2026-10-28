@@ -1068,6 +1068,9 @@
       // pending return URL (from `?action=signin&return=…`), bounce them
       // there now. This handles the case where the magic link came back to
       // landing, and (Stage 5b) every code sign-in, which never leaves this page.
+      // Stage 5c (review fix): only ever bounce to certanvil.com or its subdomains. return= arrives on the query
+      // and now survives an Apple/Google round trip, so an unchecked one would send a real sign-in anywhere.
+      if (pendingReturnUrl && !returnUrlSharesApexCookie(pendingReturnUrl)) pendingReturnUrl = null;
       if (pendingReturnUrl) {
         var ret = pendingReturnUrl;
         pendingReturnUrl = null;

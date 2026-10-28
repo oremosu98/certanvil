@@ -30,8 +30,13 @@ function stubScript() {
             const calls = JSON.parse(localStorage.getItem('__socialCalls') || '[]'); calls.push(o); localStorage.setItem('__socialCalls', JSON.stringify(calls));
             if (cfg.mode === 'cancel') return Promise.reject(Object.assign(new Error('The user canceled the authorization attempt'), { code: 'USER_CANCELLED' }));
             if (cfg.mode === 'fail') return Promise.reject(Object.assign(new Error('Sign in failed'), { code: 'UNKNOWN' }));
-            return Promise.resolve({ provider: o.provider, result: { idToken: cfg.idToken || ('tok-' + o.provider), authorizationCode: cfg.authorizationCode || 'code-1',
-              profile: { givenName: cfg.givenName || null, familyName: cfg.familyName || null, email: null, user: 'apple-sub-1' } } });
+            // Mirrors the plugin (AppleProvider.swift): authorizationCode only with useProperTokenExchange; legacy mode puts it in accessToken.token
+            const init = JSON.parse(localStorage.getItem('__socialInit') || '{}'), proper = !!(init.apple && init.apple.useProperTokenExchange);
+            const code = cfg.authorizationCode || 'code-1';
+            const out = () => Promise.resolve({ provider: o.provider, result: Object.assign({ idToken: cfg.idToken || ('tok-' + o.provider),
+              profile: { givenName: cfg.givenName || null, familyName: cfg.familyName || null, email: null, user: 'apple-sub-1' } },
+              o.provider === 'apple' ? (proper ? { authorizationCode: code, accessToken: null } : { accessToken: { token: code } }) : {}) });
+            return cfg.delay ? new Promise((r) => setTimeout(r, cfg.delay)).then(out) : out();
           }
         },
         StatusBar: { setStyle: () => Promise.resolve() }
@@ -360,5 +365,42 @@ test.describe('Stage 5c: deleting an Apple account', () => {
     await page.click('#ios-settings [data-act="delete"]');
     await expect(page.locator('#delete-account-modal')).toBeVisible();
     await expect(page.locator('#delete-account-modal')).not.toContainText('You sign in with Apple');
+  });
+});
+
+// ── Final review fixes (fable, 28 Oct) ──
+test.describe('Stage 5c final review fixes', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('C1: the plugin is initialised for the proper token exchange, so Apple returns the code', async ({ page }) => {
+    await boot(page, { seed: { __social: JSON.stringify({ mode: 'ok', authorizationCode: 'c-real' }) } });
+    const r = await page.evaluate(() => window.caNative.social('apple', {}));
+    expect(r.authorizationCode).toBe('c-real');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('__socialInit')).apple.useProperTokenExchange)).toBe(true);
+  });
+
+  test('I2: an Apple name replaces the placeholder taken from the email', async ({ page }) => {
+    await boot(page, { fake: { displayName: 'simi.test' }, seed: { __social: JSON.stringify({ mode: 'ok', givenName: 'Simi', familyName: 'Oremosu' }) } });
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('__fakeDisplayName')), { timeout: 8000 }).toBe('Simi Oremosu');
+  });
+
+  test('I3: time on Apple\'s sheet does not count against the revoke timeout', async ({ page }) => {
+    const seen = await routeRevoke(page, 'ok');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'ok', delay: 1500 }) } });
+    await page.evaluate(() => { window.iosSignIn._revokeWait = 600; });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(seen.length).toBe(1);
+    expect(seen[0].auth).toBe('Bearer fake.jwt.token');
+  });
+
+  test('I4: a revoke that never reaches the server is logged', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'fail' }) } });
+    await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed');
   });
 });

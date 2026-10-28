@@ -79,6 +79,7 @@ await t('no or invalid bearer -> 401 and no Apple call', async () => {
   stub({ userStatus: 401 });
   assert.equal((await handler(req({ code: 'c' }))).status, 401);
   assert.ok(!calls.some((c) => c.url.includes('appleid.apple.com')));
+  await tick(); assert.deepEqual(logged(), ['apple-revoke: unauthorized']);
 });
 
 await t('Apple refuses the code -> 502 failed', async () => {
@@ -95,6 +96,8 @@ await t('CORS: a cert subdomain is allowed; other origins are not', async () => 
   assert.match(ok.headers.get('access-control-allow-headers') || '', /Authorization/);
   const no = await handler(new Request('https://certanvil.com/api/apple-revoke', { method: 'OPTIONS', headers: { Origin: 'https://evil.example' } }));
   assert.equal(no.headers.get('access-control-allow-origin'), null);
+  const dev = await handler(new Request('https://certanvil.com/api/apple-revoke', { method: 'OPTIONS', headers: { Origin: 'http://localhost:3140' } }));
+  assert.equal(dev.headers.get('access-control-allow-origin'), 'http://localhost:3140');
 });
 
 console.log('apple-revoke: ' + n + '/7 passed');
