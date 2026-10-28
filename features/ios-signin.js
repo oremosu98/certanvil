@@ -148,7 +148,8 @@
       inp.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !inp.value && k > 0) { ins[k - 1].value = ''; ins[k - 1].focus(); } });
     });
     timer = setInterval(tick, 1000);
-    if (!keep) setTimeout(function () { try { ins[0].focus(); } catch (_) {} }, 360);
+    // Focus the first box once the screen has settled, unless the user (or autofill) has already started.
+    if (!keep) setTimeout(function () { try { if (ins.indexOf(document.activeElement) < 0 && !code()) ins[0].focus(); } catch (_) {} }, 360);
   }
 
   // Send a code (no emailRedirectTo: the email carries the code only). The code screen opens on success and on a
@@ -211,6 +212,82 @@
     else if (a === 'resend' || a === 'send-new') send(st.email, true);
   }
 
+  // ── The lock rule (spec §After sign-in): the account's free exam wins ──
+  // The hydrate only fills keys this device lacks, then flushes every local key up. So before verifyOtp the phone's
+  // pick is set aside and the local copy removed: the hydrate then fills the account's value and the flush cannot
+  // overwrite it. Supabase emits SIGNED_IN inside verifyOtp, so the hydrate listener goes on first.
+  function freeKey() { return typeof STORAGE === 'object' && STORAGE.FREE_CERT_ID; }
+  function localFree() { try { return freeKey() ? localStorage.getItem(freeKey()) : null; } catch (_) { return null; } }
+  IS._beforeVerify = function () {
+    var y = { local: localFree(), done: null, off: null };
+    try { if (y.local) localStorage.removeItem(freeKey()); } catch (_) {}
+    var cs = window.cloudStore;
+    y.done = new Promise(function (res) {
+      if (!cs || typeof cs.onStatusChange !== 'function') { res('none'); return; }
+      var seen = false, t = setTimeout(function () { res('timeout'); }, 15000);
+      y.off = cs.onStatusChange(function (status) {
+        if (status === 'syncing') seen = true;
+        else if (status === 'idle' && seen) { clearTimeout(t); res('ok'); }
+        else if (status === 'error' && seen) { clearTimeout(t); res('error'); }
+      });
+    }).then(function (r) { if (y.off) y.off(); return r; });
+    return y;
+  };
+  function restore(y) { try { if (y && y.local && !localFree()) localStorage.setItem(freeKey(), y.local); } catch (_) {} }
+  IS._verifyFailed = function (y) { if (y && y.off) y.off(); restore(y); };
+  // Same names as auth-state's cert switcher (it may not have loaded when the toast shows).
+  var NAMES = { netplus: 'Network+', secplus: 'Security+', az900: 'Microsoft Azure Fundamentals', ai900: 'Microsoft Azure AI Fundamentals',
+    sc900: 'Microsoft SC-900', clfc02: 'AWS Cloud Practitioner', 'aplus-core1': 'CompTIA A+ Core 1', 'aplus-core2': 'CompTIA A+ Core 2' };
+  function certName(id) { return NAMES[id] || id; }
+  function here() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || window.CURRENT_CERT || 'netplus'; }
+  function hasData() { try { var h = JSON.parse(localStorage.getItem((typeof STORAGE === 'object' && STORAGE.HISTORY) || '') || '[]'); return Array.isArray(h) && h.length > 0; } catch (_) { return false; } }
+  function open(id) { var F = window.iosFirstRun; close(); if (F && F.goToCert) F.goToCert(id); }
+  IS._afterVerify = function (y) {
+    var N = window.caNative;
+    return (y && y.done ? y.done : Promise.resolve('none')).then(function (r) {
+      if (r !== 'ok' || !N) { restore(y); close(); return; }   // no hydrate, no decision: nothing is written
+      return N.chosen().then(function (c) {
+        var X = localFree(), Y = (y && y.local) || c.lockedCert || null;
+        var tier = window._quotaState && window._quotaState.tier, pro = tier === 'pro';
+        if (pro) {   // Pro: no lock; the account's cert, else this phone's choice
+          return N.forget('lockedCert').then(function () {
+            var to = X || c.chosenCert || (hasData() ? here() : null);
+            if (!to) { close(); pickerNow('pro'); return; }
+            return N.choose(to, { locked: false }).then(function () { if (to === here()) close(); else open(to); });
+          });
+        }
+        if (X) {
+          var switched = !!(Y && X !== Y);
+          return N.choose(X, { locked: true }).then(function () { return switched ? N.set('lockToast', X) : null; }).then(function () {
+            if (X === here()) { close(); if (switched) showToast(); else if (typeof renderIosHome === 'function') renderIosHome(); }
+            else open(X);
+          });
+        }
+        if (Y) {
+          var O = window.onbFirstRun; if (O && O.persistFreeCert) O.persistFreeCert(Y);
+          if (window.cloudStore && window.cloudStore.flushNow) window.cloudStore.flushNow().catch(function () {});
+          if (!c.chosenCert) return N.choose(Y, { locked: true }).then(function () { if (Y === here()) close(); else open(Y); });
+          close(); return;
+        }
+        // Neither: the last cert with data, else the picker.
+        if (c.chosenCert) { close(); return; }
+        if (hasData()) return N.choose(here(), { locked: true }).then(close);
+        close(); pickerNow('free');
+      });
+    }).catch(function () { restore(y); close(); });
+  };
+  function pickerNow(tier) { var F = window.iosFirstRun; if (F && F.picker) F.picker({ tier: tier, native: true }); }
+  function showToast() {
+    var N = window.caNative; if (!N || !N.take) return;
+    N.take('lockToast').then(function (id) {
+      if (!id) return;
+      var d = document.createElement('div'); d.innerHTML = _isiToastHtml(certName(id));
+      var t = d.firstChild; document.body.appendChild(t);
+      setTimeout(function () { t.classList.add('open'); }, 450);
+      setTimeout(function () { t.classList.add('out'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 260); }, 5450);
+    });
+  }
+
   // from: 'welcome' | 'home' | 'settings' | 'custom' | 'diagnostic'
   IS.open = function (o) {
     st.from = (o && o.from) || 'home'; st.typo = null;
@@ -224,6 +301,7 @@
   function boot() {
     var h = hostEl(); if (!h || !window.CA_NATIVE) return;
     h.addEventListener('click', onTap);
+    showToast();   // the one-time "we've opened your account's exam" note, on the page it opened
     var p = readPending();
     if (p) { st.from = 'welcome'; st.email = p.email; show('code'); }   // a relaunch or cert change mid-code comes back here
   }

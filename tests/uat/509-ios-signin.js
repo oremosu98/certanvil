@@ -52,6 +52,14 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
 
     test('no view has an inline handler or a dash flourish',
       [w, s, st, c, cx, t].every((h) => h.length > 0 && noInline(h) && h.indexOf('—') < 0));
+    // Task 3: the lock rule (spec §After sign-in)
+    const ns = read('native-shell.js'), cl = read('lib/cert-lock.js');
+    test('native-shell records the free cert for signed-out users only (never over an account\'s)',
+      /whenSignedOut\(function \(\) \{\s*try \{ if \(typeof STORAGE === 'object' && !localStorage\.getItem\(STORAGE\.FREE_CERT_ID\)\)/.test(ns) && /if \(s === false\) \{ fn\(\); return; \}/.test(ns));
+    test('cert-lock check() falls back to the hydrated local STORAGE.FREE_CERT_ID',
+      /meta\(opts\.profile\)\.freeCertId \|\| local \|\| null/.test(cl) && /localStorage\.getItem\(STORAGE\.FREE_CERT_ID\)/.test(cl));
+    const bv = src.indexOf('IS._beforeVerify = function'), sub = src.indexOf('onStatusChange(', bv), call = src.indexOf('_beforeVerify ? IS._beforeVerify() : null'), vo = src.indexOf('verifyOtp(', call);
+    test('the hydrate listener goes on before verifyOtp is called', bv > 0 && sub > bv && call > 0 && vo > call);
     const html = read('index.html');
     test('index.html loads features/ios-signin.js and has the #ios-signin host',
       /<script defer src="features\/ios-signin\.js"><\/script>/.test(html) && /<div id="ios-signin"[^>]*hidden><\/div>/.test(html));

@@ -499,6 +499,7 @@
   }
   mountRestore();
 
+  IFR.goToCert = goToCert;   // Stage 5b: sign-in opens the account's cert the same way
   IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-capped', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 
   // ios-home.js loads (and draws Home) before this file, so repaint once now that day-0 / capped can be chosen.

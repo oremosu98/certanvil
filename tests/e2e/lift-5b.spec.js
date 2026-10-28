@@ -174,3 +174,103 @@ test.describe('Stage 5b: sign in with a code inside the app', () => {
     await expect(page.locator('#isi-email')).toHaveValue('sam@example.test');
   });
 });
+
+// ── Task 3: the account's free exam wins (spec §After sign-in) ──
+async function signIn(page) {
+  await toCode(page, 'sam@example.test');
+  await typeCode(page, '123456');
+}
+const writes = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__fakeFreeCertWrites') || '[]'));
+const SECPLUS = { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' };
+
+test.describe('Stage 5b: the lock rule after sign-in', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('account Netplus vs phone Secplus opens Netplus with the toast once', async ({ page }) => {
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await signIn(page);
+    await page.waitForURL(/cert=netplus/, { timeout: 10000 });
+    await page.waitForLoadState('load');
+    await expect(page.locator('.isi-toast')).toContainText('Your free exam on this account is Network+, so we\'ve opened it.', { timeout: 5000 });
+    expect(await prefs(page)).toMatchObject({ chosenCert: 'netplus', lockedCert: 'netplus' });
+    await page.reload(); await page.waitForLoadState('load'); await page.waitForTimeout(1200);
+    await expect(page.locator('.isi-toast')).toHaveCount(0);
+  });
+
+  test('the account keeps Netplus after the flush', async ({ page }) => {
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus', seed: { nplus_freeCertId: 'secplus' } });
+    await signIn(page);
+    await page.waitForURL(/cert=netplus/, { timeout: 10000 });
+    const w = await writes(page);
+    expect(w.length).toBeGreaterThan(0);
+    expect(w.filter((v) => v === 'secplus')).toEqual([]);
+  });
+
+  test('an account with no free exam takes the phone\'s pick', async ({ page }) => {
+    await boot(page, { fake: { tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await signIn(page);
+    await expect.poll(() => writes(page), { timeout: 8000 }).toContain('secplus');
+    await expect(page.locator('.isi-toast')).toHaveCount(0);
+    expect(await prefs(page)).toMatchObject({ lockedCert: 'secplus' });
+  });
+
+  test('the lock rule runs when the hydrate starts inside verifyOtp', async ({ page }) => {
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free', verifyDelay: 600 }, prefs: SECPLUS, query: '?cert=secplus' });
+    await signIn(page);
+    await page.waitForURL(/cert=netplus/, { timeout: 10000 });
+    expect(await prefs(page)).toMatchObject({ lockedCert: 'netplus' });
+  });
+
+  test('a failed hydrate writes nothing', async ({ page }) => {
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free', profileError: true }, prefs: SECPLUS, query: '?cert=secplus', seed: { nplus_freeCertId: 'secplus' } });
+    await signIn(page);
+    await page.waitForTimeout(2500);
+    expect(await prefs(page)).toMatchObject(SECPLUS);
+    expect(await writes(page)).toEqual([]);
+    expect(await page.evaluate(() => window.CURRENT_CERT)).toBe('secplus');
+  });
+
+  test('Pro drops the app lock', async ({ page }) => {
+    await boot(page, { fake: { tier: 'pro', metaOverride: { tier: 'pro' } }, prefs: SECPLUS, query: '?cert=secplus' });
+    await signIn(page);
+    await expect.poll(async () => (await prefs(page)).lockedCert, { timeout: 8000 }).toBeUndefined();
+    expect((await prefs(page)).chosenCert).toBe('secplus');
+  });
+
+  test('a signed-in user\'s page never records the phone\'s pick', async ({ page }) => {
+    await boot(page, { fake: { signedOut: false, tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await page.waitForTimeout(2000);
+    expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBeNull();
+  });
+
+  test('sign in from the welcome opens the account\'s cert', async ({ page }) => {
+    await boot(page, { fake: { accountFreeCert: 'secplus', tier: 'free' }, prefs: {} });
+    await page.evaluate(() => window.iosSignIn.welcome());
+    await page.click('#ios-signin [data-act="signin"]');
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await typeCode(page, '123456');
+    await page.waitForURL(/cert=secplus/, { timeout: 10000 });
+    await page.waitForTimeout(900);
+    await expect(page.locator('#onb-firstrun')).toBeHidden();
+    expect(await prefs(page)).toMatchObject({ chosenCert: 'secplus', lockedCert: 'secplus' });
+  });
+
+  test('sign in from the welcome opens the picker when the account has none', async ({ page }) => {
+    await boot(page, { fake: { tier: 'free' }, prefs: {} });
+    await page.evaluate(() => window.iosSignIn.welcome());
+    await page.click('#ios-signin [data-act="signin"]');
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await typeCode(page, '123456');
+    await expect(page.locator('#onb-firstrun')).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
+  });
+
+  test('a signed-in free user on the wrong cert gets the cert-lock wall', async ({ page }) => {
+    await boot(page, { fake: { signedOut: false, tier: 'free' }, prefs: { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' }, query: '?cert=secplus', seed: { nplus_freeCertId: 'netplus' } });
+    await page.waitForTimeout(1500);
+    await expect(page.locator('.cl-wall')).toBeVisible();
+  });
+});
+const prefs = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__prefs') || '{}'));

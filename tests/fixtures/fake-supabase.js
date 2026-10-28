@@ -15,8 +15,10 @@
   window.__fakeLog = [];
   function resolve(st){
     window.__fakeLog.push(st.table+':'+st.op);
+    if (st.op==='update' && st.table==='profiles' && st.val && st.val.metadata){ try { var w=JSON.parse(localStorage.getItem('__fakeFreeCertWrites')||'[]'); w.push(st.val.metadata.freeCertId==null?null:st.val.metadata.freeCertId); localStorage.setItem('__fakeFreeCertWrites', JSON.stringify(w)); } catch(e){} }   // Stage 5b: survives navigation
     if (st.op==='update' && st.table==='profiles'){ if (st.val && st.val.metadata) profile.metadata = st.val.metadata; Object.keys(st.val||{}).forEach(function(k){ if(k!=='metadata') profile[k]=st.val[k]; }); return {data:null,error:null,status:204}; }
     if (st.op!=='select') return {data:null,error:null,status:201};
+    if (st.table==='profiles' && F.profileError && session) return {data:null, error:{message:'profile read failed', code:'500'}};
     var rows = [];
     if (st.table==='profiles') rows=[profile];
     else if (st.table==='subscriptions') rows = F.subs || [{ user_id:user.id, status:'active', plan:'pro_annual', price_id:'price_test', current_period_end:'2027-06-08T00:00:00Z', cancel_at_period_end:false }];
@@ -52,7 +54,7 @@
         if (F.verifyThrows) return Promise.reject(new TypeError('Failed to fetch'));
         if (o.token!=='123456') return Promise.resolve({data:{session:null,user:null},error:{message:'Token has expired or is invalid',code:'otp_expired',status:403,name:'AuthApiError'}});
         session=signedSession(); listeners.forEach(function(cb){ try{ cb('SIGNED_IN',session); }catch(e){} });
-        return Promise.resolve({data:{session:session,user:user},error:null}); },
+        return new Promise(function(r){ setTimeout(function(){ r({data:{session:session,user:user},error:null}); }, F.verifyDelay||0); }); },
       signInWithPassword:function(){ return Promise.resolve({data:{},error:{message:'Invalid login credentials'}}); },
       refreshSession:function(){ return Promise.resolve({data:{session:session},error:null}); },
       exchangeCodeForSession:function(){ return Promise.resolve({data:{session:session},error:null}); },
