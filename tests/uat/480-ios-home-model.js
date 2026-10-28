@@ -108,8 +108,9 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     })());
     test('Cert header: mark N+, name Network+ (vendor prefix dropped), code N10-009',
       ret.cert.mark === 'N+' && ret.cert.name === 'Network+' && ret.cert.code === 'N10-009' && ret.streak === 1);
-    test('Signed out on the web: signedIn false; the native app always counts as signed in',
-      mk({ signedIn: false }).signedIn === false && mk({ signedIn: false, native: true }).signedIn === true);
+    // Stage 5b (28 Oct): the iOS app can be used signed out, so its Home shows Sign in too (no native override)
+    test('Signed out: signedIn false on the web and in the iOS app; signed in: true',
+      mk({ signedIn: false }).signedIn === false && mk({ signedIn: false, native: true }).signedIn === false && mk({ signedIn: true, native: true }).signedIn === true);
   } catch (err) {
     test('Lift A Home model: block (threw)', false);
     results.errors.push('480 ios-home-model block threw: ' + err.message);

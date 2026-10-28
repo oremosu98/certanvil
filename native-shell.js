@@ -35,6 +35,10 @@
       return Promise.all([pset('chosenCert', certId), pset('lastCertHost', hostOf(certId)), locked ? pset('lockedCert', certId) : pdel('lockedCert')])
         .then(function () {});
     },
+    // Stage 5b: read a one-time key and remove it (the lock toast)
+    take: function (k) { return pget(k).then(function (v) { if (v) pdel(k); return v; }); },
+    set: function (k, v) { return pset(k, v); },
+    forget: function (k) { return pdel(k); },
     chosen: function () {
       return Promise.all([pget('chosenCert'), pget('lockedCert'), pget('lastCertHost')])
         .then(function (a) { return { chosenCert: a[0], lockedCert: a[1], lastCertHost: a[2] }; });
@@ -72,18 +76,31 @@
     }
     decide();
   }
+  function whenSignedOut(fn) {
+    var t0 = Date.now();
+    (function decide() {
+      var s = window._certanvilSignedIn;
+      if (s === false) { fn(); return; }
+      if (s !== true && Date.now() - t0 < 15000) setTimeout(decide, 250);
+    })();
+  }
   function wall(locked) { if (window._certLock && window._certLock.showWall) window._certLock.showWall(locked); }
   function onReady() {
     var here = window.CURRENT_CERT || null;
     window.caNative.chosen().then(function (c) {
       if (!c.chosenCert) {
+        // Stage 5b: June's welcome first (Get started opens the picker); a pending code screen keeps its place.
+        var S = window.iosSignIn;
+        if (S && S.welcome) { if (!(S._pending && S._pending())) S.welcome(); return; }
         if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
         return;
       }
       if (c.lockedCert && here && here !== c.lockedCert) { holdLock(c.lockedCert); return; }
-      try {
-        if (c.lockedCert && here === c.lockedCert && typeof STORAGE === 'object' && !localStorage.getItem(STORAGE.FREE_CERT_ID)) localStorage.setItem(STORAGE.FREE_CERT_ID, here);
-      } catch (_) {}
+      // Signed-out users only: a signed-in account's free exam comes from the cloud (Stage 5b), and a local write
+      // here would be flushed over it. Waits for sign-in to settle, like holdLock; unresolved after 15s: no write.
+      if (c.lockedCert && here === c.lockedCert) whenSignedOut(function () {
+        try { if (typeof STORAGE === 'object' && !localStorage.getItem(STORAGE.FREE_CERT_ID)) localStorage.setItem(STORAGE.FREE_CERT_ID, here); } catch (_) {}
+      });
       if (OURS.test(host) && host !== 'certanvil.com') pset('lastCertHost', host);
     });
   }
@@ -101,7 +118,7 @@
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a) return;
-    var ext = external(a.href);
+    var ext = external(a.href) || (a.hasAttribute('data-ext') ? a.href : null);   // data-ext: our page, but in the sheet (no way back otherwise)
     if (ext) { e.preventDefault(); openSheet(ext); return; }
     if (a.target === '_blank') { e.preventDefault(); location.href = a.href; }   // our own site: same webview
   }, true);

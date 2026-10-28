@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8301 | 443 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2370 | 156 KB |
+| index.html | 2372 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
-| tests/uat.js + tests/uat/ (70 modules) | 32868 | — |
-UAT checks: 5631 · E2E `test(` count: 470 · APP_VERSION: 8.195.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (71 modules) | 32958 | — |
+UAT checks: 5648 · E2E `test(` count: 509 · APP_VERSION: 8.196.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.196.0 | The iOS app signs you in with a 6-digit email code |
 | v8.195.0 | The iOS app opens on a deliberate cert choice. |
 | v8.194.0 | New users get the June first run on phones. |
-| v8.193.2 | Review forecast, Drills tab and quiz ✕ fixes on phones. |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

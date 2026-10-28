@@ -309,7 +309,7 @@
     if (act === 'close') { closeIosCustom(); window.scrollTo(0, 0); return; }
     // Start: leaving Setup closes the screen (observer); a start that fails validation keeps it, with the error (review I1)
     if (act === 'start') { if (typeof window.startQuiz === 'function') window.startQuiz(); return; }
-    if (act === 'signin') { var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; return; }
+    if (act === 'signin') { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('custom'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; return; }
     if (act === 'acc') {
       var dom = b.closest('.ic-dom');
       var open = dom.getAttribute('aria-expanded') !== 'true';

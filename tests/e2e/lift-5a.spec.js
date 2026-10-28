@@ -65,6 +65,9 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
   test('a fresh install opens the picker on Network+', async ({ page }) => {
     await bootNative(page);
     await expect(page.locator('html')).toHaveClass(/is-native/);
+    // Stage 5b: June's welcome comes first; Get started opens the picker
+    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");
+    await page.click('#ios-signin [data-act="start"]');
     await expect(page.locator('#onb-firstrun')).toBeVisible();
     await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
     await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveText('Lock in Network+');
@@ -81,10 +84,10 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await page.reload(); await page.waitForTimeout(900);
     await expect(page.locator('#onb-firstrun')).toBeHidden();
   });
-  test('relaunch with nothing chosen reopens the picker', async ({ page }) => {
+  test('relaunch with nothing chosen opens the welcome again', async ({ page }) => {
     await bootNative(page);
     await page.reload(); await page.waitForTimeout(900);
-    await expect(page.locator('#onb-firstrun')).toBeVisible();
+    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");   // Stage 5b: the welcome again
   });
   test('a locked free user on another cert sees the lock wall with Back to their cert', async ({ page }) => {
     await bootNative(page, { prefs: { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' } });

@@ -128,9 +128,8 @@
         mastery: agg[k].n > 0 ? Math.round(agg[k].s / agg[k].n * 100) : 0, untouched: agg[k].n === 0 };
     });
 
-    var native = false;
-    try { native = !!(typeof document !== 'undefined' && document.documentElement && document.documentElement.classList.contains('is-native')); } catch (_) {}
-    var signedIn = native || !!(typeof window !== 'undefined' && window._certanvilSignedIn);
+    // Stage 5b: the iOS app can be used signed out (Get started), so its Home shows Sign in like the web.
+    var signedIn = !!(typeof window !== 'undefined' && window._certanvilSignedIn);
 
     var exam = { qs: (typeof EXAM_QUESTION_COUNT === 'number') ? EXAM_QUESTION_COUNT : 90,
       mins: Math.round(((typeof EXAM_TIME_SECONDS === 'number') ? EXAM_TIME_SECONDS : 5400) / 60),
@@ -279,7 +278,7 @@
       settings: function () { tab('settings'); },
       cert: function () { tab('settings'); },
       theme: function () { if (typeof toggleTheme === 'function') toggleTheme(); renderIosHome(); },
-      signin: function () { var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; }
+      signin: function () { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('home'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; }
     };
     root.querySelectorAll('[data-act]').forEach(function (el) {
       var act = el.getAttribute('data-act');

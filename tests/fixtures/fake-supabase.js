@@ -2,7 +2,8 @@
 (function(){
   var F = window.__FAKE_SB || {};
   var user = { id:'00000000-0000-4000-8000-000000000001', email:'simi.test@example.test', created_at:'2026-03-02T10:00:00Z', aud:'authenticated', role:'authenticated', app_metadata:{provider:'email'}, user_metadata:{} };
-  var session = F.signedOut ? null : { access_token:'fake.jwt.token', refresh_token:'fake-refresh', token_type:'bearer', expires_in:3600, expires_at:Math.floor(Date.now()/1000)+3600, user:user };
+  function signedSession(){ return { access_token:'fake.jwt.token', refresh_token:'fake-refresh', token_type:'bearer', expires_in:3600, expires_at:Math.floor(Date.now()/1000)+3600, user:user }; }
+  var session = F.signedOut ? null : signedSession();
   var profile = { id:user.id, email:user.email, display_name:'Simi', role: F.role || 'user', active_cert:'secplus', exam_date:'2026-11-20', created_at:'2026-03-02T10:00:00Z', updated_at:'2026-10-16T12:00:00Z',
     metadata: Object.assign({
       entitlements:{ secplus:{tier:'pro', source:'stripe'} }, tier:'pro', plan:'pro_annual',
@@ -10,11 +11,14 @@
       nplus_readiness_snapshots:{ secplus:{score:812, computed_at:'2026-10-15T09:00:00Z', weak_domain:'Security Operations'}, netplus:{score:640, computed_at:'2026-09-01T09:00:00Z', weak_domain:'Network Troubleshooting'} }
     }, F.metaOverride || {}) };
   if (F.noResults) delete profile.metadata.cert_results;
+  if (F.accountFreeCert) profile.metadata.freeCertId = F.accountFreeCert;   // Stage 5b: the account's free exam
   window.__fakeLog = [];
   function resolve(st){
     window.__fakeLog.push(st.table+':'+st.op);
+    if (st.op==='update' && st.table==='profiles' && st.val && st.val.metadata){ try { var w=JSON.parse(localStorage.getItem('__fakeFreeCertWrites')||'[]'); w.push(st.val.metadata.freeCertId==null?null:st.val.metadata.freeCertId); localStorage.setItem('__fakeFreeCertWrites', JSON.stringify(w)); } catch(e){} }   // Stage 5b: survives navigation
     if (st.op==='update' && st.table==='profiles'){ if (st.val && st.val.metadata) profile.metadata = st.val.metadata; Object.keys(st.val||{}).forEach(function(k){ if(k!=='metadata') profile[k]=st.val[k]; }); return {data:null,error:null,status:204}; }
     if (st.op!=='select') return {data:null,error:null,status:201};
+    if (st.table==='profiles' && F.profileError && session) return {data:null, error:{message:'profile read failed', code:'500'}};
     var rows = [];
     if (st.table==='profiles') rows=[profile];
     else if (st.table==='subscriptions') rows = F.subs || [{ user_id:user.id, status:'active', plan:'pro_annual', price_id:'price_test', current_period_end:'2027-06-08T00:00:00Z', cancel_at_period_end:false }];
@@ -27,13 +31,13 @@
     ['select','eq','neq','in','order','limit','gte','lte','gt','lt','is','filter','match','range','not','or','contains','ilike','like'].forEach(function(m){ p[m]=function(){ if(m==='select' && st.op==='select'){} return p; }; });
     p.update=function(v){st.op='update';st.val=v;return p;}; p.insert=function(v){st.op='insert';st.val=v;return p;}; p.upsert=function(v){st.op='upsert';st.val=v;return p;}; p.delete=function(){st.op='delete';return p;};
     p.single=function(){st.single=true;return p;}; p.maybeSingle=function(){st.single=true;return p;};
-    p.then=function(a,b){ return Promise.resolve(resolve(st)).then(a,b); }; p.catch=function(b){ return p.then(null,b); }; p.finally=function(f){ return p.then(function(v){f();return v;}); };
+    p.then=function(a,b){ var d=(st.table==='profiles' && st.op==='select' && F.profileDelay && session) ? F.profileDelay : 0; return new Promise(function(r){ setTimeout(function(){ r(resolve(st)); }, d); }).then(a,b); }; p.catch=function(b){ return p.then(null,b); }; p.finally=function(f){ return p.then(function(v){f();return v;}); };
     return p;
   }
   var listeners=[];
   var client = {
     from: qb,
-    rpc: function(name){ window.__fakeLog.push('rpc:'+name); var d=null; if(name==='get_daily_quota_usage') d=[{used:0,limit:-1,tier:'pro'}]; return Promise.resolve({data:d,error:null}); },
+    rpc: function(name){ window.__fakeLog.push('rpc:'+name); var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}]; return Promise.resolve({data:d,error:null}); },
     functions:{ invoke:function(n){ window.__fakeLog.push('fn:'+n); return Promise.resolve({data:null,error:null}); } },
     channel:function(){ var c={on:function(){return c;},subscribe:function(){return c;},unsubscribe:function(){}}; return c; }, removeChannel:function(){},
     storage:{ from:function(){ return { upload:function(){return Promise.resolve({data:null,error:null});}, download:function(){return Promise.resolve({data:null,error:null});} }; } },
@@ -42,7 +46,15 @@
       getUser:function(){ return Promise.resolve({data:{user:session?user:null},error:null}); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
       signOut:function(){ window.__fakeLog.push('auth:signOut'); return Promise.resolve({error:null}); },
-      signInWithOtp:function(o){ window.__fakeLog.push('auth:otp'); return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },
+      signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
+        if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
+        return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },
+      // Stage 5b: '123456' signs in (SIGNED_IN fires before the call resolves, as Supabase does); anything else is refused.
+      verifyOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:verify:'+o.token);
+        if (F.verifyThrows) return Promise.reject(new TypeError('Failed to fetch'));
+        if (o.token!=='123456') return Promise.resolve({data:{session:null,user:null},error:{message:'Token has expired or is invalid',code:'otp_expired',status:403,name:'AuthApiError'}});
+        session=signedSession(); listeners.forEach(function(cb){ try{ cb('SIGNED_IN',session); }catch(e){} });
+        return new Promise(function(r){ setTimeout(function(){ r({data:{session:session,user:user},error:null}); }, F.verifyDelay||0); }); },
       signInWithPassword:function(){ return Promise.resolve({data:{},error:{message:'Invalid login credentials'}}); },
       refreshSession:function(){ return Promise.resolve({data:{session:session},error:null}); },
       exchangeCodeForSession:function(){ return Promise.resolve({data:{session:session},error:null}); },

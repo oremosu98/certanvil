@@ -633,7 +633,7 @@
       </div>
 
       <h3 class="auth-title" id="auth-modal-title">Sign in to CertAnvil</h3>
-      <p class="auth-sub">Drop your email and we'll send a one-click sign-in link. New here? Same form; your account gets created automatically.</p>
+      <p class="auth-sub">Drop your email and we'll send a 6-digit code. New here? Same form; your account gets created automatically.</p>
 
       <div class="migration-banner" id="migration-banner" hidden>
         <div class="migration-banner-body" id="migration-stats"></div>
@@ -662,28 +662,20 @@
       </button>
 
       <div class="auth-foot">
-        By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy</a>. We use magic links because <em>passwords break, and password resets break more</em>.
+        By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy</a>. We sign you in with a one-time code because <em>passwords break, and password resets break more</em>.
       </div>
     </div>
 
     <div class="auth-state auth-state-sent" id="auth-sent" hidden>
-      <h3 class="auth-sent-title">Check your inbox</h3>
-      <p class="auth-sent-sub">We sent a 6-digit sign-in code to:</p>
-      <span class="auth-sent-email-pill" id="auth-sent-email">you@email.com</span>
-
+      <div class="auth-sent-icon" aria-hidden="true"></div>
+      <h3 class="auth-sent-title">Check your email</h3>
+      <p class="auth-sent-sub">We sent a 6-digit code to <b id="auth-sent-email">you@email.com</b>.</p>
       <form class="auth-otp-form" id="auth-otp-form" novalidate>
-        <div class="auth-input-group">
-          <label class="auth-label" for="auth-otp">Enter the code from your email</label>
-          <input type="text" class="auth-otp-input" id="auth-otp" inputmode="numeric" pattern="[0-9]{6,8}" maxlength="8" autocomplete="one-time-code" placeholder="00000000" spellcheck="false" required>
-        </div>
-        <div class="auth-error" id="auth-otp-error" role="alert" hidden></div>
-        <button type="submit" class="auth-cta" id="auth-otp-submit" disabled>Verify code →</button>
+        <div class="auth-otp-boxes" id="auth-otp-boxes" role="group" aria-label="6-digit code"><input inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" aria-label="Digit 1"><input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 2"><input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 3"><input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 4"><input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 5"><input inputmode="numeric" pattern="[0-9]*" maxlength="1" aria-label="Digit 6"></div>
+        <p class="auth-error auth-otp-msg" id="auth-otp-error" role="alert" hidden></p>
+        <button type="button" class="auth-cta" id="auth-otp-new" hidden>Send a new code</button>
       </form>
-
-      <p class="auth-sent-sub auth-sent-sub-hint">The code expires in 1 hour. Check spam if you don't see it within 30 seconds. <em>The email also includes a sign-in link as a fallback.</em></p>
-      <p class="auth-sent-resend">
-        Didn't get it? <a href="#" id="auth-resend">Resend</a> · <a href="#" id="auth-different-email">Use different email</a>
-      </p>
+      <p class="auth-sent-resend"><span id="auth-resend-wait">You can resend in <b>60s</b>.</span><a href="#" id="auth-resend" hidden>Resend code</a> · <a href="#" id="auth-different-email">Wrong email? Change it</a></p>
     </div>
   </div>
 </div>

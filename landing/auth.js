@@ -9,7 +9,7 @@
 //   1. Logged-out topbar — "Sign in" CTA visible
 //   2. Sign-in modal default — email field + "Continue with email"
 //   3. Sign-in modal with anonymous-progress migration banner
-//   4. Magic-link-sent confirmation — "Check your inbox · simi@..."
+//   4. The code screen (Stage 5b): "Check your email", six boxes, resend after 60s
 //   5. Logged-in topbar — account pill replaces "Sign in"
 //   6. Account dropdown — email + tier + sign-out
 //
@@ -118,7 +118,7 @@
   // render (Sign-in button stayed visible despite the user being signed
   // in). Now: only modal-specific wiring is gated; the topbar pill + auth
   // state machine still runs everywhere. See helper guards below
-  // (openAuthModal, closeAuthModal, sendMagicLink, form-submit handler)
+  // (openAuthModal, closeAuthModal, sendCode, form-submit handler)
   // each gated independently with `if (!authModal) return;` etc.
   var hasModalMarkup = !!(authModal && authForm);
   if (!hasModalMarkup) {
@@ -271,8 +271,8 @@
     }
     if (authSubText) {
       authSubText.textContent = isPlaytest
-        ? 'Tester credentials only. The rest of the world uses magic links.'
-        : "Drop your email and we'll send a one-click sign-in link. New here? Same form; your account gets created automatically.";
+        ? 'Tester credentials only. The rest of the world uses an email code.'
+        : "Drop your email and we'll send a 6-digit code. New here? Same form; your account gets created automatically.";
     }
     if (authSubmit) {
       authSubmit.textContent = isPlaytest ? 'Sign in →' : 'Continue with email →';
@@ -342,9 +342,10 @@
   // routes the user here for sign-in, it appends `?action=signin&return=<url>`.
   // We honour that in two places:
   //   (a) On page load — if already signed in, bounce immediately.
-  //   (b) When sending the magic link — set `emailRedirectTo` to the return
-  //       URL so the session lands on the right origin (critical for preview
-  //       URLs on vercel.app, which don't share cookies with .certanvil.com).
+  //   (b) After the code signs in (Stage 5b) — the SIGNED_IN listener below
+  //       replaces to the return URL. The session is the .certanvil.com cookie,
+  //       so a vercel.app preview return does not carry it (previews sign in
+  //       on their own origin).
   // Stored in module scope so both the URL handler and the magic-link sender
   // can see the same value across renders.
   var pendingReturnUrl = null;
@@ -383,23 +384,12 @@
     } catch (e) { return false; }
   }
 
-  // ── Magic-link send ─────────────────────────────────────────────────────
-  function buildRedirectUrl() {
-    // If the cert app passed a `return=` URL, point the magic link there
-    // so the session ends up on the cert app's origin. Otherwise the link
-    // arrives back at the same page (standard landing-side sign-in flow).
-    if (pendingReturnUrl) return pendingReturnUrl;
-    return window.location.origin + window.location.pathname;
-  }
-
-  function sendMagicLink(email) {
-    return supabase.auth.signInWithOtp({
-      email: email,
-      options: {
-        emailRedirectTo: buildRedirectUrl(),
-        // shouldCreateUser: true is the default. Same form for sign-up + sign-in.
-      },
-    });
+  // ── Code send (Stage 5b, 28 Oct 2026) ───────────────────────────────────
+  // The email carries a 6-digit code and no link (a link and its code share one token, and mail scanners such as
+  // Microsoft Safe Links burn it on arrival). No redirect URL: the user types the code here, the session lands on
+  // .certanvil.com, and the SIGNED_IN listener below returns them to `return=`. shouldCreateUser defaults to true.
+  function sendCode(email) {
+    return supabase.auth.signInWithOtp({ email: email });
   }
 
   // ── Topbar render: signed-in vs signed-out ──────────────────────────────
@@ -809,58 +799,105 @@
 
       // ── Default magic-link flow ──
       if (authSubmit) {
-        setSubmitBusy(authSubmit, 'Sending…', 'Sending your link');
+        setSubmitBusy(authSubmit, 'Sending…', 'Sending your code');
       }
 
-      sendMagicLink(email)
+      sendCode(email)
         .then(function (result) {
           if (authSubmit) {
             clearSubmitBusy(authSubmit, 'Continue with email →');
           }
-          if (result && result.error) {
-            var msg = result.error.message || 'Could not send magic link. Try again in a moment.';
-            showAuthError(msg);
-            return;
-          }
+          var err = result && result.error;
+          // Sent too soon: a code is already on its way, so show the code screen with the wait line.
+          if (err && err.status === 429) { showAuthSent(email); codeStart(email, CODE_COPY.rate); return; }
+          if (err) { showAuthError(err.status === 0 || err.name === 'AuthRetryableFetchError' ? CODE_COPY.net : CODE_COPY.refused); return; }
           showAuthSent(email);
+          codeStart(email);
         })
         .catch(function (err) {
           if (authSubmit) {
             clearSubmitBusy(authSubmit, 'Continue with email →');
           }
-          console.error('[certanvil-auth] sendMagicLink threw:', err);
+          console.error('[certanvil-auth] sendCode threw:', err);
           showAuthError('Network error. Check your connection and try again.');
         });
     });
   }
 
-  // Resend magic link (re-uses the email shown in the confirmation pill)
-  if (authResend) {
-    authResend.addEventListener('click', function (e) {
-      e.preventDefault();
-      var email = authSentEmail ? authSentEmail.textContent : '';
-      if (!email) return;
-      var origText = authResend.textContent;
-      authResend.textContent = 'Sending…';
-      sendMagicLink(email)
-        .then(function (result) {
-          if (result && result.error) {
-            authResend.textContent = 'Try again';
-          } else {
-            authResend.textContent = 'Sent ✓';
-          }
-          setTimeout(function () {
-            if (authResend) authResend.textContent = origText || 'Resend';
-          }, 3000);
-        })
-        .catch(function () {
-          authResend.textContent = 'Try again';
-          setTimeout(function () {
-            if (authResend) authResend.textContent = origText || 'Resend';
-          }, 3000);
-        });
-    });
+  // ── The code screen (Stage 5b): six boxes, auto-submit, 60s resend, wrong vs expired by the send time ──
+  var CODE_TTL = 900000, RESEND_MS = 60000;
+  var CODE_COPY = {
+    wrong: "That code isn't right. Check it and try again.", expired: 'That code has expired.',
+    rate: 'Give it a minute, then ask for a new code.', net: "Couldn't reach CertAnvil. Check your connection and try again.",
+    sent: 'We sent a new code.', checking: 'Checking…',
+    refused: "We couldn't send a code just now. Try again in a minute."
+  };
+  var authOtpBoxes = document.getElementById('auth-otp-boxes');
+  var authOtpError = document.getElementById('auth-otp-error');
+  var authOtpNew = document.getElementById('auth-otp-new');
+  var authResendWait = document.getElementById('auth-resend-wait');
+  var codeEmail = null, codeTimer = null, codeBusy = false;
+  window.__authCodeSentAt = 0;   // the last successful send (tests move it back to age a code)
+  function otpBoxes() { return authOtpBoxes ? [].slice.call(authOtpBoxes.querySelectorAll('input')) : []; }
+  function otpSay(text) {
+    if (!authOtpError) return;
+    authOtpError.textContent = text || '';
+    if (text) authOtpError.removeAttribute('hidden'); else authOtpError.setAttribute('hidden', '');
   }
+  function otpClear() { otpBoxes().forEach(function (i) { i.value = ''; }); var f = otpBoxes()[0]; if (f) { try { f.focus(); } catch (e) {} } }
+  function resendTick() {
+    var left = Math.max(0, Math.ceil((RESEND_MS - (Date.now() - window.__authCodeSentAt)) / 1000));
+    if (authResendWait) { authResendWait.hidden = left === 0; authResendWait.innerHTML = 'You can resend in <b>' + left + 's</b>. '; }
+    if (authResend) authResend.hidden = left > 0;
+    if (left === 0) clearInterval(codeTimer);
+  }
+  function codeStart(email, msg) {
+    codeEmail = email;
+    if (!msg) window.__authCodeSentAt = Date.now();
+    else if (!window.__authCodeSentAt) window.__authCodeSentAt = Date.now();
+    if (authOtpNew) authOtpNew.hidden = true;
+    otpBoxes().forEach(function (i) { i.value = ''; });
+    otpSay(msg || '');
+    clearInterval(codeTimer); resendTick(); codeTimer = setInterval(resendTick, 1000);
+    setTimeout(function () { var f = otpBoxes()[0]; if (f && otpBoxes().indexOf(document.activeElement) < 0) { try { f.focus(); } catch (e) {} } }, 120);
+  }
+  function codeResend() {
+    if (!codeEmail) return;
+    sendCode(codeEmail).then(function (result) {
+      var err = result && result.error;
+      if (err && err.status === 429) { otpSay(CODE_COPY.rate); return; }
+      if (err) { otpSay(err.status === 0 || err.name === 'AuthRetryableFetchError' ? CODE_COPY.net : CODE_COPY.refused); return; }
+      codeStart(codeEmail); otpSay(CODE_COPY.sent);
+    }).catch(function () { otpSay(CODE_COPY.net); });
+  }
+  function codeSubmit() {
+    var token = otpBoxes().map(function (i) { return i.value; }).join(''), email = codeEmail;
+    if (codeBusy || token.length < 6 || !email) return;
+    codeBusy = true; otpSay(CODE_COPY.checking);
+    supabase.auth.verifyOtp({ email: email, token: token, type: 'email' }).then(function (result) {
+      codeBusy = false;
+      var err = result && result.error;
+      if (!err) { otpSay(''); return; }   // the SIGNED_IN listener closes the modal and follows return=
+      if (err.status === 0 || err.name === 'AuthRetryableFetchError') { otpSay(CODE_COPY.net); return; }
+      // Supabase answers wrong and expired alike: the time since the last send decides.
+      if (Date.now() - window.__authCodeSentAt > CODE_TTL) { otpSay(CODE_COPY.expired); if (authOtpNew) authOtpNew.hidden = false; if (authResendWait) authResendWait.hidden = true; if (authResend) authResend.hidden = true; return; }
+      otpSay(CODE_COPY.wrong); otpClear();
+    }).catch(function (e) { codeBusy = false; console.error('[certanvil-auth] verifyOtp threw:', e); otpSay(CODE_COPY.net); });
+  }
+  otpBoxes().forEach(function (inp, k, ins) {
+    inp.addEventListener('input', function () {
+      var d = inp.value.replace(/\D/g, '');
+      if (d.length > 1) { inp.value = ''; d.slice(0, 6 - k).split('').forEach(function (c, j) { ins[k + j].value = c; }); }   // paste / one-time-code autofill
+      else inp.value = d;
+      var next = ins.filter(function (i) { return !i.value; })[0];
+      if (next) { if (inp.value) next.focus(); } else { ins[5].focus(); codeSubmit(); }
+    });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Backspace' && !inp.value && k > 0) { ins[k - 1].value = ''; ins[k - 1].focus(); } });
+  });
+  var authOtpForm = document.getElementById('auth-otp-form');
+  if (authOtpForm) authOtpForm.addEventListener('submit', function (e) { e.preventDefault(); codeSubmit(); });
+  if (authOtpNew) authOtpNew.addEventListener('click', codeResend);
+  if (authResend) authResend.addEventListener('click', function (e) { e.preventDefault(); codeResend(); });
 
   // Use a different email — go back to the form
   if (authDifferentEmail) {
@@ -980,8 +1017,7 @@
 
           // Anonymous + ?action=signin: pop the modal automatically so the
           // user doesn't have to find the button. The pendingReturnUrl is
-          // already stashed above, and sendMagicLink will use it as
-          // emailRedirectTo when the form is submitted.
+          // already stashed above; the SIGNED_IN listener follows it after the code.
           if (signinRequested) {
             // Defer one tick so the modal-open animation doesn't race the
             // initial paint.
@@ -1002,9 +1038,7 @@
       // Phase C′: if the user just landed via magic link AND we have a
       // pending return URL (from `?action=signin&return=…`), bounce them
       // there now. This handles the case where the magic link came back to
-      // landing (rather than directly to the return URL — happens if the
-      // emailRedirectTo wasn't set, e.g. on a fresh page load with action=signin
-      // but no submit happened locally).
+      // landing, and (Stage 5b) every code sign-in, which never leaves this page.
       if (pendingReturnUrl) {
         var ret = pendingReturnUrl;
         pendingReturnUrl = null;
