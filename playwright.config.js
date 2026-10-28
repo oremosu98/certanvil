@@ -19,7 +19,7 @@ module.exports = defineConfig({
     // Tests must pass here before any deploy.
     // v7.8.2: cert-app projects ignore landing.spec.js — that targets the
     // landing/ codebase on :3132 via the `landing` project below.
-    { name: 'chromium', testIgnore: [/landing\.spec\.js/, /visual\.spec\.js/], use: { browserName: 'chromium' } },
+    { name: 'chromium', testIgnore: [/landing(-[\w-]+)?\.spec\.js/, /visual\.spec\.js/], use: { browserName: 'chromium' } },
 
     // v4.99.29 (iOS Plan Phase 3) — WebKit + Mobile Safari projects.
     // These run iOS Safari behavior locally (~95% match — Playwright's
@@ -37,14 +37,14 @@ module.exports = defineConfig({
     // Once stable, promote to CI by removing the --project=chromium
     // filter in .github/workflows/ci.yml. See IOS_TESTING.md for the
     // full recipe + iPhone-via-USB Develop-menu setup.
-    { name: 'webkit', testIgnore: [/landing\.spec\.js/, /visual\.spec\.js/], use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile-safari', testIgnore: [/landing\.spec\.js/, /visual\.spec\.js/], use: { ...devices['iPhone 14'] } },
+    { name: 'webkit', testIgnore: [/landing(-[\w-]+)?\.spec\.js/, /visual\.spec\.js/], use: { ...devices['Desktop Safari'] } },
+    { name: 'mobile-safari', testIgnore: [/landing(-[\w-]+)?\.spec\.js/, /visual\.spec\.js/], use: { ...devices['iPhone 14'] } },
 
     // v7.8.2: landing-site E2E project. Runs ONLY landing.spec.js against the
     // landing/ codebase served on :3132 (second webServer below). CI gates on
     // it via `--project=landing` alongside chromium. Guards the cd8c784
     // cert-coverage contract (8 canonical exams, no phantom certs).
-    { name: 'landing', testMatch: /landing\.spec\.js/, testIgnore: /visual\.spec\.js/, use: { browserName: 'chromium', baseURL: 'http://localhost:3132' } },
+    { name: 'landing', testMatch: /landing(-[\w-]+)?\.spec\.js/, testIgnore: /visual\.spec\.js/, use: { browserName: 'chromium', baseURL: 'http://localhost:3132' } },
 
     // Visual regression project — screenshot baselines via toHaveScreenshot().
     // LOCAL ONLY, never in CI: baselines are generated on macOS (this dev

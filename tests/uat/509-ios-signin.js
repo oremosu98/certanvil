@@ -60,6 +60,15 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       /meta\(opts\.profile\)\.freeCertId \|\| local \|\| null/.test(cl) && /localStorage\.getItem\(STORAGE\.FREE_CERT_ID\)/.test(cl));
     const bv = src.indexOf('IS._beforeVerify = function'), sub = src.indexOf('onStatusChange(', bv), call = src.indexOf('_beforeVerify ? IS._beforeVerify() : null'), vo = src.indexOf('verifyOtp(', call);
     test('the hydrate listener goes on before verifyOtp is called', bv > 0 && sub > bv && call > 0 && vo > call);
+    // Task 5: the website signs in with the same code
+    const la = read('landing/auth.js');
+    const PAGES = ['index.html', 'pricing.html', 'account.html', 'analytics.html', 'manage-subscription.html'];
+    const linkCopy = PAGES.filter((f) => /Check your inbox|sign-in link|one-click|magic link/i.test(read('landing/' + f)));
+    test('no landing sign-in surface still talks about links (privacy/terms legal text is the founder\'s)', linkCopy.length === 0);
+    test('landing/auth.js sends a code with no emailRedirectTo and verifies type email',
+      la.indexOf('emailRedirectTo') < 0 && /signInWithOtp\(\{ email: email \}\)/.test(la) && /verifyOtp\(\{ email: email, token: token, type: 'email' \}\)/.test(la));
+    const sentIds = (h) => ['auth-sent', 'auth-sent-email', 'auth-otp-boxes', 'auth-otp-error', 'auth-otp-new', 'auth-resend', 'auth-resend-wait', 'auth-different-email'].every((id) => h.indexOf('id="' + id + '"') >= 0);
+    test('index.html and pricing.html share the code screen\'s ids', sentIds(read('landing/index.html')) && sentIds(read('landing/pricing.html')));
     const html = read('index.html');
     test('index.html loads features/ios-signin.js and has the #ios-signin host',
       /<script defer src="features\/ios-signin\.js"><\/script>/.test(html) && /<div id="ios-signin"[^>]*hidden><\/div>/.test(html));
