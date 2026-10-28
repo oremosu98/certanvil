@@ -31,7 +31,7 @@
     ['select','eq','neq','in','order','limit','gte','lte','gt','lt','is','filter','match','range','not','or','contains','ilike','like'].forEach(function(m){ p[m]=function(){ if(m==='select' && st.op==='select'){} return p; }; });
     p.update=function(v){st.op='update';st.val=v;return p;}; p.insert=function(v){st.op='insert';st.val=v;return p;}; p.upsert=function(v){st.op='upsert';st.val=v;return p;}; p.delete=function(){st.op='delete';return p;};
     p.single=function(){st.single=true;return p;}; p.maybeSingle=function(){st.single=true;return p;};
-    p.then=function(a,b){ return Promise.resolve(resolve(st)).then(a,b); }; p.catch=function(b){ return p.then(null,b); }; p.finally=function(f){ return p.then(function(v){f();return v;}); };
+    p.then=function(a,b){ var d=(st.table==='profiles' && st.op==='select' && F.profileDelay && session) ? F.profileDelay : 0; return new Promise(function(r){ setTimeout(function(){ r(resolve(st)); }, d); }).then(a,b); }; p.catch=function(b){ return p.then(null,b); }; p.finally=function(f){ return p.then(function(v){f();return v;}); };
     return p;
   }
   var listeners=[];

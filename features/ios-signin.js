@@ -49,7 +49,7 @@
       + '<p class="isi-msg err" id="isi-msg" role="alert">' + e(m && m.msg) + '</p>'
       + '<p class="isi-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 7l9 6 9-6"></path></svg>We\'ll email you a 6-digit code.</p>'
       + '</div>'
-      + '<p class="isi-legal">By continuing you agree to our <a href="https://certanvil.com/terms">Terms</a> and <a href="https://certanvil.com/privacy">Privacy Policy</a>.</p>'
+      + '<p class="isi-legal">By continuing you agree to our <a href="https://certanvil.com/terms" data-ext>Terms</a> and <a href="https://certanvil.com/privacy" data-ext>Privacy Policy</a>.</p>'
       + '</div>';
   }
 
@@ -100,11 +100,21 @@
 
   function hostEl() { return document.getElementById('ios-signin'); }
   function sb() { return window.certanvilSupabase || null; }
-  function readPending() {
-    try { var p = JSON.parse(sessionStorage.getItem(PENDING) || 'null'); return p && p.email && Date.now() - p.sentAt < CODE_TTL ? p : null; } catch (_) { return null; }
+  // The Supabase chain loads after window.load, so an early tap waits for it (up to 10s) instead of doing nothing.
+  function withClient(fn, fail) {
+    var t0 = Date.now();
+    (function tryNow() {
+      var c = sb(); if (c) { fn(c); return; }
+      if (Date.now() - t0 < 10000) setTimeout(tryNow, 200); else fail();
+    })();
   }
-  function writePending(email, sentAt) { try { sessionStorage.setItem(PENDING, JSON.stringify({ email: email, sentAt: sentAt })); } catch (_) {} }
-  function clearPending() { try { sessionStorage.removeItem(PENDING); } catch (_) {} }
+  function readPending() {
+    try { var p = JSON.parse(localStorage.getItem(PENDING) || 'null'); return p && p.email && Date.now() - p.sentAt < CODE_TTL ? p : null; } catch (_) { return null; }
+  }
+  // localStorage, not sessionStorage: iOS can end the app while the user reads Mail, and a cold launch starts a
+  // new session (native-shell's ca_launched relies on that). The 15-minute TTL bounds it.
+  function writePending(email, sentAt) { try { localStorage.setItem(PENDING, JSON.stringify({ email: email, sentAt: sentAt })); } catch (_) {} }
+  function clearPending() { try { localStorage.removeItem(PENDING); } catch (_) {} }
   function sentAt() { var p = readPending(); return p ? p.sentAt : 0; }
   function leftSec() { return Math.max(0, Math.ceil((RESEND_MS - (Date.now() - sentAt())) / 1000)); }
   function isNet(err) { return !err || err.status === 0 || err.name === 'AuthRetryableFetchError' || err instanceof TypeError; }
@@ -155,7 +165,9 @@
   // Send a code (no emailRedirectTo: the email carries the code only). The code screen opens on success and on a
   // refusal for sending too soon (a code is already on its way); a network failure stays on the email.
   function send(email, resend) {
-    var c = sb(); if (!c || busy) return;
+    if (busy) return;
+    if (!sb()) { busy = true; withClient(function () { busy = false; send(email, resend); }, function () { busy = false; if (st.view === 'code') say(COPY.net, 'err'); else show('signin', { msg: COPY.net }); }); return; }
+    var c = sb();
     busy = true; st.email = email; st.typo = null;
     var keepSent = readPending() && readPending().email === email ? sentAt() : 0;
     Promise.resolve().then(function () { return c.auth.signInWithOtp({ email: email }); }).then(function (r) {
@@ -174,7 +186,8 @@
     say(COPY.wrong, 'err'); boxes().forEach(function (i) { i.value = ''; }); boxes()[0].focus();
   }
   function submit() {
-    var c = sb(), token = code(); if (!c || busy || token.length < 6) return;
+    var c = sb(), token = code(); if (busy || token.length < 6) return;
+    if (!c) { busy = true; say(COPY.checking); withClient(function () { busy = false; submit(); }, function () { busy = false; say(COPY.net, 'err'); }); return; }
     busy = true;
     var b = document.getElementById('isi-boxes'); if (b) b.classList.add('checking'); say(COPY.checking);
     var y = IS._beforeVerify ? IS._beforeVerify() : null;   // Task 3: set the phone's pick aside first
@@ -224,7 +237,7 @@
     var cs = window.cloudStore;
     y.done = new Promise(function (res) {
       if (!cs || typeof cs.onStatusChange !== 'function') { res('none'); return; }
-      var seen = false, t = setTimeout(function () { res('timeout'); }, 15000);
+      var seen = false, t = setTimeout(function () { res('timeout'); }, IS._hydrateWait || 15000);
       y.off = cs.onStatusChange(function (status) {
         if (status === 'syncing') seen = true;
         else if (status === 'idle' && seen) { clearTimeout(t); res('ok'); }
@@ -241,14 +254,19 @@
   function certName(id) { return NAMES[id] || id; }
   function here() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || window.CURRENT_CERT || 'netplus'; }
   function hasData() { try { var h = JSON.parse(localStorage.getItem((typeof STORAGE === 'object' && STORAGE.HISTORY) || '') || '[]'); return Array.isArray(h) && h.length > 0; } catch (_) { return false; } }
-  function open(id) { var F = window.iosFirstRun; close(); if (F && F.goToCert) F.goToCert(id); }
+  function open(id) { var F = window.iosFirstRun; document.documentElement.classList.add('isi-switching'); close(); if (F && F.goToCert) F.goToCert(id); }
   IS._afterVerify = function (y) {
     var N = window.caNative;
     return (y && y.done ? y.done : Promise.resolve('none')).then(function (r) {
-      if (r !== 'ok' || !N) { restore(y); close(); return; }   // no hydrate, no decision: nothing is written
-      return N.chosen().then(function (c) {
+      // No decision without a finished hydrate. Put the phone's pick back only when no hydrate can follow ('error'
+      // never flushes; 'none' has no cloud store): after a 'timeout' the hydrate may still land and flush every local
+      // key, so the key stays absent and that hydrate fills the account's value instead.
+      if (r !== 'ok' || !N) { if (r !== 'timeout') restore(y); close(); return; }
+      return Promise.all([N.chosen(), knownTier()]).then(function (a) {
+        var c = a[0], tier = a[1];
+        if (!tier) { close(); return; }   // spec §Pro: until the tier is known nothing changes
         var X = localFree(), Y = (y && y.local) || c.lockedCert || null;
-        var tier = window._quotaState && window._quotaState.tier, pro = tier === 'pro';
+        var pro = tier === 'pro';
         if (pro) {   // Pro: no lock; the account's cert, else this phone's choice
           return N.forget('lockedCert').then(function () {
             var to = X || c.chosenCert || (hasData() ? here() : null);
@@ -276,6 +294,17 @@
       });
     }).catch(function () { restore(y); close(); });
   };
+  // The quota RPC (the tier) runs alongside the hydrate; wait for it briefly rather than guess.
+  function knownTier() {
+    return new Promise(function (res) {
+      var t0 = Date.now();
+      (function look() {
+        var q = window._quotaState, t = q && q.tier;
+        if (t) { res(t); return; }
+        if (Date.now() - t0 < (IS._tierWait || 3000)) setTimeout(look, 150); else res(null);
+      })();
+    });
+  }
   function pickerNow(tier) { var F = window.iosFirstRun; if (F && F.picker) F.picker({ tier: tier, native: true }); }
   function showToast() {
     var N = window.caNative; if (!N || !N.take) return;

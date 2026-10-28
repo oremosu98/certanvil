@@ -118,7 +118,7 @@
   document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a) return;
-    var ext = external(a.href);
+    var ext = external(a.href) || (a.hasAttribute('data-ext') ? a.href : null);   // data-ext: our page, but in the sheet (no way back otherwise)
     if (ext) { e.preventDefault(); openSheet(ext); return; }
     if (a.target === '_blank') { e.preventDefault(); location.href = a.href; }   // our own site: same webview
   }, true);

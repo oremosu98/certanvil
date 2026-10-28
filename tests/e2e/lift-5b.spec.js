@@ -1,6 +1,6 @@
 // Stage 5b: sign in by email code inside the iOS app (features/ios-signin.js). Native paths run with the app's UA
 // suffix and the stubbed Capacitor bridge from lift-5a; Supabase is tests/fixtures/fake-supabase.js ('123456' signs in).
-// Time moves by shifting the kept send time (sessionStorage ca_signin_pending.sentAt), never a fake clock.
+// Time moves by shifting the kept send time (localStorage ca_signin_pending.sentAt), never a fake clock.
 const { test, expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
@@ -21,7 +21,7 @@ function stubScript() {
           remove: ({ key }) => Promise.resolve().then(() => { const o = read(); delete o[key]; write(o); })
         },
         Haptics: { impact: () => Promise.resolve(), notification: () => Promise.resolve() },
-        Browser: { open: () => Promise.resolve() },
+        Browser: { open: (o) => { (window.__browser = window.__browser || []).push(o.url); return Promise.resolve(); } },
         StatusBar: { setStyle: () => Promise.resolve() }
       }
     };
@@ -57,7 +57,7 @@ async function toCode(page, email) {
 }
 async function typeCode(page, code) { await page.locator('#isi-boxes input').first().focus(); await page.keyboard.type(code, { delay: 30 }); }
 async function shiftSent(page, seconds) {
-  await page.evaluate((s) => { const p = JSON.parse(sessionStorage.getItem('ca_signin_pending')); p.sentAt -= s * 1000; sessionStorage.setItem('ca_signin_pending', JSON.stringify(p)); }, seconds);
+  await page.evaluate((s) => { const p = JSON.parse(localStorage.getItem('ca_signin_pending')); p.sentAt -= s * 1000; localStorage.setItem('ca_signin_pending', JSON.stringify(p)); }, seconds);
 }
 
 test.describe('Stage 5b: sign in with a code inside the app', () => {
@@ -333,5 +333,76 @@ test.describe('Stage 5b on the website', () => {
     const req = page.waitForRequest(/^https:\/\/certanvil\.com\/\?action=signin&return=/);
     await page.evaluate(() => window.iosSignIn.go('home'));
     await req;
+  });
+});
+
+// ── Final review fixes (fable, 28 Oct) ──
+test.describe('Stage 5b final review fixes', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('I1: a hydrate slower than the wait never puts the phone\'s pick back (the late flush would push it over the account\'s)', async ({ page }) => {
+    await boot(page, { prefs: SECPLUS, query: '?cert=secplus' });
+    const r = await page.evaluate(async () => {
+      localStorage.removeItem('nplus_freeCertId');
+      await window.iosSignIn._afterVerify({ local: 'secplus', done: Promise.resolve('timeout') });
+      const timeout = localStorage.getItem('nplus_freeCertId');
+      await window.iosSignIn._afterVerify({ local: 'secplus', done: Promise.resolve('error') });
+      return { timeout, error: localStorage.getItem('nplus_freeCertId') };
+    });
+    expect(r).toEqual({ timeout: null, error: 'secplus' });   // a failed hydrate never flushes, so only then is it safe to put back
+  });
+
+  test('I2: a pending code survives a relaunch (session storage gone)', async ({ page }) => {
+    await boot(page);
+    await toCode(page, 'sam@example.test');
+    await page.evaluate(() => sessionStorage.clear());
+    await page.reload(); await page.waitForLoadState('load'); await page.waitForTimeout(900);
+    await expect(host(page)).toContainText('We sent a 6-digit code to sam@example.test.');
+  });
+
+  test('I3: the cert-lock wall never shows during the account switch', async ({ page }) => {
+    await page.addInitScript(() => {
+      new MutationObserver(() => { if (document.querySelector('.cl-wall')) localStorage.setItem('__wallSeen', location.search || '/'); })
+        .observe(document.documentElement, { childList: true, subtree: true });
+    });
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'free' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await signIn(page);
+    await page.waitForURL(/cert=netplus/, { timeout: 10000 });
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(() => localStorage.getItem('__wallSeen'))).toBeNull();
+  });
+
+  test('I4: Terms and Privacy open in the in-app browser sheet', async ({ page }) => {
+    await boot(page);
+    await openSignIn(page);
+    const before = page.url();
+    await page.click('#ios-signin .isi-legal a >> text=Terms');
+    await page.click('#ios-signin .isi-legal a >> text=Privacy Policy');
+    expect(await page.evaluate(() => window.__browser)).toEqual(['https://certanvil.com/terms', 'https://certanvil.com/privacy']);
+    expect(page.url()).toBe(before);
+  });
+
+  test('I5: an unknown tier changes nothing (no switch, no toast)', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(window, '_quotaState', { configurable: true, get: () => null, set: () => {} }); });
+    await boot(page, { fake: { accountFreeCert: 'netplus', tier: 'pro' }, prefs: SECPLUS, query: '?cert=secplus' });
+    await page.evaluate(() => { window.iosSignIn._tierWait = 800; });
+    await signIn(page);
+    await page.waitForTimeout(3000);
+    expect(await prefs(page)).toMatchObject(SECPLUS);
+    expect(await page.evaluate(() => window.CURRENT_CERT)).toBe('secplus');
+    await expect(host(page)).toBeHidden();
+  });
+
+  test('I6: Continue before Supabase has loaded still sends once it arrives', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.route('**/lib/supabase.js*', async (r) => { await new Promise((x) => setTimeout(x, 3000)); r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB={"signedOut":true,"metaOverride":{"tier":"free"}};' + FAKE }); });
+    await page.addInitScript(() => { localStorage.setItem('__prefs', JSON.stringify({ chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' })); localStorage.setItem('nplus_a2hs_dismissed', '1'); });
+    await page.addInitScript(stubScript());
+    await page.goto('/');
+    await page.waitForFunction(() => window.iosSignIn && window.iosSignIn.open);
+    await page.evaluate(() => window.iosSignIn.open({ from: 'settings' }));
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(host(page)).toContainText('We sent a 6-digit code to sam@example.test.', { timeout: 10000 });
   });
 });
