@@ -54,17 +54,29 @@ sign-in by email code), 5c (Sign in with Apple + Google), 5d (local reminders).
   check (June's "Did you mean you@gmail.com?" with **Yes, fix it** / **No, keep mine**) runs on Continue for the
   common domains.
 - **Code** (new): "Check your email", "We sent a 6-digit code to <b>email</b>.", six boxes (`inputmode=numeric`,
-  `autocomplete=one-time-code`, paste fills all six), auto-submit on the sixth digit, **Resend code** after a 30s
-  countdown ("You can resend in 30s."), **Wrong email? Change it**. Errors: "That code isn't right. Check it
+  `autocomplete=one-time-code`, paste fills all six), auto-submit on the sixth digit, **Resend code** after a 60s
+  countdown ("You can resend in 60s."; Supabase refuses a second code to the same address within about 60s, and
+  that refusal reads "Give it a minute, then ask for a new code."), **Wrong email? Change it**. The pending email
+  is kept in `sessionStorage` for 15 minutes, so a relaunch or a cert change while the code screen is open
+  returns to it. Errors: "That code isn't right. Check it
   and try again." (boxes clear, focus first); "That code has expired." with **Send a new code**; a network
   failure keeps the code and shows "Couldn't reach CertAnvil. Check your connection and try again."
 - **After sign-in** (`verifyOtp({ email, token, type: 'email' })` on the existing `window.certanvilSupabase`):
-  auth-state's own `SIGNED_IN` path hydrates as today. Then the lock rule:
-  - account has `freeCertId` X and the phone's `lockedCert` is Y ≠ X → Preferences take X, the app opens X, and
-    a one-time toast says "Your free exam on this account is <X>, so we've opened it.";
-  - account has no `freeCertId` and the phone has `lockedCert` Y → save Y to the account (`persistFreeCert`,
-    then flush, now that the user is signed in);
-  - Pro account → clear `lockedCert`.
+  auth-state's own `SIGNED_IN` path hydrates as today. The lock rule needs the account's value to survive that
+  hydrate, which only fills keys the device does not already have and then flushes every local key up:
+  - **Before `verifyOtp`** the sign-in host sets the phone's pick aside (`Y` = local `STORAGE.FREE_CERT_ID`,
+    else Preferences `lockedCert`) and removes the local `STORAGE.FREE_CERT_ID`, so the hydrate fills the
+    account's value `X` (from `profiles.metadata.freeCertId`) and the flush cannot overwrite it with Y.
+  - **After the first cloud hydrate completes** (cloud-store's status listener), the account's value is read
+    from local `STORAGE.FREE_CERT_ID`:
+    - X set and Y set, X ≠ Y → Preferences `lockedCert`/`chosenCert`/`lastCertHost` take X, the app opens X, and
+      a one-time toast says "Your free exam on this account is <X>, so we've opened it.";
+    - X set, no Y (or X = Y) → Preferences take X; nothing to say;
+    - no X, Y set → `persistFreeCert(Y)` (it flushes now that the user is signed in) and Preferences keep Y;
+    - neither → the picker, once the account's cert is unknown.
+  - **Pro:** the tier comes from `window._quotaState.tier` (the quota RPC), not the router's role stub. When it
+    reads `pro`, Preferences `lockedCert` is cleared; until it is known nothing changes (signed-in users are never
+    walled by the shell, so a pending `lockedCert` has no effect while signed in).
   Sign in from the welcome (nothing chosen yet) skips the picker and opens the account's cert (`freeCertId`,
   else the last cert with data, else the picker).
 - **Sign in elsewhere in the app** (Home, Settings' account card, Custom quiz, the diagnostic) opens the same
@@ -75,9 +87,16 @@ sign-in by email code), 5c (Sign in with Apple + Google), 5d (local reminders).
 above, the modal's styling), then returns to `return=` as today. `landing/pricing.html`'s orphan code markup is
 removed. Google stays "Soon" until 5c.
 
-**Supabase (founder, right after the ship):** OTP length 6, expiry 900s; the Magic Link and Confirm signup
-email templates show `{{ .Token }}` only. Until then the emails carry link and code and both flows keep
-working (the new screens accept the code from today's email; 8 digits are accepted until the flip).
+**Supabase (founder), in two steps:**
+1. **Before the preview test:** OTP length 6, expiry 900s. Today's link flow is unaffected (the link in the
+   email keeps working), and the new screens get the 6-digit code they expect.
+2. **Right after the ship:** the Magic Link and Confirm signup email templates show `{{ .Token }}` only (no
+   link). New addresses get Confirm signup (`shouldCreateUser` defaults to true); `type: 'email'` verifies both.
+
+**Signed-in lock (a 5a gap, fixed here):** `auth-state.js` loads the profile without `metadata`, so
+`lib/cert-lock.js` `check()` never sees an account's `freeCertId` and cannot wall a signed-in free user on the
+wrong cert. `check()` falls back to local `STORAGE.FREE_CERT_ID`, which `_onbRoute` sees after the hydrate
+(fast lane; `auth-state.js` untouched).
 
 ## Architecture
 
@@ -89,9 +108,14 @@ working (the new screens accept the code from today's email; 8 digits are accept
   `persistFreeCert` + `cloudStore.flush`).
 - Landing: `landing/auth.js` (code send + verify, reusing `hold-otp`'s verify handler), `landing/index.html`
   (sent-state markup), `landing/pricing.html` (orphan removal).
-- **Shipped as a PR** (auth surface): Vercel preview + a real sign-in on the preview with a test inbox before
-  merge. Tests: UAT for pure views; Playwright with the fake Supabase extended to answer `signInWithOtp` /
-  `verifyOtp` (right, wrong, expired); the real app in the simulator signed in against the preview.
+- **Shipped as a PR** (auth surface). What the Vercel preview proves: the website's code flow and the app's
+  sign-in screens and errors, signed in for real with the founder's test address. A preview runs on
+  `*.vercel.app`, so the session is per-origin (no `.certanvil.com` cookie) and it talks to the production
+  Supabase project (the test sign-in creates a real production user). What is checked after merge, on prod in
+  the simulator: the cross-subdomain lock rule (account X vs phone Y) and relaunch. Tests: UAT for pure views;
+  Playwright with `tests/fixtures/fake-supabase.js` extended with `signInWithOtp`, `verifyOtp` (right, wrong,
+  expired, rate-limited) that sets the session and emits `SIGNED_IN` to listeners, plus a metadata
+  `freeCertId` the hydrate fills.
 
 ## Process
 
@@ -106,8 +130,9 @@ working (the new screens accept the code from today's email; 8 digits are accept
 - App: a fresh install shows the welcome; Get started → picker → day-0 as in 5a; Sign in → email → code →
   signed in, the account's cert open; a wrong code, an expired code and a resend all behave as above; Sign in
   from Home or Settings never leaves the app.
-- Lock: account X vs phone Y → X opens with the one-time toast; account none + phone Y → the account now has Y;
-  Pro → no lock.
+- Lock: account X vs phone Y → X opens with the one-time toast and the account still holds X after the
+  flush; account none + phone Y → the account now has Y; Pro → no lock. A signed-in free user on the wrong
+  cert gets the cert-lock wall.
 - Website: Continue → code screen → signed in and returned; no "Check your inbox" link copy remains.
 - After the founder's flip: the email shows a 6-digit code and no link; an Outlook address signs in.
 
@@ -127,6 +152,9 @@ working (the new screens accept the code from today's email; 8 digits are accept
 - **This phone's lock wins:** quietly undoes a lock confirmed on the web.
 - **Apple in 5b:** blocks the email fix on Apple credentials; drawn now, switched on in 5c.
 - **Editing auth-state.js to host sign-in:** not needed; the existing client and SIGNED_IN path suffice.
+- **Running the lock rule after the hydrate as-is:** the hydrate keeps the phone's local value and flushes it
+  over the account's, which is the rejected "phone wins".
+- **Accepting 8-digit codes until the flip:** six boxes cannot hold them; the length change goes first instead.
 
 ## Related
 [[2026-10-27-ios-stage5a-native-shell-design]] · [[2026-10-19-ios-launch-june-design]] · [[2026-06-07-free-tier-cert-lock-design]] · [[Mobile MOC]]
