@@ -4439,7 +4439,7 @@ function _showSignInPrompt(anchorEl, message) {
     if (pill) { pill.click(); return; }
     // Fallback: navigate directly to the certanvil.com sign-in page.
     var here = window.location.origin + window.location.pathname;
-    window.location.href = 'https://certanvil.com/?action=signin&return=' + encodeURIComponent(here);
+    if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('home'); return; } window.location.href = 'https://certanvil.com/?action=signin&return=' + encodeURIComponent(here);   // 5b: stays in the iOS app
   });
   if (anchorEl && anchorEl.parentNode) {
     anchorEl.insertAdjacentElement('afterend', box);

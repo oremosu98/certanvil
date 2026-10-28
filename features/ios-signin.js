@@ -296,11 +296,23 @@
   };
   IS.welcome = function () { st.from = 'welcome'; st.typo = null; show('welcome'); };
   IS.close = close;
+  // Every sign-in in the app comes here: the in-app screens in the iOS app, today's certanvil.com page on the web.
+  IS.go = function (from) {
+    if (window.CA_NATIVE) { IS.open({ from: from }); return; }
+    var u = typeof window.buildSignInUrl === 'function' ? window.buildSignInUrl() : null;
+    if (u) window.location.href = u;
+  };
   IS._pending = readPending;
 
   function boot() {
     var h = hostEl(); if (!h || !window.CA_NATIVE) return;
     h.addEventListener('click', onTap);
+    // The topbar pill and any certanvil.com sign-in link open the in-app screens instead of Safari.
+    document.addEventListener('click', function (e) {
+      var a = e.target && e.target.closest ? e.target.closest('a.topbar-signin-pill, a[href^="https://certanvil.com/?action=signin"]') : null;
+      if (!a) return;
+      e.preventDefault(); e.stopPropagation(); IS.open({ from: 'home' });
+    }, true);
     showToast();   // the one-time "we've opened your account's exam" note, on the page it opened
     var p = readPending();
     if (p) { st.from = 'welcome'; st.email = p.email; show('code'); }   // a relaunch or cert change mid-code comes back here

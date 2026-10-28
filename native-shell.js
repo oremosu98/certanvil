@@ -89,6 +89,9 @@
     var here = window.CURRENT_CERT || null;
     window.caNative.chosen().then(function (c) {
       if (!c.chosenCert) {
+        // Stage 5b: June's welcome first (Get started opens the picker); a pending code screen keeps its place.
+        var S = window.iosSignIn;
+        if (S && S.welcome) { if (!(S._pending && S._pending())) S.welcome(); return; }
         if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
         return;
       }

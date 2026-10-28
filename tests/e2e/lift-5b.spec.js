@@ -274,3 +274,64 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
   });
 });
 const prefs = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__prefs') || '{}'));
+
+// ── Task 4: June's welcome first, and sign-in never leaves the app ──
+test.describe('Stage 5b: first launch and every sign-in in the app', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('a fresh install shows the welcome', async ({ page }) => {
+    await boot(page, { prefs: {} });
+    await expect(host(page)).toContainText("Know when you're ready");
+    await expect(host(page)).toContainText('Sign in with email');
+    await expect(page.locator('#onb-firstrun')).toBeHidden();
+  });
+
+  test('Get started opens the picker and both reminders as in 5a', async ({ page }) => {
+    await boot(page, { prefs: {} });
+    await page.click('#ios-signin [data-act="start"]');
+    await expect(host(page)).toBeHidden();
+    await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
+    await page.click('#onb-firstrun [data-act="lock"]');
+    await page.click('#ist-sheet [data-act="lock-go"]');
+    await expect(page.locator('#ist-sheet')).toContainText('One last check');
+  });
+
+  test('Already have an account opens sign-in, and back returns to the welcome', async ({ page }) => {
+    await boot(page, { prefs: {} });
+    await page.click('#ios-signin [data-act="signin"]');
+    await expect(host(page)).toContainText('Sign in or create your account');
+    await page.click('#ios-signin [data-act="back"]');
+    await expect(host(page)).toContainText("Know when you're ready");
+  });
+
+  for (const [name, run] of [
+    ['Home', async (page) => { await page.click('#ios-home [data-act="signin"]'); }],
+    ['Settings', async (page) => { await page.evaluate(() => window.iosSettings._on.signin()); }],
+    ['Custom quiz', async (page) => { await page.evaluate(() => window.iosSignIn.go('custom')); }],
+    ['the topbar pill', async (page) => { await page.evaluate(() => { const a = document.querySelector('a.topbar-signin-pill'); a.click(); }); }],
+    ['the app.js fallback', async (page) => { await page.evaluate(() => window.iosSignIn.go('home')); }]
+  ]) {
+    test(`Sign in from ${name} stays in the app`, async ({ page }) => {
+      await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });   // past day-0, so Home is drawn
+      const before = page.url();
+      await run(page);
+      await expect(host(page)).toContainText('Sign in or create your account');
+      expect(page.url()).toBe(before);
+    });
+  }
+});
+
+test.describe('Stage 5b on the website', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('the website keeps the certanvil.com sign-in link', async ({ page }) => {
+    await boot(page, { native: false, prefs: {} });
+    await expect(page.locator('#ios-signin')).toBeHidden();
+    expect(await page.evaluate(() => window.CA_NATIVE)).toBe(false);
+    const href = await page.evaluate(() => { const a = document.querySelector('a.topbar-signin-pill'); return a && a.href; });
+    expect(href).toMatch(/^https:\/\/certanvil\.com\/\?action=signin&return=/);
+    await page.route('https://certanvil.com/**', (r) => r.fulfill({ contentType: 'text/html', body: '<p>landing</p>' }));
+    const req = page.waitForRequest(/^https:\/\/certanvil\.com\/\?action=signin&return=/);
+    await page.evaluate(() => window.iosSignIn.go('home'));
+    await req;
+  });
+});

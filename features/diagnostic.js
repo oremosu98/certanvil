@@ -877,7 +877,7 @@
           if (typeof _showSignInPrompt === 'function') {
             _showSignInPrompt(host, 'Save your Pass Plan free: 15 questions a day, no password, no card.');
           } else if (typeof window.buildSignInUrl === 'function') {
-            window.location.href = window.buildSignInUrl();
+            if (window.iosSignIn && window.iosSignIn.go) window.iosSignIn.go('diagnostic'); else window.location.href = window.buildSignInUrl();
           }
         } else if (act === 'dq-pro-teaser') {
           _showProWaitlist();

@@ -260,7 +260,7 @@
   window.iosSettings = window.iosSettings || {};   // the namespace exists before the handlers attach to it
   var ON = window.iosSettings._on = window.iosSettings._on || {};
   ON.theme = function () { _call('toggleTheme'); _repaint(); };
-  ON.signin = function () { var u = _call('buildSignInUrl'); if (u) window.location.href = u; };
+  ON.signin = function () { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('settings'); return; } var u = _call('buildSignInUrl'); if (u) window.location.href = u; };
   // Sign out is today's account-menu link: it uploads first and only clears this device once the cloud has it all.
   ON.signout = function () {
     var l = document.getElementById('topbar-signout-link');
