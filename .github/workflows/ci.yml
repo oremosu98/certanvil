@@ -10,7 +10,7 @@ jobs:
   # ── JOB 1: Run all tests ──
   test:
     name: UAT + Playwright
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     steps:
       - uses: actions/checkout@v6
 
@@ -50,7 +50,7 @@ jobs:
   tech-debt:
     name: Tech Debt Monitor
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     permissions:
       contents: read
       issues: write
@@ -115,7 +115,7 @@ jobs:
     name: Lighthouse Audit
     needs: test
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     permissions:
       contents: read
       pull-requests: write
@@ -183,7 +183,7 @@ jobs:
     name: Deploy to Production (Network+)
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -206,7 +206,7 @@ jobs:
     name: Deploy Preview
     needs: test
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     permissions:
       contents: read
       pull-requests: write
