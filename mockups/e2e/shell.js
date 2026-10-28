@@ -133,6 +133,11 @@
     'st-restore'        : 'cert-ios-settings.html?v=restore',
     'st-clear-bank'     : 'cert-ios-settings.html?v=clear-bank',
     'st-delete'         : 'cert-ios-settings.html?v=delete',
+    'st-methods'        : 'cert-ios-settings.html?v=methods',          // Stage 5c (28 Oct): Sign-in methods
+    'st-methods-added'  : 'cert-ios-settings.html?v=methods-added',
+    'st-methods-exists' : 'cert-ios-settings.html?v=methods-exists',
+    'st-delete-apple'   : 'cert-ios-settings.html?v=delete-apple',     // Stage 5c: Apple confirms before deletion
+    'signin-provider-error': 'onboarding-signup-signin.html?v=provider-error',
     'log-result'        : 'cert-ios-log-result.html',
     'review'            : 'cert-ios-review.html',
     'review-answers'    : 'cert-ios-review-answers.html',
@@ -168,6 +173,7 @@
     'native-welcome'   : [ {sel:'.btn-primary', to:'free-cert-picker'},
                            {sel:'.btn-link',    to:'signup-signin'} ],
     'signup-signin'    : [ {sel:'.btn-apple',   to:'home'},          // 5c switches Apple on
+                           {sel:'#googleBtn',   to:'home'},          // 5c: Google, like Apple, lands on the account's cert
                            {sel:'#goCode',      to:'email-code'} ],  // the mockup clicks it once the typo check passes
     'email-code'       : [ {sel:'#goHome',      to:'home'},
                            {sel:'#changeEmail', to:'pop'} ],
@@ -275,6 +281,7 @@
   ['exam-paused','exam-end','exam-leave','exam-pbq'].forEach(function (k) { NAV[k] = NAV['exam']; });
   NAV['exam-results-toast'] = NAV['exam-results'];
   NAV['signin-typo'] = NAV['signup-signin'];
+  NAV['signin-provider-error'] = NAV['signup-signin'];
   NAV['lock-switched'] = NAV['home'];
   ['code-wrong','code-expired','resend-wait','code-offline'].forEach(function (k) { NAV[k] = NAV['email-code']; });
   ['drills-free','drills-empty','drills-dl'].forEach(function (k) { NAV[k] = NAV['drills']; });
@@ -713,6 +720,13 @@
       s5Btn.textContent = '5a ' + (s5I + 1) + '/' + LIFT_5A.length + ' \u203a';
     });
     // Lift C (26 Oct): first run on phones
+    // Stage 5c (28 Oct): Sign in with Apple and Google
+    var LIFT_5C = ['native-welcome','signup-signin','signin-provider-error','st-methods','st-methods-added','st-methods-exists','st-delete-apple'];
+    var s5cBtn = document.getElementById('hud-5c'), s5cI = -1;
+    if (s5cBtn) s5cBtn.addEventListener('click', function () {
+      s5cI = (s5cI + 1) % LIFT_5C.length; resetTo(LIFT_5C[s5cI]);
+      s5cBtn.textContent = '5c ' + (s5cI + 1) + '/' + LIFT_5C.length + ' \u203a';
+    });
     // Stage 5b (28 Oct): sign in by email code
     var LIFT_5B = ['native-welcome','signup-signin','signin-typo','email-code','code-wrong','code-expired','resend-wait','code-offline','lock-switched'];
     var s5bBtn = document.getElementById('hud-5b'), s5bI = -1;

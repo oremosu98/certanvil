@@ -563,6 +563,37 @@
   .st-body > .reveal:nth-child(n+7) { animation-delay: .25s; }   /* reading order: everything past the sixth item rises on the last beat, never before the ones above it */
   .st-still .reveal { animation: none !important; }   /* a redraw after a state change does not replay the entrance */
   @media (prefers-reduced-motion: reduce) { .st-sheet, .st-sheet.open { transition: none; } }
+  /* Stage 5c (28 Oct): Sign-in methods + Apple's confirm sheet */
+  .st-meths { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .st-meth { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 54px; }
+  .st-meth + .st-meth { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-meth .mi { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--ink); background: color-mix(in oklab, var(--ink) 8%, transparent); flex: 0 0 auto; }
+  .st-meth .mi .i { width: 17px; height: 17px; }
+  svg.i.g path { stroke: none; }   /* Google's G keeps its own fills */
+  .st-meth .mn { flex: 1; font: 650 14px/1.25 Inter, sans-serif; color: var(--ink); }
+  .st-meth .mn span { display: block; font: 500 12px/1.3 Inter, sans-serif; color: var(--muted); margin-top: 2px; }
+  .st-add { flex: 0 0 auto; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border)); background: transparent; color: var(--accent-deep); font: 700 13px/1 Inter, sans-serif; cursor: pointer; transition: transform .15s var(--ease); }
+  .st-add:active { transform: scale(0.97); }
+  .st-conn { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; font: 650 12.5px/1 Inter, sans-serif; color: var(--pass); }
+  .st-conn .i { width: 14px; height: 14px; } .st-conn.on { color: var(--muted); }
+  .st-sheet > p.st-merr { margin: 12px 0 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--miss); }
+  .st-sheet > p.st-mnote { margin: 12px 0 2px; font: 500 12px/1.45 Inter, sans-serif; color: var(--muted); }
+  .apple-note { display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in oklab, var(--ink) 6%, transparent); font: 500 12.5px/1.45 Inter, sans-serif; color: var(--ink-soft); }
+  .apple-note .i { width: 15px; height: 15px; flex: 0 0 auto; margin-top: 1px; color: var(--ink); }
+  .sys-apple { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 12; border-radius: 26px; padding: 16px 18px 18px; background: #f2f2f7; color: #111; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    box-shadow: 0 -10px 40px -10px rgba(0,0,0,.45); transform: translateY(110%); transition: transform .3s cubic-bezier(0.32,0.72,0,1); }
+  .sys-apple.open { transform: none; }
+  [data-theme="dark"] .sys-apple { background: #1c1c1e; color: #f2f2f7; }
+  .sa-head { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 15px; }
+  .sa-logo .i { width: 16px; height: 16px; } .sa-x { margin-left: auto; width: 28px; height: 28px; border-radius: 999px; border: 0; background: rgba(120,120,128,.16); color: inherit; font-size: 18px; line-height: 1; cursor: pointer; }
+  .sa-app { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 16px 0 6px; font-size: 15px; }
+  .sa-icon { width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; background: #1b1b22; color: #ffb454; font: 800 18px/1 Inter, sans-serif; }
+  .sa-q { text-align: center; font-size: 14px; line-height: 1.4; margin: 6px 6px 14px; opacity: .8; }
+  .sa-go { width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: #000; color: #fff; font: 600 16px/1 -apple-system, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+  [data-theme="dark"] .sa-go { background: #fff; color: #000; }
+  .sa-go .i { width: 17px; height: 17px; } .sa-foot { text-align: center; font-size: 12px; opacity: .55; margin: 10px 0 0; }
+  @media (prefers-reduced-motion: reduce) { .sys-apple { transition: none; } }
+
 </style>
 </head>
 <body>
@@ -590,6 +621,9 @@
     (function () {
       var qv = new URLSearchParams(location.search).get('v'), v = qv || 'free';
       var I = {
+        key: '<circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3M15 8l2 2"></path>',
+        apple: '<path fill="currentColor" stroke="none" d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"></path>',
+        mail: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 7l9 6 9-6"></path>',
         back: '<path d="M15 6l-6 6 6 6"/>', right: '<path d="M9 6l6 6-6 6"/>', left: '<path d="M15 6l-6 6 6 6"/>',
         lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', check: '<path d="M20 6L9 17l-5-5"/>',
         sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -638,6 +672,7 @@
           h += '<div class="st-group reveal"><div class="st-row static"><span class="st-av">S</span><span class="rl" style="font-weight:650">simi@example.com<span>Signed in</span></span>'
             + '<span class="st-plan' + (pro ? ' pro">Pro' : '">Free') + '</span></div>'
             + row('swap', 'Cert', null, 'Network+', { id: 'stCert' })
+            + row('key', 'Sign-in methods', null, v === 'methods-added' ? 'Email, Apple' : 'Email', { id: 'stMethods' })   // Stage 5c
             + (pro ? '' : row('star', 'Go Pro', 'Unlimited questions and every cert', null, { id: 'goProRow', cls: 'pro' }))
             + '</div>';
         }
@@ -688,7 +723,11 @@
         // ── sheets ──
         h += '<div class="scrim" id="scrim"></div>'
           + '<div class="lsheet" id="lsheet" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="ls-grip"></div><h3 id="lsT"></h3><p id="lsP"></p><button class="ls-stay" type="button" id="lsStay"></button><button class="ls-go" type="button" id="lsGo"></button></div>'
-          + '<div class="st-sheet" id="istSheet" role="dialog" aria-modal="true" aria-labelledby="istT"></div>';
+          + '<div class="st-sheet" id="istSheet" role="dialog" aria-modal="true" aria-labelledby="istT"></div>'
+          + '<div class="sys-apple" id="sysApple" role="dialog" aria-label="Sign in with Apple"><div class="sa-head"><span class="sa-logo">' + ic('apple') + '</span>Sign in with Apple<button class="sa-x" type="button" id="saX" aria-label="Cancel">\u00d7</button></div>'
+          + '<div class="sa-app"><span class="sa-icon">CA</span><b>CertAnvil</b></div>'
+          + '<p class="sa-q">Continue using your Apple ID \u201csimi@icloud.com\u201d with CertAnvil?</p>'
+          + '<button class="sa-go" type="button" id="saGo">' + ic('apple') + 'Continue</button><p class="sa-foot">Confirm with Face ID</p></div>';
         $('app').innerHTML = h;
         $('screen').classList.toggle('st-still', !!still);
         wire();
@@ -712,15 +751,38 @@
           + '<button class="st-pri" type="button">Save 14 December</button><button class="st-clear" type="button">Remove exam date</button>';
         openScrim(); $('istSheet').classList.add('open');
       }
+      // Stage 5c (28 Oct): Sign-in methods (Email always on; Add attaches Apple or Google to this account)
+      function methodsSheet(state) {
+        var apple = state === 'added';
+        function m(icon, name, sub, right) {
+          return '<div class="st-meth"><span class="mi">' + icon + '</span><span class="mn">' + name + (sub ? '<span>' + sub + '</span>' : '') + '</span>' + right + '</div>';
+        }
+        var on = '<span class="st-conn">' + ic('check') + 'Connected</span>';
+        $('istSheet').innerHTML = '<div class="ls-grip"></div><h3 id="istT">Sign-in methods</h3><p>Any of these opens this account.</p><div class="st-meths">'
+          + m(ic('mail'), 'Email code', 'simi@example.com', '<span class="st-conn on">On</span>')
+          + m('<svg class="i" viewBox="0 0 24 24" aria-hidden="true">' + I.apple + '</svg>', 'Apple', apple ? 'Hide My Email' : null, apple ? on : '<button class="st-add" type="button" id="addApple">Add</button>')
+          + m('<svg class="i g" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg>', 'Google', null, '<button class="st-add" type="button" id="addGoogle">Add</button>')
+          + '</div>'
+          + (state === 'exists' ? '<p class="st-merr" role="alert">That Apple ID already has its own CertAnvil account. To use it, sign out and continue with Apple.</p>' : '')
+          + '<p class="st-mnote">Signed up with Apple\u2019s Hide My Email? Add Apple here so both open this account.</p>';
+        openScrim(); $('istSheet').classList.add('open');
+        if ($('addApple')) $('addApple').addEventListener('click', function () { methodsSheet('added'); });
+      }
+      // Stage 5c: Apple's own confirm sheet (system UI, neutral and faithful), shown before an Apple account is deleted
+      function appleSheet() {
+        $('sysApple').classList.add('open');
+      }
       function deleteSheet() {
         $('istSheet').innerHTML = '<div class="ls-grip"></div><div class="st-del"><h3 id="istT">Delete your account?</h3><p style="margin:0 0 8px;font:500 12.5px/1.45 Inter,sans-serif;color:var(--ink-soft)">This is what goes after the 7-day grace window:</p>'
           + '<div class="dr">Progress and history<span>Quiz history, streaks and readiness scores</span></div><div class="dr">Review queue<span>Saved cards and their schedule</span></div><div class="dr">Your profile<span>Email, exam date and cert results</span></div>'
           + '<p class="grace">Sign in any time in the next <b>7 days</b> to cancel. After that it’s gone for good.</p>'
+          + (v === 'delete-apple' ? '<p class="apple-note">' + ic('apple') + '<span>You sign in with Apple, so Apple will ask you to confirm. That also stops CertAnvil using your Apple ID.</span></p>' : '')
           + '<label for="delEmail">Type <b>simi@example.com</b> to confirm</label><input id="delEmail" type="email" placeholder="Your email" autocomplete="off" />'
           + '<button class="st-danger-btn" type="button" id="setDeleteAcct" disabled>Delete account</button><button class="st-clear" type="button" id="delCancel">Cancel</button></div>';
         openScrim(); $('istSheet').classList.add('open');
         $('delEmail').addEventListener('input', function () { $('setDeleteAcct').disabled = $('delEmail').value.trim().toLowerCase() !== 'simi@example.com'; });
         $('delCancel').addEventListener('click', closeAll);
+        if (v === 'delete-apple') $('setDeleteAcct').addEventListener('click', appleSheet);
       }
       var ASK = {
         diag: ['Take the baseline diagnostic?', '20 questions in one sitting, about 30 minutes. If you stop partway, it won’t be saved.', 'Start', 'Not now'],
@@ -742,6 +804,9 @@
         $('stClear').addEventListener('click', function () { ask.apply(null, ASK.clear); });
         $('stImport').addEventListener('click', function () { ask.apply(null, ASK.import); });
         if ($('stDelete')) $('stDelete').addEventListener('click', deleteSheet);
+        if ($('stMethods')) $('stMethods').addEventListener('click', function () { methodsSheet(v === 'methods-added' ? 'added' : ''); });
+        if ($('saX')) $('saX').addEventListener('click', function () { $('sysApple').classList.remove('open'); });
+        if ($('saGo')) $('saGo').addEventListener('click', function () { $('sysApple').classList.remove('open'); closeAll(); });
         [].slice.call(document.querySelectorAll('.cseg')).forEach(function (g) { [].slice.call(g.children).forEach(function (b) { b.addEventListener('click', function () { if (b.classList.contains('locked')) return; [].slice.call(g.children).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); }); }); });
         [].slice.call(document.querySelectorAll('.st-sw')).forEach(function (s) { s.addEventListener('click', function () { s.setAttribute('aria-pressed', String(s.getAttribute('aria-pressed') !== 'true')); }); });
       }
@@ -754,7 +819,11 @@
         diag: 'Start the diagnostic asks in the in-app sheet, not a browser pop-up.',
         restore: 'Tapping a backup asks before restoring. Today is snapshotted first, as it is now.',
         'clear-bank': 'Clear wrong answers asks in the in-app sheet first.',
-        delete: 'Delete account: today’s terms, the 7-day grace window, type your email to confirm.'
+        delete: 'Delete account: today’s terms, the 7-day grace window, type your email to confirm.',
+        methods: 'Stage 5c: Sign-in methods lists Email (always on), Apple and Google with Add. Add opens the native sheet.',
+        'methods-added': 'Stage 5c: Apple added from Settings (a Hide My Email user keeps one account).',
+        'methods-exists': 'Stage 5c: that Apple ID already has its own CertAnvil account; nothing is merged.',
+        'delete-apple': 'Stage 5c: an Apple account confirms with Apple before deletion; the server revokes CertAnvil\u2019s access.'
       };
       $('hint').textContent = HINT[v] || '';
       setTimeout(function () {
@@ -764,6 +833,10 @@
         if (v === 'restore') ask.apply(null, ASK.restore);
         if (v === 'clear-bank') ask.apply(null, ASK.clear);
         if (v === 'delete') deleteSheet();
+        if (v === 'methods') methodsSheet('');
+        if (v === 'methods-added') methodsSheet('added');
+        if (v === 'methods-exists') methodsSheet('exists');
+        if (v === 'delete-apple') { deleteSheet(); $('delEmail').value = 'simi@example.com'; $('setDeleteAcct').disabled = false; setTimeout(appleSheet, 500); }
       }, 40);
       // theme
       var html = document.documentElement, label = $('themeLabel'), icon = $('themeIcon');
