@@ -290,3 +290,75 @@ test.describe('Stage 5c: Sign-in methods off the app', () => {
     await expect(page.locator('#ios-settings [data-act="methods"]')).toHaveCount(0);
   });
 });
+
+// ── Task 4: Apple confirms before an Apple account is deleted ──
+async function routeRevoke(page, result) {
+  const seen = [];
+  await page.route('https://certanvil.com/api/apple-revoke', async (r) => {
+    seen.push({ body: r.request().postDataJSON(), auth: r.request().headers()['authorization'], at: Date.now() });
+    await r.fulfill({ status: result === 'ok' ? 200 : 409, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ result }) });
+  });
+  return seen;
+}
+async function deleteAccount(page) {
+  await openSettings(page);
+  await page.click('#ios-settings [data-act="delete"]');
+  await expect(page.locator('#delete-account-modal')).toBeVisible();
+  await page.fill('#dla-email', 'simi.test@example.test');
+  await page.click('#dla-confirm');
+}
+const profileUpdateAt = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__fakeFreeCertWrites') || '[]').length);
+
+test.describe('Stage 5c: deleting an Apple account', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('deleting an Apple account asks Apple first, then schedules deletion', async ({ page }) => {
+    const seen = await routeRevoke(page, 'ok');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'ok', authorizationCode: 'code-del' }) } });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(seen.length).toBe(1);
+    expect(seen[0].body).toEqual({ code: 'code-del' });
+    expect(seen[0].auth).toBe('Bearer fake.jwt.token');
+    expect((await socialCalls(page)).map((c) => c.provider)).toEqual(['apple']);
+  });
+
+  test('cancelling Apple still schedules deletion', async ({ page }) => {
+    const seen = await routeRevoke(page, 'ok');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'cancel' }) } });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(seen.length).toBe(0);
+  });
+
+  test('a refused revoke still schedules deletion', async ({ page }) => {
+    await routeRevoke(page, 'sub-mismatch');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+  });
+
+  test('a non-Apple account deletes without the Apple step', async ({ page }) => {
+    const seen = await routeRevoke(page, 'ok');
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(seen.length).toBe(0);
+    expect(await socialCalls(page)).toEqual([]);
+  });
+
+  test('the delete sheet shows the Apple note only for Apple accounts in the app', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="delete"]');
+    await expect(page.locator('#delete-account-modal')).toContainText('You sign in with Apple, so Apple will ask you to confirm. That also stops CertAnvil using your Apple ID.');
+  });
+
+  test('no Apple note for an email-only account', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="delete"]');
+    await expect(page.locator('#delete-account-modal')).toBeVisible();
+    await expect(page.locator('#delete-account-modal')).not.toContainText('You sign in with Apple');
+  });
+});

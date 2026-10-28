@@ -401,6 +401,30 @@
     });
   };
 
+  // Stage 5c: before an Apple-linked account is deleted, Apple confirms once more and landing/api/apple-revoke.js
+  // revokes CertAnvil's grant (Apple's rule). Never rejects; the deletion goes ahead whatever this returns.
+  var REVOKE_URL = 'https://certanvil.com/api/apple-revoke';
+  function logRevoke(out) { try { if (typeof logError === 'function') logError('apple-revoke', 'apple-revoke: ' + out); } catch (_) {} }
+  IS._appleRevoke = function () {
+    var N = window.caNative, c = sb();
+    if (!N || !N.social || !c) return Promise.resolve('failed');
+    var timeout = new Promise(function (r) { setTimeout(function () { r('failed'); }, 15000); });
+    var run = N.social('apple', {}).then(function (r) {
+      if (!r.authorizationCode) return 'failed';
+      return c.auth.getSession().then(function (s) {
+        var t = s && s.data && s.data.session && s.data.session.access_token;
+        return fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ code: r.authorizationCode }) })
+          .then(function (res) { return res.json().then(function (j) { return (j && j.result) || 'failed'; }, function () { return 'failed'; }); }, function () { return 'failed'; });
+      });
+    }, function (e) { var out = e && e.cancelled ? 'cancelled' : 'failed'; logRevoke(out); return out; });
+    return Promise.race([run, timeout]).catch(function () { return 'failed'; });
+  };
+  // true when this signed-in user has an Apple identity and the app can ask Apple
+  IS._hasApple = function (user) {
+    var N = window.caNative;
+    return !!(window.CA_NATIVE && N && N.socialReady && N.socialReady('apple') && user && (user.identities || []).some(function (i) { return i && i.provider === 'apple'; }));
+  };
+
   // from: 'welcome' | 'home' | 'settings' | 'custom' | 'diagnostic'
   IS.open = function (o) {
     st.from = (o && o.from) || 'home'; st.typo = null;

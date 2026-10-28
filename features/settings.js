@@ -901,6 +901,7 @@
             '<div class="dlpb-row"><span class="dlpb-row-tx"><b>Your profile</b><span>Email, exam date, and cert results</span></span></div>' +
           '</div>' +
           '<p class="dlpb-pro-line">Sign in any time in the next <b>7 days</b> to cancel. After that it&rsquo;s gone for good.</p>' +
+          (window.iosSignIn && window.iosSignIn._hasApple && window.iosSignIn._hasApple(session.user) ? '<p class="dlpb-pro-line dla-apple">You sign in with Apple, so Apple will ask you to confirm. That also stops CertAnvil using your Apple ID.</p>' : '') +   // Stage 5c
           '<div class="dla-confirm">' +
             '<label for="dla-email">Type <b>' + email.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</b> to confirm</label>' +
             '<input id="dla-email" type="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Your email" />' +
