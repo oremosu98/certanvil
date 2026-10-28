@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CertAnvil · Sign up / Sign in concept</title>
+<title>CertAnvil · Sign in or create your account</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -70,13 +70,6 @@
   .auth-sub { font-size: 14px; color: var(--ink-soft); margin: 9px 0 0; }
   .auth-sub b { color: var(--accent-deep); font-weight: 650; }
 
-  .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 22px 0 20px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 13px; }
-  .seg { border: none; background: transparent; border-radius: 9px; padding: 10px; cursor: pointer; font: 650 13.5px/1 Inter, sans-serif; color: var(--muted); transition: color .2s, background .2s, box-shadow .2s; }
-  .seg.active { color: var(--ink); background: var(--bg); box-shadow: 0 1px 3px -1px color-mix(in oklab, var(--ink) 20%, transparent); }
-
-  .view { display: none; flex-direction: column; gap: 12px; }
-  .view.active { display: flex; }
-
   .btn-apple { display: inline-flex; align-items: center; justify-content: center; gap: 9px; width: 100%; border: none; border-radius: 14px; padding: 15px; cursor: pointer;
     background: var(--apple-bg); color: var(--apple-fg); font: 600 15px/1 Inter, sans-serif; transition: transform .15s var(--ease), filter .2s; }
   .btn-apple svg { width: 17px; height: 17px; fill: currentColor; margin-top: -1px; }
@@ -96,8 +89,25 @@
   .field input { border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 13px 14px; font: 500 15px/1 Inter, sans-serif; transition: border-color .18s, box-shadow .18s; }
   .field input::placeholder { color: var(--muted); }
   .field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent); }
-  .link-forgot { align-self: flex-end; background: none; border: none; cursor: pointer; font: 600 12.5px/1 Inter, sans-serif; color: var(--accent-bright); padding: 2px; margin-top: -2px; }
+  .link-forgot-unused { align-self: flex-end; background: none; border: none; cursor: pointer; font: 600 12.5px/1 Inter, sans-serif; color: var(--accent-bright); padding: 2px; margin-top: -2px; }
 
+  .form { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+  .code-line { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 2px 0 0; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--muted); }
+  .code-line svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .field input[aria-invalid="true"] { border-color: color-mix(in oklab, var(--accent) 60%, var(--border)); }
+  /* Email typo check (June's "Did you mean", inline under the field) */
+  .typo { display: none; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--accent) 35%, var(--border));
+    background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+  .typo.open { display: flex; }
+  @media (prefers-reduced-motion: no-preference) { .typo.open { animation: rise .32s var(--ease) both; } }
+  .typo-q { margin: 0; font: 600 14px/1.35 Inter, sans-serif; color: var(--ink); }
+  .typo-q b { color: var(--accent-deep); font-weight: 700; }
+  .typo-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .typo-row button { padding: 12px; font-size: 14px; border-radius: 12px; }
+  /* harness annotation, not app UI: marks what 5c switches on */
+  .tag-5c { position: absolute; top: -8px; right: 10px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .08em; padding: 4px 6px; border-radius: 6px;
+    color: oklch(0.45 0.16 250); background: oklch(0.95 0.04 250); border: 1px dashed oklch(0.6 0.14 250); }
+  .apple-wrap { position: relative; }
   .legal { margin-top: auto; padding-top: 22px; text-align: center; font-size: 11px; line-height: 1.5; color: var(--muted); }
   .legal a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
 
@@ -105,7 +115,7 @@
   @media (prefers-reduced-motion: no-preference) {
     .reveal { opacity: 0; transform: translateY(10px); animation: rise .5s var(--ease) forwards; }
     .topbar { animation-delay: .02s; } .auth-title { animation-delay: .08s; } .auth-sub { animation-delay: .12s; }
-    .segmented { animation-delay: .16s; } .view.active { animation-delay: .2s; } .legal { animation-delay: .26s; }
+    .form { animation-delay: .16s; } .legal { animation-delay: .26s; }
     @keyframes rise { to { opacity: 1; transform: none; } }
   }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
@@ -116,9 +126,9 @@
   <div class="stage">
     <div class="stage-head">
       <div>
-        <p class="stage-eyebrow">App Store · account</p>
-        <h1 class="stage-title">Sign up / Sign in</h1>
-        <p class="stage-sub">What a user hits after tapping Get started on the welcome. Account-first, free, no payment here. Toggle Create / Sign in below.</p>
+        <p class="stage-eyebrow">Stage 5b · sign in by email code</p>
+        <h1 class="stage-title">Sign in or create your account</h1>
+        <p class="stage-sub">Stage 5b (28 Oct): one screen for both, because a code signs in and creates the account alike. Apple is drawn now and switched on in 5c. <code>?v=typo</code> opens the typo check.</p>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light and dark">
         <svg id="themeIcon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
@@ -152,36 +162,36 @@
             </div>
 
             <div class="auth-body">
-              <h1 class="auth-title reveal" id="authTitle">Create your account</h1>
-              <p class="auth-sub reveal" id="authSub"><b>Free to start.</b> No card needed.</p>
+              <h1 class="auth-title reveal" id="authTitle">Sign in or create your account</h1>
+              <p class="auth-sub reveal" id="authSub"><b>Free to start.</b> No password to remember.</p>
 
-              <div class="segmented reveal" role="tablist">
-                <button class="seg active" data-seg="create" type="button" role="tab">Create account</button>
-                <button class="seg" data-seg="signin" type="button" role="tab">Sign in</button>
-              </div>
-
-              <div class="view view-create active reveal" id="viewCreate">
-                <button class="btn-apple" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"/></svg>Continue with Apple</button>
+              <div class="form reveal">
+                <div class="apple-wrap">
+                  <button class="btn-apple" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"/></svg>Continue with Apple</button>
+                  <span class="tag-5c" title="Drawn in 5b, switched on in 5c">5c</span>
+                </div>
                 <div class="divider">or</div>
-                <div class="field"><label for="cEmail">Email</label><input id="cEmail" type="email" placeholder="you@example.com" autocomplete="email" /></div>
-                <button class="btn-primary" type="button">Continue with email</button>
+                <div class="field"><label for="email">Email</label><input id="email" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email" autocapitalize="off" spellcheck="false" /></div>
+
+                <div class="typo" id="typo" role="alert">
+                  <p class="typo-q">Did you mean <b id="typoFix">you@gmail.com</b>?</p>
+                  <div class="typo-row">
+                    <button class="btn-primary" id="fixYes" type="button">Yes, fix it</button>
+                    <button class="btn-outline" id="fixNo" type="button">No, keep mine</button>
+                  </div>
+                </div>
+
+                <button class="btn-primary" id="continueBtn" type="button">Continue</button>
+                <p class="code-line"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 7l9 6 9-6"></path></svg>We'll email you a 6-digit code.</p>
+                <button id="goCode" type="button" hidden></button>
               </div>
 
-              <div class="view view-signin reveal" id="viewSignin">
-                <button class="btn-apple" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"/></svg>Continue with Apple</button>
-                <div class="divider">or</div>
-                <div class="field"><label for="sEmail">Email</label><input id="sEmail" type="email" placeholder="you@example.com" autocomplete="email" /></div>
-                <div class="field"><label for="sPass">Password</label><input id="sPass" type="password" placeholder="Your password" autocomplete="current-password" /></div>
-                <button class="link-forgot" type="button">Forgot password?</button>
-                <button class="btn-primary" type="button">Sign in</button>
-              </div>
-
-              <p class="legal reveal">By continuing you agree to our <a href="#" onclick="return false">Terms</a> and <a href="#" onclick="return false">Privacy Policy</a>.</p>
+              <p class="legal reveal">By continuing you agree to our <a href="#terms">Terms</a> and <a href="#privacy">Privacy Policy</a>.</p>
             </div>
           </div>
         </div>
       </div>
-      <p class="hint">Tap Create account / Sign in to switch states.</p>
+      <p class="hint">Try you@gmial.com to see the typo check. Any other address goes to the code screen.</p>
     </div>
   </div>
 
@@ -194,19 +204,25 @@
       document.getElementById('themeToggle').addEventListener('click', function(){ html.setAttribute('data-theme', html.getAttribute('data-theme') === 'light' ? 'dark' : 'light'); paint(); });
       paint();
 
-      var title = document.getElementById('authTitle'), sub = document.getElementById('authSub');
-      var copy = {
-        create: { title: 'Create your account', sub: '<b>Free to start.</b> No card needed.' },
-        signin: { title: 'Welcome back',          sub: 'Pick up where you left off.' }
-      };
-      var segs = document.querySelectorAll('.seg');
-      function select(which){
-        segs.forEach(function(s){ s.classList.toggle('active', s.dataset.seg === which); });
-        document.getElementById('viewCreate').classList.toggle('active', which === 'create');
-        document.getElementById('viewSignin').classList.toggle('active', which === 'signin');
-        title.textContent = copy[which].title; sub.innerHTML = copy[which].sub;
-      }
-      segs.forEach(function(s){ s.addEventListener('click', function(){ select(s.dataset.seg); }); });
+      // Typo check on Continue for the common domains (spec 5b); a clean address goes on to the code screen.
+      var COMMON = { 'gmial.com':'gmail.com','gmai.com':'gmail.com','gmail.co':'gmail.com','gamil.com':'gmail.com','hotmial.com':'hotmail.com','hotmai.com':'hotmail.com',
+        'outlok.com':'outlook.com','outloo.com':'outlook.com','yaho.com':'yahoo.com','yahooo.com':'yahoo.com','iclod.com':'icloud.com','icoud.com':'icloud.com' };
+      var input = document.getElementById('email'), typo = document.getElementById('typo'), fix = document.getElementById('typoFix');
+      var cont = document.getElementById('continueBtn'), go = document.getElementById('goCode');
+      function suggest(v) { var m = /^([^@\s]+)@([^@\s]+)$/.exec(v.trim().toLowerCase()); return m && COMMON[m[2]] ? m[1] + '@' + COMMON[m[2]] : null; }
+      function remember(v) { try { sessionStorage.setItem('e2e_code_email', v); } catch (_) {} }
+      function proceed(v) { remember(v); typo.classList.remove('open'); input.removeAttribute('aria-invalid'); go.click(); }
+      function showTypo(v, s) { fix.textContent = s; typo.dataset.fix = s; typo.dataset.keep = v; typo.classList.add('open'); input.setAttribute('aria-invalid', 'true'); cont.hidden = true; }
+      cont.addEventListener('click', function () {
+        var v = input.value.trim() || 'you@gmail.com', s = suggest(v);
+        if (s) { showTypo(v, s); return; }
+        proceed(v);
+      });
+      document.getElementById('fixYes').addEventListener('click', function () { input.value = typo.dataset.fix; cont.hidden = false; proceed(typo.dataset.fix); });
+      document.getElementById('fixNo').addEventListener('click', function () { cont.hidden = false; proceed(typo.dataset.keep); });
+      input.addEventListener('input', function () { if (typo.classList.contains('open')) { typo.classList.remove('open'); input.removeAttribute('aria-invalid'); cont.hidden = false; } });
+      // The E2E shell opens the typo check directly with ?v=typo.
+      try { if (new URLSearchParams(location.search).get('v') === 'typo') { input.value = 'you@gmial.com'; showTypo('you@gmial.com', 'you@gmail.com'); } } catch (_) {}
     })();
   </script>
 </body>

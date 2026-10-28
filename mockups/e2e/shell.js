@@ -23,6 +23,13 @@
     'rollout'           : 'onboarding-rollout-flow.html',
     'signup-signin'     : 'onboarding-signup-signin.html',
     'magic-link'        : 'onboarding-magic-link-sent.html',
+    'signin-typo'       : 'onboarding-signup-signin.html?v=typo',          // Stage 5b (28 Oct): "Did you mean"
+    'email-code'        : 'onboarding-email-code.html',                    // Stage 5b: the 6-digit code
+    'code-wrong'        : 'onboarding-email-code.html?v=wrong',
+    'code-expired'      : 'onboarding-email-code.html?v=expired',
+    'resend-wait'       : 'onboarding-email-code.html?v=resend-wait',
+    'code-offline'      : 'onboarding-email-code.html?v=offline',
+    'lock-switched'     : 'cert-ios-home.html?v=lockswitch',               // Stage 5b: the account's free exam wins, said once
     'welcome-back'      : 'onboarding-welcome-back.html',
     'plan-picker'       : 'onboarding-plan-picker-concept.html',
     'free-cert-picker'  : 'onboarding-free-cert-picker.html',
@@ -145,7 +152,7 @@
 
   // ── Canonical happy-path spine (D7: Option B) ───────────────────────────
   var HAPPY_PATH = [
-    'native-welcome', 'signup-signin', 'free-cert-picker', 'free-home-day0',
+    'native-welcome', 'free-cert-picker', 'free-home-day0',
     'home', 'hub', 'free-capped-home', 'upgrade-sheet', 'pro-iap',
     'pro-welcome', 'my-certs-pro'
   ];
@@ -157,10 +164,13 @@
   //  the mockup's own JS. Universal: .back / [data-act="back"] -> pop.
   //  Each rule: {sel, to, push?} — `to` is a SCREENS id (or 'pop'/'next').
   var NAV = {
-    'native-welcome'   : [ {sel:'.btn-primary', to:'signup-signin'},
+    // Stage 5b (28 Oct): Get started -> the 5a picker; Sign in -> one screen -> the code -> the account's cert
+    'native-welcome'   : [ {sel:'.btn-primary', to:'free-cert-picker'},
                            {sel:'.btn-link',    to:'signup-signin'} ],
-    'signup-signin'    : [ {sel:'.btn-apple',   to:'free-cert-picker'},
-                           {sel:'.btn-primary', to:'free-cert-picker'} ],
+    'signup-signin'    : [ {sel:'.btn-apple',   to:'home'},          // 5c switches Apple on
+                           {sel:'#goCode',      to:'email-code'} ],  // the mockup clicks it once the typo check passes
+    'email-code'       : [ {sel:'#goHome',      to:'home'},
+                           {sel:'#changeEmail', to:'pop'} ],
     // Lift C (26 Oct): Lock in opens the lock-in sheet (the mockup's own JS); only its confirm moves on
     // Stage 5a: Lock in -> sheet 1 -> sheet 2 (mockup JS); only "Yes, lock in" moves on
     'free-cert-picker' : [ {sel:'#lastGo',      to:'free-home-day0'} ],
@@ -264,6 +274,9 @@
   NAV['analytics'] = (NAV['analytics'] || []).concat([{sel:'[data-view="progress"]', to:'progress'}]);
   ['exam-paused','exam-end','exam-leave','exam-pbq'].forEach(function (k) { NAV[k] = NAV['exam']; });
   NAV['exam-results-toast'] = NAV['exam-results'];
+  NAV['signin-typo'] = NAV['signup-signin'];
+  NAV['lock-switched'] = NAV['home'];
+  ['code-wrong','code-expired','resend-wait','code-offline'].forEach(function (k) { NAV[k] = NAV['email-code']; });
   ['drills-free','drills-empty','drills-dl'].forEach(function (k) { NAV[k] = NAV['drills']; });
   NAV['simlab'] = [ {text:'Start the sim', to:'simlab-loading'}, {sel:'.back', to:'drills'} ];
   NAV['simlab-verdict'] = [ {text:'Back to Practice', to:'drills'} ]; NAV['simlab-verdict-open'] = NAV['simlab-verdict'];
@@ -699,6 +712,13 @@
       s5Btn.textContent = '5a ' + (s5I + 1) + '/' + LIFT_5A.length + ' \u203a';
     });
     // Lift C (26 Oct): first run on phones
+    // Stage 5b (28 Oct): sign in by email code
+    var LIFT_5B = ['native-welcome','signup-signin','signin-typo','email-code','code-wrong','code-expired','resend-wait','code-offline','lock-switched'];
+    var s5bBtn = document.getElementById('hud-5b'), s5bI = -1;
+    if (s5bBtn) s5bBtn.addEventListener('click', function () {
+      s5bI = (s5bI + 1) % LIFT_5B.length; resetTo(LIFT_5B[s5bI]);
+      s5bBtn.textContent = '5b ' + (s5bI + 1) + '/' + LIFT_5B.length + ' \u203a';
+    });
     var LIFT_C = ['restore','free-cert-picker','picker-lock','picker-pro','free-home-day0','day0-pro','first-run-diag','check-score','free-capped-home','daily-limit','offline'];
     var cBtn = document.getElementById('hud-liftc'), cI = -1;
     if (cBtn) cBtn.addEventListener('click', function () {
