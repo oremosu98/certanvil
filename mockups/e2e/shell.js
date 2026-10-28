@@ -644,6 +644,7 @@
       var v = stack.pop();
       if (v.viewEl.parentNode) v.viewEl.parentNode.removeChild(v.viewEl);
     }
+    animating = false;   // a reset during a slide must still land (rapid HUD taps left a blank stack)
     push(id);
   }
 
