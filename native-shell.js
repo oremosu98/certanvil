@@ -30,7 +30,8 @@
   }
   // Stage 5c (28 Oct): Sign in with Apple and Google through @capgo/capacitor-social-login (8.7.5). The Google client IDs
   // are public (not secrets); empty means Google stays hidden. window.CA_SOCIAL_IDS overrides them (tests).
-  var SOCIAL = { googleIOS: '', googleWeb: '' };
+  var SOCIAL = { googleIOS: '614075733544-jra264mi2kev9sshpr9pbf3fvhd00r7u.apps.googleusercontent.com',
+                 googleWeb: '614075733544-fvsfvvovt37tqu75pj8cf7a71ja2789v.apps.googleusercontent.com' };   // Google Cloud, 28 Oct
   function socialIds() { return window.CA_SOCIAL_IDS || SOCIAL; }
   var socialInit = null;
   function socialPlugin() { return P.SocialLogin || null; }

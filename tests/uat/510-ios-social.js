@@ -40,6 +40,12 @@ const { fs, path, ROOT, test, results } = require('./_context');
       [li, lp].every((h) => /id="auth-apple"/.test(h) && /id="auth-google"/.test(h) && h.indexOf('coming-soon-pill">Soon') < 0 && h.indexOf('Coming soon · Google OAuth') < 0));
     test('website providers use signInWithOAuth back to the landing; hidden inside the app',
       /signInWithOAuth\(\{ provider: provider, options: \{ redirectTo: /.test(la) && /html\.is-native #auth-providers/.test(ldg));
+    // Task 6: the real Google client IDs and the reversed iOS client ID as a URL scheme (GIDSignIn needs it)
+    const plist = read('ios/App/App/Info.plist');
+    const iosId = (ns.match(/googleIOS: '([^']+)'/) || [])[1] || '';
+    test('Google iOS client ID is set and its reversed form is an app URL scheme',
+      /\.apps\.googleusercontent\.com$/.test(iosId) && /googleWeb: '[^']+\.apps\.googleusercontent\.com'/.test(ns)
+      && plist.indexOf('<string>com.googleusercontent.apps.' + iosId.replace('.apps.googleusercontent.com', '') + '</string>') > 0);
     test('the website build still excludes the native project', /'ios'/.test(read('scripts/build.js')));
   } catch (err) {
     test('Stage 5c social: block (threw)', false);
