@@ -34,6 +34,12 @@ const { fs, path, ROOT, test, results } = require('./_context');
       && run('_iosStMethodsLabel(__m)', ['email', 'apple', 'google']) === 'Email, Apple, Google' && run('_iosStMethodsLabel(__m)', null) === 'Email');
     test('the Sign-in methods row is app-only and signed-in only',
       /methodsRow: signedIn && !!window\.CA_NATIVE/.test(read('features/settings.js')) && /m\.methodsRow \? row\('methods'/.test(st));
+    // Task 5: the website buttons
+    const li = read('landing/index.html'), lp = read('landing/pricing.html'), la = read('landing/auth.js'), ldg = read('landing/dg-system.css');
+    test('the landing modal on index and pricing has Apple and Google and no Soon pill',
+      [li, lp].every((h) => /id="auth-apple"/.test(h) && /id="auth-google"/.test(h) && h.indexOf('coming-soon-pill">Soon') < 0 && h.indexOf('Coming soon · Google OAuth') < 0));
+    test('website providers use signInWithOAuth back to the landing; hidden inside the app',
+      /signInWithOAuth\(\{ provider: provider, options: \{ redirectTo: /.test(la) && /html\.is-native #auth-providers/.test(ldg));
     test('the website build still excludes the native project', /'ios'/.test(read('scripts/build.js')));
   } catch (err) {
     test('Stage 5c social: block (threw)', false);

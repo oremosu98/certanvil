@@ -4686,3 +4686,7 @@ button { font: inherit; border: 0; background: transparent; cursor: pointer; col
   .auth-modal-card { transform: none; transition: none; }
   .faq-a { transition: none; grid-template-rows: 1fr; }
 }
+
+/* Stage 5c (28 Oct): the providers sit above the email (live-button styling in dg-system.css) */
+.auth-providers { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+.auth-providers[hidden] { display: none; }

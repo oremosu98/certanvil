@@ -52,6 +52,9 @@
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },
+      // Stage 5c: the website's redirect sign-in; calls land in localStorage __oauthCalls (no navigation).
+      signInWithOAuth:function(o){ o=o||{}; try{ var c=JSON.parse(localStorage.getItem('__oauthCalls')||'[]'); c.push({provider:o.provider,redirectTo:(o.options||{}).redirectTo||null}); localStorage.setItem('__oauthCalls',JSON.stringify(c)); }catch(e){}
+        return Promise.resolve({data:{provider:o.provider,url:'about:blank'},error:null}); },
       // Stage 5c: Settings → Sign-in methods. __FAKE_SB.linkError: 'identity_already_exists' | 'other'.
       linkIdentity:function(o){ o=o||{}; try{ var c=JSON.parse(localStorage.getItem('__linkCalls')||'[]'); c.push({provider:o.provider,token:o.token,nonce:o.nonce||null}); localStorage.setItem('__linkCalls',JSON.stringify(c)); }catch(e){}
         if (F.linkError==='identity_already_exists') return Promise.resolve({data:null,error:{message:'Identity is already linked to another user',code:'identity_already_exists',status:422,name:'AuthApiError'}});

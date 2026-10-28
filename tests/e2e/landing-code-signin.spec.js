@@ -68,3 +68,42 @@ test.describe('Stage 5b website: a refused send says so', () => {
     await expect(page.locator('#auth-error')).toHaveText("We couldn't send a code just now. Try again in a minute.");
   });
 });
+
+// ── Stage 5c: Apple and Google on certanvil.com ──
+const oauth = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__oauthCalls') || '[]'));
+for (const file of ['index.html', 'pricing.html']) {
+  test.describe(`Stage 5c website providers (${file})`, () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+    for (const [prov, label] of [['apple', 'Apple'], ['google', 'Google']]) {
+      test(`Continue with ${label} redirects back to the landing with return`, async ({ page }) => {
+        await boot(page, file);
+        await expect(page.locator('#auth-' + prov)).toHaveText(new RegExp('Continue with ' + label));
+        await page.click('#auth-' + prov);
+        await expect.poll(() => oauth(page)).toHaveLength(1);
+        const c = (await oauth(page))[0], here = new URL(page.url());
+        expect(c.provider).toBe(prov);
+        expect(c.redirectTo).toBe(here.origin + here.pathname + '?action=signin&return=' + encodeURIComponent('https://networkplus.certanvil.com/') + '&via=' + prov);
+      });
+    }
+    test('Apple and Google sit above the email field, Apple first', async ({ page }) => {
+      await boot(page, file);
+      const order = await page.evaluate(() => ['#auth-apple', '#auth-google', '#auth-email'].map((s) => document.querySelector(s).getBoundingClientRect().top));
+      expect(order[0]).toBeLessThan(order[1]); expect(order[1]).toBeLessThan(order[2]);
+    });
+    test('an error on return reopens the modal with the line', async ({ page }) => {
+      const F = { signedOut: true };
+      await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + JSON.stringify(F) + ';' + FAKE }));
+      await page.goto('/' + file.replace(/(^index)?\.html$/, '') + '?action=signin&via=google&error=access_denied&error_description=' + encodeURIComponent('User cancelled'));
+      await expect(page.locator('#auth-modal')).toBeVisible();
+      await expect(page.locator('#auth-error')).toHaveText("Google sign-in didn't finish. Try again, or use your email.");
+    });
+  });
+}
+test.describe('Stage 5c website in the app', () => {
+  test.use({ storageState: { cookies: [], origins: [] }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 CertAnvilApp' });
+  test('the landing page in the app shows no provider buttons', async ({ page }) => {
+    await boot(page, 'index.html');
+    await expect(page.locator('#auth-apple')).toBeHidden();
+    await expect(page.locator('#auth-google')).toBeHidden();
+  });
+});
