@@ -93,7 +93,8 @@
   var COPY = {
     wrong: "That code isn't right. Check it and try again.", expired: 'That code has expired.',
     rate: 'Give it a minute, then ask for a new code.', net: "Couldn't reach CertAnvil. Check your connection and try again.",
-    sent: 'We sent a new code.', checking: 'Checking…'
+    sent: 'We sent a new code.', checking: 'Checking…',
+    refused: "We couldn't send a code just now. Try again in a minute."   // Supabase answered but did not send (e.g. a 500)
   };
   var IS = window.iosSignIn = window.iosSignIn || {};
   var st = { view: null, from: null, email: '', typo: null }, timer = null, busy = false;
@@ -174,7 +175,7 @@
       busy = false;
       var err = r && r.error;
       if (err && err.status === 429) { writePending(email, keepSent || Date.now()); show('code', { msg: COPY.rate, kind: 'err' }); return; }
-      if (err) { if (st.view === 'code') say(COPY.net, 'err'); else show('signin', { msg: COPY.net }); return; }
+      if (err) { var m = isNet(err) ? COPY.net : COPY.refused; if (st.view === 'code') say(m, 'err'); else show('signin', { msg: m }); return; }
       writePending(email, Date.now());
       show('code', resend ? { msg: COPY.sent, kind: 'ok' } : {});
     }, function () { busy = false; if (st.view === 'code') say(COPY.net, 'err'); else show('signin', { msg: COPY.net }); });

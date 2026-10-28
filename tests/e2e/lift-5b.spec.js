@@ -406,3 +406,14 @@ test.describe('Stage 5b final review fixes', () => {
     await expect(host(page)).toContainText('We sent a 6-digit code to sam@example.test.', { timeout: 10000 });
   });
 });
+
+test.describe('Stage 5b: a refused send says so (found in the founder test, 28 Oct)', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  test('a 500 from Supabase is not reported as a connection problem', async ({ page }) => {
+    await boot(page, { fake: { otpStatus: 500 } });
+    await openSignIn(page);
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(page.locator('#isi-msg')).toHaveText("We couldn't send a code just now. Try again in a minute.");
+  });
+});

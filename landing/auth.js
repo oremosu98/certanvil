@@ -810,7 +810,7 @@
           var err = result && result.error;
           // Sent too soon: a code is already on its way, so show the code screen with the wait line.
           if (err && err.status === 429) { showAuthSent(email); codeStart(email, CODE_COPY.rate); return; }
-          if (err) { showAuthError(err.status === 0 ? CODE_COPY.net : (err.message || 'Could not send a code. Try again in a moment.')); return; }
+          if (err) { showAuthError(err.status === 0 || err.name === 'AuthRetryableFetchError' ? CODE_COPY.net : CODE_COPY.refused); return; }
           showAuthSent(email);
           codeStart(email);
         })
@@ -829,7 +829,8 @@
   var CODE_COPY = {
     wrong: "That code isn't right. Check it and try again.", expired: 'That code has expired.',
     rate: 'Give it a minute, then ask for a new code.', net: "Couldn't reach CertAnvil. Check your connection and try again.",
-    sent: 'We sent a new code.', checking: 'Checking…'
+    sent: 'We sent a new code.', checking: 'Checking…',
+    refused: "We couldn't send a code just now. Try again in a minute."
   };
   var authOtpBoxes = document.getElementById('auth-otp-boxes');
   var authOtpError = document.getElementById('auth-otp-error');
@@ -865,7 +866,7 @@
     sendCode(codeEmail).then(function (result) {
       var err = result && result.error;
       if (err && err.status === 429) { otpSay(CODE_COPY.rate); return; }
-      if (err) { otpSay(CODE_COPY.net); return; }
+      if (err) { otpSay(err.status === 0 || err.name === 'AuthRetryableFetchError' ? CODE_COPY.net : CODE_COPY.refused); return; }
       codeStart(codeEmail); otpSay(CODE_COPY.sent);
     }).catch(function () { otpSay(CODE_COPY.net); });
   }

@@ -58,3 +58,13 @@ for (const file of ['index.html', 'pricing.html']) {
     });
   });
 }
+
+test.describe('Stage 5b website: a refused send says so', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('a 500 from Supabase reads as a send failure, not "magic link"', async ({ page }) => {
+    await boot(page, 'index.html', { otpStatus: 500 });
+    await page.fill('#auth-email', 'sam@example.test');
+    await page.click('#auth-submit');
+    await expect(page.locator('#auth-error')).toHaveText("We couldn't send a code just now. Try again in a minute.");
+  });
+});
