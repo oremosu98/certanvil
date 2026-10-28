@@ -3021,3 +3021,18 @@ html.isi-open { overflow: hidden; }
 .isi-google:active { transform: scale(0.985); }
 @media (hover: hover) and (pointer: fine) { .isi-google:hover { border-color: color-mix(in oklab, var(--text) 30%, var(--border)); } }
 .isi-perr { margin: 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--red, oklch(0.62 0.17 28)); }
+
+/* Stage 5c (28 Oct): Settings → Sign-in methods (June E2E cert-ios-settings ?v=methods) */
+#ist-sheet .ist-meths { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+#ist-sheet .ist-meth { display: flex; align-items: center; gap: 12px; padding: 12px 14px; min-height: 54px; }
+#ist-sheet .ist-meth + .ist-meth { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+#ist-sheet .ist-mi { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--text); background: color-mix(in oklab, var(--text) 8%, transparent); flex: 0 0 auto; }
+#ist-sheet .ist-mn { flex: 1; font: 650 14px/1.25 Inter, sans-serif; color: var(--text); }
+#ist-sheet .ist-mn span { display: block; font: 500 12px/1.3 Inter, sans-serif; color: var(--text-dim); margin-top: 2px; word-break: break-all; }
+#ist-sheet .ist-add { flex: 0 0 auto; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border)); background: transparent; color: var(--accent); font: 700 13px/1 Inter, sans-serif; cursor: pointer; transition: transform .15s var(--ios-ease); }
+#ist-sheet .ist-add:active { transform: scale(0.97); }
+#ist-sheet .ist-add:disabled { opacity: .5; }
+#ist-sheet .ist-conn { flex: 0 0 auto; font: 650 12.5px/1 Inter, sans-serif; color: var(--green, oklch(0.6 0.14 150)); }
+#ist-sheet .ist-conn.on { color: var(--text-dim); }
+#ist-sheet .ist-merr { margin: 12px 0 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--red, oklch(0.62 0.17 28)); }
+#ist-sheet .ist-mnote { margin: 12px 0 2px; font: 500 12px/1.45 Inter, sans-serif; color: var(--text-dim); }

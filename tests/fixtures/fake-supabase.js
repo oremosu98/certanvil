@@ -2,6 +2,7 @@
 (function(){
   var F = window.__FAKE_SB || {};
   var user = { id:'00000000-0000-4000-8000-000000000001', email:'simi.test@example.test', created_at:'2026-03-02T10:00:00Z', aud:'authenticated', role:'authenticated', app_metadata:{provider:'email'}, user_metadata:{} };
+  user.identities = [{ provider:'email', identity_id:'id-email' }].concat((F.identities||[]).map(function(p){ return { provider:p, identity_id:'id-'+p }; }));   // Stage 5c
   function signedSession(){ return { access_token:'fake.jwt.token', refresh_token:'fake-refresh', token_type:'bearer', expires_in:3600, expires_at:Math.floor(Date.now()/1000)+3600, user:user }; }
   var session = F.signedOut ? null : signedSession();
   var profile = { id:user.id, email:user.email, display_name:'Simi', role: F.role || 'user', active_cert:'secplus', exam_date:'2026-11-20', created_at:'2026-03-02T10:00:00Z', updated_at:'2026-10-16T12:00:00Z',
@@ -51,6 +52,12 @@
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },
+      // Stage 5c: Settings → Sign-in methods. __FAKE_SB.linkError: 'identity_already_exists' | 'other'.
+      linkIdentity:function(o){ o=o||{}; try{ var c=JSON.parse(localStorage.getItem('__linkCalls')||'[]'); c.push({provider:o.provider,token:o.token,nonce:o.nonce||null}); localStorage.setItem('__linkCalls',JSON.stringify(c)); }catch(e){}
+        if (F.linkError==='identity_already_exists') return Promise.resolve({data:null,error:{message:'Identity is already linked to another user',code:'identity_already_exists',status:422,name:'AuthApiError'}});
+        if (F.linkError) return Promise.resolve({data:null,error:{message:'link failed',status:500,name:'AuthApiError'}});
+        user.identities.push({ provider:o.provider, identity_id:'id-'+o.provider }); listeners.forEach(function(cb){ try{ cb('USER_UPDATED',session); }catch(e){} });
+        return Promise.resolve({data:{user:user,session:session},error:null}); },
       // Stage 5c: an identity token from the native sheet. __FAKE_SB.idTokenError refuses it; calls land in localStorage __idTokenCalls.
       signInWithIdToken:function(o){ o=o||{}; try{ var c=JSON.parse(localStorage.getItem('__idTokenCalls')||'[]'); c.push({provider:o.provider,token:o.token,nonce:o.nonce||null}); localStorage.setItem('__idTokenCalls',JSON.stringify(c)); }catch(e){}
         if (F.idTokenError) return Promise.resolve({data:{session:null,user:null},error:{message:F.idTokenError,status:400,name:'AuthApiError'}});

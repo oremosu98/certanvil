@@ -67,7 +67,7 @@
         if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ email: _istEmail || '' });   // in place: keeps the reveal
       }).catch(function () { _istEmailAsked = false; });
     }
-    if (!signedIn) { _istEmail = null; _istEmailAsked = false; }
+    if (!signedIn) { _istEmail = null; _istEmailAsked = false; if (window.iosSettings && window.iosSettings._methodsReset) window.iosSettings._methodsReset(); }
     var certs = typeof window.getAvailableCerts === 'function' ? window.getAvailableCerts() : [];
     var active = window.CURRENT_CERT || 'netplus', c = null;
     for (var i = 0; i < certs.length; i++) if (certs[i].id === active) c = certs[i];
@@ -78,6 +78,7 @@
     var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     return {
       signedIn: signedIn, email: _istEmail || (signedIn ? '' : null), pro: pro,
+      methodsRow: signedIn && !!window.CA_NATIVE, methods: signedIn && window.CA_NATIVE && window.iosSettings && window.iosSettings._methods ? window.iosSettings._methods() : ['email'],   // Stage 5c
       cert: { name: (c && c.name) || meta.name || '', code: (c && c.code) || meta.code || '' },
       passPlanHtml: _passPlanHtml(),
       glance: { sync: !!_quotaState, exam: exam ? { date: exam, days: typeof getDaysToExam === 'function' ? getDaysToExam() : null } : null,

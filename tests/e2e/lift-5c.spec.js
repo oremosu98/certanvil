@@ -202,3 +202,91 @@ test.describe('Stage 5c on the phone website', () => {
     await expect(page.locator('#ios-signin [data-act="apple"]:visible, #ios-signin [data-act="google"]')).toHaveCount(0);
   });
 });
+
+// ── Task 3: Settings → Sign-in methods ──
+const linkCalls = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__linkCalls') || '[]'));
+async function openSettings(page) {
+  await page.click('#ios-home [data-act="settings"]');
+  await expect(page.locator('#ios-settings')).toBeVisible();
+}
+async function openMethods(page) {
+  await openSettings(page);
+  await page.click('#ios-settings [data-act="methods"]');
+  await expect(page.locator('#ist-sheet')).toContainText('Sign-in methods');
+}
+const SIGNED = { signedOut: false, tier: 'free' };
+
+test.describe('Stage 5c: Settings → Sign-in methods', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('Sign-in methods lists Email on and Apple and Google to add', async ({ page }) => {
+    await page.addInitScript(IDS);
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await expect(page.locator('#ios-settings [data-act="methods"]')).toContainText('Email');
+    await page.click('#ios-settings [data-act="methods"]');
+    const sh = page.locator('#ist-sheet');
+    await expect(sh).toContainText('Any of these opens this account.');
+    await expect(sh.locator('.ist-meth')).toHaveCount(3);
+    await expect(sh.locator('[data-act="add-apple"]')).toHaveText('Add');
+    await expect(sh.locator('[data-act="add-google"]')).toHaveText('Add');
+    await expect(sh).toContainText("Signed up with Apple's Hide My Email? Add Apple here so both open this account.");
+  });
+
+  test('Add Apple links and shows Connected', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await expect(page.locator('#ist-sheet')).toContainText('Connected');
+    expect((await linkCalls(page))[0]).toMatchObject({ provider: 'apple', token: 'tok-apple' });
+    expect((await linkCalls(page))[0].nonce).toMatch(/^[0-9a-f]{64}$/);
+    expect(await idCalls(page)).toEqual([]);   // linking never signs in again
+    await expect(page.locator('#ios-settings [data-act="methods"]')).toContainText('Email, Apple');
+  });
+
+  test('an Apple ID that is already an account shows the defined message', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ linkError: 'identity_already_exists' }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await expect(page.locator('#ist-sheet .ist-merr')).toHaveText('That Apple ID already has its own CertAnvil account. To use it, sign out and continue with Apple.');
+  });
+
+  test('another link error shows Couldn\'t add Apple', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ linkError: 'other' }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await expect(page.locator('#ist-sheet .ist-merr')).toHaveText("Couldn't add Apple. Try again.");
+  });
+
+  test('a cancelled Add changes nothing', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'cancel' }) } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await page.waitForTimeout(500);
+    expect(await linkCalls(page)).toEqual([]);
+    await expect(page.locator('#ist-sheet .ist-merr')).toHaveCount(0);
+    await expect(page.locator('#ist-sheet [data-act="add-apple"]')).toBeVisible();
+  });
+
+  test('an account that already has Apple shows it Connected', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await expect(page.locator('#ios-settings [data-act="methods"]')).toContainText('Email, Apple');
+  });
+
+  test('no Sign-in methods row signed out', async ({ page }) => {
+    await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await expect(page.locator('#ios-settings [data-act="methods"]')).toHaveCount(0);
+  });
+});
+
+test.describe('Stage 5c: Sign-in methods off the app', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('no Sign-in methods row on the phone website', async ({ page }) => {
+    await boot(page, { native: false, fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await page.waitForTimeout(800);
+    await expect(page.locator('#ios-settings [data-act="methods"]')).toHaveCount(0);
+  });
+});
