@@ -37,6 +37,7 @@
       swap: '<path d="M7 7h11l-3-3M17 17H6l3 3"></path>', star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"></path>',
       bin: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path>',
       trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>',
+      doc: '<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4M10 12h5M10 16h5"></path>', shield: '<path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"></path>',
       theme: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
     };
     function row(act, icon, label, sub, val, o) {
@@ -95,6 +96,12 @@
       : '<p class="ist-note reveal">No automatic backups yet. One will be made on your next visit.</p>';
     h += '<div class="ist-btns reveal"><button type="button" class="ist-sec" data-act="download">Download latest</button><button type="button" class="ist-sec" data-act="snapshot">Snapshot now</button></div>'
       + '<p class="ist-note reveal">We keep a snapshot from each of the last 7 days. Restoring one saves today first, so you can undo it.</p>';
+    // 28 Oct: the legal pages, reachable in the app (Apple 5.1.1); data-ext opens them in the in-app browser sheet (native-shell.js)
+    function legal(href, icon, label) {
+      return '<a class="ist-row" href="' + href + '" target="_blank" rel="noopener" data-ext><span class="ist-ri">' + svg(I[icon]) + '</span><span class="ist-rl">' + label + '</span>' + svg(I.chev, 16) + '</a>';
+    }
+    h += '<div class="ist-sect reveal">About</div><div class="ist-group ist-legal reveal">'
+      + legal('https://certanvil.com/privacy', 'shield', 'Privacy Policy') + legal('https://certanvil.com/terms', 'doc', 'Terms of Service') + '</div>';
     h += '<div class="ist-sect danger reveal">Danger zone</div><div class="ist-group reveal">'
       + row('clear', 'bin', 'Clear wrong answers bank', 'Drill Mistakes uses these', String(m.wrongCount), { cls: 'danger' })
       + (m.out ? '' : row('delete', 'trash', 'Delete account', 'Deleted 7 days after you confirm', null, { cls: 'danger' })) + '</div>';

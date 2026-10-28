@@ -417,3 +417,21 @@ test.describe('Stage 5b: a refused send says so (found in the founder test, 28 O
     await expect(page.locator('#isi-msg')).toHaveText("We couldn't send a code just now. Try again in a minute.");
   });
 });
+
+// ── Legal in the app (founder ask, 28 Oct): Settings → About carries Privacy Policy and Terms of Service ──
+test.describe('Stage 5b: legal pages in Settings', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  test('Settings has About with Privacy Policy and Terms, opening in the in-app sheet', async ({ page }) => {
+    await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.click('#ios-home [data-act="settings"]');
+    await expect(page.locator('#ios-settings .ist-legal')).toBeVisible();
+    const about = page.locator('#ios-settings .ist-legal');
+    await expect(page.locator('#ios-settings .ist-sect', { hasText: 'About' })).toHaveCount(1);
+    await expect(about.locator('a.ist-row')).toHaveText([/Privacy Policy/, /Terms of Service/]);
+    const before = page.url();
+    await about.locator('a.ist-row').nth(0).dispatchEvent('click');
+    await about.locator('a.ist-row').nth(1).dispatchEvent('click');
+    expect(await page.evaluate(() => window.__browser)).toEqual(['https://certanvil.com/privacy', 'https://certanvil.com/terms']);
+    expect(page.url()).toBe(before);
+  });
+});

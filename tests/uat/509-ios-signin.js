@@ -69,6 +69,15 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       la.indexOf('emailRedirectTo') < 0 && /signInWithOtp\(\{ email: email \}\)/.test(la) && /verifyOtp\(\{ email: email, token: token, type: 'email' \}\)/.test(la));
     const sentIds = (h) => ['auth-sent', 'auth-sent-email', 'auth-otp-boxes', 'auth-otp-error', 'auth-otp-new', 'auth-resend', 'auth-resend-wait', 'auth-different-email'].every((id) => h.indexOf('id="' + id + '"') >= 0);
     test('index.html and pricing.html share the code screen\'s ids', sentIds(read('landing/index.html')) && sentIds(read('landing/pricing.html')));
+    // Legal pages (28 Oct): sign-in is described as a one-time email code; v1.1 recorded in each page's history
+    const pv = read('landing/privacy.html'), tm = read('landing/terms.html');
+    test('privacy and terms no longer describe magic links and record v1.1',
+      ![pv, tm].some((h) => /magic[- ]link|sign-in link|one-use sign-in/i.test(h)) && /one-time/.test(pv) && /one-time/.test(tm)
+      && /<strong>v1\.1<\/strong>/.test(pv) && /<strong>v1\.1<\/strong>/.test(tm) && /expires after 15 minutes/.test(pv));
+    const stg = read('features/ios-settings.js');
+    test('iOS Settings has an About section with Privacy Policy and Terms links that open in the in-app sheet',
+      /ist-sect reveal">About</.test(stg) && stg.indexOf("legal('https://certanvil.com/privacy'") > 0 && stg.indexOf("legal('https://certanvil.com/terms'") > 0 && /target="_blank" rel="noopener" data-ext>/.test(stg)
+      && stg.indexOf('ist-sect reveal">About') < stg.indexOf('Danger zone'));
     const html = read('index.html');
     test('index.html loads features/ios-signin.js and has the #ios-signin host',
       /<script defer src="features\/ios-signin\.js"><\/script>/.test(html) && /<div id="ios-signin"[^>]*hidden><\/div>/.test(html));

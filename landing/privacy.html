@@ -236,7 +236,7 @@
   <h1 class="legal-h1">Your data, plainly explained.</h1>
   <p class="legal-sub">Email, quiz history, billing state, and real-user performance metrics. Nothing else. No tracking pixels, no advertising data sharing, no behavioural profiling. This page explains what we collect, why, and how to get rid of it whenever you want.</p>
   <p class="legal-meta">
-    Last updated <strong>11 May 2026</strong> · v1.0 (initial)
+    Last updated <strong>11 May 2026</strong> · v1.1
   </p>
 </section>
 
@@ -275,7 +275,7 @@
 
 <h3>2.1 · Account data (when you sign up)</h3>
 <ul>
-  <li><strong>Email address</strong>:&#160;required. We use magic-link authentication: you type your email, we send a one-use sign-in link. No passwords means no password resets, no leaked-password breaches. Your email is the only identity we hold.</li>
+  <li><strong>Email address</strong>:&#160;required. We sign you in with a one-time code: you type your email, we email you a 6-digit code, and you enter it in CertAnvil. No passwords means no password resets and no leaked-password breaches. Your email is the only identity we hold.</li>
   <li><strong>Display name</strong>:&#160;optional, set in account settings. Shown only to you, used to personalise greetings.</li>
   <li><strong>Active cert preference</strong>:&#160;which CompTIA exam you're studying (Network+ N10-009, Security+ SY0-701, etc.). Used to load the right content pack.</li>
   <li><strong>Exam date</strong>:&#160;optional. Used to calculate "days until exam" countdowns and pace your daily plan.</li>
@@ -344,7 +344,7 @@
 <table class="legal-table">
   <thead><tr><th>Data</th><th>Why</th><th>Lawful basis (GDPR)</th></tr></thead>
   <tbody>
-    <tr><td>Email</td><td>Sign in via magic-link, send receipts, and respond to support</td><td>Contract (necessary to provide the service)</td></tr>
+    <tr><td>Email</td><td>Sign in with a one-time code, send receipts, and respond to support</td><td>Contract (necessary to provide the service)</td></tr>
     <tr><td>Quiz history</td><td>Compute readiness, power Pass Plan, and drive spaced-repetition</td><td>Contract</td></tr>
     <tr><td>Billing state</td><td>Enforce Pro entitlements, handle renewals and cancellations</td><td>Contract and legitimate interests (fraud and chargeback protection)</td></tr>
     <tr><td>Performance telemetry</td><td>Detect regressions, prioritise optimisation work, and validate that releases help real users</td><td>Legitimate interests (product improvement), pseudonymous</td></tr>
@@ -361,10 +361,10 @@
 <table class="legal-table">
   <thead><tr><th>Sub-processor</th><th>What they handle</th><th>Where</th></tr></thead>
   <tbody>
-    <tr><td><strong>Supabase</strong></td><td>Database (account, quiz history, subscription state, telemetry) and authentication (magic-link)</td><td>EU (Frankfurt) by default; see <a href="https://supabase.com/privacy" rel="noopener">supabase.com/privacy</a></td></tr>
+    <tr><td><strong>Supabase</strong></td><td>Database (account, quiz history, subscription state, telemetry) and authentication (one-time email codes)</td><td>EU (Frankfurt) by default; see <a href="https://supabase.com/privacy" rel="noopener">supabase.com/privacy</a></td></tr>
     <tr><td><strong>Stripe</strong></td><td>Payments, card processing, subscription billing, and invoices</td><td>US and EU; see <a href="https://stripe.com/privacy" rel="noopener">stripe.com/privacy</a></td></tr>
     <tr><td><strong>Anthropic</strong></td><td>The AI model behind Generate Quiz, Diagnostic, Topic Deep Dive, etc. Receives the question-generation prompt; never receives your email, name, or other identifying data.</td><td>US; see <a href="https://www.anthropic.com/legal/privacy" rel="noopener">anthropic.com/legal/privacy</a></td></tr>
-    <tr><td><strong>Resend</strong></td><td>Sends magic-link emails and (later) transactional emails like billing receipts. Receives your email address only.</td><td>US; see <a href="https://resend.com/legal/privacy-policy" rel="noopener">resend.com</a></td></tr>
+    <tr><td><strong>Resend</strong></td><td>Sends sign-in code emails and (later) transactional emails like billing receipts. Receives your email address only.</td><td>US; see <a href="https://resend.com/legal/privacy-policy" rel="noopener">resend.com</a></td></tr>
     <tr><td><strong>Vercel</strong></td><td>Hosting for the CertAnvil website and serverless API endpoints. Sees request metadata (IP, UA) but doesn't access database content.</td><td>Global edge network; see <a href="https://vercel.com/legal/privacy-policy" rel="noopener">vercel.com</a></td></tr>
     <tr><td><strong>Hostinger</strong></td><td>Email inbox provider for <code class="legal-inline">hello@certanvil.com</code> and aliases. Receives any email you send us directly.</td><td>EU; see <a href="https://www.hostinger.com/privacy-policy" rel="noopener">hostinger.com</a></td></tr>
   </tbody>
@@ -433,7 +433,7 @@
 <ul>
   <li><strong>Encryption in transit</strong>:&#160;all traffic between your browser and our servers uses TLS 1.2 or above. The certificate is auto-rotated by Vercel.</li>
   <li><strong>Encryption at rest</strong>:&#160;Supabase and Stripe both encrypt stored data at rest using industry-standard AES-256.</li>
-  <li><strong>Authentication</strong>:&#160;magic-link only. No passwords means no leaked-password breaches. Sign-in links expire after 60 minutes and are single-use.</li>
+  <li><strong>Authentication</strong>:&#160;one-time email codes only. No passwords means no leaked-password breaches. Each code works once and expires after 15 minutes.</li>
   <li><strong>Row-level security</strong>:&#160;Supabase RLS policies enforce that your data is only readable by you (and by the founder for admin tasks like subscription support).</li>
   <li><strong>Service-role keys</strong>:&#160;held only in server-side environment variables, never in client code.</li>
   <li><strong>No card data</strong>:&#160;Stripe handles all PCI scope. We never see card numbers, CVCs, or expiration dates.</li>
@@ -446,7 +446,11 @@
 
 <h2 id="changes"><span class="legal-h2-num">§ 12</span>Changes to this policy</h2>
 <p>If we make a meaningful change to this policy (adding a new sub-processor, expanding what we collect, or changing retention), we'll update the version date at the top of this page and send signed-in users an email summarising the change. Minor edits (typos, link fixes, clarifications that don't change substance) won't trigger an email.</p>
-<p>This is <strong>v1.0</strong>, the initial publication of the policy. Future versions will be listed below as they ship.</p>
+<p>This is <strong>v1.1</strong>. Versions so far:</p>
+<ul>
+  <li><strong>v1.1</strong> (28 October 2026): sign-in now uses a one-time 6-digit email code instead of an emailed link. What we collect and who we share it with have not changed.</li>
+  <li><strong>v1.0</strong> (11 May 2026): first publication.</li>
+</ul>
 
 <h2 id="contact"><span class="legal-h2-num">§ 13</span>Contact us</h2>
 <div class="legal-contact-card">
