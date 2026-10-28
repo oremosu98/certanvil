@@ -80,13 +80,38 @@
       + '<span class="isi-toast-t">Your free exam on this account is <b>' + e(certName) + '</b>, so we\'ve opened it.</span></div>';
   }
 
-  // The common mistyped domains (spec §Sign-in typo check). Returns the fixed address, or null.
+  // The typo check (spec §Sign-in typo check): a domain one or two slips from a common provider (a swapped pair,
+  // a missing, extra or wrong letter) gets "Did you mean". Real domains, and anything not close to a provider, pass.
+  // Returns the fixed address, or null. (28 Oct: closeness replaced a fixed misspellings list, which missed htomail.com.)
   function _isiSuggest(v) {
-    var FIX = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gamil.com': 'gmail.com', 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
-      'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'iclod.com': 'icloud.com', 'icoud.com': 'icloud.com' };
+    var COMMON = ['gmail.com', 'googlemail.com', 'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'yahoo.com', 'yahoo.co.uk', 'icloud.com'];
+    var REAL = ['mail.com', 'ymail.com', 'gmx.com', 'gmx.co.uk', 'live.com', 'live.co.uk', 'outlook.co.uk', 'me.com', 'mac.com', 'aol.com', 'aol.co.uk', 'msn.com',
+      'proton.me', 'protonmail.com', 'btinternet.com', 'sky.com', 'virginmedia.com', 'talktalk.net', 'gmail.co.uk',
+      'hotmail.fr', 'hotmail.de', 'hotmail.it', 'hotmail.es', 'outlook.de', 'outlook.fr', 'outlook.es', 'yahoo.fr', 'yahoo.de', 'yahoo.it', 'yahoo.es', 'gmx.de', 'web.de'];
+    // edit distance where swapping two neighbouring letters counts as one slip (optimal string alignment)
+    function dist(a, b) {
+      var d = [], i, j;
+      for (i = 0; i <= a.length; i++) { d[i] = [i]; }
+      for (j = 0; j <= b.length; j++) { d[0][j] = j; }
+      for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) {
+        var cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+        if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+      return d[a.length][b.length];
+    }
     var m = /^([^@\s]+)@([^@\s]+)$/.exec(String(v == null ? '' : v).trim().toLowerCase());
-    return m && Object.prototype.hasOwnProperty.call(FIX, m[2]) ? m[1] + '@' + FIX[m[2]] : null;
+    if (!m) return null;
+    var dom = m[2];
+    if (COMMON.indexOf(dom) >= 0 || REAL.indexOf(dom) >= 0) return null;
+    var best = null, bestD = 3;
+    COMMON.forEach(function (c) {
+      var d = dist(dom, c), allowed = c.length >= 9 ? 2 : 1;   // short names get one slip only
+      if (d <= allowed && d < bestD) { best = c; bestD = d; }
+    });
+    return best ? m[1] + '@' + best : null;
   }
+
 
   // ── The host (#ios-signin, full screen, the iOS app only) ─────────────
   var PENDING = 'ca_signin_pending', CODE_TTL = 900000, RESEND_MS = 60000;

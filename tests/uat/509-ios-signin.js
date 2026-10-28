@@ -35,6 +35,14 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       Object.keys(MAP).every((d) => SG('sam@' + d) === 'sam@' + MAP[d]) && SG('Sam@GMIAL.com ') === 'sam@gmail.com'
       && SG('sam@gmail.com') === null && SG('nope') === null && SG('') === null);
 
+    // 28 Oct (founder test): "htomail.com" slipped through the fixed list; closeness now catches one-or-two-letter slips
+    test('typo check: swapped, missing, extra or wrong letters near a common provider are caught',
+      SG('simi@htomail.com') === 'simi@hotmail.com' && SG('a@hotmal.com') === 'a@hotmail.com' && SG('a@gmaill.com') === 'a@gmail.com'
+      && SG('a@outlool.com') === 'a@outlook.com' && SG('a@icluod.com') === 'a@icloud.com' && SG('a@yahooo.co.uk') === 'a@yahoo.co.uk'
+      && SG('a@hotmial.co.uk') === 'a@hotmail.co.uk');
+    test('typo check: real addresses are left alone (other real providers, regional domains, work domains)',
+      ['mail.com', 'ymail.com', 'gmx.com', 'live.com', 'live.co.uk', 'hotmail.co.uk', 'me.com', 'mac.com', 'aol.com', 'msn.com', 'proton.me', 'btinternet.com', 'certanvil.com', 'nhs.net', 'ac.uk', 'outlook.de', 'hotmail.fr', 'yahoo.de']
+        .every((d) => SG('a@' + d) === null));
     const c = run('_isiCodeHtml(__s)', { email: 'sam@example.test', left: 60, msg: '', kind: '', expired: false });
     const cx = run('_isiCodeHtml(__s)', { email: 'sam@example.test', left: 0, msg: 'That code has expired.', kind: 'err', expired: true });
     const c0 = run('_isiCodeHtml(__s)', { email: 'a<b@x.test', left: 0, msg: '', kind: '', expired: false });
