@@ -17,9 +17,9 @@ const handler = mod.default, { clientSecret, decideRevoke } = mod._internal;
 
 const b64u = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const idToken = (sub) => b64u({ alg: 'RS256' }) + '.' + b64u({ sub, aud: 'com.certanvil.app' }) + '.sig';
-let calls = [];
+let calls = [], written = [];
 function stub({ user = { id: 'u1', identities: [{ provider: 'apple', id: 'apple-sub-1', identity_data: { sub: 'apple-sub-1' } }] }, userStatus = 200, appleSub = 'apple-sub-1', exchangeStatus = 200 } = {}) {
-  calls = [];
+  calls = []; written = [];
   globalThis.fetch = async (url, init = {}) => {
     calls.push({ url: String(url), init });
     if (String(url).endsWith('/auth/v1/user')) return new Response(JSON.stringify(user), { status: userStatus });
@@ -27,7 +27,7 @@ function stub({ user = { id: 'u1', identities: [{ provider: 'apple', id: 'apple-
       ? new Response(JSON.stringify({ refresh_token: 'rt-1', id_token: idToken(appleSub) }), { status: 200 })
       : new Response(JSON.stringify({ error: 'invalid_grant' }), { status: exchangeStatus });
     if (String(url).endsWith('/auth/revoke')) return new Response('', { status: 200 });
-    if (String(url).includes('/rest/v1/client_errors')) return new Response('', { status: 201 });
+    if (String(url).includes('/rest/v1/client_errors')) { await new Promise((r) => setTimeout(r, 30)); written.push(JSON.parse(init.body).message); return new Response('', { status: 201 }); }
     return new Response('', { status: 404 });
   };
 }
@@ -79,14 +79,15 @@ await t('no or invalid bearer -> 401 and no Apple call', async () => {
   stub({ userStatus: 401 });
   assert.equal((await handler(req({ code: 'c' }))).status, 401);
   assert.ok(!calls.some((c) => c.url.includes('appleid.apple.com')));
-  await tick(); assert.deepEqual(logged(), ['apple-revoke: unauthorized']);
+  assert.deepEqual(written, ['apple-revoke: unauthorized']);
 });
 
 await t('Apple refuses the code -> 502 failed', async () => {
   stub({ exchangeStatus: 400 });
   const res = await handler(req({ code: 'c' }));
   assert.equal(res.status, 502); assert.deepEqual(await res.json(), { result: 'failed' });
-  await tick(); assert.deepEqual(logged(), ['apple-revoke: failed']);
+  // the log row is written BEFORE the response returns (Edge drops unawaited work), and it carries Apple's reason
+  assert.deepEqual(written, ['apple-revoke: failed (token 400 invalid_grant)']);
 });
 
 await t('CORS: a cert subdomain is allowed; other origins are not', async () => {
@@ -100,4 +101,14 @@ await t('CORS: a cert subdomain is allowed; other origins are not', async () => 
   assert.equal(dev.headers.get('access-control-allow-origin'), 'http://localhost:3140');
 });
 
-console.log('apple-revoke: ' + n + '/7 passed');
+await t('the apikey falls back to SUPABASE_PUBLISHABLE_KEY (the name its sibling endpoints use)', async () => {
+  const anon = process.env.SUPABASE_ANON_KEY;
+  delete process.env.SUPABASE_ANON_KEY; process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_x';
+  try {
+    stub();
+    await handler(req({ code: 'c' }));
+    assert.equal(calls.find((c) => c.url.endsWith('/auth/v1/user')).init.headers.apikey, 'sb_publishable_x');
+  } finally { process.env.SUPABASE_ANON_KEY = anon; delete process.env.SUPABASE_PUBLISHABLE_KEY; }
+});
+
+console.log('apple-revoke: ' + n + '/8 passed');

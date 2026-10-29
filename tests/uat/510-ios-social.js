@@ -47,6 +47,20 @@ const { fs, path, ROOT, test, results } = require('./_context');
       /\.apps\.googleusercontent\.com$/.test(iosId) && /googleWeb: '[^']+\.apps\.googleusercontent\.com'/.test(ns)
       && plist.indexOf('<string>com.googleusercontent.apps.' + iosId.replace('.apps.googleusercontent.com', '') + '</string>') > 0);
     test('the website build still excludes the native project', /'ios'/.test(read('scripts/build.js')));
+    // Deferred minor, closed 29 Oct: the e2e SocialLogin stub must keep the plugin's real Apple envelope (the C1 lesson:
+    // a stub that invented authorizationCode hid a revoke that could never work).
+    const dts = read('node_modules/@capgo/capacitor-social-login/dist/esm/definitions.d.ts');
+    const apple = (dts.match(/export interface AppleProviderResponse \{[\s\S]*?\n\}/) || [''])[0];
+    const stub = read('tests/e2e/lift-5c.spec.js');
+    test('the plugin\'s Apple response still has the fields caNative.social and the e2e stub use',
+      !dts || (/\bidToken: string \| null;/.test(apple) && /\bauthorizationCode\?: string;/.test(apple) && /\baccessToken: AccessToken \| null;/.test(apple)
+        && /givenName: string \| null;/.test(apple) && /familyName: string \| null;/.test(apple)
+        && /authorizationCode: code, accessToken: null/.test(stub) && /profile: \{ givenName/.test(stub)));
+    // The revoke endpoint's own suite (tests/apple-revoke.test.mjs) runs here so CI runs it.
+    const { spawnSync } = require('child_process');
+    const rv = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/apple-revoke.test.mjs')], { encoding: 'utf8', timeout: 30000 });
+    test('apple-revoke endpoint suite passes (' + ((rv.stdout || '').match(/apple-revoke: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
+      rv.status === 0 && /apple-revoke: (\d+)\/\1 passed/.test(rv.stdout || ''));
   } catch (err) {
     test('Stage 5c social: block (threw)', false);
     results.errors.push('510 ios-social block threw: ' + err.message);
