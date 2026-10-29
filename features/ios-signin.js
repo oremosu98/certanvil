@@ -410,19 +410,23 @@
   function logRevoke(out) { try { if (typeof logError === 'function') logError('apple-revoke', 'apple-revoke: ' + out); } catch (_) {} }
   IS._appleRevoke = function () {
     var N = window.caNative, c = sb();
-    if (!N || !N.social || !c) { logRevoke('failed'); return Promise.resolve('failed'); }
+    if (!N || !N.social || !c) { logRevoke('failed (no client)'); return Promise.resolve('failed'); }
+    var why = '';   // which step failed, for the log (v8.197.2): the outcome alone never said
     // The access token is read before the sheet: the user may take their time on Apple's sheet, and the timeout
     // below covers only the network call after it (a stuck network never holds up the deletion).
     return c.auth.getSession().then(function (s) {
       var t = s && s.data && s.data.session && s.data.session.access_token;
       return N.social('apple', {}).then(function (r) {
-        if (!r.authorizationCode || !t) return 'failed';
+        if (!r.authorizationCode || !t) { why = !t ? 'no session' : 'no code'; return 'failed'; }
         var call = fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify({ code: r.authorizationCode }) })
-          .then(function (res) { return res.json().then(function (j) { return (j && j.result) || 'failed'; }, function () { return 'failed'; }); }, function () { return 'failed'; });
-        return Promise.race([call, new Promise(function (r2) { setTimeout(function () { r2('failed'); }, IS._revokeWait || 15000); })]);
-      }, function (e) { return e && e.cancelled ? 'cancelled' : 'failed'; });
-    }).catch(function () { return 'failed'; }).then(function (out) {
-      if (out !== 'ok' && out !== 'sub-mismatch') logRevoke(out);   // the server logs ok / sub-mismatch itself
+          .then(function (res) {
+            return res.json().then(function (j) { var out = (j && j.result) || 'failed'; if (out !== 'ok') why = 'server ' + res.status + ' ' + out; return out; },
+              function () { why = 'server ' + res.status + ' not json'; return 'failed'; });
+          }, function () { why = 'network'; return 'failed'; });
+        return Promise.race([call, new Promise(function (r2) { setTimeout(function () { why = why || 'timeout'; r2('failed'); }, IS._revokeWait || 15000); })]);
+      }, function (e) { if (e && e.cancelled) return 'cancelled'; why = 'sheet'; return 'failed'; });
+    }).catch(function () { why = why || 'threw'; return 'failed'; }).then(function (out) {
+      if (out !== 'ok' && out !== 'sub-mismatch') logRevoke(out + (why && out !== 'cancelled' ? ' (' + why + ')' : ''));   // the server logs ok / sub-mismatch itself
       return out;
     });
   };

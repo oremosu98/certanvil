@@ -401,7 +401,16 @@ test.describe('Stage 5c final review fixes', () => {
     await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
     await deleteAccount(page);
     await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
-    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed');
+    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (sheet)');
+  });
+
+  test('the app logs why a revoke failed: the server\'s answer, or a timeout', async ({ page }) => {
+    await routeRevoke(page, 'failed');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (server 409 failed)');
   });
 });
 

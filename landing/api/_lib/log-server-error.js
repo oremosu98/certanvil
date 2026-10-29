@@ -2,13 +2,14 @@
 // Identical copy of api/_lib/log-server-error.js for the landing Vercel project
 // (separate deployment — cannot share node_modules paths across projects).
 // ESM export because landing/api/ uses Vercel Edge Runtime (not Node.js CJS).
-// NEVER awaited on the response path; never throws.
+// Never throws. Returns the write's promise: on Edge an unawaited write can be dropped once the response is sent,
+// so an endpoint whose log matters (apple-revoke) awaits it; others still fire and forget.
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export function logServerError(entry) {
   try {
-    if (!SUPABASE_URL || !SERVICE_KEY) return;
+    if (!SUPABASE_URL || !SERVICE_KEY) return Promise.resolve();
     const row = {
       fingerprint: ('server|' + (entry.endpoint || '') + '|' + (entry.status || '') + '|' +
         String(entry.message || '').slice(0, 80)).slice(0, 300),
@@ -20,7 +21,7 @@ export function logServerError(entry) {
       user_id: null,
       extra: { error_id: entry.errorId || null, status: entry.status || null }
     };
-    fetch(SUPABASE_URL + '/rest/v1/client_errors', {
+    return fetch(SUPABASE_URL + '/rest/v1/client_errors', {
       method: 'POST',
       headers: {
         'apikey': SERVICE_KEY,
@@ -29,6 +30,6 @@ export function logServerError(entry) {
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify(row)
-    }).catch(() => {});
-  } catch (_) { /* reporting must never break serving */ }
+    }).then(() => {}, () => {});
+  } catch (_) { return Promise.resolve(); /* reporting must never break serving */ }
 }
