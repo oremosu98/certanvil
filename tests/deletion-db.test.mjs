@@ -389,6 +389,24 @@ await t('running the migration re-stamps marks from before 29 Oct to now, once, 
   assert.equal((await meta(A)).deletion_requested_at, a1, 'a second run does not extend it again');
 });
 
+await t('running the migration cancels a pre-29 Oct mark when the person signed in after it', async () => {
+  // The old flow never cleared a mark on sign-in; a later sign-in is the cancel the trigger would have made.
+  const file = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261029_account_deletion.sql'), 'utf8');
+  await setMeta(A, { keep: 1, deletion_requested_at: '2026-10-01T00:00:00Z' });
+  await db.exec('alter table auth.users disable trigger on_signin_cancel_deletion');
+  try { await signIn(A, "'2026-10-05T00:00:00Z'"); }
+  finally { await db.exec('alter table auth.users enable trigger on_signin_cancel_deletion'); }
+  await db.exec(file);
+  const m = await meta(A);
+  assert.equal(m.deletion_requested_at, undefined, 'mark removed');
+  assert.ok(Math.abs(new Date(m.deletion_cancelled_at) - Date.now()) < 5000, 'notice set to now: ' + m.deletion_cancelled_at);
+  assert.equal(m.keep, 1, 'other keys stay');
+  assert.equal(await purge(), 0);
+  assert.equal(await count('auth.users where id = $1', [A]), 1, 'A kept');
+  await db.exec(file);
+  assert.deepEqual(await meta(A), m, 'a second run changes nothing');
+});
+
 // Last: it removes what every case above depends on.
 await t('the rollback removes the trigger, the five functions and restores admin_audit_record', async () => {
   const file = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261029_account_deletion.sql'), 'utf8');

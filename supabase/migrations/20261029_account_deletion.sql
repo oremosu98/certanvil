@@ -55,10 +55,13 @@
 --      It also skips an account that signed in after its mark
 --      (auth.users.last_sign_in_at later than the mark), even if the mark is
 --      still there.
---   6b. ONE-TIME: every mark written before 2026-10-29T00:00:00Z (the old
---      flow, since v7.45.0, never cleared its marks) is re-stamped to now(),
---      a fresh 7 days, so the first hourly run purges nobody by surprise.
---      Re-running the file does not extend them again (see the block).
+--   6b. ONE-TIME, for every mark written before 2026-10-29T00:00:00Z (the
+--      old flow, since v7.45.0, never cleared its marks): if the person signed
+--      in after the mark, the deletion is cancelled as the sign-in trigger
+--      would have (mark removed, deletion_cancelled_at set); otherwise the
+--      mark is re-stamped to now(), a fresh 7 days. Either way the first
+--      hourly run purges nobody by surprise. Re-running the file changes
+--      neither again (see the block).
 --   7. pg_cron job purge-deleted-accounts, hourly at :17, only where pg_cron
 --      is available (on Supabase you may first need to switch it on under
 --      Database → Extensions). Re-running replaces the job, never duplicates.
@@ -78,7 +81,7 @@
 -- ACTION REQUIRED: run this whole file once in Supabase Dashboard → SQL
 -- Editor (as postgres). Idempotent (CREATE OR REPLACE / DROP ... IF EXISTS).
 -- The ROLLBACK block at the end undoes it (it cannot restore purged accounts,
--- nor un-re-stamp the marks block 6b moved). Before running it, do the
+-- nor undo block 6b's re-stamps and cancels). Before running it, do the
 -- preflight in the plan (Task 6 Step 2): list every marked account and strip
 -- the mark of anyone who should stay.
 -- ══════════════════════════════════════════════════════════════════════════
@@ -356,6 +359,19 @@ revoke execute on function public.purge_deleted_accounts() from public, anon, au
 -- (Old-flow marks made on 29 Oct itself, before the migration ran, are not
 -- re-stamped: they are less than a day old and already get about 7 days.)
 -- A missing or unparseable mark is skipped (safe_timestamptz gives NULL).
+-- First, a person who signed in AFTER their old mark already changed their
+-- mind (the old flow simply never cleared the mark): cancel it, exactly as the
+-- sign-in trigger would have (mark removed, deletion_cancelled_at = now(), so
+-- the app shows the welcome-back notice once). The rest are re-stamped.
+-- Both leave no pre-cutoff mark behind, so a second run changes nothing.
+update public.profiles p
+   set metadata = (p.metadata - 'deletion_requested_at')
+                  || jsonb_build_object('deletion_cancelled_at', now())
+  from auth.users u
+ where u.id = p.id
+   and public.safe_timestamptz(p.metadata->>'deletion_requested_at') < '2026-10-29T00:00:00Z'::timestamptz
+   and u.last_sign_in_at > public.safe_timestamptz(p.metadata->>'deletion_requested_at');
+
 update public.profiles
    set metadata = metadata || jsonb_build_object('deletion_requested_at', now())
  where public.safe_timestamptz(metadata->>'deletion_requested_at') < '2026-10-29T00:00:00Z'::timestamptz;
