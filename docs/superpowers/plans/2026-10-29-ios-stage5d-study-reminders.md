@@ -40,13 +40,15 @@ Drafts from the spec and the approved drawing; Task 1 locks them.
 | Reminder title | CertAnvil |
 | Countdown (n ≥ 2) | Your {cert} exam is in {n} days. A quick session keeps you on track. |
 | Countdown (n = 1) | Your {cert} exam is tomorrow. One last warm-up? |
-| Reviews (n ≥ 2) | {n} review cards are due. Five minutes and you're done. |
-| Reviews (n = 1) | 1 review card is due. Five minutes and you're done. |
+| Reviews (n ≥ 2) | {n} review cards are due. About {m} minutes. |
+| Reviews (n = 1) | 1 review card is due. About 2 minutes. |
 | Practice, free | Your 15 questions for today are waiting. |
 | Practice, Pro | Your daily practice is waiting. |
 | Priming sheet | as the approved drawing's `rem-prime` / `rem-prime-pro` states, incl. "Remind me at {time}", "Turn on reminders", "Maybe later", "One a day at most. Turn it off any time in Settings." |
 | Settings row | Reminders · value "{time}" or "Off" |
 | Denied sheet | Notifications are off for CertAnvil in iPhone Settings. · Open Settings · Not now |
+
+Copy pass (29 Oct): the reviews line said "Five minutes and you're done", which is untrue for a large pile; it now gives Home's own estimate, `{m}` = `max(2, round(n × 0.5))` minutes (features/home.js), so the promise is always honest. Other strings unchanged (humanizer: plain, no softeners or em-dashes; marketing-psychology: concrete effort lowers friction, no guilt). |
 
 ---
 
@@ -86,7 +88,7 @@ Drafts from the spec and the approved drawing; Task 1 locks them.
   // now = 2026-10-29T10:00 local, time '19:00', counts [6,0,0,3,0,0,0], daysToExam 7, cert 'Security+', free
   test('7 items, ids 5001..5007, each at 19:00 local on consecutive days')
   test('day 0 (exam in 7) is the countdown line, not the 6 reviews')
-  test('day 3 shows "3 review cards are due. Five minutes and you\'re done."')
+  test('day 3 shows "3 review cards are due. About 2 minutes."')
   test('days with no reviews and no countdown show "Your 15 questions for today are waiting."')
   test('Pro practice line is "Your daily practice is waiting." and never contains 15')
   test('exam in 1 day uses the tomorrow line; exam day and after have no countdown')
