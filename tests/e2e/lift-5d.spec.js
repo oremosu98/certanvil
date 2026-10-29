@@ -290,3 +290,94 @@ test.describe('Stage 5d: the ask', () => {
     await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
   });
 });
+
+// ── Task 6: Settings → Reminders ──
+async function openSettings(page) {
+  await page.click('#ios-home [data-act="settings"]');
+  await expect(page.locator('#ios-settings')).toBeVisible();
+}
+const remRow = (page) => page.locator('#ios-settings [data-act="reminders"]');
+
+test.describe('Stage 5d: Settings → Reminders', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('on and granted: the row reads 7:00 pm', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: Object.assign({ nplus_onb_skips: '{"at":1}' }, GRANTED) });
+    await openSettings(page);
+    await expect(remRow(page)).toContainText('Reminders');
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('7:00 pm', { timeout: 3000 });
+  });
+
+  test('off: the row reads Off; switching on with permission not asked asks iOS', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'prompt', requestAnswer: 'granted' }) } });
+    await openSettings(page);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('Off');
+    await remRow(page).click();
+    await page.click('#ist-sheet [data-act="rem-sw"]');
+    await expect.poll(async () => (await notifCalls(page)).some((c) => c.op === 'request')).toBe(true);
+    await expect.poll(async () => { const s = await state(page); return s && s.on; }).toBe(true);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('7:00 pm', { timeout: 3000 });
+    expect((await state(page)).asked).toBe('done');
+  });
+
+  test('changing the time reschedules at the new time', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: Object.assign({ nplus_onb_skips: '{"at":1}' }, GRANTED) });
+    await openSettings(page);
+    await remRow(page).click();
+    await page.click('#ist-sheet [data-act="rem-time"]');
+    await page.click('#ist-sheet [data-act="rem-w"][data-k="h"][data-v="8"]');
+    await expect.poll(async () => (await state(page)).time).toBe('20:00');
+    await expect.poll(async () => { const n = await lastSchedule(page); return n && new Date(n[n.length - 1].schedule.at).getHours(); }).toBe(20);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('8:00 pm');
+  });
+
+  test('switching off cancels everything', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: Object.assign({ nplus_onb_skips: '{"at":1}' }, GRANTED) });
+    await openSettings(page);
+    await remRow(page).click();
+    await page.evaluate(() => localStorage.setItem('__notifCalls', '[]'));
+    await page.click('#ist-sheet [data-act="rem-sw"]');
+    await expect.poll(async () => (await state(page)).on).toBe(false);
+    await expect.poll(async () => (await notifCalls(page)).some((c) => c.op === 'cancel')).toBe(true);
+    expect((await notifCalls(page)).some((c) => c.op === 'schedule')).toBe(false);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('Off');
+  });
+
+  test('denied (even with on): row Off, the sheet shows the denied text and Open Settings', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'denied' }) } });
+    await openSettings(page);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('Off', { timeout: 3000 });
+    await remRow(page).click();
+    await expect(page.locator('#ist-sheet')).toContainText('Notifications are off for CertAnvil in iPhone Settings.');
+    await page.click('#ist-sheet [data-act="rem-open"]');
+    expect((await notifCalls(page)).find((c) => c.op === 'openUrl').url).toBe('app-settings:');
+  });
+
+  test('Open Settings is hidden when the app can\'t open them', async ({ page }) => {
+    await page.addInitScript(() => { const t = setInterval(() => { if (window.Capacitor && window.Capacitor.Plugins) { delete window.Capacitor.Plugins.AppLauncher; clearInterval(t); } }, 0); });
+    await boot(page, { prefs: ON_PREFS(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'denied' }) } });
+    await openSettings(page);
+    await remRow(page).click();
+    await expect(page.locator('#ist-sheet')).toContainText('Notifications are off');
+    await expect(page.locator('#ist-sheet [data-act="rem-open"]')).toHaveCount(0);
+  });
+
+  test('allowing later in iPhone Settings: app-active with permission granted restores the time', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'denied' }) } });
+    await openSettings(page);
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('Off', { timeout: 3000 });
+    await page.evaluate(() => { localStorage.setItem('__notif', JSON.stringify({ perm: 'granted' })); window.__fireAppActive(); });
+    await expect(remRow(page).locator('.ist-rmv')).toHaveText('7:00 pm', { timeout: 3000 });
+    await expect.poll(async () => !!(await lastSchedule(page))).toBe(true);
+  });
+});
+
+test.describe('Stage 5d: Settings off the app', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('no Reminders row on the phone website', async ({ page }) => {
+    await boot(page, { native: false, prefs: ON_PREFS(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.click('#ios-home [data-act="settings"]');
+    await page.waitForTimeout(600);
+    await expect(remRow(page)).toHaveCount(0);
+  });
+});

@@ -209,10 +209,44 @@
     }).catch(function () {});
   };
 
+  // ── Settings → Reminders (features/ios-settings.js draws the row and sheet; the logic lives here) ──
+  IR.rowShown = function () { return active(); };
+  IR._label = null;
+  IR.rowLabel = function () {
+    if (!active()) return Promise.resolve('Off');
+    return Promise.all([IR.load(), N().reminders.permission()]).then(function (a) { return a[0].on && a[1] === 'granted' ? fmtTime(a[0].time) : 'Off'; });
+  };
+  IR.refreshRow = function () {
+    return IR.rowLabel().then(function (l) {
+      IR._label = l;
+      var el = document.querySelector('#ios-settings .ist-rmv'); if (el) el.textContent = l;
+    }).catch(function () {});
+  };
+  IR.sheetModel = function () {
+    return Promise.all([IR.load(), active() ? N().reminders.permission() : Promise.resolve('denied')]).then(function (a) {
+      var st = a[0], perm = a[1];
+      return { perm: perm, on: !!st.on && perm === 'granted', time: fmtTime(st.time), parts: toParts(st.time), canOpen: !!(N() && N().canOpenAppSettings && N().canOpenAppSettings()) };
+    });
+  };
+  // Turning on asks iOS if it never has; a refusal leaves reminders off (the sheet then shows the denied state).
+  IR.setOn = function (on) {
+    if (!active()) return Promise.resolve();
+    var R = N().reminders;
+    var p = !on ? IR.save({ on: false }) : R.permission().then(function (perm) {
+      if (perm === 'granted') return IR.save({ on: true });
+      if (perm === 'prompt') return R.request().then(function (ans) { return IR.save(ans === 'granted' ? { on: true, asked: 'done' } : { asked: 'done' }); });
+      return IR.save({ on: true });   // denied: stays effectively off until iOS allows it
+    });
+    return p.then(function () { return IR.reschedule(); }).then(function () { return IR.refreshRow(); }).catch(function () {});
+  };
+  IR.setTime = function (parts) {
+    return IR.save({ time: fromParts(parts) }).then(function () { return IR.reschedule(); }).then(function () { return IR.refreshRow(); }).catch(function () {});
+  };
+
   if (!window.CA_NATIVE) return;
   window.addEventListener('ca:home-shown', function () { IR.maybeOffer(); });
   window.addEventListener('ca:quiz-finished', function () { IR.onQuizFinished(); });
-  window.addEventListener('ca:app-active', function () { IR.reschedule(); });
+  window.addEventListener('ca:app-active', function () { IR.reschedule().then(function () { return IR.refreshRow(); }); });   // e.g. allowed in iPhone Settings
   window.addEventListener('ca:exam-date', function () { IR.reschedule(); });
   // At launch, once the page's data has loaded; again when the account's tier resolves (a Pro user's first plan may
   // have used the free line).

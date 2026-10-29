@@ -3103,3 +3103,32 @@ html.isi-open { overflow: hidden; }
   #irm-root .irm-sheet, #irm-root .irm-sheet.open, #irm-root .irm-tsheet, #irm-root .irm-tsheet.open { transform: none; transition: opacity .2s ease; }
   #irm-root .irm-sheet:not(.open), #irm-root .irm-tsheet:not(.open) { opacity: 0; pointer-events: none; }
 }
+/* Stage 5d: Settings → Reminders sheet (lift of june-e2e cert-ios-settings.html ?v=reminders-sheet / reminders-denied).
+   No new motion: the sheet uses #ist-sheet's own timings. */
+#ist-sheet .ist-rem { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+#ist-sheet .ist-rem .ist-tog { margin: 0; padding: 12px 14px; border-top: 0; min-height: 56px; }
+#ist-sheet .ist-rem .ist-row { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); border-radius: 0; }
+#ist-sheet .ist-rem .ist-row[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+#ist-sheet .ist-rem .ist-rv { color: var(--accent-deep); font-variant-numeric: lining-nums tabular-nums; }
+#ist-sheet .ist-wheel { position: relative; display: flex; justify-content: center; gap: 6px; height: 190px; overflow: hidden; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); padding: 0 4px; }
+#ist-sheet .ist-wheel::before { content: ""; position: absolute; left: 8px; right: 8px; top: 76px; height: 38px; border-radius: 10px; background: color-mix(in oklab, var(--text) 7%, transparent); pointer-events: none; }
+#ist-sheet .irm-wcol { position: relative; display: flex; flex-direction: column; width: 72px; }
+#ist-sheet .irm-wcol button { height: 38px; border: 0; background: none; cursor: pointer; font: 500 21px/38px Inter, sans-serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; padding: 0; }
+#ist-sheet .irm-wcol button.d1 { opacity: .45; font-size: 19px; }
+#ist-sheet .irm-wcol button.d2 { opacity: .2; font-size: 17px; }
+#ist-sheet .irm-wcol button.d0 { font-weight: 650; }
+#ist-sheet .ist-denied { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; margin-bottom: 12px; border-radius: 14px; border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--text) 4%, var(--surface)); font: 550 13.5px/1.45 Inter, sans-serif; color: var(--text); }
+#ist-sheet .ist-denied svg { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; stroke: var(--text-dim); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* the page's own row / toggle / switch rules are scoped to #ios-settings; the same values for the Reminders sheet */
+#ist-sheet .ist-rem .ist-tog { display: flex; align-items: center; gap: 12px; }
+#ist-sheet .ist-rem .ist-tl { flex: 1 1 auto; min-width: 0; font: 650 13.5px/1.25 Inter, sans-serif; color: var(--text); }
+#ist-sheet .ist-rem .ist-tl span { display: block; margin-top: 3px; font: 500 11.5px/1.4 Inter, sans-serif; color: var(--text-dim); }
+#ist-sheet .ist-rem .ist-sw { position: relative; flex: 0 0 auto; width: 48px; height: 30px; border-radius: 999px; border: none; background: var(--track); cursor: pointer; padding: 0; transition: background-color .2s var(--ios-ease); }
+#ist-sheet .ist-rem .ist-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s var(--ios-ease); }
+#ist-sheet .ist-rem .ist-sw[aria-pressed="true"] { background: var(--accent); }
+#ist-sheet .ist-rem .ist-sw[aria-pressed="true"]::after { transform: translateX(18px); }
+#ist-sheet .ist-rem .ist-row { width: 100%; min-height: 50px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-left: 0; border-right: 0; border-bottom: 0; background: transparent; color: var(--text); text-align: left; font: 600 14px/1.25 Inter, sans-serif; cursor: pointer; }
+#ist-sheet .ist-rem .ist-rl { flex: 1 1 0; min-width: 0; }
+#ist-sheet .ist-rem .ist-rv { flex: 0 0 auto; font: 600 13px/1.2 Inter, sans-serif; text-align: right; }
+@media (prefers-reduced-motion: reduce) { #ist-sheet .ist-rem .ist-sw, #ist-sheet .ist-rem .ist-sw::after { transition: none; } }
