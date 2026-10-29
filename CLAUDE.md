@@ -171,6 +171,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - `tests/uat.js` prefers behavioral smoke over structural; see Testing Philosophy
 
 **Deploy**
+- **Migrations never self-apply, and some silently never reached prod** (29 Oct 2026 audit: `user_bug_reports` was missing, so every in-app bug report since July was lost; the 15-question quota was still 20). After pasting a migration, add a row to `scripts/sql/migration-audit.sql` and run it in the SQL Editor; MISSING rows sort first.
 - Service worker cache name must be bumped on every deploy or users get stale files — use `scripts/bump-version.js`, never hand-edit partial
 - Vercel CLI requires nvm path export: `export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"`
 - If you're tempted to `vercel --prod` without committing, **commit and push immediately after** — git↔prod drift cost us 6 versions (v4.39→v4.43.1) before it got caught
