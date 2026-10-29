@@ -14,3 +14,11 @@ const { path, ROOT, test, results } = require('./_context');
     results.errors.push('512 account-deletion block threw: ' + err.message);
   }
 })();
+
+// Privacy v1.2 (29 Oct): Self-delete describes the 7-day erase, not Stripe or browser cache.
+(function () {
+  const pv = require('fs').readFileSync(path.join(ROOT, 'landing/privacy.html'), 'utf8');
+  const self = (pv.match(/<p><strong>Self-delete<\/strong>.*?<\/p>/s) || [''])[0];
+  test('privacy.html is v1.2 and Self-delete no longer says Stripe or browser cache',
+    /· v1\.2/.test(pv) && /<strong>v1\.2<\/strong> \(29 October 2026\)/.test(pv) && /Signing back in within 7 days cancels it/.test(self) && !/Stripe|browser cache/i.test(self));
+})();

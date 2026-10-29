@@ -91,9 +91,9 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     test('index.html and pricing.html share the code screen\'s ids', sentIds(read('landing/index.html')) && sentIds(read('landing/pricing.html')));
     // Legal pages (28 Oct): sign-in is described as a one-time email code; v1.1 recorded in each page's history
     const pv = read('landing/privacy.html'), tm = read('landing/terms.html');
-    test('privacy and terms no longer describe magic links and record v1.1',
+    test('privacy and terms no longer describe magic links and record v1.1 (privacy may be v1.2)',
       ![pv, tm].some((h) => /magic[- ]link|sign-in link|one-use sign-in/i.test(h)) && /one-time/.test(pv) && /one-time/.test(tm)
-      && /<strong>v1\.1<\/strong>/.test(pv) && /<strong>v1\.1<\/strong>/.test(tm) && /expires after 15 minutes/.test(pv));
+      && /<strong>v1\.[12]<\/strong>/.test(pv) && /<strong>v1\.1<\/strong> \(28 October 2026\)/.test(pv) && /<strong>v1\.1<\/strong>/.test(tm) && /expires after 15 minutes/.test(pv));
     const stg = read('features/ios-settings.js');
     test('iOS Settings has an About section with Privacy Policy and Terms links that open in the in-app sheet',
       /ist-sect reveal">About</.test(stg) && stg.indexOf("legal('https://certanvil.com/privacy'") > 0 && stg.indexOf("legal('https://certanvil.com/terms'") > 0 && /target="_blank" rel="noopener" data-ext>/.test(stg)
