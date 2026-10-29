@@ -22,7 +22,7 @@ import { PGlite } from '@electric-sql/pglite';
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIGRATIONS = [
   '20260506_phase_c_prime.sql', '20260509_phase_e_subscriptions.sql', '20260509_notify_signups.sql',
-  '20260511_diagnostic_pending.sql', '20260511_web_vitals.sql', '20260531_phase5_admin_audit_log.sql',
+  '20260511_diagnostic_pending.sql', '20260511_web_vitals.sql', '20260529_ai_proxy_rate_limit.sql', '20260531_phase5_admin_audit_log.sql',
   '20260718_client_errors.sql', '20260718_user_bug_reports.sql',
 ];
 const PRELUDE = `
@@ -181,7 +181,7 @@ await t('the cancel trigger waits at most 2s for a row lock', async () => {
 // C: unmarked, other@x.com. D: an unparseable mark. Each has a row of every kind the purge touches.
 const C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d';
 const E = '00000000-0000-0000-0000-00000000000e';
-const PURGE_TABLES = ['admin_audit_log', 'waitlist', 'notify_signups', 'diagnostic_pending', 'client_errors', 'user_bug_reports'];
+const PURGE_TABLES = ['admin_audit_log', 'waitlist', 'notify_signups', 'diagnostic_pending', 'client_errors', 'user_bug_reports', 'ai_proxy_rate_limit'];
 async function seedUser(id, email, markJson, listEmails = [email]) {
   await db.query('insert into auth.users (id, email) values ($1, $2)', [id, email]);
   if (markJson !== undefined) {
@@ -195,6 +195,7 @@ async function seedUser(id, email, markJson, listEmails = [email]) {
   await db.query("insert into public.client_errors (fingerprint, type, message, user_id) values ('fp', 'error', 'boom', $1)", [id]);
   await db.query("insert into public.user_bug_reports (report_id, title, user_id) values ($2, 'broken', $1)", [id, 'r-' + id]);
   await db.query("insert into public.admin_audit_log (actor_id, action, target_table, target_op, target_id, old_data, new_data) values ($1, 'role_change', 'profiles', 'UPDATE', $2, '{\"role\":\"user\"}', '{\"role\":\"admin\"}')", [id, id]);
+  await db.query("insert into public.ai_proxy_rate_limit (key, call_count) values ('user:' || $1, 7)", [id]);
   for (const [i, e] of listEmails.entries()) {
     await db.query("insert into public.waitlist (email, cert) values ($1, 'AZ-900')", [e]);
     await db.query("insert into public.notify_signups (email, cert) values ($1, 'CCNA')", [e]);
@@ -208,6 +209,7 @@ async function seed() {
   await seedUser(B, 'b@x.com', "now() - interval '6 days'");
   await seedUser(C, 'other@x.com', undefined, ['other@x.com', 'xsimi@x.com']);
   await seedUser(D, 'd@x.com', "'not a date'::text");
+  await db.query("insert into public.ai_proxy_rate_limit (key) values ('ip:abc'), ('global:daily')");
 }
 const purge = async () => (await db.query('select public.purge_deleted_accounts() as n')).rows[0].n;
 const count = async (sql, params) => Number((await db.query('select count(*)::int as c from ' + sql, params)).rows[0].c);
@@ -222,14 +224,50 @@ async function dump(where = 'true') {
   }
   return out;
 }
-// Rows mentioning any of these ids or emails anywhere (as a whole JSON string value, case-insensitive).
-const others = (ids, emails) => "(to_jsonb(x)::text ~* '\"(" + [...ids, ...emails].join('|').replace(/\./g, '\\.') + ")\"')";
+// Rows mentioning any of these ids or emails anywhere (as a whole JSON string value, or a 'user:<id>' rate-limit
+// key; case-insensitive).
+const others = (ids, emails) => "(to_jsonb(x)::text ~* '\"(user:)?(" + [...ids, ...emails].join('|').replace(/\./g, '\\.') + ")\"')";
 
 await t('the purge removes A and every cascaded row, and returns 1', async () => {
   await seed();
   assert.equal(await purge(), 1);
   assert.equal(await count('auth.users where id = $1', [A]), 0, 'auth.users');
   for (const tb of USER_TABLES) assert.equal(await count(tb, [A]), 0, tb);
+  assert.equal(await count('public.ai_proxy_rate_limit where key = $1', ['user:' + A]), 0, "A's AI rate-limit row");
+  assert.equal(await count("public.ai_proxy_rate_limit where key in ('ip:abc', 'global:daily')"), 2, 'non-user keys stay');
+  assert.equal(await count('public.ai_proxy_rate_limit'), 5, 'B, C, D keep theirs');
+});
+
+await t('an account whose mark was cleared after the run started is skipped, not deleted', async () => {
+  // A sign-in can commit between the purge reading its list and reaching an account. In one connection the
+  // same thing happens when purging A (first, by id) clears E's mark: E is still on the list, so only the
+  // locked re-check keeps E alive.
+  await seed();
+  await seedUser(E, 'e@x.com', "now() - interval '9 days'");
+  await db.exec(`create function public.t_reclaim_e() returns trigger language plpgsql as $f$
+    begin
+      if old.id = '${A}' then
+        update public.profiles set metadata = (metadata - 'deletion_requested_at')
+          || jsonb_build_object('deletion_cancelled_at', now()) where id = '${E}';
+      end if;
+      return old;
+    end $f$;
+    create trigger t_reclaim_e after delete on public.profiles for each row execute function public.t_reclaim_e();`);
+  try {
+    const beforeE = (await dump(others([E], ['e@x.com'])));
+    assert.equal(await purge(), 1, 'only A');
+    assert.equal(await count('auth.users where id = $1', [A]), 0, 'A purged');
+    const afterE = await dump(others([E], ['e@x.com']));
+    assert.equal(afterE['auth.users'].length, 1, 'E kept');
+    assert.ok(afterE['public.profiles'][0].metadata.deletion_cancelled_at, 'E reclaimed');
+    afterE['public.profiles'] = beforeE['public.profiles'] = [];
+    assert.deepEqual(afterE, beforeE, "E's other rows untouched");
+  } finally { await db.exec('drop trigger t_reclaim_e on public.profiles; drop function public.t_reclaim_e();'); }
+});
+
+await t('the purge waits at most 5s for a row lock', async () => {
+  const r = (await db.query("select proconfig from pg_proc where oid = 'public.purge_deleted_accounts()'::regprocedure")).rows[0];
+  assert.ok((r.proconfig || []).includes('lock_timeout=5s'), String(r.proconfig));
 });
 
 await t("A's error and bug reports stay with user_id null", async () => {

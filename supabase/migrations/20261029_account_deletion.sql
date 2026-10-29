@@ -35,8 +35,20 @@
 --      delete its waitlist / notify / diagnostic rows by email (auth and
 --      profile email, case-insensitive), then delete the auth.users row, which
 --      cascades to profiles, quiz_history, cert_entitlements, subscriptions,
---      ai_usage and web_vitals. Returns how many accounts it purged. Only the
---      owner (postgres) may run it.
+--      ai_usage and web_vitals. It also deletes the person's AI rate-limit
+--      row (ai_proxy_rate_limit key 'user:<id>'). Returns how many accounts it
+--      purged. Only the owner (postgres) may run it.
+--      Each account is locked (auth.users, then profiles: the same order as a
+--      sign-in) and re-checked before anything is touched, so an account
+--      reclaimed by a sign-in after the run started is skipped, never deleted.
+--      lock_timeout = 5s: an account whose row is held elsewhere becomes a
+--      caught WARNING and is retried next hour, instead of stalling the run.
+--      Per-account failures show ONLY as WARNINGs in the Postgres logs:
+--      cron.job_run_details still reports the run as "succeeded" when an
+--      account was skipped. Check the logs for "purge_deleted_accounts:".
+--      Anonymising an audit row where the person acted as admin on someone
+--      else keeps that someone's id but also nulls the row's old_data and
+--      new_data (intended: the images may carry the person's own data).
 --   7. pg_cron job purge-deleted-accounts, hourly at :17, only where pg_cron
 --      is available (on Supabase you may first need to switch it on under
 --      Database → Extensions). Re-running replaces the job, never duplicates.
@@ -223,6 +235,7 @@ returns integer
 language plpgsql
 security definer
 set search_path = ''
+set lock_timeout = '5s'
 as $purge$
 declare
   r       record;
@@ -237,6 +250,21 @@ begin
      order by p.id
   loop
     begin
+      -- Lock in a sign-in's order (auth.users, then profiles) and re-check:
+      -- the list above is a snapshot, and a sign-in since then may have
+      -- cleared the mark. Not due any more (or gone) = skip, untouched.
+      perform 1 from auth.users u where u.id = r.id for update;
+      if not found then
+        continue;
+      end if;
+      perform 1 from public.profiles p
+       where p.id = r.id
+         and public.safe_timestamptz(p.metadata->>'deletion_requested_at') < now() - interval '7 days'
+         for update;
+      if not found then
+        continue;
+      end if;
+
       -- 1. No audit rows for the cascade below (admin_audit_record checks this).
       perform pg_catalog.set_config('certanvil.purging', 'on', true);
 
@@ -272,6 +300,9 @@ begin
       delete from public.waitlist where lower(email) = any (v_mails);
       delete from public.notify_signups where lower(email) = any (v_mails);
       delete from public.diagnostic_pending where lower(email) = any (v_mails);
+
+      -- The AI proxy's per-user rate-limit row.
+      delete from public.ai_proxy_rate_limit where key = 'user:' || v_id;
 
       -- 5. The account itself; cascades to profiles, quiz_history,
       --    cert_entitlements, subscriptions, ai_usage, web_vitals.
