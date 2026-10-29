@@ -42,11 +42,13 @@
   var client = {
     from: qb,
     // Account deletion: rpc names land in localStorage __rpcCalls (survives navigation). F.rpcError / F.rpcNull make request_account_deletion fail / return NULL.
-    rpc: function(name){ window.__fakeLog.push('rpc:'+name); try{ var rc=JSON.parse(localStorage.getItem('__rpcCalls')||'[]'); rc.push(name); localStorage.setItem('__rpcCalls',JSON.stringify(rc)); }catch(e){}
+    // Lazy like supabase-js's PostgrestFilterBuilder: nothing is recorded or applied until .then runs, so an un-chained rpc() (which never sends in production) shows up as a missing call.
+    rpc: function(name){ var run=function(){ window.__fakeLog.push('rpc:'+name); try{ var rc=JSON.parse(localStorage.getItem('__rpcCalls')||'[]'); rc.push(name); localStorage.setItem('__rpcCalls',JSON.stringify(rc)); }catch(e){}
       var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}];
-      if(name==='request_account_deletion'){ if(F.rpcError) return Promise.resolve({data:null,error:{message:'rpc failed',code:'500'}}); if(F.rpcNull) return Promise.resolve({data:null,error:null}); d=new Date().toISOString(); profile.metadata.deletion_requested_at=d; }
+      if(name==='request_account_deletion'){ if(F.rpcError) return {data:null,error:{message:'rpc failed',code:'500'}}; if(F.rpcNull) return {data:null,error:null}; d=new Date().toISOString(); profile.metadata.deletion_requested_at=d; }
       if(name==='clear_deletion_notice'){ delete profile.metadata.deletion_cancelled_at; try{ localStorage.setItem('__fakeNoticeCleared','1'); }catch(e){} }
-      return Promise.resolve({data:d,error:null}); },
+      return {data:d,error:null}; };
+      var q={ then:function(a,b){ return Promise.resolve().then(run).then(a,b); }, catch:function(b){ return q.then(null,b); } }; return q; },
     functions:{ invoke:function(n){ window.__fakeLog.push('fn:'+n); return Promise.resolve({data:null,error:null}); } },
     channel:function(){ var c={on:function(){return c;},subscribe:function(){return c;},unsubscribe:function(){}}; return c; }, removeChannel:function(){},
     storage:{ from:function(){ return { upload:function(){return Promise.resolve({data:null,error:null});}, download:function(){return Promise.resolve({data:null,error:null});} }; } },

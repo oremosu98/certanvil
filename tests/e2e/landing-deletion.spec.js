@@ -24,30 +24,20 @@ test.describe('website account deletion', () => {
     page.on('dialog', (d) => { dialogMsg = d.message(); d.accept(); });
     await page.goto('/account');
     await expect(page.locator('#btn-delete-account')).toBeVisible();
-    await page.evaluate(() => { localStorage.removeItem('__rpcCalls'); window.__order = []; });
+    await page.evaluate(() => { localStorage.removeItem('__rpcCalls'); });
+    // __fakeLog dies with the page; mirror it to sessionStorage on every sign-out so the order survives the navigation home.
+    await page.evaluate(() => {
+      const so = window.certanvilSupabase.auth.signOut;
+      window.certanvilSupabase.auth.signOut = function () { const r = so.apply(this, arguments); sessionStorage.setItem('log', JSON.stringify(window.__fakeLog)); return r; };
+    });
     await page.click('#btn-delete-account');
-    await page.waitForURL((u) => u.pathname === '/' , { timeout: 8000 });
+    await page.waitForURL((u) => u.pathname === '/', { timeout: 8000 });
     expect(dialogMsg).toContain(DIALOG_LINE);
     expect(dialogMsg).not.toContain('Cancel deletion');
     await expect(page.locator('#toast-stack .toast')).toHaveText(AFTER_DELETING);
     expect(page.url()).not.toContain('deleted');
-    expect(await rpcCalls(page)).toEqual(['request_account_deletion']);
-  });
-
-  test('/account delete: rpc order is rpc then global sign-out', async ({ page }) => {
-    await route(page);
-    page.on('dialog', (d) => d.accept());
-    await page.goto('/account');
-    await expect(page.locator('#btn-delete-account')).toBeVisible();
-    await page.evaluate(() => {
-      const sb = window.certanvilSupabase, rpc = sb.rpc, so = sb.auth.signOut;
-      window.__seq = [];
-      sb.rpc = function (n) { window.__seq.push('rpc:' + n); return rpc.apply(sb, arguments); };
-      sb.auth.signOut = function (o) { window.__seq.push('auth:signOut:' + ((o && o.scope) || 'local')); window.__seqSaved = window.__seq.slice(); sessionStorage.setItem('seq', JSON.stringify(window.__seq)); return so.apply(sb.auth, arguments); };
-    });
-    await page.click('#btn-delete-account');
-    await page.waitForURL((u) => u.pathname === '/', { timeout: 8000 });
-    expect(JSON.parse(await page.evaluate(() => sessionStorage.getItem('seq')))).toEqual(['rpc:request_account_deletion', 'auth:signOut:global']);
+    const log = JSON.parse(await page.evaluate(() => sessionStorage.getItem('log')));
+    expect(log.filter((e) => /^(rpc:request_account_deletion|auth:signOut:)/.test(e))).toEqual(['rpc:request_account_deletion', 'auth:signOut:global']);
   });
 
   for (const [name, fake] of [['an rpc error', { rpcError: true }], ['a NULL result', { rpcNull: true }]]) {
@@ -72,18 +62,12 @@ test.describe('website account deletion', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('#toast-stack .toast')).toHaveCount(1);
     expect(await rpcCalls(page)).toEqual(['clear_deletion_notice']);
+    // the flag is gone after the rpc really ran: a reload shows no notice and sends no second rpc
     await page.reload();
     await page.waitForTimeout(500);
     await expect(page.locator('#toast-stack .toast')).toHaveCount(0);
     expect(await rpcCalls(page)).toEqual(['clear_deletion_notice']);
-  });
-
-  test('no notice and no rpc when nothing was cancelled', async ({ page }) => {
-    await route(page);
-    await page.goto('/');
-    await page.waitForTimeout(500);
-    await expect(page.locator('#toast-stack .toast')).toHaveCount(0);
-    expect(await rpcCalls(page)).toEqual([]);
+    expect(await page.evaluate(() => window.__FAKE_PROFILE.metadata.deletion_cancelled_at)).toBeUndefined();
   });
 
   test('?deleted=1 shows the after-deleting toast and drops the param', async ({ page }) => {

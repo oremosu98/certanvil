@@ -668,7 +668,8 @@
     if (deletionNoticeShown || !profile || !profile.metadata || !profile.metadata.deletion_cancelled_at) return;
     deletionNoticeShown = true;
     noticeToast('Welcome back. We\'ve cancelled the deletion and your account is safe.');
-    try { supabase.rpc('clear_deletion_notice'); } catch (e) {}
+    // rpc() is lazy: it only sends once .then runs.
+    try { supabase.rpc('clear_deletion_notice').then(function () {}, function () {}); } catch (e) {}
   }
 
   // After deleting from /account the site sends you home with ?deleted=1.
