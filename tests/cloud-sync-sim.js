@@ -31,21 +31,44 @@ function makeSupabase(db, userId) {
   function builder(table) {
     const st = { table, op: 'select', filters: [], payload: null, single: false };
     const api = {
-      select() { st.op = st.op === 'select' ? 'select' : st.op; return api; },
+      select() { if (st.op !== 'select') st.returning = true; return api; },
       eq(col, val) { st.filters.push(['eq', col, val]); return api; },
+      is(col, val) { st.filters.push(['is', col, val]); return api; },
       gte(col, val) { st.filters.push(['gte', col, val]); return api; },
       order() { return api; },
       limit() { return api; },
       single() { st.single = true; return api; },
       update(obj) { st.op = 'update'; st.payload = obj; return api; },
       insert(rows) { st.op = 'insert'; st.payload = rows; return api; },
-      then(res, rej) { return Promise.resolve().then(run).then(res, rej); }
+      // v8.198.1: db.readHold (a promise) holds a profile read's answer back AFTER the row was read, so a test can
+      // land a server change between an in-flight flush's read and its write.
+      then(res, rej) {
+        return Promise.resolve().then(run).then(function (out) {
+          if (table === 'profiles' && st.op === 'select' && db.readHold) { const h = db.readHold; return h.then(function () { return out; }); }
+          return out;
+        }).then(res, rej);
+      }
     };
+    // metadata->>key filters on an update (a compare-and-set): true when the row still matches.
+    function rowMatches() {
+      return st.filters.every(([op, col, val]) => {
+        const m = /^metadata->>(.+)$/.exec(col);
+        if (!m) return true;
+        const cur = db.profile.metadata ? db.profile.metadata[m[1]] : undefined;
+        if (op === 'is') return cur == null && val === null;
+        if (op === 'eq') return cur != null && String(cur) === String(val);
+        return true;
+      });
+    }
     function run() {
       if (table === 'profiles') {
-        if (st.op === 'update') { calls.profileUpdates++; Object.assign(db.profile, st.payload); return { data: null, error: null }; }
+        if (st.op === 'update') {
+          if (!rowMatches()) { calls.refusedUpdates = (calls.refusedUpdates || 0) + 1; return { data: st.returning ? [] : null, error: null }; }
+          calls.profileUpdates++; Object.assign(db.profile, JSON.parse(JSON.stringify(st.payload))); return { data: st.returning ? [{ id: userId }] : null, error: null };
+        }
         if (db.failMetaRead) return { data: null, error: { message: 'read failed' } };
-        return { data: { metadata: db.profile.metadata, exam_date: db.profile.exam_date || null, role: 'user' }, error: null };
+        // a copy, like a real response: a later server change must not reach a read that already happened
+        return { data: { metadata: JSON.parse(JSON.stringify(db.profile.metadata || {})), exam_date: db.profile.exam_date || null, role: 'user' }, error: null };
       }
       if (table === 'quiz_history') {
         if (st.op === 'insert') { calls.historyInserts++; calls.inserted += st.payload.length; st.payload.forEach(r => db.history.push(r)); return { data: st.payload, error: null }; }
@@ -190,6 +213,82 @@ async function main() {
     await b.cs.flushNow();
     const lh = JSON.parse(b.ls.getItem('nplus_history') || '[]');
     out.s6 = { onlyThisCert: lh.length === 1 && lh[0].topic === 'PKI', noReupload: db.history.length === 2 };
+  }
+
+  // 7. v8.198.1: account deletion vs an in-flight flush. The server stamps metadata.deletion_requested_at (rpc) and
+  // removes metadata.deletion_cancelled_at (clear_deletion_notice); a client flush must never undo either.
+  {
+    const hold = () => { let release; const p = new Promise((r) => { release = r; }); return { p, release }; };
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const settle = async () => { for (let i = 0; i < 10; i++) await tick(); };   // lets a released write land
+    const start = async (b) => {      // start a debounced flush and let it read the row
+      b.cs.flush('nplus_streak');
+      const fn = b.timers.pop(); fn();
+      await tick(); await tick();
+    };
+
+    // 7a. flushNow() waits for a flush already in flight, even with nothing new pending.
+    {
+      const db = { profile: { metadata: { streak: { best: 1 } } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 2, best: 2 }) }, db);
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const h = hold(); db.readHold = h.p;
+      await start(b);
+      let settled = false;
+      const p = b.cs.flushNow().then(() => { settled = true; });
+      await tick(); await tick();
+      const settledEarly = settled;
+      h.release(); db.readHold = null;
+      await p;
+      out.s7a = { waitsForInflight: settledEarly === false && settled === true && b.calls.profileUpdates >= 1 };
+    }
+
+    // 7b. A flush that read the row before the rpc and writes after it does not erase the mark.
+    {
+      const db = { profile: { metadata: { streak: { best: 1 } } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 2, best: 2 }) }, db);
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const h = hold(); db.readHold = h.p;
+      await start(b);
+      db.profile.metadata = Object.assign({}, db.profile.metadata, { deletion_requested_at: '2026-10-29T12:00:00.000Z' });   // the rpc lands
+      h.release(); db.readHold = null;
+      await b.cs.flushNow().catch(() => {}); await settle();
+      const markAfterRace = db.profile.metadata.deletion_requested_at;
+      await b.cs.flushNow().catch(() => {}); await settle();      // the refused write's keys retry against the fresh row
+      out.s7b = {
+        markKept: markAfterRace === '2026-10-29T12:00:00.000Z' && db.profile.metadata.deletion_requested_at === '2026-10-29T12:00:00.000Z',
+        dataStillSynced: db.profile.metadata.streak && db.profile.metadata.streak.best === 2
+      };
+    }
+
+    // 7c. A flush that read the row before clear_deletion_notice does not bring deletion_cancelled_at back.
+    {
+      const db = { profile: { metadata: { streak: { best: 1 }, deletion_cancelled_at: '2026-10-29T09:00:00.000Z' } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 2, best: 2 }) }, db);
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const h = hold(); db.readHold = h.p;
+      await start(b);
+      const m = Object.assign({}, db.profile.metadata); delete m.deletion_cancelled_at; db.profile.metadata = m;   // clear_deletion_notice lands
+      h.release(); db.readHold = null;
+      await b.cs.flushNow().catch(() => {}); await settle();
+      await b.cs.flushNow().catch(() => {}); await settle();
+      out.s7c = { noticeNotResurrected: !('deletion_cancelled_at' in db.profile.metadata) && db.profile.metadata.streak.best === 2 };
+    }
+
+    // 7d. An ordinary flush leaves both server-owned keys exactly as the server has them, whatever this device holds.
+    {
+      const db = { profile: { metadata: { deletion_requested_at: '2026-10-29T12:00:00.000Z' } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 3, best: 3 }) }, db);
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      b.cs.flush('nplus_streak');
+      await b.cs.flushNow();
+      out.s7d = { unchanged: db.profile.metadata.deletion_requested_at === '2026-10-29T12:00:00.000Z' && !('deletion_cancelled_at' in db.profile.metadata)
+        && db.profile.metadata.streak.best === 3 };
+    }
   }
 
   return out;

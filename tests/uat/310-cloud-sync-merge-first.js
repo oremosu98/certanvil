@@ -44,6 +44,16 @@ const { authStateJs, test, vm, path } = require('./_context');
   test('v8.155.0 sync: a device only pulls its own cert\'s history (no Network+ rows on the Security+ site)',
     s6.onlyThisCert === true && s6.noReupload === true);
 
+  const s7a = r.s7a || {}, s7b = r.s7b || {}, s7c = r.s7c || {}, s7d = r.s7d || {};
+  test('v8.198.1 sync: flushNow() waits for a flush already in flight (the delete flow relies on it)',
+    s7a.waitsForInflight === true);
+  test('v8.198.1 sync: a flush that read the profile before request_account_deletion cannot erase the deletion mark',
+    s7b.markKept === true && s7b.dataStillSynced === true);
+  test('v8.198.1 sync: a flush that read the profile before clear_deletion_notice cannot bring the notice back',
+    s7c.noticeNotResurrected === true);
+  test('v8.198.1 sync: an ordinary flush never adds, removes or changes deletion_requested_at / deletion_cancelled_at',
+    s7d.unchanged === true);
+
   test('v8.151.0 auth-state: sign-out clears local data only when cloud-store says it is backed up', (() => {
     try {
       const m = authStateJs.match(/function\s+_clearLocalIfSafe\(cs\)\s*\{[\s\S]*?\n\s\s\}/);
