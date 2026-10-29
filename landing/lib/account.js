@@ -874,31 +874,28 @@
     });
   }
 
-  // ── Delete account (soft-delete via metadata flag) ─────────────────────
+  // ── Delete account (server schedules it; we sign out everywhere) ───────
   function wireDeleteAccount() {
     if (!elBtnDeleteAccount) return;
     elBtnDeleteAccount.addEventListener('click', function () {
       if (!currentUser) return;
       var msg = 'Delete your CertAnvil account?\n\n'
         + 'This marks your account for deletion. After 7 days, your profile + quiz history are permanently purged.\n\n'
-        + 'You can cancel during the grace window by signing in and clicking "Cancel deletion" below this button.\n\n'
+        + 'Changed your mind? Sign back in within 7 days and your account stays.\n\n'
         + 'Are you sure?';
       if (!confirm(msg)) return;
 
-      var meta = (currentProfile && currentProfile.metadata) || {};
-      var nextMeta = Object.assign({}, meta, {
-        deletion_requested_at: new Date().toISOString(),
-      });
-      supabase.from('profiles').update({ metadata: nextMeta }).eq('id', currentUser.id).then(function (r) {
-        if (r.error) { toast('Couldn\'t schedule deletion. Try again.', 'error'); return; }
-        currentProfile.metadata = nextMeta;
-        var purgeDate = new Date(Date.now() + 7 * 86400000);
-        if (elDeletionStatus) {
-          elDeletionStatus.textContent = 'Deletion scheduled for ' + purgeDate.toISOString().slice(0, 10) + ' — sign in any time before then to cancel.';
-          elDeletionStatus.removeAttribute('hidden');
-        }
-        toast('Account marked for deletion. 7-day grace window.', 'info');
-      }).catch(function () { toast('Couldn\'t schedule deletion.', 'error'); });
+      var failed = function () { toast('Couldn\'t schedule deletion. Try again.', 'error'); };
+      supabase.rpc('request_account_deletion').then(function (r) {
+        if (!r || r.error || !r.data) { failed(); return; }
+        var leave = function () { window.location.href = '/?deleted=1'; };
+        // supabase-js resolves {error} on a network failure and keeps the session: sign this device out instead.
+        var local = function () { return supabase.auth.signOut().then(leave, leave); };
+        supabase.auth.signOut({ scope: 'global' }).then(function (so) {
+          if (so && so.error) return local();
+          leave();
+        }, local);
+      }).catch(failed);
     });
   }
 

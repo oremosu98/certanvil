@@ -462,3 +462,94 @@ test.describe('Stage 5c deferred minors', () => {
     await expect(page.locator('#ist-sheet')).toContainText('Connected', { timeout: 6000 });
   });
 });
+
+// ── Account deletion: the app deletes through the server, signs out everywhere, and says welcome back ──
+const NOTICE = "Welcome back. We've cancelled the deletion and your account is safe.";
+const rpcCalls = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__rpcCalls') || '[]'));
+test.describe('Account deletion: app', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  const SEED = { nplus_onb_skips: '{"at":1}' };
+
+  test('deleting calls request_account_deletion, then signs out everywhere', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    const l = await log(page);
+    expect(l.indexOf('rpc:request_account_deletion')).toBeGreaterThan(-1);
+    expect(l.indexOf('auth:signOut:global')).toBeGreaterThan(l.indexOf('rpc:request_account_deletion'));
+    expect(l).not.toContain('auth:signOut:local');
+    // the app's own earlier profile sync may write; the deletion itself must not be a client-side profile update
+    expect(l.slice(l.indexOf('rpc:request_account_deletion')).filter((e) => e === 'profiles:update')).toEqual([]);
+    expect(await page.evaluate(() => window.__FAKE_PROFILE.metadata.deletion_requested_at)).toBeTruthy();
+  });
+
+  test("waits for cloud-store's pending flush before requesting deletion", async ({ page }) => {
+    // cloud-store's flush rewrites the whole metadata column; landing after the rpc it would erase the mark.
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.evaluate(() => {
+      window.cloudStore = window.cloudStore || {};
+      window.cloudStore.flushNow = () => { window.__fakeLog.push('flush:start');
+        return new Promise((r) => setTimeout(() => { window.__fakeLog.push('flush:done'); r(); }, 300)); };
+    });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    const l = (await log(page)).filter((e) => /^(flush:|rpc:request_account_deletion)/.test(e));
+    expect(l).toEqual(['flush:start', 'flush:done', 'rpc:request_account_deletion']);
+  });
+
+  test('a failing flush still requests deletion', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => Promise.reject(new Error('offline')); });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
+  });
+
+  test('a global sign-out that fails still signs this device out', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ signOutError: true }, SIGNED), seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual(['auth:signOut:global', 'auth:signOut:local']);
+  });
+
+  test('an Apple account still asks Apple first, then requests deletion', async ({ page }) => {
+    await routeRevoke(page, 'ok');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: Object.assign({ __social: JSON.stringify({ mode: 'ok', authorizationCode: 'c-1' }) }, SEED) });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect((await socialCalls(page)).map((c) => c.provider)).toEqual(['apple']);
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
+  });
+
+  test('a failed request shows the error card and does not sign out', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ rpcError: true }, SIGNED), seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('schedule deletion', { timeout: 8000 });
+    expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual([]);
+  });
+
+  test('a missing profile (NULL back) shows the error card and does not sign out', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ rpcNull: true }, SIGNED), seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('schedule deletion', { timeout: 8000 });
+    expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual([]);
+  });
+
+  test('a cancelled deletion shows the notice once and clears it', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
+    await expect(page.getByText(NOTICE)).toBeVisible({ timeout: 8000 });
+    await expect.poll(async () => (await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+    await page.reload();
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(1200);
+    await expect(page.getByText(NOTICE)).toHaveCount(0);
+    expect((await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+  });
+
+  test('no flag, no notice', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.waitForTimeout(800);
+    await expect(page.getByText(NOTICE)).toHaveCount(0);
+    expect(await rpcCalls(page)).not.toContain('clear_deletion_notice');
+  });
+});

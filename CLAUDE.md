@@ -28,8 +28,8 @@
 | styles.css | 14888 | 550 KB |
 | index.html | 2372 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
-| tests/uat.js + tests/uat/ (73 modules) | 33096 | — |
-UAT checks: 5678 · E2E `test(` count: 551 · APP_VERSION: 8.197.2 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (74 modules) | 33121 | — |
+UAT checks: 5680 · E2E `test(` count: 569 · APP_VERSION: 8.198.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.198.0 | Account deletion does what it promises |
 | v8.197.2 | Sign-in with Apple and Google: the deferred minors |
 | v8.197.1 | Apple and Google sign-in stays signed in on the web |
-| v8.197.0 | Sign in with Apple and Google (Stage 5c) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -171,6 +171,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - `tests/uat.js` prefers behavioral smoke over structural; see Testing Philosophy
 
 **Deploy**
+- **Migrations never self-apply, and some silently never reached prod** (29 Oct 2026 audit: `user_bug_reports` was missing, so every in-app bug report since July was lost; the 15-question quota was still 20). After pasting a migration, add a row to `scripts/sql/migration-audit.sql` and run it in the SQL Editor; MISSING rows sort first.
 - Service worker cache name must be bumped on every deploy or users get stale files — use `scripts/bump-version.js`, never hand-edit partial
 - Vercel CLI requires nvm path export: `export PATH="$HOME/.nvm/versions/node/v20.20.2/bin:$PATH"`
 - If you're tempted to `vercel --prod` without committing, **commit and push immediately after** — git↔prod drift cost us 6 versions (v4.39→v4.43.1) before it got caught

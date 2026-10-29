@@ -650,6 +650,42 @@
       .catch(function () { return { role: 'user', metadata: {} }; });
   }
 
+  // Notices ride the same .toast markup as landing/lib/account.js's toast() into #toast-stack.
+  function noticeToast(msg) {
+    var stack = document.getElementById('toast-stack');
+    if (!stack) return;
+    var t = document.createElement('div');
+    t.className = 'toast toast-info';
+    t.textContent = msg;
+    stack.appendChild(t);
+    setTimeout(function () { t.classList.add('is-fading'); }, 2400);
+    setTimeout(function () { try { stack.removeChild(t); } catch (e) {} }, 3000);
+  }
+
+  // Account deletion: a sign-in inside the 7-day window cancels it server-side and leaves a flag; say so once, then clear it.
+  // While a ?action=signin&return= bounce is under way the destination app shows and clears it, so this page must not.
+  var deletionNoticeShown = false;
+  var returnBouncePending = false;
+  function showDeletionCancelledNotice(profile) {
+    if (returnBouncePending || deletionNoticeShown || !profile || !profile.metadata || !profile.metadata.deletion_cancelled_at) return;
+    deletionNoticeShown = true;
+    noticeToast('Welcome back. We\'ve cancelled the deletion and your account is safe.');
+    // rpc() is lazy: it only sends once .then runs.
+    try { supabase.rpc('clear_deletion_notice').then(function () {}, function () {}); } catch (e) {}
+  }
+
+  // After deleting from /account the site sends you home with ?deleted=1.
+  function showDeletedNoticeFromQuery() {
+    try {
+      var qs = new URLSearchParams(window.location.search);
+      if (!qs.has('deleted')) return;
+      noticeToast('Your account will be deleted in 7 days. Sign back in before then to keep it.');
+      qs.delete('deleted');
+      var rest = qs.toString();
+      history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
+    } catch (e) {}
+  }
+
   function renderSignedOut() {
     if (signInBtn) signInBtn.removeAttribute('hidden');
     if (accountPill) accountPill.setAttribute('hidden', '');
@@ -685,6 +721,7 @@
     fetchProfileRole(userId).then(function (profile) {
       personalizeCertTilesForSignedIn(profile);
       renderMyCertsList(profile);
+      showDeletionCancelledNotice(profile);
     });
   }
 
@@ -1017,6 +1054,7 @@
     // Stash the return URL up front so both branches (signed-in bounce + the
     // anonymous magic-link send) can see it.
     pendingReturnUrl = readReturnUrlFromQuery();
+    showDeletedNoticeFromQuery();
     var signinRequested = isSignInRequested();
 
     supabase.auth.getSession()
@@ -1033,6 +1071,7 @@
           // session on the correct origin.
           if (signinRequested && pendingReturnUrl) {
             if (returnUrlSharesApexCookie(pendingReturnUrl)) {
+              returnBouncePending = true;
               try { window.location.replace(pendingReturnUrl); } catch (e) {}
             } else {
               // Cross-origin: open the modal so the user can re-sign-in via
@@ -1073,6 +1112,7 @@
       if (pendingReturnUrl && !returnUrlSharesApexCookie(pendingReturnUrl)) pendingReturnUrl = null;
       if (pendingReturnUrl) {
         var ret = pendingReturnUrl;
+        returnBouncePending = true;
         pendingReturnUrl = null;
         setTimeout(function () {
           try { window.location.replace(ret); } catch (e) {}

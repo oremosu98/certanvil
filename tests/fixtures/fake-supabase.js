@@ -12,6 +12,7 @@
       nplus_readiness_snapshots:{ secplus:{score:812, computed_at:'2026-10-15T09:00:00Z', weak_domain:'Security Operations'}, netplus:{score:640, computed_at:'2026-09-01T09:00:00Z', weak_domain:'Network Troubleshooting'} }
     }, F.metaOverride || {}) };
   if (F.noResults) delete profile.metadata.cert_results;
+  try { if (F.deletionCancelled && !localStorage.getItem('__fakeNoticeCleared')) profile.metadata.deletion_cancelled_at = '2026-10-29T09:00:00Z'; } catch(e){}   // Account deletion: the trigger's flag, until clear_deletion_notice runs
   if (F.accountFreeCert) profile.metadata.freeCertId = F.accountFreeCert;
   if (F.displayName !== undefined) profile.display_name = F.displayName;   // Stage 5c: null = no name yet   // Stage 5b: the account's free exam
   window.__fakeLog = [];
@@ -40,7 +41,14 @@
   var listeners=[];
   var client = {
     from: qb,
-    rpc: function(name){ window.__fakeLog.push('rpc:'+name); var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}]; return Promise.resolve({data:d,error:null}); },
+    // Account deletion: rpc names land in localStorage __rpcCalls (survives navigation). F.rpcError / F.rpcNull make request_account_deletion fail / return NULL.
+    // Lazy like supabase-js's PostgrestFilterBuilder: nothing is recorded or applied until .then runs, so an un-chained rpc() (which never sends in production) shows up as a missing call.
+    rpc: function(name){ var run=function(){ window.__fakeLog.push('rpc:'+name); try{ var rc=JSON.parse(localStorage.getItem('__rpcCalls')||'[]'); rc.push(name); localStorage.setItem('__rpcCalls',JSON.stringify(rc)); }catch(e){}
+      var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}];
+      if(name==='request_account_deletion'){ if(F.rpcError) return {data:null,error:{message:'rpc failed',code:'500'}}; if(F.rpcNull) return {data:null,error:null}; d=new Date().toISOString(); profile.metadata.deletion_requested_at=d; }
+      if(name==='clear_deletion_notice'){ delete profile.metadata.deletion_cancelled_at; try{ localStorage.setItem('__fakeNoticeCleared','1'); }catch(e){} }
+      return {data:d,error:null}; };
+      var q={ then:function(a,b){ return Promise.resolve().then(run).then(a,b); }, catch:function(b){ return q.then(null,b); } }; return q; },
     functions:{ invoke:function(n){ window.__fakeLog.push('fn:'+n); return Promise.resolve({data:null,error:null}); } },
     channel:function(){ var c={on:function(){return c;},subscribe:function(){return c;},unsubscribe:function(){}}; return c; }, removeChannel:function(){},
     storage:{ from:function(){ return { upload:function(){return Promise.resolve({data:null,error:null});}, download:function(){return Promise.resolve({data:null,error:null});} }; } },
@@ -50,7 +58,10 @@
       getUser:function(){ var u=session?user:null; if(u && F.freshIdentities){ u=Object.assign({},user,{identities:user.identities.concat(F.freshIdentities.map(function(p){ return { provider:p, identity_id:'id-'+p }; }))}); }
         return new Promise(function(r){ setTimeout(function(){ r({data:{user:u},error:null}); }, F.getUserDelay||0); }); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
-      signOut:function(){ window.__fakeLog.push('auth:signOut'); return Promise.resolve({error:null}); },
+      // Account deletion: F.signOutError makes a global sign-out resolve {error} (supabase-js on a network failure keeps the session).
+      signOut:function(opts){ var sc=(opts && opts.scope) || 'local'; window.__fakeLog.push('auth:signOut:'+sc);
+        if (F.signOutError && sc==='global') return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+        return Promise.resolve({error:null}); },
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },

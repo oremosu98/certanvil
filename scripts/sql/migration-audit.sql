@@ -1,0 +1,39 @@
+-- Read-only: which repo migrations are present on this database? Paste into the Supabase SQL Editor; MISSING rows sort first. Add a row for every new migration. (First run 29 Oct 2026: user_bug_reports and the 15-question quota had never reached prod.)
+with fn as (select proname, prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public'),
+checks(migration, item, ok) as (values
+  ('20260506_phase_c_prime',            'profiles.role column',          exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='role')),
+  ('20260506_phase_c_prime',            'is_admin()',                    exists (select 1 from fn where proname='is_admin')),
+  ('20260506_phase_c_prime',            'policy profiles_update_own',    exists (select 1 from pg_policies where tablename='profiles' and policyname='profiles_update_own')),
+  ('20260509_notify_signups',           'table notify_signups',          to_regclass('public.notify_signups') is not null),
+  ('20260509_notify_signups (+fixes)',  'insert policy',                 exists (select 1 from pg_policies where tablename='notify_signups' and policyname='Allow notify-me signup inserts')),
+  ('20260509_phase_e_subscriptions',    'table subscriptions',           to_regclass('public.subscriptions') is not null),
+  ('20260509_phase_e_subscriptions',    'table ai_usage',                to_regclass('public.ai_usage') is not null),
+  ('20260509_phase_e_subscriptions',    'table stripe_events',           to_regclass('public.stripe_events') is not null),
+  ('20260509_phase_e_subscriptions',    'consume_daily_quota()',         exists (select 1 from fn where proname='consume_daily_quota')),
+  ('20260509_phase_e_admin_bypass',     'is_pro() has admin bypass',     exists (select 1 from fn where proname='is_pro' and prosrc ilike '%admin%')),
+  ('20260509_playtest_accounts',        'profiles.is_playtest column',   exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='is_playtest')),
+  ('20260511_diagnostic_pending',       'table diagnostic_pending',      to_regclass('public.diagnostic_pending') is not null),
+  ('20260511_diagnostic_pending',       'table diagnostic_signup_rate_limit', to_regclass('public.diagnostic_signup_rate_limit') is not null),
+  ('20260511_diagnostic_rate_limit',    'table diagnostic_rate_limit',   to_regclass('public.diagnostic_rate_limit') is not null),
+  ('20260511_diagnostic_share',         'table diagnostic_share',        to_regclass('public.diagnostic_share') is not null),
+  ('20260511_diagnostic_share',         'table diagnostic_email_rate_limit', to_regclass('public.diagnostic_email_rate_limit') is not null),
+  ('20260511_diagnostic_share',         'increment_share_view()',        exists (select 1 from fn where proname='increment_share_view')),
+  ('20260511_web_vitals',               'table web_vitals',              to_regclass('public.web_vitals') is not null),
+  ('20260511_web_vitals',               'record_web_vitals()',           exists (select 1 from fn where proname='record_web_vitals')),
+  ('20260529_ai_proxy_rate_limit',      'table ai_proxy_rate_limit',     to_regclass('public.ai_proxy_rate_limit') is not null),
+  ('20260529_ai_proxy_rate_limit',      'ai_rl_check_and_increment()',   exists (select 1 from fn where proname='ai_rl_check_and_increment')),
+  ('20260529_phase2_db_quick_wins',     'get_diagnostic_share()',        exists (select 1 from fn where proname='get_diagnostic_share')),
+  ('20260529_phase3_notify_rate_limit', 'table notify_rate_limit',       to_regclass('public.notify_rate_limit') is not null),
+  ('20260529_phase3_notify_rate_limit', 'notify_rl_check_and_increment()', exists (select 1 from fn where proname='notify_rl_check_and_increment')),
+  ('20260531_phase5_admin_audit_log',   'table admin_audit_log',         to_regclass('public.admin_audit_log') is not null),
+  ('20260531_phase5_admin_audit_log',   'trigger trg_audit_profiles_role', exists (select 1 from pg_trigger where tgname='trg_audit_profiles_role')),
+  ('20260607_onboarding_config',        'table app_config',              to_regclass('public.app_config') is not null),
+  ('20260611_free_tier_15_questions',   'quota is 15 (not 20)',          exists (select 1 from fn where proname='consume_daily_quota' and prosrc like '%daily_limit constant int := 15%')),
+  ('20260718_client_errors',            'table client_errors',           to_regclass('public.client_errors') is not null),
+  ('20260718_user_bug_reports',         'table user_bug_reports',        to_regclass('public.user_bug_reports') is not null),
+  ('20261029_account_deletion',         'purge_deleted_accounts()',      exists (select 1 from fn where proname='purge_deleted_accounts')),
+  ('20261029_account_deletion',         'trigger on_signin_cancel_deletion', exists (select 1 from pg_trigger where tgname='on_signin_cancel_deletion'))
+)
+select migration, item, case when ok then 'ok' else 'MISSING' end as status
+from checks
+order by ok, migration;
