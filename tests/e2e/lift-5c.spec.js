@@ -497,6 +497,14 @@ test.describe('Account deletion: app', () => {
     expect(l).toEqual(['flush:start', 'flush:done', 'rpc:request_account_deletion']);
   });
 
+  test('a flush that never finishes holds the deletion back at most 5s', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => new Promise(() => {}); });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 9000 });
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
+  });
+
   test('a failing flush still requests deletion', async ({ page }) => {
     await boot(page, { fake: SIGNED, seed: SEED });
     await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => Promise.reject(new Error('offline')); });

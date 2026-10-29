@@ -67,6 +67,11 @@ function makeSupabase(db, userId) {
           calls.profileUpdates++; Object.assign(db.profile, JSON.parse(JSON.stringify(st.payload))); return { data: st.returning ? [{ id: userId }] : null, error: null };
         }
         if (db.failMetaRead) return { data: null, error: { message: 'read failed' } };
+        if (db.afterRead) {   // v8.198.1: a server change that lands after this read is answered
+          const snap = JSON.parse(JSON.stringify(db.profile.metadata || {}));
+          db.afterRead();
+          return { data: { metadata: snap, exam_date: db.profile.exam_date || null, role: 'user' }, error: null };
+        }
         // a copy, like a real response: a later server change must not reach a read that already happened
         return { data: { metadata: JSON.parse(JSON.stringify(db.profile.metadata || {})), exam_date: db.profile.exam_date || null, role: 'user' }, error: null };
       }
@@ -79,7 +84,7 @@ function makeSupabase(db, userId) {
         });
         return { data: rows.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)), error: null };
       }
-      if (table === 'client_errors') return { data: null, error: null };
+      if (table === 'client_errors') { calls.telemetry = (calls.telemetry || 0) + 1; return { data: null, error: null }; }
       return { data: null, error: null };
     }
     return api;
@@ -87,14 +92,14 @@ function makeSupabase(db, userId) {
   return { client: { from: builder, auth: {} }, calls };
 }
 
-function boot(localInit, db, cert) {
+function boot(localInit, db, cert, hostname) {
   const userId = 'u1';
   const ls = makeLocal(localInit);
   const sb = makeSupabase(db, userId);
   const timers = [];
   const win = { certanvilSupabase: sb.client, CURRENT_CERT: cert || 'secplus', addEventListener() {} };
   const ctx = {
-    window: win, localStorage: ls, location: { hostname: 'localhost' },
+    window: win, localStorage: ls, location: { hostname: hostname || 'localhost' },
     navigator: { onLine: true, userAgent: 'sim' },
     document: { addEventListener() {}, visibilityState: 'visible' },
     setTimeout: (fn) => { timers.push(fn); return timers.length; }, clearTimeout: () => {},
@@ -288,6 +293,46 @@ async function main() {
       await b.cs.flushNow();
       out.s7d = { unchanged: db.profile.metadata.deletion_requested_at === '2026-10-29T12:00:00.000Z' && !('deletion_cancelled_at' in db.profile.metadata)
         && db.profile.metadata.streak.best === 3 };
+    }
+  }
+
+  // 8. v8.198.1 review: a compare-and-set miss retries by itself, through the real timer path, and only twice.
+  // Here the stubbed setTimeout's callbacks are run by the test (runTimers), never a manual flushNow().
+  {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const settle = async () => { for (let i = 0; i < 10; i++) await tick(); };
+    const runTimers = async (b) => { let n = 0; while (b.timers.length) { const fn = b.timers.shift(); fn(); n++; await settle(); } return n; };
+
+    // 8a. hydrate's post-merge flush races clear_deletion_notice (the welcome-back sign-in): one conflict, one automatic retry.
+    {
+      const db = { profile: { metadata: { streak: { best: 1 }, deletion_cancelled_at: '2026-10-29T09:00:00.000Z' } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 2, best: 2 }) }, db, 'secplus', 'networkplus.certanvil.com');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      let fired = false;
+      db.afterRead = () => { if (fired) return; fired = true; const m = Object.assign({}, db.profile.metadata); delete m.deletion_cancelled_at; db.profile.metadata = m; };
+      const fn = b.timers.shift(); fn(); await settle();          // hydrate's 50ms flush: reads, the rpc lands, the write is refused
+      const statusAfterConflict = b.cs.getStatus();
+      const refused = b.calls.refusedUpdates || 0;
+      const retries = await runTimers(b);                         // the retry the conflict scheduled
+      out.s8a = {
+        retried: refused === 1 && retries === 1 && b.calls.profileUpdates === 1,
+        synced: db.profile.metadata.streak.best === 2 && !('deletion_cancelled_at' in db.profile.metadata),
+        pendingNotError: statusAfterConflict === 'pending' && b.cs.getStatus() === 'idle',
+        noTelemetry: !(b.calls.telemetry > 0)
+      };
+    }
+
+    // 8b. A conflict that never clears stops after two retries.
+    {
+      const db = { profile: { metadata: { streak: { best: 1 }, deletion_cancelled_at: 't0' } }, history: [] };
+      const b = boot({ nplus_streak: JSON.stringify({ current: 2, best: 2 }) }, db);
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      let n = 0;
+      db.afterRead = () => { n++; db.profile.metadata = Object.assign({}, db.profile.metadata, { deletion_cancelled_at: 't' + n }); };
+      const ran = await runTimers(b);                             // hydrate's flush + every retry it schedules
+      out.s8b = { capped: ran === 3 && b.calls.refusedUpdates === 3 && b.calls.profileUpdates === 0 && b.timers.length === 0 };
     }
   }
 

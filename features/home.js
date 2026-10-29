@@ -1399,7 +1399,10 @@
     // mark, so send anything pending first. A failed flush never stops the deletion.
     var CS = window.cloudStore;
     var flushed = function () {
-      return (CS && typeof CS.flushNow === 'function') ? Promise.resolve().then(function () { return CS.flushNow(); }).catch(function () {}) : null;
+      if (!CS || typeof CS.flushNow !== 'function') return null;
+      // Waits at most 5s (offline a flush can take far longer); cloud-store's compare-and-set keeps the mark safe anyway.
+      var f = Promise.resolve().then(function () { return CS.flushNow(); });
+      return Promise.race([f, new Promise(function (r) { setTimeout(r, 5000); })]).catch(function () {});
     };
     // The server stamps the mark (and sees the whole row, so nothing is clobbered), then every device is signed out.
     // A global sign-out that fails (supabase-js resolves {error} offline and keeps the session) falls back to

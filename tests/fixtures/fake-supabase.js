@@ -45,6 +45,7 @@
     // Lazy like supabase-js's PostgrestFilterBuilder: nothing is recorded or applied until .then runs, so an un-chained rpc() (which never sends in production) shows up as a missing call.
     rpc: function(name){ var run=function(){ window.__fakeLog.push('rpc:'+name); try{ var rc=JSON.parse(localStorage.getItem('__rpcCalls')||'[]'); rc.push(name); localStorage.setItem('__rpcCalls',JSON.stringify(rc)); }catch(e){}
       var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}];
+      if(name==='get_daily_quota_usage' && F.quotaUsed!=null) d=[{used_today:F.quotaUsed,daily_limit:15,tier:'free'}];   // the app's own fields: a late refresh agrees with the test's tier
       if(name==='request_account_deletion'){ if(F.rpcError) return {data:null,error:{message:'rpc failed',code:'500'}}; if(F.rpcNull) return {data:null,error:null}; d=new Date().toISOString(); profile.metadata.deletion_requested_at=d; }
       if(name==='clear_deletion_notice'){ delete profile.metadata.deletion_cancelled_at; try{ localStorage.setItem('__fakeNoticeCleared','1'); }catch(e){} }
       return {data:d,error:null}; };

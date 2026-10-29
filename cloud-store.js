@@ -124,6 +124,9 @@
   // Pending flush queue — keys waiting to be written to cloud
   var pendingFlush = new Set();
   var flushTimer = null;
+  // v8.198.1: automatic retries after a compare-and-set miss in a row (see doFlush); reset by a write that lands.
+  var conflictRetries = 0;
+  var MAX_CONFLICT_RETRIES = 2;
   var FLUSH_DEBOUNCE_MS = 1500;  // wait 1.5s of quiet before batching writes
   var lastSyncAt = null;
   var syncStatus = 'idle';  // 'idle' | 'pending' | 'syncing' | 'error' | 'offline'
@@ -501,6 +504,9 @@
   // Doflush — actually run the queued cloud writes
   function doFlush() {
     if (inflightFlush) return inflightFlush;
+    // v8.198.1: this run takes everything pending, so whichever timer called it is spent and any other is
+    // superseded. flushTimer used to keep the spent id after a debounce or hydrate timer fired.
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     if (pendingFlush.size === 0) return Promise.resolve();
     var sb = getSupabase();
     var userId = getUserId();
@@ -637,18 +643,28 @@
 
     inflightFlush = flushPromise.then(function (results) {
       inflightFlush = null;
-      var hadError = results.some(function (r) { return r && r.error; });
+      // v8.198.1: a compare-and-set miss (the server changed a deletion key mid-flush) is expected, not a failure:
+      // status 'pending', no telemetry, and an automatic retry against a fresh read, at most MAX_CONFLICT_RETRIES
+      // in a row. Any other error behaves as before.
+      var realErrors = results.filter(function (r) { return r && r.error && !r.conflict; });
+      var conflict = results.some(function (r) { return r && r.conflict; });
+      var hadError = realErrors.length > 0;
       lastSyncAt = Date.now();
-      setStatus(hadError ? 'error' : 'idle');
-      if (hadError) {
+      setStatus(hadError ? 'error' : (conflict ? 'pending' : 'idle'));
+      if (hadError || conflict) {
         // Re-queue the failed keys for retry
         keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
-        // v8.198.1: a compare-and-set miss is not an outage; retry once the debounce passes.
-        if (results.some(function (r) { return r && r.conflict; }) && !flushTimer) {
-          flushTimer = setTimeout(doFlush, FLUSH_DEBOUNCE_MS);
-        }
+      }
+      if (conflict && !hadError && conflictRetries < MAX_CONFLICT_RETRIES) {
+        conflictRetries++;
+        if (flushTimer) clearTimeout(flushTimer);
+        flushTimer = setTimeout(doFlush, FLUSH_DEBOUNCE_MS);
+      } else if (!conflict && !hadError) {
+        conflictRetries = 0;   // a write that landed
+      }
+      if (hadError) {
         console.warn('[cloud-store] flush had errors', results);
-        _syncTelemetry('flush', (results.filter(function (r) { return r && r.error; })[0] || {}).error);
+        _syncTelemetry('flush', (realErrors[0] || {}).error);
       }
       return results;
     }).catch(function (err) {

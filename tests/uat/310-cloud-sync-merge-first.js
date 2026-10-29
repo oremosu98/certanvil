@@ -54,6 +54,24 @@ const { authStateJs, test, vm, path } = require('./_context');
   test('v8.198.1 sync: an ordinary flush never adds, removes or changes deletion_requested_at / deletion_cancelled_at',
     s7d.unchanged === true);
 
+  const s8a = r.s8a || {}, s8b = r.s8b || {};
+  test('v8.198.1 sync: a flush refused by the compare-and-set retries once by itself and then syncs',
+    s8a.retried === true && s8a.synced === true);
+  test('v8.198.1 sync: a compare-and-set miss shows as pending, not an error, and sends no telemetry',
+    s8a.pendingNotError === true && s8a.noTelemetry === true);
+  test('v8.198.1 sync: a conflict that never clears stops after two automatic retries',
+    s8b.capped === true);
+
+  // v8.198.1: offline, the delete flows clear the session with supabase-js's private _removeSession(). A supabase-js
+  // upgrade that renames it would quietly drop them to the storage fallback, so pin it in both vendored bundles.
+  test('v8.198.1 deletion: the vendored supabase-js (app and website) still defines auth._removeSession()', (() => {
+    try {
+      const fs = require('fs');
+      return ['lib/supabase-umd.min.js', 'landing/lib/supabase-umd.min.js'].every((f) =>
+        /async _removeSession\(\)\{/.test(fs.readFileSync(path.join(__dirname, '..', '..', f), 'utf8')));
+    } catch (e) { return false; }
+  })());
+
   test('v8.151.0 auth-state: sign-out clears local data only when cloud-store says it is backed up', (() => {
     try {
       const m = authStateJs.match(/function\s+_clearLocalIfSafe\(cs\)\s*\{[\s\S]*?\n\s\s\}/);
