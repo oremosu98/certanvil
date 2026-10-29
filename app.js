@@ -5190,7 +5190,7 @@ function _sampleTopicsForMixedBatch(dist) {
   Object.keys(byDomain).forEach(d => {
     result[d] = [];
     const need = dist[d] || 0;
-    if (need <= 0) return;
+    if (need <= 0 || !byDomain[d].length) return;   // no topics (e.g. the cert pack never loaded): the fill loop below would never end
     const pool = byDomain[d];
     if (need <= pool.length) {
       result[d] = (typeof window !== 'undefined' && window._mixedPickMode === 'lrs' && typeof _lrsPick === 'function') ? _lrsPick(shuffle(pool), need) : shuffle(pool).slice(0, need);  // v8.146.0: true random; least-recently-seen only for Catch-up
