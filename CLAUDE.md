@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.198.1 | **Deletion leftovers.** `cloud-store.js` (gated): `flushNow()` waits for an in-flight flush, and the profile write is a compare-and-set on the server-owned deletion keys. Offline delete clears the local session (supabase-js keeps it) and only then says you're signed out. Detail in CHANGELOG. |
 | v8.198.0 | Account deletion does what it promises |
 | v8.197.2 | Sign-in with Apple and Google: the deferred minors |
-| v8.197.1 | Apple and Google sign-in stays signed in on the web |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
