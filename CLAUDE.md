@@ -29,7 +29,7 @@
 | index.html | 2372 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
 | tests/uat.js + tests/uat/ (74 modules) | 33121 | — |
-UAT checks: 5680 · E2E `test(` count: 569 · APP_VERSION: 8.197.2 · stamped-at: worktree
+UAT checks: 5680 · E2E `test(` count: 569 · APP_VERSION: 8.198.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.198.0 | Account deletion does what it promises |
 | v8.197.2 | Sign-in with Apple and Google: the deferred minors |
 | v8.197.1 | Apple and Google sign-in stays signed in on the web |
-| v8.197.0 | Sign in with Apple and Google (Stage 5c) |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
