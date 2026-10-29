@@ -28,8 +28,8 @@
 | styles.css | 14888 | 550 KB |
 | index.html | 2372 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
-| tests/uat.js + tests/uat/ (72 modules) | 33036 | — |
-UAT checks: 5664 · E2E `test(` count: 545 · APP_VERSION: 8.197.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (73 modules) | 33082 | — |
+UAT checks: 5676 · E2E `test(` count: 545 · APP_VERSION: 8.197.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.197.1 | Apple and Google sign-in stays signed in on the web |
 | v8.197.0 | Sign in with Apple and Google (Stage 5c) |
 | v8.196.1 | Sign-in catches more email typos |
-| v8.196.0 | The iOS app signs you in with a 6-digit email code |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -158,6 +158,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - **Constants inside a `features/*.js` IIFE are invisible to app.js and other modules.** A `typeof X === 'number'` guard silently falls back and a bare reference throws inside a `try` (v8.160.0: the lost `SR_SESSION_CAP` showed "Review 62 cards" on Home and dropped reviews from next-best-move). Export a function (`window.getSrTodayPlan`) and read that.
 - **WebKit (Safari, the iOS app) misses `:has(#host:not(:empty))` when a host fills IN PLACE on an already-shown page** (Custom quiz over Home: tab bar and top bar stayed). Hosts filled while their page enters are fine (the display change restyles). For an in-place overlay, toggle a class from JS (`html.ic-open`) and key the CSS on it.
 - **Entrance reveals must rest VISIBLE and animate from hidden** (`animation: x .5s … backwards`, `@keyframes x { from { opacity: 0 } }`). WebKit never starts a CSS animation on content drawn while its page is `display:none` (Home re-renders just before `showPage` marks it active), so a rule resting at `opacity: 0` with `forwards` left Home blank after a tab round-trip in the iOS app. UAT 481 guards it.
+- **The `.certanvil.com` session cookie is chunked by its ENCODED length** (`buildCookieStorage`, both `lib/supabase.js` and `landing/lib/supabase.js`, kept in lockstep). Measuring the raw length let Apple/Google sessions encode past the 4096-byte cookie limit; the browser dropped them silently and web sign-in bounced back signed out (v8.197.1, UAT 511). Localhost uses localStorage, so only a real certanvil.com host shows it.
 - `setQuestionText(el, raw)` order is **escape-THEN-highlight** (`escHtml` → `highlightExamKeywords` → `innerHTML`). Reversing it is an XSS hole since question text is AI-generated.
 - The `_fnBody(src, name)` helper used by UAT extracts function bodies via brace-depth walking. **Prefix-match trap**: `tbShowCoach` will match `tbShowCoachModalLoading`. When writing UAT for a function, pick a name that's either unique or specify the exact suffix.
 - Curated exemplars (`CERT_PACK.questionExemplars`) are few-shot **style references** injected into the generation prompt — never served as quiz questions. MCQs key `answer: 'B'`; multi-selects key `answers: ['A','B']` (plural, the shape the runtime scorer reads) and may carry options past D. `_formatExemplarsForPrompt` must read BOTH keys and emit only the option letters present — it must also stay self-contained (no external helpers, `typeof CERT_PACK` guarded) because UAT extracts and runs its body in a bare vm sandbox.
