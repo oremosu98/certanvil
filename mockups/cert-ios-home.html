@@ -188,6 +188,22 @@
   .mtoast.open { transform: translateY(0); opacity: 1; pointer-events: auto; transition: transform .34s cubic-bezier(0.16,1,0.3,1), opacity .25s cubic-bezier(0.16,1,0.3,1); }
   .mtoast.out { transform: translateY(-10px); opacity: 0; transition: transform .22s cubic-bezier(0.16,1,0.3,1), opacity .18s ease; }
   @media (prefers-reduced-motion: reduce) { .mtoast, .mtoast.open, .mtoast.out { transform: none; transition: opacity .18s ease; } }
+  /* Stage 5d (29 Oct): a study reminder arriving as an iOS banner (?v=reminder | reminder-exam).
+     iOS system chrome: neutral, not app-styled (like the system alert). Drops in once and holds; tap dismisses (faster out). */
+  .ios-banner { position: absolute; z-index: 12; left: 8px; right: 8px; top: 50px; display: flex; gap: 11px; align-items: flex-start; padding: 11px 14px 12px 11px; border-radius: 22px;
+    background: rgba(246,246,248,.86); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); color: #111;
+    font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif; box-shadow: 0 10px 30px -10px rgba(0,0,0,.35);
+    border: 0; text-align: left; cursor: pointer; transform: translateY(-140%); opacity: 0; pointer-events: none; }
+  .ios-banner.open { transform: none; opacity: 1; pointer-events: auto; transition: transform .36s cubic-bezier(0.16,1,0.3,1), opacity .25s cubic-bezier(0.16,1,0.3,1); }
+  .ios-banner.out { transform: translateY(-140%); opacity: 0; pointer-events: none; transition: transform .22s cubic-bezier(0.16,1,0.3,1), opacity .18s ease; }
+  [data-theme="dark"] .ios-banner { background: rgba(44,44,48,.86); color: #f5f5f7; }
+  .ib-icon { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 9px; display: grid; place-items: center; background: #1b1b22; color: #ffb454; font: 800 13px/1 Inter, sans-serif; letter-spacing: -.01em; }
+  .ib-txt { display: block; flex: 1 1 auto; min-width: 0; }
+  .ib-top { display: flex; align-items: baseline; gap: 8px; }
+  .ib-top b { flex: 1; font-size: 15px; font-weight: 600; line-height: 1.25; }
+  .ib-top span { font-size: 13px; opacity: .5; }
+  .ib-body { display: block; margin: 1px 0 0; font-size: 15px; line-height: 1.3; }
+  @media (prefers-reduced-motion: reduce) { .ios-banner, .ios-banner.open, .ios-banner.out { transform: none; transition: opacity .18s ease; } }
   .mtoast-i { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 14%, transparent); }
   .mtoast-i svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
   .mtoast-t { display: block; font: 600 13px/1.4 Inter, sans-serif; color: var(--ink); }
@@ -319,6 +335,11 @@
             <span class="mtoast-i"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
             <span class="mtoast-t">Your free exam on this account is <b>Network+</b>, so we've opened it.</span>
           </div>
+          <!-- Stage 5d: a study reminder as the iOS banner (?v=reminder, ?v=reminder-exam) -->
+          <button class="ios-banner" id="remBanner" type="button" aria-label="Notification from CertAnvil">
+            <span class="ib-icon" aria-hidden="true">CA</span>
+            <span class="ib-txt"><span class="ib-top"><b>CertAnvil</b><span>now</span></span><span class="ib-body" id="remBody">7 review cards are due. Five minutes and you're done.</span></span>
+          </button>
           <div class="notch"></div>
           <div class="statusbar">
             <span>9:41</span>
@@ -654,6 +675,11 @@
       // Stage 5b: the lock-switch toast slides in, holds, then leaves on its own.
       try { if (new URLSearchParams(location.search).get('v') === 'lockswitch') { var lt = document.getElementById('lockToast');
         setTimeout(function(){ lt.classList.add('open'); }, 450); setTimeout(function(){ lt.classList.add('out'); }, 5200); } } catch (_) {}
+      // Stage 5d: a study reminder drops in as the iOS banner and holds until tapped.
+      try { var rv = new URLSearchParams(location.search).get('v'); if (rv === 'reminder' || rv === 'reminder-exam') { var rb = document.getElementById('remBanner');
+        if (rv === 'reminder-exam') document.getElementById('remBody').textContent = 'Your Network+ exam is in 7 days. A quick session keeps you on track.';
+        rb.addEventListener('click', function(){ rb.classList.add('out'); });
+        setTimeout(function(){ rb.classList.add('open'); }, 650); } } catch (_) {}
 
       // Accordion expand / collapse (collapsed by default).
       homeBody.querySelectorAll('[data-acc]').forEach(function(acc){

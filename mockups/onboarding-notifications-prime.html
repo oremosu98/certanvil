@@ -117,6 +117,58 @@
     .covers li:nth-child(3) { animation-delay: .30s; }
   }
   @media (prefers-reduced-motion: reduce) { .ios-scrim, .ios-alert { transition: none; } }
+
+  /* ── Stage 5d (29 Oct): the ask after a finished quiz (?v=quiz | quiz-pro | time | prompt) ──
+     Home stays put underneath, dimmed; the priming screen arrives as a sheet over it.
+     Motion: the sheet rises once (rare surface, spatial: it came up over Home); the scrim fades with it.
+     The inner stagger is off here so only one thing moves. */
+  .home-bg { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  .home-bg iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .p-scrim { position: absolute; inset: 0; z-index: 1; background: rgba(0,0,0,.32); opacity: 0; transition: opacity .3s var(--ease); pointer-events: none; }
+  .p-scrim.open { opacity: 1; transition: opacity .52s var(--ease); }
+  .psheet { position: absolute; left: 0; right: 0; top: 54px; bottom: 0; z-index: 3; display: flex; flex-direction: column; background: var(--bg); color: var(--ink);
+    border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px -18px rgba(0,0,0,.45); transform: translateY(100%); transition: transform .3s var(--ease); }
+  .psheet.open { transform: none; transition: transform .52s var(--ease); }
+  .screen.still .psheet, .screen.still .p-scrim { transition: none; }
+  .p-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 18%, transparent); margin: 8px auto 0; flex: 0 0 auto; }
+  .screen.after > .statusbar { display: none; }
+  .screen.after .hdr { padding-top: 10px; }
+  .screen.after .reveal, .screen.after .covers li { animation: none; opacity: 1; transform: none; }
+  .screen.after .hero { margin-top: 6px; }
+  .screen.after .bell-wrap { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 14px; }
+  .screen.after .bell-wrap svg { width: 31px; height: 31px; }
+  .screen.after .covers { margin-top: 18px; }
+
+  .timerow { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; margin-top: 10px; padding: 11px 15px; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); color: var(--ink); text-align: left; cursor: pointer; font: inherit; transition: transform .15s var(--ease); }
+  .timerow:active { transform: scale(0.985); }
+  @media (hover:hover) and (pointer:fine) { .timerow:hover { background: color-mix(in oklab, var(--ink) 3%, var(--surface)); } }
+  .timerow .tl { flex: 1 1 auto; font: 650 13.5px/1.3 Inter, sans-serif; }
+  .timerow .tv { font: 700 14px/1 Inter, sans-serif; color: var(--accent-deep); font-variant-numeric: lining-nums tabular-nums; }
+  .timerow .chev { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* the time picker sheet (an iOS-style wheel inside the app's own sheet) */
+  .t-scrim { position: absolute; inset: 0; z-index: 7; background: rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .2s var(--ease); }
+  .t-scrim.open { opacity: 1; pointer-events: auto; transition: opacity .36s var(--ease); }
+  .tsheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; background: var(--surface); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+    padding: 6px 12px calc(18px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .2s var(--ease); }
+  .tsheet.open { transform: none; transition: transform .36s var(--ease); }
+  .ts-head { display: flex; align-items: center; justify-content: space-between; }
+  .ts-head h3 { font: 650 15px/1 Inter, sans-serif; margin: 0; color: var(--ink); }
+  .ts-btn { min-width: 64px; min-height: 44px; border: 0; background: none; cursor: pointer; font: 600 15px/1 Inter, sans-serif; color: var(--ink-soft); padding: 0 8px; transition: transform .15s var(--ease); }
+  .ts-btn.done { color: var(--accent-deep); font-weight: 750; }
+  .ts-btn:active { transform: scale(0.97); }
+  .wheel { position: relative; display: flex; justify-content: center; gap: 6px; margin: 6px 4px 4px; height: 190px; overflow: hidden; }
+  .wheel::before { content: ""; position: absolute; left: 0; right: 0; top: 76px; height: 38px; border-radius: 10px; background: color-mix(in oklab, var(--ink) 7%, transparent); pointer-events: none; }
+  .wcol { position: relative; display: flex; flex-direction: column; width: 72px; }
+  .wcol button { height: 38px; border: 0; background: none; cursor: pointer; font: 500 21px/38px Inter, sans-serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; padding: 0; }
+  .wcol button.d1 { opacity: .45; font-size: 19px; } .wcol button.d2 { opacity: .2; font-size: 17px; }
+  .wcol button.d0 { font-weight: 650; }
+  .ts-note { margin: 4px 8px 0; text-align: center; font: 500 12px/1.45 Inter, sans-serif; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) {
+    .psheet, .psheet.open, .tsheet, .tsheet.open { transform: none; transition: opacity .2s ease; }
+    .psheet:not(.open), .tsheet:not(.open) { opacity: 0; pointer-events: none; }
+  }
   .hint { text-align: center; color: var(--page-dim); font-size: 12px; margin-top: 18px; }
   @media (max-width: 440px) { .phone { transform: scale(.92); transform-origin: top center; } }
 </style>
@@ -223,6 +275,88 @@
       document.getElementById('iosAllow').addEventListener('click', closeIos);
       document.getElementById('iosDeny').addEventListener('click', closeIos);
       document.getElementById('laterBtn').addEventListener('click', function(){ /* mockup: real flow routes on to home without asking */ });
+
+      // ── Stage 5d (29 Oct): the ask after a finished quiz, over Home ──
+      var qv = new URLSearchParams(location.search).get('v');
+      if (!{ quiz: 1, 'quiz-pro': 1, time: 1, prompt: 1 }[qv]) return;
+      var $ = function (id) { return document.getElementById(id); };
+      var screen = document.querySelector('.screen');
+      screen.classList.add('after');
+      var step = document.querySelector('.hdr .step'); if (step) step.remove();
+      var pro = qv === 'quiz-pro';
+      document.querySelector('.hero p').textContent = pro
+        ? 'A daily nudge for your practice and any reviews that are due, plus a heads-up as your exam gets close.'
+        : 'A daily nudge for your 15 questions and any reviews that are due, plus a heads-up as your exam gets close.';
+      document.querySelector('.covers li .cs').innerHTML = pro
+        ? 'One reminder a day for your practice, at the time you pick.'
+        : 'One reminder a day for <b>your 15</b>, at the time you pick.';
+      var CHEV = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>';
+      var CLOCK = '<span class="ci"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span>';
+      document.querySelector('.quiet').insertAdjacentHTML('beforebegin',
+        '<button class="timerow" type="button" id="timeRow">' + CLOCK + '<span class="tl">Remind me at</span><span class="tv" id="timeVal">7:00 pm</span>' + CHEV + '</button>');
+
+      // Home underneath (the real Home mockup, frame stripped), then the dim, then the sheet
+      var bg = document.createElement('div'); bg.className = 'home-bg'; bg.setAttribute('aria-hidden', 'true');
+      bg.innerHTML = '<iframe src="cert-ios-home.html" tabindex="-1" title="Home"></iframe>';
+      var pscrim = document.createElement('div'); pscrim.className = 'p-scrim';
+      var sheet = document.createElement('div'); sheet.className = 'psheet'; sheet.setAttribute('role', 'dialog'); sheet.setAttribute('aria-modal', 'true'); sheet.setAttribute('aria-label', 'Turn on reminders');
+      sheet.innerHTML = '<div class="p-grip"></div>';
+      ['.hdr', '.body', '.footer'].forEach(function (s) { sheet.appendChild(document.querySelector(s)); });
+      screen.insertBefore(sheet, screen.firstChild); screen.insertBefore(pscrim, sheet); screen.insertBefore(bg, pscrim);
+      var frame = bg.firstChild;
+      var STRIP = 'html,body{margin:0!important;padding:0!important;background:transparent!important;overflow:hidden!important;height:100%!important}'
+        + '.stage{max-width:none!important;margin:0!important;height:100%!important}.stage-head,.states,.switcher,.hint,.notch{display:none!important}'
+        + '.phone-wrap{display:block!important;height:100%!important}'
+        + '.phone{width:100%!important;height:100%!important;padding:0!important;border-radius:0!important;box-shadow:none!important;transform:none!important;max-width:none!important}'
+        + '.screen{border-radius:0!important;height:100%!important}';
+      function syncTheme() { try { frame.contentDocument.documentElement.setAttribute('data-theme', html.getAttribute('data-theme')); } catch (_) {} }
+      frame.addEventListener('load', function () {
+        try { var st = frame.contentDocument.createElement('style'); st.textContent = STRIP; frame.contentDocument.head.appendChild(st); } catch (_) {}
+        syncTheme();
+      });
+      new MutationObserver(syncTheme).observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+
+      // the time picker: hour, minute, am/pm wheels; Done writes the row
+      var t = { h: 7, m: 0, ap: 'pm' }, draft;
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function fmt(x) { return x.h + ':' + pad(x.m) + ' ' + x.ap; }
+      function col(key, vals, cur, label) {
+        var i = vals.indexOf(cur), out = '';
+        for (var k = -2; k <= 2; k++) {
+          var j = i + k, val = vals[(j + vals.length) % vals.length];
+          if (key === 'ap' && (j < 0 || j >= vals.length)) { out += '<button type="button" tabindex="-1" aria-hidden="true" style="visibility:hidden"></button>'; continue; }
+          out += '<button type="button" class="d' + Math.abs(k) + '" data-k="' + key + '" data-v="' + val + '"' + (k === 0 ? ' aria-current="true"' : '') + '>' + (key === 'm' ? pad(val) : val) + '</button>';
+        }
+        return '<div class="wcol" role="listbox" aria-label="' + label + '">' + out + '</div>';
+      }
+      var H = [1,2,3,4,5,6,7,8,9,10,11,12], M = []; for (var mm = 0; mm < 60; mm++) M.push(mm);
+      function drawWheel() {
+        $('wheel').innerHTML = col('h', H, draft.h, 'Hour') + col('m', M, draft.m, 'Minute') + col('ap', ['am', 'pm'], draft.ap, 'am or pm');
+        [].forEach.call($('wheel').querySelectorAll('button[data-k]'), function (b) {
+          b.addEventListener('click', function () { var k = b.getAttribute('data-k'), val = b.getAttribute('data-v'); draft[k] = k === 'ap' ? val : +val; drawWheel(); });
+        });
+      }
+      screen.insertAdjacentHTML('beforeend', '<div class="t-scrim" id="tScrim"></div><div class="tsheet" id="tSheet" role="dialog" aria-modal="true" aria-labelledby="tsT">'
+        + '<div class="ts-head"><button class="ts-btn" type="button" id="tsCancel">Cancel</button><h3 id="tsT">Reminder time</h3><button class="ts-btn done" type="button" id="tsDone">Done</button></div>'
+        + '<div class="wheel" id="wheel"></div><p class="ts-note">You can change it any time in Settings.</p></div>');
+      function openTime() { draft = { h: t.h, m: t.m, ap: t.ap }; drawWheel(); $('tScrim').classList.add('open'); $('tSheet').classList.add('open'); }
+      function closeTime() { $('tScrim').classList.remove('open'); $('tSheet').classList.remove('open'); }
+      $('timeRow').addEventListener('click', openTime);
+      $('tsCancel').addEventListener('click', closeTime);
+      $('tScrim').addEventListener('click', closeTime);
+      $('tsDone').addEventListener('click', function () { t = draft; $('timeVal').textContent = fmt(t); closeTime(); });
+
+      function openSheet() { pscrim.classList.add('open'); sheet.classList.add('open'); }
+      function closeSheet() { screen.classList.remove('still'); pscrim.classList.remove('open'); sheet.classList.remove('open'); }
+      $('laterBtn').addEventListener('click', closeSheet);
+      $('iosAllow').addEventListener('click', function () { setTimeout(closeSheet, 180); });
+      $('iosDeny').addEventListener('click', function () { setTimeout(closeSheet, 180); });
+      if (qv === 'quiz' || qv === 'quiz-pro') {
+        setTimeout(openSheet, 450);   // after the shell's push lands, the sheet rises over Home
+      } else {
+        screen.classList.add('still'); openSheet();
+        setTimeout(qv === 'time' ? openTime : openIos, 300);
+      }
     })();
   </script>
 </body>

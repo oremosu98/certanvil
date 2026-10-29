@@ -138,6 +138,16 @@
     'st-methods-exists' : 'cert-ios-settings.html?v=methods-exists',
     'st-delete-apple'   : 'cert-ios-settings.html?v=delete-apple',     // Stage 5c: Apple confirms before deletion
     'signin-provider-error': 'onboarding-signup-signin.html?v=provider-error',
+    'rem-prime'         : 'onboarding-notifications-prime.html?v=quiz',     // Stage 5d (29 Oct): the ask, over Home after a finished quiz
+    'rem-prime-pro'     : 'onboarding-notifications-prime.html?v=quiz-pro',
+    'rem-time'          : 'onboarding-notifications-prime.html?v=time',
+    'rem-ios-prompt'    : 'onboarding-notifications-prime.html?v=prompt',
+    'rem-banner'        : 'cert-ios-home.html?v=reminder',                 // Stage 5d: the reminder as an iOS banner
+    'rem-banner-exam'   : 'cert-ios-home.html?v=reminder-exam',
+    'st-reminders'      : 'cert-ios-settings.html?v=reminders',            // Stage 5d: Settings, Reminders row
+    'st-reminders-off'  : 'cert-ios-settings.html?v=reminders-off',
+    'st-reminders-sheet': 'cert-ios-settings.html?v=reminders-sheet',
+    'st-reminders-denied': 'cert-ios-settings.html?v=reminders-denied',
     'log-result'        : 'cert-ios-log-result.html',
     'review'            : 'cert-ios-review.html',
     'review-answers'    : 'cert-ios-review-answers.html',
@@ -282,6 +292,7 @@
   NAV['exam-results-toast'] = NAV['exam-results'];
   NAV['signin-typo'] = NAV['signup-signin'];
   NAV['signin-provider-error'] = NAV['signup-signin'];
+  NAV['rem-banner'] = NAV['home']; NAV['rem-banner-exam'] = NAV['home'];   // Stage 5d: Home underneath the banner works as Home
   NAV['lock-switched'] = NAV['home'];
   ['code-wrong','code-expired','resend-wait','code-offline'].forEach(function (k) { NAV[k] = NAV['email-code']; });
   ['drills-free','drills-empty','drills-dl'].forEach(function (k) { NAV[k] = NAV['drills']; });
@@ -726,6 +737,13 @@
     if (s5cBtn) s5cBtn.addEventListener('click', function () {
       s5cI = (s5cI + 1) % LIFT_5C.length; resetTo(LIFT_5C[s5cI]);
       s5cBtn.textContent = '5c ' + (s5cI + 1) + '/' + LIFT_5C.length + ' \u203a';
+    });
+    // Stage 5d (29 Oct): study reminders
+    var LIFT_5D = ['rem-prime','rem-prime-pro','rem-time','rem-ios-prompt','rem-banner','rem-banner-exam','st-reminders','st-reminders-off','st-reminders-sheet','st-reminders-denied'];
+    var s5dBtn = document.getElementById('hud-5d'), s5dI = -1;
+    if (s5dBtn) s5dBtn.addEventListener('click', function () {
+      s5dI = (s5dI + 1) % LIFT_5D.length; resetTo(LIFT_5D[s5dI]);
+      s5dBtn.textContent = '5d ' + (s5dI + 1) + '/' + LIFT_5D.length + ' \u203a';
     });
     // Stage 5b (28 Oct): sign in by email code
     var LIFT_5B = ['native-welcome','signup-signin','signin-typo','email-code','code-wrong','code-expired','resend-wait','code-offline','lock-switched'];

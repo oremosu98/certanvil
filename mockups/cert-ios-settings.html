@@ -593,6 +593,19 @@
   [data-theme="dark"] .sa-go { background: #fff; color: #000; }
   .sa-go .i { width: 17px; height: 17px; } .sa-foot { text-align: center; font-size: 12px; opacity: .55; margin: 10px 0 0; }
   @media (prefers-reduced-motion: reduce) { .sys-apple { transition: none; } }
+  /* Stage 5d (29 Oct): Reminders (row in Study setup + its sheet). No new motion: the sheet uses .st-sheet's timings. */
+  .st-rem { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .st-rem .st-tog { margin: 0; padding: 12px 14px; border-top: 0; min-height: 56px; }
+  .st-rem .st-row { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+  .st-rem .st-row[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+  .st-rem .rv { color: var(--accent-deep); font-variant-numeric: lining-nums tabular-nums; }
+  .wheel { position: relative; display: flex; justify-content: center; gap: 6px; height: 190px; overflow: hidden; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); padding: 0 4px; }
+  .wheel::before { content: ""; position: absolute; left: 8px; right: 8px; top: 76px; height: 38px; border-radius: 10px; background: color-mix(in oklab, var(--ink) 7%, transparent); pointer-events: none; }
+  .wcol { position: relative; display: flex; flex-direction: column; width: 72px; }
+  .wcol button { height: 38px; border: 0; background: none; cursor: pointer; font: 500 21px/38px Inter, sans-serif; color: var(--ink); font-variant-numeric: lining-nums tabular-nums; padding: 0; }
+  .wcol button.d1 { opacity: .45; font-size: 19px; } .wcol button.d2 { opacity: .2; font-size: 17px; } .wcol button.d0 { font-weight: 650; }
+  .st-denied { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: color-mix(in oklab, var(--ink) 4%, var(--surface)); font: 550 13.5px/1.45 Inter, sans-serif; color: var(--ink); }
+  .st-denied .i { width: 18px; height: 18px; flex: 0 0 auto; margin-top: 1px; color: var(--muted); }
 
 </style>
 </head>
@@ -621,6 +634,7 @@
     (function () {
       var qv = new URLSearchParams(location.search).get('v'), v = qv || 'free';
       var I = {
+        bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>', bellOff: '<path d="M18 8a6 6 0 0 0-9.3-5M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M13.7 21a2 2 0 0 1-3.4 0M3 3l18 18"/>',
         key: '<circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3M15 8l2 2"></path>',
         apple: '<path fill="currentColor" stroke="none" d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"></path>',
         mail: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 7l9 6 9-6"></path>',
@@ -642,6 +656,7 @@
       var CERTS = [['N+','Network+','N10-009',0],['S+','Security+','SY0-701',1],['AZ','Microsoft Azure Fundamentals','AZ-900',1],['AI','Microsoft Azure AI Fundamentals','AI-901',1],['SC','Microsoft SC-900','SC-900',1],['AWS','AWS Cloud Practitioner','CLF-C02',1],['A+','CompTIA A+ Core 1','220-1201',1],['A+','CompTIA A+ Core 2','220-1202',1]];
       var BACKUPS = [['8 June','193.8 KB · saved 18:36'],['7 June','169.5 KB · saved 21:04'],['6 June','158.2 KB · saved 19:48'],['5 June','171.0 KB · saved 22:10']];
 
+      var remOn = v === 'reminders' || v === 'reminders-sheet';   // Stage 5d
       var out = v === 'signed-out', pro = v === 'pro' || v === 'exam-date' || v === 'restore' || v === 'delete';
       // the E2E shell's Pro demo toggle drives the default state only; ?v= states are fixed
       window.setPlan = function (p) { if (qv) return; pro = !!p; draw(true); };
@@ -693,6 +708,7 @@
         h += '<div class="st-sect reveal">Study setup</div><div class="st-group reveal">'
           + row('cloud', 'Cloud sync', null, out ? 'Off' : 'On', { vcls: out ? 'warn' : 'ok', nochev: true, cls: 'static' })
           + row('cal', 'Exam date', null, pro ? '14 Dec · 49 days' : 'Not set', { id: 'stExam' })
+          + row('bell', 'Reminders', null, remOn ? '7:00 pm' : 'Off', { id: 'stRem' })   // Stage 5d: reads the live permission, never a stored flag
           + row('goal', 'Daily goal', null, pro ? '30 a day' : '15 a day', { nochev: true, cls: 'static' })
           + row('today', 'Today', null, pro ? '12 of 30' : '6 of 15', { nochev: true, cls: 'static' })
           + '</div>';
@@ -768,6 +784,42 @@
         openScrim(); $('istSheet').classList.add('open');
         if ($('addApple')) $('addApple').addEventListener('click', function () { methodsSheet('added'); });
       }
+      // Stage 5d (29 Oct): Reminders sheet (on/off + time), and the denied state
+      var rt = { h: 7, m: 0, ap: 'pm', on: true, wheel: false };
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+      function wcol(key, vals, cur, label) {
+        var i = vals.indexOf(cur), o = '';
+        for (var k = -2; k <= 2; k++) {
+          var j = i + k;
+          if (key === 'ap' && (j < 0 || j >= vals.length)) { o += '<button type="button" tabindex="-1" aria-hidden="true" style="visibility:hidden"></button>'; continue; }
+          var val = vals[(j + vals.length) % vals.length];
+          o += '<button type="button" class="d' + Math.abs(k) + '" data-k="' + key + '" data-v="' + val + '">' + (key === 'm' ? pad(val) : val) + '</button>';
+        }
+        return '<div class="wcol" role="listbox" aria-label="' + label + '">' + o + '</div>';
+      }
+      var WH = [1,2,3,4,5,6,7,8,9,10,11,12], WM = []; for (var q = 0; q < 60; q++) WM.push(q);
+      function remSheet(denied) {
+        var t = rt.h + ':' + pad(rt.m) + ' ' + rt.ap;
+        if (denied) {
+          $('istSheet').innerHTML = '<div class="ls-grip"></div><h3 id="istT">Reminders</h3><p>One a day at most, at the time you pick.</p>'
+            + '<div class="st-denied" role="status">' + ic('bellOff') + '<span>Notifications are off for CertAnvil in iPhone Settings.</span></div>'
+            + '<button class="st-pri" type="button" id="remOpen">Open Settings</button><button class="st-clear" type="button" id="remNot">Not now</button>';
+        } else {
+          $('istSheet').innerHTML = '<div class="ls-grip"></div><h3 id="istT">Reminders</h3><p>One a day at most, at the time you pick.</p><div class="st-rem">'
+            + '<div class="st-tog"><span class="tl">Study reminders<span>Your daily practice, due reviews and your exam countdown.</span></span><button class="st-sw" type="button" id="remSw" aria-pressed="' + rt.on + '" aria-label="Study reminders"></button></div>'
+            + row('', 'Time', null, rt.on ? t : 'Off', { id: 'remTime', nochev: rt.wheel }).replace('<button class="st-row"', '<button class="st-row"' + (rt.on ? '' : ' aria-disabled="true"'))
+            + (rt.on && rt.wheel ? '<div class="wheel" id="remWheel">' + wcol('h', WH, rt.h, 'Hour') + wcol('m', WM, rt.m, 'Minute') + wcol('ap', ['am', 'pm'], rt.ap, 'am or pm') + '</div>' : '')
+            + '</div>';
+        }
+        openScrim(); $('istSheet').classList.add('open');
+        function setRow() { var r = $('stRem'); if (r) r.querySelector('.rv').textContent = rt.on ? rt.h + ':' + pad(rt.m) + ' ' + rt.ap : 'Off'; }
+        if (denied) { $('remOpen').addEventListener('click', closeAll); $('remNot').addEventListener('click', closeAll); return; }
+        $('remSw').addEventListener('click', function () { rt.on = !rt.on; if (!rt.on) rt.wheel = false; setRow(); remSheet(false); });
+        $('remTime').addEventListener('click', function () { rt.wheel = !rt.wheel; remSheet(false); });
+        if ($('remWheel')) [].forEach.call($('remWheel').querySelectorAll('button[data-k]'), function (b) {
+          b.addEventListener('click', function () { var k = b.getAttribute('data-k'), val = b.getAttribute('data-v'); rt[k] = k === 'ap' ? val : +val; setRow(); remSheet(false); });
+        });
+      }
       // Stage 5c: Apple's own confirm sheet (system UI, neutral and faithful), shown before an Apple account is deleted
       function appleSheet() {
         $('sysApple').classList.add('open');
@@ -804,6 +856,7 @@
         $('stClear').addEventListener('click', function () { ask.apply(null, ASK.clear); });
         $('stImport').addEventListener('click', function () { ask.apply(null, ASK.import); });
         if ($('stDelete')) $('stDelete').addEventListener('click', deleteSheet);
+        if ($('stRem')) $('stRem').addEventListener('click', function () { if (v === 'reminders-denied') remSheet(true); else { rt.on = remOn; rt.wheel = false; remSheet(false); } });
         if ($('stMethods')) $('stMethods').addEventListener('click', function () { methodsSheet(v === 'methods-added' ? 'added' : ''); });
         if ($('saX')) $('saX').addEventListener('click', function () { $('sysApple').classList.remove('open'); });
         if ($('saGo')) $('saGo').addEventListener('click', function () { $('sysApple').classList.remove('open'); closeAll(); });
@@ -823,6 +876,10 @@
         methods: 'Stage 5c: Sign-in methods lists Email (always on), Apple and Google with Add. Add opens the native sheet.',
         'methods-added': 'Stage 5c: Apple added from Settings (a Hide My Email user keeps one account).',
         'methods-exists': 'Stage 5c: that Apple ID already has its own CertAnvil account; nothing is merged.',
+        reminders: 'Stage 5d: Reminders in Study setup shows the time when they are on and iOS allows them.',
+        'reminders-off': 'Stage 5d: Reminders reads Off when they are off or iOS has not been asked yet. Turning on asks iOS first.',
+        'reminders-sheet': 'Stage 5d: the Reminders sheet: a switch and the time. Tap Time for the wheel.',
+        'reminders-denied': 'Stage 5d: iOS permission denied (or revoked in iPhone Settings): Off whatever the switch says, and Open Settings.',
         'delete-apple': 'Stage 5c: an Apple account confirms with Apple before deletion; the server revokes CertAnvil\u2019s access.'
       };
       $('hint').textContent = HINT[v] || '';
@@ -833,6 +890,9 @@
         if (v === 'restore') ask.apply(null, ASK.restore);
         if (v === 'clear-bank') ask.apply(null, ASK.clear);
         if (v === 'delete') deleteSheet();
+        if (/^reminders/.test(v) && $('stRem')) { var sb = document.querySelector('.st-body'), rr = $('stRem'); sb.scrollTop += rr.getBoundingClientRect().top - sb.getBoundingClientRect().top - (v === 'reminders' || v === 'reminders-off' ? 260 : 60); }   // Stage 5d: bring the row into view (scroll the list only)
+        if (v === 'reminders-sheet') remSheet(false);
+        if (v === 'reminders-denied') remSheet(true);
         if (v === 'methods') methodsSheet('');
         if (v === 'methods-added') methodsSheet('added');
         if (v === 'methods-exists') methodsSheet('exists');
