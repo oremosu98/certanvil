@@ -1380,10 +1380,19 @@
     var apple = (S && S._hasApple && S._appleRevoke) ? sb.auth.getUser().then(function (u) {
       return S._hasApple(u && u.data && u.data.user) ? S._appleRevoke() : null;
     }).catch(function () { return null; }) : Promise.resolve(null);
+    // cloud-store's debounced flush rewrites the whole metadata column; landing after the rpc it would erase the
+    // mark, so send anything pending first. A failed flush never stops the deletion.
+    var CS = window.cloudStore;
+    var flushed = function () {
+      return (CS && typeof CS.flushNow === 'function') ? Promise.resolve().then(function () { return CS.flushNow(); }).catch(function () {}) : null;
+    };
     // The server stamps the mark (and sees the whole row, so nothing is clobbered), then every device is signed out.
-    apple.then(function () { return sb.rpc('request_account_deletion'); }).then(function (r) {
+    // A global sign-out that fails (supabase-js resolves {error} offline and keeps the session) falls back to this device.
+    apple.then(flushed).then(function () { return sb.rpc('request_account_deletion'); }).then(function (r) {
       if (!r || r.error || !r.data) throw (r && r.error) || new Error('no profile');
-      return sb.auth.signOut({ scope: 'global' });
+      return sb.auth.signOut({ scope: 'global' }).then(function (so) {
+        if (so && so.error) return sb.auth.signOut();
+      }, function () { return sb.auth.signOut(); }).catch(function () {});
     }).then(function () {
       if (card) {
         card.innerHTML =

@@ -663,9 +663,11 @@
   }
 
   // Account deletion: a sign-in inside the 7-day window cancels it server-side and leaves a flag; say so once, then clear it.
+  // While a ?action=signin&return= bounce is under way the destination app shows and clears it, so this page must not.
   var deletionNoticeShown = false;
+  var returnBouncePending = false;
   function showDeletionCancelledNotice(profile) {
-    if (deletionNoticeShown || !profile || !profile.metadata || !profile.metadata.deletion_cancelled_at) return;
+    if (returnBouncePending || deletionNoticeShown || !profile || !profile.metadata || !profile.metadata.deletion_cancelled_at) return;
     deletionNoticeShown = true;
     noticeToast('Welcome back. We\'ve cancelled the deletion and your account is safe.');
     // rpc() is lazy: it only sends once .then runs.
@@ -1069,6 +1071,7 @@
           // session on the correct origin.
           if (signinRequested && pendingReturnUrl) {
             if (returnUrlSharesApexCookie(pendingReturnUrl)) {
+              returnBouncePending = true;
               try { window.location.replace(pendingReturnUrl); } catch (e) {}
             } else {
               // Cross-origin: open the modal so the user can re-sign-in via
@@ -1109,6 +1112,7 @@
       if (pendingReturnUrl && !returnUrlSharesApexCookie(pendingReturnUrl)) pendingReturnUrl = null;
       if (pendingReturnUrl) {
         var ret = pendingReturnUrl;
+        returnBouncePending = true;
         pendingReturnUrl = null;
         setTimeout(function () {
           try { window.location.replace(ret); } catch (e) {}

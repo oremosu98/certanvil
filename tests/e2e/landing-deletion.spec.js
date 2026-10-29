@@ -40,6 +40,22 @@ test.describe('website account deletion', () => {
     expect(log.filter((e) => /^(rpc:request_account_deletion|auth:signOut:)/.test(e))).toEqual(['rpc:request_account_deletion', 'auth:signOut:global']);
   });
 
+  test('/account delete: a global sign-out that fails still signs this device out before going home', async ({ page }) => {
+    await route(page, { signOutError: true });
+    page.on('dialog', (d) => d.accept());
+    await page.goto('/account');
+    await expect(page.locator('#btn-delete-account')).toBeVisible();
+    await page.evaluate(() => {
+      const so = window.certanvilSupabase.auth.signOut;
+      window.certanvilSupabase.auth.signOut = function () { const r = so.apply(this, arguments); sessionStorage.setItem('log', JSON.stringify(window.__fakeLog)); return r; };
+    });
+    await page.click('#btn-delete-account');
+    await page.waitForURL((u) => u.pathname === '/', { timeout: 8000 });
+    await expect(page.locator('#toast-stack .toast')).toHaveText(AFTER_DELETING);
+    const log = JSON.parse(await page.evaluate(() => sessionStorage.getItem('log')));
+    expect(log.filter((e) => /^auth:signOut:/.test(e))).toEqual(['auth:signOut:global', 'auth:signOut:local']);
+  });
+
   for (const [name, fake] of [['an rpc error', { rpcError: true }], ['a NULL result', { rpcNull: true }]]) {
     test(`/account delete: ${name} keeps you signed in with the failure toast`, async ({ page }) => {
       await route(page, fake);
@@ -69,6 +85,34 @@ test.describe('website account deletion', () => {
     expect(await rpcCalls(page)).toEqual(['clear_deletion_notice']);
     expect(await page.evaluate(() => window.__FAKE_PROFILE.metadata.deletion_cancelled_at)).toBeUndefined();
   });
+
+  // A sign-in on certanvil.com with ?action=signin&return= bounces to the app 250ms later; the app shows and clears the
+  // notice, so the landing must not (its toast would flash and the clear would leave the app nothing to show).
+  const RETURN = 'https://networkplus.certanvil.com/';
+  async function landingStorage(page) { // the landing's localStorage, read from a script-free page on its origin
+    await page.route('**/__probe', (r) => r.fulfill({ contentType: 'text/html', body: '<p>probe</p>' }));
+    await page.goto('/__probe');
+    return page.evaluate(() => ({ rpc: JSON.parse(localStorage.getItem('__rpcCalls') || '[]'), cleared: localStorage.getItem('__fakeNoticeCleared') }));
+  }
+  for (const [name, fake] of [['a code sign-in', { signedOut: true }], ['an existing session', {}]]) {
+    test(`${name} that bounces to return= leaves the notice for the app`, async ({ page }) => {
+      await route(page, Object.assign({ deletionCancelled: true }, fake));
+      await page.route('https://networkplus.certanvil.com/**', (r) => r.fulfill({ contentType: 'text/html', body: '<p>cert app</p>' }));
+      await page.goto('/?action=signin&return=' + encodeURIComponent(RETURN));
+      if (fake.signedOut) {
+        await expect(page.locator('#auth-modal')).toBeVisible();
+        await page.fill('#auth-email', 'sam@example.test');
+        await page.click('#auth-submit');
+        await expect(page.locator('#auth-sent')).toBeVisible();
+        await page.locator('#auth-otp-boxes input').first().focus();
+        await page.keyboard.type('123456', { delay: 30 });
+      }
+      await page.waitForURL(RETURN, { timeout: 8000 });
+      const s = await landingStorage(page);
+      expect(s.rpc).not.toContain('clear_deletion_notice');
+      expect(s.cleared).toBeNull();
+    });
+  }
 
   test('?deleted=1 shows the after-deleting toast and drops the param', async ({ page }) => {
     await route(page, { signedOut: true });

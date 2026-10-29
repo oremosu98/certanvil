@@ -889,7 +889,12 @@
       supabase.rpc('request_account_deletion').then(function (r) {
         if (!r || r.error || !r.data) { failed(); return; }
         var leave = function () { window.location.href = '/?deleted=1'; };
-        supabase.auth.signOut({ scope: 'global' }).then(leave, leave);
+        // supabase-js resolves {error} on a network failure and keeps the session: sign this device out instead.
+        var local = function () { return supabase.auth.signOut().then(leave, leave); };
+        supabase.auth.signOut({ scope: 'global' }).then(function (so) {
+          if (so && so.error) return local();
+          leave();
+        }, local);
       }).catch(failed);
     });
   }

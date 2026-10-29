@@ -91,7 +91,7 @@ restore purged accounts.
 ## App and website
 
 - **The notice.** When a signed-in page loads a profile carrying `metadata.deletion_cancelled_at`, it shows one
-  toast, "Welcome back. Your account won't be deleted.", then calls `supabase.rpc('clear_deletion_notice')`.
+  toast, "Welcome back. We've cancelled the deletion and your account is safe." (the plan's Copy table), then calls `supabase.rpc('clear_deletion_notice')`.
   Whichever surface loads first shows it and clears it, so it shows once.
   - App (phone web and iOS): a feature file listens for `SIGNED_IN` / `INITIAL_SESSION` on
     `window.certanvilSupabase` and reads the profile. `auth-state.js`, `cloud-store.js`, `lib/supabase.js` and

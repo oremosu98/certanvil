@@ -361,6 +361,34 @@ await t('authenticated and service_role cannot execute the purge', async () => {
   assert.equal(await count('auth.users where id = $1', [A]), 1, 'nothing purged');
 });
 
+await t('a sign-in after the mark that the cancel trigger missed still keeps the account', async () => {
+  // The trigger can miss a sign-in (its 2s lock wait timed out), or a stale whole-metadata write can put a
+  // cancelled mark back. The purge's locked re-check compares the mark with last_sign_in_at itself.
+  await db.query("update public.profiles set metadata = metadata || jsonb_build_object('deletion_requested_at', now() - interval '8 days') where id = $1", [A]);
+  await db.exec('alter table auth.users disable trigger on_signin_cancel_deletion');
+  try { await signIn(A, "now() - interval '2 days'"); }
+  finally { await db.exec('alter table auth.users enable trigger on_signin_cancel_deletion'); }
+  assert.ok((await meta(A)).deletion_requested_at, 'setup: the mark is still there');
+  assert.equal(await purge(), 0);
+  assert.equal(await count('auth.users where id = $1', [A]), 1, 'A kept');
+  assert.equal(await count('public.profiles where id = $1', [A]), 1, "A's profile kept");
+});
+
+await t('running the migration re-stamps marks from before 29 Oct to now, once, and leaves newer marks alone', async () => {
+  const file = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261029_account_deletion.sql'), 'utf8');
+  await setMeta(A, { keep: 1, deletion_requested_at: '2026-10-01T00:00:00Z' }); // an old-flow mark: would be due at once
+  const atB = await mark(B); // a new-flow mark
+  await db.exec(file);
+  const a1 = (await meta(A)).deletion_requested_at;
+  assert.ok(Math.abs(new Date(a1) - Date.now()) < 5000, 'A re-stamped to now: ' + a1);
+  assert.equal((await meta(A)).keep, 1, 'other keys stay');
+  assert.equal(new Date((await meta(B)).deletion_requested_at).getTime(), new Date(atB).getTime(), "B's mark untouched");
+  assert.equal(await purge(), 0, 'nothing due straight after the migration');
+  assert.equal(await count('auth.users where id = $1', [A]), 1, 'A kept');
+  await db.exec(file);
+  assert.equal((await meta(A)).deletion_requested_at, a1, 'a second run does not extend it again');
+});
+
 // Last: it removes what every case above depends on.
 await t('the rollback removes the trigger, the five functions and restores admin_audit_record', async () => {
   const file = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261029_account_deletion.sql'), 'utf8');

@@ -56,7 +56,10 @@
       getSession:function(){ return Promise.resolve({data:{session:session},error:null}); },
       getUser:function(){ return Promise.resolve({data:{user:session?user:null},error:null}); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
-      signOut:function(opts){ window.__fakeLog.push('auth:signOut:'+((opts && opts.scope) || 'local')); return Promise.resolve({error:null}); },
+      // Account deletion: F.signOutError makes a global sign-out resolve {error} (supabase-js on a network failure keeps the session).
+      signOut:function(opts){ var sc=(opts && opts.scope) || 'local'; window.__fakeLog.push('auth:signOut:'+sc);
+        if (F.signOutError && sc==='global') return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+        return Promise.resolve({error:null}); },
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },

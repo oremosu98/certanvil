@@ -425,6 +425,35 @@ test.describe('Account deletion: app', () => {
     expect(await page.evaluate(() => window.__FAKE_PROFILE.metadata.deletion_requested_at)).toBeTruthy();
   });
 
+  test("waits for cloud-store's pending flush before requesting deletion", async ({ page }) => {
+    // cloud-store's flush rewrites the whole metadata column; landing after the rpc it would erase the mark.
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.evaluate(() => {
+      window.cloudStore = window.cloudStore || {};
+      window.cloudStore.flushNow = () => { window.__fakeLog.push('flush:start');
+        return new Promise((r) => setTimeout(() => { window.__fakeLog.push('flush:done'); r(); }, 300)); };
+    });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    const l = (await log(page)).filter((e) => /^(flush:|rpc:request_account_deletion)/.test(e));
+    expect(l).toEqual(['flush:start', 'flush:done', 'rpc:request_account_deletion']);
+  });
+
+  test('a failing flush still requests deletion', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => Promise.reject(new Error('offline')); });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
+  });
+
+  test('a global sign-out that fails still signs this device out', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ signOutError: true }, SIGNED), seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual(['auth:signOut:global', 'auth:signOut:local']);
+  });
+
   test('an Apple account still asks Apple first, then requests deletion', async ({ page }) => {
     await routeRevoke(page, 'ok');
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: Object.assign({ __social: JSON.stringify({ mode: 'ok', authorizationCode: 'c-1' }) }, SEED) });

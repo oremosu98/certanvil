@@ -9,6 +9,9 @@
 -- What this file does:
 --   1. public.safe_timestamptz(text): parses a stored mark, NULL (never an
 --      error) on a missing or bad value.
+--      It also accepts Postgres's special values ('epoch', '-infinity', ...).
+--      Accepted: they can only make the user's OWN account due sooner, and a
+--      user can already write their own metadata.
 --   2. public.request_account_deletion(): the caller marks their OWN profile
 --      with the server's clock (metadata.deletion_requested_at) and drops any
 --      old cancel notice. Returns the stamp (NULL if the caller has no profile).
@@ -49,6 +52,13 @@
 --      Anonymising an audit row where the person acted as admin on someone
 --      else keeps that someone's id but also nulls the row's old_data and
 --      new_data (intended: the images may carry the person's own data).
+--      It also skips an account that signed in after its mark
+--      (auth.users.last_sign_in_at later than the mark), even if the mark is
+--      still there.
+--   6b. ONE-TIME: every mark written before 2026-10-29T00:00:00Z (the old
+--      flow, since v7.45.0, never cleared its marks) is re-stamped to now(),
+--      a fresh 7 days, so the first hourly run purges nobody by surprise.
+--      Re-running the file does not extend them again (see the block).
 --   7. pg_cron job purge-deleted-accounts, hourly at :17, only where pg_cron
 --      is available (on Supabase you may first need to switch it on under
 --      Database → Extensions). Re-running replaces the job, never duplicates.
@@ -67,7 +77,10 @@
 --
 -- ACTION REQUIRED: run this whole file once in Supabase Dashboard → SQL
 -- Editor (as postgres). Idempotent (CREATE OR REPLACE / DROP ... IF EXISTS).
--- The ROLLBACK block at the end undoes it (it cannot restore purged accounts).
+-- The ROLLBACK block at the end undoes it (it cannot restore purged accounts,
+-- nor un-re-stamp the marks block 6b moved). Before running it, do the
+-- preflight in the plan (Task 6 Step 2): list every marked account and strip
+-- the mark of anyone who should stay.
 -- ══════════════════════════════════════════════════════════════════════════
 
 -- ── 1. safe_timestamptz · parse a mark without ever raising ───────────────
@@ -242,6 +255,7 @@ declare
   v_id    text;
   v_mails text[];
   v_count integer := 0;
+  v_last  timestamptz;
 begin
   for r in
     select p.id
@@ -253,13 +267,19 @@ begin
       -- Lock in a sign-in's order (auth.users, then profiles) and re-check:
       -- the list above is a snapshot, and a sign-in since then may have
       -- cleared the mark. Not due any more (or gone) = skip, untouched.
-      perform 1 from auth.users u where u.id = r.id for update;
+      -- A sign-in after the mark also saves the account even when the mark
+      -- is still there: the cancel trigger may have missed it (its 2s lock
+      -- wait timed out), or a stale whole-metadata write put a cancelled mark
+      -- back.
+      select u.last_sign_in_at into v_last
+        from auth.users u where u.id = r.id for update;
       if not found then
         continue;
       end if;
       perform 1 from public.profiles p
        where p.id = r.id
          and public.safe_timestamptz(p.metadata->>'deletion_requested_at') < now() - interval '7 days'
+         and (v_last is null or v_last <= public.safe_timestamptz(p.metadata->>'deletion_requested_at'))
          for update;
       if not found then
         continue;
@@ -322,6 +342,23 @@ $purge$;
 
 alter function public.purge_deleted_accounts() owner to postgres;
 revoke execute on function public.purge_deleted_accounts() from public, anon, authenticated, service_role;
+
+-- ── 6b. One-time · give marks from the old flow a fresh 7 days ───────────
+-- Since v7.45.0 the old delete stamped metadata.deletion_requested_at from the
+-- client and never cleared it, and the old website delete left people signed
+-- in. Without this block the first hourly run would purge every one of those
+-- accounts at once, with no sign-in check. Each such mark is re-stamped to
+-- now(), so its owner gets the full 7 days (and a sign-in cancels it as usual).
+-- Only marks earlier than the fixed cutoff 2026-10-29T00:00:00Z (this
+-- migration's date) are touched: a re-stamped mark is now() and so after the
+-- cutoff, which makes a second run of this file a no-op for it, and marks made
+-- by request_account_deletion() after the migration are never extended.
+-- (Old-flow marks made on 29 Oct itself, before the migration ran, are not
+-- re-stamped: they are less than a day old and already get about 7 days.)
+-- A missing or unparseable mark is skipped (safe_timestamptz gives NULL).
+update public.profiles
+   set metadata = metadata || jsonb_build_object('deletion_requested_at', now())
+ where public.safe_timestamptz(metadata->>'deletion_requested_at') < '2026-10-29T00:00:00Z'::timestamptz;
 
 -- ── 7. Schedule · hourly at :17, only where pg_cron exists ────────────────
 -- pg_cron runs a job as the role that scheduled it (postgres in the SQL
