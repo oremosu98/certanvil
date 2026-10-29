@@ -26,13 +26,18 @@ at 14 / 7 / 3 / 1 days.
 ## What the person sees (iOS app only)
 
 ### The ask
-- After their **first finished quiz**, tapping Continue on the results screen opens the priming screen: the June
-  mockup lifted as drawn, plus one row, "Remind me at 7:00 pm", that opens a time picker.
+- **When:** the next time Home appears after a **finished practice quiz or exam** (the `ios-quiz` and `ios-exam`
+  results screens; any of their exit buttons), the priming screen slides up. Drills, Sim Lab and review sessions do
+  not count. "First" means the first one counted in the app (an app-wide counter, below), so someone with web history
+  is asked after their next quiz in the app.
+- **The screen:** the June mockup with three changes: the "Almost done" onboarding step label goes; a row "Remind me
+  at 7:00 pm" opens a time picker; the Pro variant drops "15" from the practice line. Copy is locked in the plan's copy
+  pass.
 - **Turn on reminders** → iOS's permission prompt.
   - Allow → reminders on at the chosen time.
   - Don't Allow → recorded as denied; never asked again.
-- **Maybe later** → offered once more after their 5th finished quiz, then never again.
-- The screen never shows on the website, for a Pro or free user alike, or once permission is decided.
+- **Maybe later** → offered once more after 4 more finished quizzes or exams (any cert), then never again.
+- The screen never shows on the website, and never again once iOS has answered the prompt (either way).
 
 ### The reminder
 At most one a day, at their time, the day's most useful line (drafts; Task 1 of the plan runs the humanizer and
@@ -44,15 +49,23 @@ marketing-psychology pass and locks the strings):
    you're done." ({n} = 1: "1 review card is due.")
 3. Otherwise **practice**: free "Your 15 questions for today are waiting."; Pro "Your daily practice is waiting."
 
-Title: "CertAnvil". No countdown line without an exam date, or after it. Tapping a reminder opens the app; the app's
-normal routing lands on Home. If they have finished a quiz today, today's reminder is not scheduled (and is
-cancelled when they finish one).
+Title: "CertAnvil". No countdown line without an exam date, or after it. Tapping a reminder opens the app: a cold
+launch lands on Home through normal routing; a warm resume returns to the screen that was open (intended). If they have
+finished a quiz or exam today on any cert, today's reminder is not scheduled (and is cancelled when they finish one).
+Reminders follow the cert opened most recently (its name, exam date and review plan). If they stop opening the app,
+reminders stop after the 7 scheduled days. A reminder can appear as a banner while the app is open; accepted, since
+finishing the day's quiz cancels it.
 
 ### Settings → Reminders (new row, iOS app only, in "Study setup")
-- On: value shows the time, e.g. "7:00 pm"; the row opens a sheet with an on/off switch and the time picker.
-- Off: value "Off". Turning on from here asks iOS's permission if it has never been asked.
-- Denied: value "Off"; the sheet says "Notifications are off for CertAnvil in iPhone Settings." with "Open
-  Settings" (the app's iOS settings page).
+- The value and sheet read the **live** permission (`caNative.reminders.permission()`), never a stored flag.
+- On and permitted: value shows the time, e.g. "7:00 pm"; the row opens a sheet with an on/off switch and the time
+  picker.
+- Off, or permission not yet asked: value "Off". Turning on from here asks iOS's permission if it has never been
+  asked.
+- Permission denied (including revoked later in iPhone Settings): value "Off" whatever `on` says, nothing is
+  scheduled, and the sheet says "Notifications are off for CertAnvil in iPhone Settings." with "Open Settings" (the
+  app's iOS settings page). If they later allow it in iPhone Settings, the next foreground reads `granted` and their
+  saved `on` and time apply again.
 
 ## How it works
 
@@ -60,34 +73,51 @@ cancelled when they finish one).
 `@capacitor/local-notifications`, pinned to an exact version, reached only through `window.caNative` in
 `native-shell.js` (the 5c pattern), as:
 
-- `caNative.reminders.permission() → Promise<'granted' | 'denied' | 'prompt'>`
+- `caNative.reminders.permission() → Promise<'granted' | 'denied' | 'prompt'>` (the plugin's
+  `prompt-with-rationale` maps to `prompt`)
 - `caNative.reminders.request() → Promise<'granted' | 'denied'>`
 - `caNative.reminders.schedule(list) → Promise<void>` where `list` is `[{ id, at: Date, title, body }]`
 - `caNative.reminders.cancelAll() → Promise<void>` (cancels the ids 5001–5007 only)
 - `caNative.reminders.ready() → boolean` (plugin present)
-- `caNative.openAppSettings()` for "Open Settings".
+- `caNative.openAppSettings()` for "Open Settings": `@capacitor/app-launcher` (pinned) `openUrl({ url:
+  'app-settings:' })`, iOS's own URL for the app's settings page.
 
 Local notifications need no entitlement or Apple key; the binary still changes (plugin + `cap sync`), so the native
 part reaches devices with the stage 6 TestFlight build, or a local Xcode build to test before then.
 
 ### `features/ios-reminders.js` (new, loaded with the other ios-* features)
 - **Planner** `planReminders(now, s, d) → [{ id, at, title, body }]`, pure. `s` = settings `{ on, time: 'HH:MM' }`;
-  `d` = `{ counts: number[7] (getSrTodayPlan().counts, day 0 = today), daysToExam: number|null (getDaysToExam()),
-  certName, pro: boolean, studiedToday: boolean }`. Returns nothing when `s.on` is false. Days 0–6, id `5001 + day`,
-  each at `s.time` in the phone's local time zone; a day-0 time already past, or `studiedToday`, skips day 0. Line
-  per day by the priority above.
+  `d` = `{ counts: number[7], daysToExam: number|null, certName, pro: boolean, studiedToday: boolean }`.
+  - `counts` = `getSrTodayPlan().counts`: the **planned** review load per day, day 0 = today (= `todo`, what is left
+    today, capped for free users), days 1–6 assuming the earlier days' plans were done, overflow carried forward. A
+    snapshot, refreshed at the next reschedule. Not raw "cards due".
+  - `daysToExam` = `getDaysToExam()` (features/readiness.js; 0 on exam day, negative after); day `k`'s value is
+    `daysToExam - k`, and the countdown line fires when that equals 14, 7, 3 or 1.
+  - Returns nothing when `s.on` is false. Days 0–6, id `5001 + k`, each at `s.time` on that local calendar day (built
+    with local `Date` fields, so DST weekends keep the hour). Any item less than 60 seconds ahead of `now` is dropped
+    (covers a day-0 time already past); `studiedToday` drops day 0. Line per day by the priority above.
 - **Rescheduler** `reschedule() → Promise<void>`: if on, permitted and the plugin is ready, `cancelAll()` then
-  `schedule(planReminders(...))`; otherwise `cancelAll()`. Runs on app launch, on returning to the foreground
-  (`@capacitor/app` `appStateChange` → active, wired in `native-shell.js`), after every finished quiz, and after a
-  change to the exam date or the reminder settings. Never throws.
+  `schedule(planReminders(...))`; otherwise `cancelAll()`. Calls are serialised (each waits for the previous), so a
+  launch and a foreground event at cold start can't interleave. Runs on app launch, on returning to the foreground
+  (`@capacitor/app` `appStateChange` → active, wired in `native-shell.js`), after every finished quiz or exam, after a
+  change to the exam date or the reminder settings, and once more when the account's tier resolves (so a Pro user
+  never gets the free "15" line from a reschedule that ran first). Cancelling pending ids never affects a reminder
+  already delivered. Never throws. Reminders keep the hour of the time zone they were scheduled in until the next
+  app open (accepted for travel).
 - **Priming screen** and **Settings row/sheet** as above.
 
 ### Storage
 Capacitor Preferences through `caNative` (app-wide across cert subdomains, survives web-storage eviction), one key
-`reminders` = JSON `{ on: boolean, time: 'HH:MM', asked: 'never' | 'later' | 'done', laterAtQuiz: number|null,
-denied: boolean }`, default `{ on: false, time: '19:00', asked: 'never', laterAtQuiz: null, denied: false }`. The
-finished-quiz count comes from quiz history (split rows skipped, per CLAUDE.md). Not synced to the account:
-reminders belong to the phone.
+`reminders` = JSON `{ on: boolean, time: 'HH:MM', asked: 'never' | 'later' | 'done', quizzes: number,
+laterAtQuiz: number|null, lastStudiedDay: 'YYYY-MM-DD'|null }`, default `{ on: false, time: '19:00', asked: 'never',
+quizzes: 0, laterAtQuiz: null, lastStudiedDay: null }`.
+- `quizzes` counts finished practice quizzes and exams in the app, any cert (not read from quiz history, which is per
+  cert subdomain and includes web sessions). Maybe later stores `laterAtQuiz = quizzes`; the second offer comes when
+  `quizzes >= laterAtQuiz + 4`.
+- `lastStudiedDay` is the **local** calendar date of the last finished quiz or exam on any cert (built from local
+  `Date` fields, never `toISOString()`); `studiedToday` = it equals today's local date.
+- `asked` becomes `'done'` once iOS has answered the prompt. Permission itself is never stored; it is read live.
+Not synced to the account: reminders belong to the phone.
 
 ## Cross-platform
 
@@ -99,18 +129,20 @@ reminders belong to the phone.
 | iOS app | the ask, the reminders, the Settings row |
 
 Every entry point checks `window.CA_NATIVE` and `caNative.reminders.ready()`; with an older app binary (no plugin)
-the feature stays dormant and nothing breaks.
+the feature stays dormant and nothing breaks. "Open Settings" also needs `@capacitor/app-launcher` in the binary; the
+link hides when it is missing.
 
 ## Testing
 
-- **Planner, UAT:** countdown wins on days 14/7/3/1 and only then; review counts from `counts`; practice otherwise;
-  Pro has no "15"; no exam date → no countdown; after the exam → no countdown; `studiedToday` and a past time skip day
-  0; times land at the chosen local hour across a clock-change weekend (both directions); at most 7 items, ids
-  5001–5007; off → empty.
+- **Planner, UAT:** countdown wins on days 14/7/3/1 (`daysToExam - k`) and only then; review counts from `counts`;
+  practice otherwise; Pro has no "15"; no exam date → no countdown; after the exam → no countdown; `studiedToday` and
+  a past time skip day 0; an item 30 s ahead is dropped; times land at the chosen local hour across a clock-change
+  weekend (both directions); at most 7 items, ids 5001–5007; off → empty.
 - **Playwright (chromium + mobile-safari, the lift harness with a stand-in LocalNotifications plugin):** the priming
-  screen after the first finished quiz and not before; Allow schedules; Don't Allow records denied and never asks
-  again; Maybe later asks again at quiz 5 only; the Settings switch and time reschedule; finishing a quiz drops
-  today's; the denied sheet; nothing on the website.
+  screen on Home after the first finished quiz (and after an exam) and not before, and not after a drill; Allow
+  schedules; Don't Allow never asks again; Maybe later asks again only after 4 more; the Settings switch and time
+  reschedule; finishing a quiz drops today's; permission revoked → row "Off", nothing scheduled, the denied sheet;
+  a second cert's reschedule doesn't bring back today's after a quiz on the first; nothing on the website.
 - **Simulator:** with a time two minutes ahead, the founder sees the reminder arrive. iPhone check with stage 6.
 
 ## Rollout
@@ -126,6 +158,8 @@ sheet; both are drawn into the June E2E app for the founder's Simulator approval
 - **A fixed 7 pm**: wrong for night-shift and morning people.
 - **One repeating daily reminder (approach B)**: can't count reviews or the countdown, and nags forever after they
   stop.
+- **Counting quizzes from quiz history**: per cert subdomain and includes web sessions, so "first" and "5th" mean
+  different things per cert; an app-wide counter in Preferences instead.
 - **Push from a server (approach C)**: the launch plan says no push server; needs an APNs key, a backend and a
   scheduler.
 
