@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",
+    "@electric-sql/pglite": "0.5.13",
     "@playwright/test": "^1.49.0",
     "esbuild": "^0.28.0",
     "serve": "^14.2.0"
