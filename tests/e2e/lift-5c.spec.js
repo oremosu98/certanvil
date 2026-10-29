@@ -505,11 +505,23 @@ test.describe('Account deletion: app', () => {
     expect(await rpcCalls(page)).toContain('request_account_deletion');
   });
 
-  test('a global sign-out that fails still signs this device out', async ({ page }) => {
-    await boot(page, { fake: Object.assign({ signOutError: true }, SIGNED), seed: SEED });
+  // v8.198.1: offline, supabase-js's signOut() of any scope fails and keeps the session, so the app clears it locally.
+  const hasSession = (page) => page.evaluate(() => window.certanvilSupabase.auth.getSession().then((r) => !!(r.data && r.data.session)));
+  test('offline, a failed global sign-out clears this device\'s session without the network', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ signOutOffline: true }, SIGNED), seed: SEED });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
-    expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual(['auth:signOut:global', 'auth:signOut:local']);
+    await expect(page.locator('#delete-account-modal')).toContainText('You\u2019re signed out.', { timeout: 8000 });
+    expect((await log(page)).filter((e) => /^auth:(signOut|removeSession)/.test(e))).toEqual(['auth:signOut:global', 'auth:removeSession']);
+    expect(await hasSession(page)).toBe(false);
+  });
+
+  test('offline, if the session cannot be cleared it says so instead of claiming you are signed out', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ signOutOffline: true, removeSessionFails: true }, SIGNED), seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText(
+      'Your account will be deleted in 7 days. We couldn\u2019t sign you out on this device, so sign out from Settings when you\u2019re back online.', { timeout: 8000 });
+    await expect(page.locator('#delete-account-modal')).not.toContainText('signed out.');
+    expect(await hasSession(page)).toBe(true);
   });
 
   test('an Apple account still asks Apple first, then requests deletion', async ({ page }) => {

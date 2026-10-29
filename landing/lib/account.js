@@ -90,15 +90,16 @@
   };
 
   // ── Toast helper ────────────────────────────────────────────────────────
-  function toast(msg, kind) {
+  function toast(msg, kind, holdMs) {
     var stack = document.getElementById('toast-stack');
     if (!stack) return;
     var t = document.createElement('div');
     t.className = 'toast toast-' + (kind || 'info');
     t.textContent = msg;
     stack.appendChild(t);
-    setTimeout(function () { t.classList.add('is-fading'); }, 2400);
-    setTimeout(function () { try { stack.removeChild(t); } catch (e) {} }, 3000);
+    var hold = holdMs || 2400;   // a longer message can ask to stay up longer
+    setTimeout(function () { t.classList.add('is-fading'); }, hold);
+    setTimeout(function () { try { stack.removeChild(t); } catch (e) {} }, hold + 600);
   }
 
   // ── Cert pack catalog (local — same data as the landing's tile grid) ──
@@ -875,6 +876,20 @@
   }
 
   // ── Delete account (server schedules it; we sign out everywhere) ───────
+  // supabase-js 2.105 has no public local-only sign-out: use its private _removeSession() (clears the stored session
+  // and fires SIGNED_OUT) when it exists, else remove the stored session from the client's storage. Resolves true only
+  // when getSession() then finds no session.
+  function dropLocalSession() {
+    var a = supabase && supabase.auth;
+    if (!a) return Promise.resolve(false);
+    return Promise.resolve().then(function () {
+      if (typeof a._removeSession === 'function') return a._removeSession();
+      if (a.storage && a.storageKey && typeof a.storage.removeItem === 'function') return a.storage.removeItem(a.storageKey);
+    }).then(function () { return a.getSession(); }).then(function (r) {
+      return !(r && r.data && r.data.session);
+    }, function () { return false; });
+  }
+
   function wireDeleteAccount() {
     if (!elBtnDeleteAccount) return;
     elBtnDeleteAccount.addEventListener('click', function () {
@@ -889,8 +904,14 @@
       supabase.rpc('request_account_deletion').then(function (r) {
         if (!r || r.error || !r.data) { failed(); return; }
         var leave = function () { window.location.href = '/?deleted=1'; };
-        // supabase-js resolves {error} on a network failure and keeps the session: sign this device out instead.
-        var local = function () { return supabase.auth.signOut().then(leave, leave); };
+        // supabase-js resolves {error} on a network failure and keeps the session (signOut() of any scope calls the
+        // network first), so clear this device's session without the network. Only go home signed out when it is gone.
+        var local = function () {
+          return dropLocalSession().then(function (gone) {
+            if (gone) return leave();
+            toast('Your account will be deleted in 7 days. We couldn\'t sign you out on this device, so sign out here when you\'re back online.', 'info', 8000);
+          });
+        };
         supabase.auth.signOut({ scope: 'global' }).then(function (so) {
           if (so && so.error) return local();
           leave();

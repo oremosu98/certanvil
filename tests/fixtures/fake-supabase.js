@@ -58,10 +58,17 @@
       getUser:function(){ var u=session?user:null; if(u && F.freshIdentities){ u=Object.assign({},user,{identities:user.identities.concat(F.freshIdentities.map(function(p){ return { provider:p, identity_id:'id-'+p }; }))}); }
         return new Promise(function(r){ setTimeout(function(){ r({data:{user:u},error:null}); }, F.getUserDelay||0); }); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
-      // Account deletion: F.signOutError makes a global sign-out resolve {error} (supabase-js on a network failure keeps the session).
-      signOut:function(opts){ var sc=(opts && opts.scope) || 'local'; window.__fakeLog.push('auth:signOut:'+sc);
-        if (F.signOutError && sc==='global') return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+      // Like supabase-js 2.105: a no-arg signOut() is scope 'global', and every scope but 'others' calls the network logout
+      // first, so under F.signOutOffline global AND local resolve {error} and keep the session. A sign-out that works
+      // clears the session and fires SIGNED_OUT.
+      signOut:function(opts){ var sc=(opts && opts.scope) || 'global'; window.__fakeLog.push('auth:signOut:'+sc);
+        if (F.signOutOffline) return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+        if (sc!=='others'){ session=null; listeners.forEach(function(cb){ try{ cb('SIGNED_OUT',null); }catch(e){} }); }
         return Promise.resolve({error:null}); },
+      // supabase-js's private no-network session removal (storage cleared, SIGNED_OUT fired). F.removeSessionFails keeps the session.
+      _removeSession:function(){ window.__fakeLog.push('auth:removeSession');
+        if (F.removeSessionFails) return Promise.resolve();
+        session=null; listeners.forEach(function(cb){ try{ cb('SIGNED_OUT',null); }catch(e){} }); return Promise.resolve(); },
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },
