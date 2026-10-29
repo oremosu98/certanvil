@@ -102,6 +102,7 @@
   function renderIosExamResults(d) {
     var root = document.getElementById('ios-exam-results');
     if (!root) return false;
+    if (d && d !== _ieLast) { try { window.dispatchEvent(new Event('ca:quiz-finished')); } catch (_) {} }   // Stage 5d: a finished exam
     if (d) _ieLast = d;
     if (!_ieIsPhone() || !_ieLast) { if (root.innerHTML) root.innerHTML = ''; return false; }
     var m = _iosExamResultsModel(_ieLast);

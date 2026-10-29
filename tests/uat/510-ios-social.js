@@ -61,6 +61,14 @@ const { fs, path, ROOT, test, results } = require('./_context');
     const rv = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/apple-revoke.test.mjs')], { encoding: 'utf8', timeout: 30000 });
     test('apple-revoke endpoint suite passes (' + ((rv.stdout || '').match(/apple-revoke: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
       rv.status === 0 && /apple-revoke: (\d+)\/\1 passed/.test(rv.stdout || ''));
+    // The account-deletion revoke is a cross-origin call from the cert app; the app's CSP must allow it, or WebKit
+    // blocks it before it leaves the phone and the app logs "apple-revoke: failed (network)" (seen 29 Oct).
+    const revokeUrl = ((read('features/ios-signin.js').match(/REVOKE_URL = '([^']+)'/) || [])[1]) || '';
+    const csp = ((JSON.parse(read('vercel.json') || '{}').headers || []).find((h) => h.source === '/(.*)') || { headers: [] })
+      .headers.find((h) => h.key === 'Content-Security-Policy');
+    const connect = ((csp && csp.value) || '').split(';').map((d) => d.trim()).find((d) => d.indexOf('connect-src ') === 0) || '';
+    test('the cert app CSP connect-src allows the Apple revoke endpoint\'s origin',
+      !!revokeUrl && connect.split(/\s+/).indexOf(new URL(revokeUrl).origin) > 0);
   } catch (err) {
     test('Stage 5c social: block (threw)', false);
     results.errors.push('510 ios-social block threw: ' + err.message);

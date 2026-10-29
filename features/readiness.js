@@ -492,9 +492,10 @@
     return raw || null;
   }
   function setExamDate(isoDate) {
-    if (!isoDate) { localStorage.removeItem(STORAGE.EXAM_DATE); _cloudFlush(STORAGE.EXAM_DATE); return; }
-    localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
+    if (!isoDate) localStorage.removeItem(STORAGE.EXAM_DATE);
+    else localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
     _cloudFlush(STORAGE.EXAM_DATE);
+    try { window.dispatchEvent(new Event('ca:exam-date')); } catch (_) {}   // Stage 5d: the reminders re-plan the countdown
   }
   // v8.138.0: a stored exam date is a bare "YYYY-MM-DD", which new Date() reads
   // as UTC midnight: 1am on the day in the UK (so Math.ceil said "8 days" for an

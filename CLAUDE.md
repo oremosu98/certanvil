@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8301 | 443 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2372 | 156 KB |
+| index.html | 2373 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
-| tests/uat.js + tests/uat/ (74 modules) | 33121 | — |
-UAT checks: 5680 · E2E `test(` count: 569 · APP_VERSION: 8.198.0 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (75 modules) | 33173 | — |
+UAT checks: 5690 · E2E `test(` count: 604 · APP_VERSION: 8.199.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.199.0 | Study reminders in the iOS app (Stage 5d) |
 | v8.198.0 | Account deletion does what it promises |
 | v8.197.2 | Sign-in with Apple and Google: the deferred minors |
-| v8.197.1 | Apple and Google sign-in stays signed in on the web |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 

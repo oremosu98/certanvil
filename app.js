@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.198.0
+// Network+ AI Quiz — app.js  v8.199.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.198.0';
+const APP_VERSION = '8.199.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -5190,7 +5190,7 @@ function _sampleTopicsForMixedBatch(dist) {
   Object.keys(byDomain).forEach(d => {
     result[d] = [];
     const need = dist[d] || 0;
-    if (need <= 0) return;
+    if (need <= 0 || !byDomain[d].length) return;   // no topics (e.g. the cert pack never loaded): the fill loop below would never end
     const pool = byDomain[d];
     if (need <= pool.length) {
       result[d] = (typeof window !== 'undefined' && window._mixedPickMode === 'lrs' && typeof _lrsPick === 'function') ? _lrsPick(shuffle(pool), need) : shuffle(pool).slice(0, need);  // v8.146.0: true random; least-recently-seen only for Catch-up

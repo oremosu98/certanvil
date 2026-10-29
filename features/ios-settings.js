@@ -20,6 +20,7 @@
       out: !s.signedIn, email: s.email || '', pro: !!s.pro, methodsRow: !!s.methodsRow, methods: s.methods || ['email'], certName: (s.cert && s.cert.name) || '', certCode: (s.cert && s.cert.code) || '',
       passPlanHtml: s.passPlanHtml || '', sync: !!g.sync && !!s.signedIn, examLabel: examLabel, goal: Number(s.goal) || 15, glanceGoal: Number(g.goal) || Number(s.goal) || 15,
       today: Number(g.today) || 0, review: s.review || { size: 5, topUp: false }, wrongCount: Number(s.wrongCount) || 0, still: !!s.still,
+      remRow: !!s.remRow, remLabel: s.remLabel || 'Off',   // Stage 5d: Reminders (iOS app only); the label is patched from the live permission
       backups: (s.backups || []).map(function (b) {
         var t = String(b.capturedAt || '').slice(11, 16);
         return { iso: b.iso, date: b.label || day(b.iso), meta: (Math.round((Number(b.bytes) || 0) / 102.4) / 10).toFixed(1) + ' KB' + (t ? ' · saved ' + t : '') };
@@ -39,6 +40,7 @@
       bin: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"></path>',
       trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>',
       doc: '<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4M10 12h5M10 16h5"></path>', shield: '<path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"></path>',
+      bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path>',
       theme: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
     };
     function row(act, icon, label, sub, val, o) {
@@ -74,6 +76,7 @@
     h += '<div class="ist-sect reveal">Study setup</div><div class="ist-group reveal">'
       + row(null, 'cloud', 'Cloud sync', null, m.sync ? 'On' : 'Off', { vcls: m.sync ? 'ok' : 'warn' })
       + row('exam', 'cal', 'Exam date', null, e(m.examLabel))
+      + (m.remRow ? row('reminders', 'bell', 'Reminders', null, '<span class="ist-rmv">' + e(m.remLabel) + '</span>') : '')   // Stage 5d
       + row(null, 'goal', 'Daily goal', null, m.glanceGoal + ' a day')
       + row(null, 'today', 'Today', null, m.today + ' of ' + m.glanceGoal) + '</div>';
     h += '<div class="ist-card reveal"><div class="ist-k">Daily goal' + (m.pro ? '' : '<span class="ist-lock">' + svg(I.lock, 10) + 'Pro</span>') + '</div>'
@@ -182,7 +185,10 @@
     if (typeof _subscribeAuth === 'function') _subscribeAuth();   // the client may not have existed when this file ran
     // a still repaint keeps keyboard focus on the control that caused it
     var f = document.activeElement, fk = (f && host.contains(f) && f.getAttribute('data-act')) ? [f.getAttribute('data-act'), f.getAttribute('data-n'), f.getAttribute('data-date')] : null;
+    var IRm = window.iosReminders;   // Stage 5d
+    state.remRow = !!(IRm && IRm.rowShown && IRm.rowShown()); state.remLabel = (IRm && IRm._label) || 'Off';
     host.innerHTML = _iosStHtml(_iosStModel(state));
+    if (state.remRow && IRm.refreshRow) IRm.refreshRow();
     if (fk) {
       var sel = '[data-act="' + fk[0] + '"]' + (fk[1] != null ? '[data-n="' + fk[1] + '"]' : '') + (fk[2] != null ? '[data-date="' + fk[2] + '"]' : '');
       var back = host.querySelector(sel);
@@ -203,6 +209,32 @@
   }
   // #ist-sheet: the list / calendar sheet (two-button asks use iosSheet). Built like B3c1's #igt-topics.
   var _sheetBack = null, _sheetKey = null;
+  // Stage 5d: the Reminders sheet. sm = {perm: 'granted'|'denied'|'prompt', on, time: '7:00 pm', parts: {h, m, ap}, wheel, canOpen}
+  function _iosStRemSheetHtml(sm) {
+    var head = '<div class="ist-grip"></div><h3 id="ist-sheet-title">Reminders</h3><p>One a day at most, at the time you pick.</p>';
+    if (sm.perm === 'denied') {
+      return head + '<div class="ist-denied" role="status"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-9.3-5"></path><path d="M6 8c0 7-3 9-3 9h14"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path><path d="M3 3l18 18"></path></svg>'
+        + '<span>Notifications are off for CertAnvil in iPhone Settings.</span></div>'
+        + (sm.canOpen ? '<button type="button" class="ist-pri ist-wide" data-act="rem-open">Open Settings</button>' : '')
+        + '<button type="button" class="ist-clear" data-act="rem-not">Not now</button>';
+    }
+    function wcol(key, vals, cur, label) {
+      var at = vals.indexOf(cur), out = '';
+      for (var k = -2; k <= 2; k++) {
+        var j = at + k;
+        if (key === 'ap' && (j < 0 || j >= vals.length)) { out += '<button type="button" tabindex="-1" aria-hidden="true" style="visibility:hidden"></button>'; continue; }
+        var v = vals[(j + vals.length) % vals.length];
+        out += '<button type="button" class="d' + Math.abs(k) + '" data-act="rem-w" data-k="' + key + '" data-v="' + v + '">' + (key === 'm' ? ('0' + v).slice(-2) : v) + '</button>';
+      }
+      return '<div class="irm-wcol" role="listbox" aria-label="' + label + '">' + out + '</div>';
+    }
+    var H = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], M = []; for (var i = 0; i < 60; i++) M.push(i);
+    return head + '<div class="ist-rem"><div class="ist-tog"><span class="ist-tl">Study reminders<span>Your daily practice, due reviews and your exam countdown.</span></span>'
+      + '<button type="button" class="ist-sw" data-act="rem-sw" aria-pressed="' + !!sm.on + '" aria-label="Study reminders"></button></div>'
+      + '<button type="button" class="ist-row" data-act="rem-time"' + (sm.on ? '' : ' aria-disabled="true"') + '><span class="ist-rl">Time</span><span class="ist-rv">' + (sm.on ? sm.time : 'Off') + '</span></button>'
+      + (sm.on && sm.wheel ? '<div class="irm-wheel ist-wheel">' + wcol('h', H, sm.parts.h, 'Hour') + wcol('m', M, sm.parts.m, 'Minute') + wcol('ap', ['am', 'pm'], sm.parts.ap, 'am or pm') + '</div>' : '')
+      + '</div>';
+  }
   function openSheet(html, onTap) {
     var sheet = document.getElementById('ist-sheet'), scrim = document.getElementById('ist-sheet-scrim');
     if (!sheet || !scrim) return;
@@ -352,6 +384,25 @@
       }, function (e) { if (e && e.cancelled) { _istLinking = false; b.disabled = false; return; } fail(); });
     });
   }
+  // Stage 5d: Settings → Reminders. The switch asks iOS the first time; the row reads the live permission.
+  var _remWheel = false;
+  function _drawRem(redraw) {
+    var R = window.iosReminders; if (!R) return Promise.resolve();
+    return R.sheetModel().then(function (sm) {
+      var sh = document.getElementById('ist-sheet');
+      if (redraw && !(sh && sh.classList.contains('open') && sh.querySelector('.ist-rem, .ist-denied'))) return;   // closed meanwhile: stay closed
+      sm.wheel = _remWheel;
+      openSheet(_iosStRemSheetHtml(sm), function (b) {
+        var a = b.getAttribute('data-act');
+        if (a === 'rem-not') { closeSheet(); return; }
+        if (a === 'rem-open') { closeSheet(); if (window.caNative) window.caNative.openAppSettings(); return; }
+        if (a === 'rem-time') { if (sm.on) { _remWheel = !_remWheel; _drawRem(true); } return; }
+        if (a === 'rem-sw') { b.disabled = true; R.setOn(!sm.on).then(function () { if (sm.on) _remWheel = false; return _drawRem(true); }); return; }   // switching off closes the wheel
+        if (a === 'rem-w') { var p = { h: sm.parts.h, m: sm.parts.m, ap: sm.parts.ap }, k = b.getAttribute('data-k'), v = b.getAttribute('data-v'); p[k] = k === 'ap' ? v : +v; R.setTime(p).then(function () { return _drawRem(true); }); }
+      });
+    });
+  }
+  ON.reminders = function () { _remWheel = false; _drawRem(); };
   ON.methods = function () { _drawMethods(); _methodsFetch().then(function () { var sh = document.getElementById('ist-sheet'); if (!_istLinking && sh && sh.classList.contains('open') && sh.querySelector('.ist-meths')) _drawMethods(); }); };
   ON.cert = function () {
     var certs = _call('getAvailableCerts') || [];
@@ -433,7 +484,7 @@
     _repaint();
   });
 
-  window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml; window._iosStMethodsSheetHtml = _iosStMethodsSheetHtml; window._iosStMethodsLabel = _iosStMethodsLabel;
+  window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml; window._iosStRemSheetHtml = _iosStRemSheetHtml; window._iosStMethodsSheetHtml = _iosStMethodsSheetHtml; window._iosStMethodsLabel = _iosStMethodsLabel;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;
   window.iosSettings = window.iosSettings || {};
   window.iosSettings.isPhone = isPhone;

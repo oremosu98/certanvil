@@ -257,7 +257,7 @@
     var root = document.getElementById('ios-home');
     if (!root) return;
     if (!(window.matchMedia && matchMedia('(max-width: 899px)').matches)) { root.innerHTML = ''; if (window.iosFirstRun && iosFirstRun.clearPhoneState) iosFirstRun.clearPhoneState(); return; }
-    if (window.iosFirstRun && iosFirstRun.renderHome) { try { if (iosFirstRun.renderHome(root)) return; } catch (_) {} }   // Lift C: day-0 / capped Home
+    if (window.iosFirstRun && iosFirstRun.renderHome) { try { if (iosFirstRun.renderHome(root)) { _ihShown(); return; } } catch (_) {} }   // Lift C: day-0 / capped Home
     var m;
     try { m = _iosHomeModel(new Date()); root.innerHTML = _iosHomeHtml(m); } catch (err) { root.innerHTML = ''; return; }   // empty = desktop Home shows
     var tab = function (p) { var b = document.querySelector('.lift-tab[data-page="' + p + '"]'); if (b) b.click(); else if (typeof showPage === 'function') showPage(p); };
@@ -289,7 +289,10 @@
       var head = a.querySelector('.ih-acc-head');
       head.addEventListener('click', function () { var open = a.classList.toggle('ih-open'); head.setAttribute('aria-expanded', open ? 'true' : 'false'); });
     });
+    _ihShown();
   }
+  // Stage 5d: Home is on screen (the reminders' ask waits for this)
+  function _ihShown() { try { window.dispatchEvent(new Event('ca:home-shown')); } catch (_) {} }
 
   window._iosHomeModel = _iosHomeModel;
   window.renderIosHome = renderIosHome;

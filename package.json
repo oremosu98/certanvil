@@ -1,6 +1,6 @@
 {
   "name": "certanvil",
-  "version": "8.198.0",
+  "version": "8.199.0",
   "private": true,
   "scripts": {
     "test:uat": "node tests/uat.js",
@@ -30,10 +30,12 @@
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",
+    "@capacitor/app-launcher": "8.0.1",
     "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.5.3",
+    "@capacitor/local-notifications": "8.3.1",
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",

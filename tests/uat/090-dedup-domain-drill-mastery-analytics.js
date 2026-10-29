@@ -1162,6 +1162,19 @@ test('v4.85.8 Lottery: vm fixture — sampler handles need > pool size with repl
         && result.security.every(t => t === 'A' || t === 'B');
     } catch (e) { return false; }
   })());
+test('Lottery: vm fixture — a domain with no topics returns [] instead of looping forever',
+  (() => {
+    // A cert pack that failed to load leaves DOMAIN_WEIGHTS and TOPIC_DOMAINS from different
+    // certs; the old fill-with-replacement loop never grew on an empty pool and froze the app.
+    try {
+      const body = _fnBody(js, '_sampleTopicsForMixedBatch');
+      const vm = require('vm');
+      const ctx = { TOPIC_DOMAINS: { A: 'concepts' }, DOMAIN_WEIGHTS: { concepts: 0.5, threats: 0.5 }, Math, Object, Array };
+      vm.createContext(ctx); vm.runInContext(body, ctx);
+      const r = vm.runInContext('_sampleTopicsForMixedBatch({concepts:1,threats:3})', ctx, { timeout: 500 });
+      return r.threats.length === 0 && r.concepts.length === 1;
+    } catch (e) { return false; }
+  })());
 test('v8.127.0 Lottery: vm fixture — sampler follows the active cert\'s domain keys (Sec+ shape)',
   (() => {
     try {

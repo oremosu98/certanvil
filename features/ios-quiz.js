@@ -85,11 +85,14 @@
   var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
   function _iosThemeIcon() { return document.documentElement.getAttribute('data-theme') === 'light' ? MOON : SUN; }
 
+  var _irFinishedLog = null;
   function renderIosResults() {
     var root = document.getElementById('ios-results');
     if (!root) return;
     if (!isPhone() || typeof log === 'undefined' || !log.length) { root.innerHTML = ''; return; }   // never leave a stale session behind
     var total = log.length, pct = Math.round(score / total * 100);
+    // Stage 5d: a finished session, once per session (re-renders of the same log don't count again)
+    if (_irFinishedLog !== log) { _irFinishedLog = log; try { window.dispatchEvent(new Event('ca:quiz-finished')); } catch (_) {} }
     var scaled = (typeof scaledExamScore === 'function') ? scaledExamScore(pct, 100) : Math.round(100 + pct * 8);
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA';
     var hl = document.getElementById('result-headline'), sub = document.getElementById('result-sub'), el = document.getElementById('r-elapsed');
