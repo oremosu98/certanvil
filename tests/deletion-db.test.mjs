@@ -9,6 +9,9 @@
 //   - schema auth and table auth.users (id, email, raw_user_meta_data, last_sign_in_at, created_at): only the
 //     columns the real files and these tests use
 //   - auth.uid(): reads the settable test.uid instead of the request JWT
+//   - Supabase's default privileges: new public functions are executable by anon, authenticated and service_role,
+//     so every REVOKE in the migration is tested against the grants it has to undo
+//   - supabase_auth_admin may read and update auth.users (GoTrue's role; it fires the sign-in trigger)
 // Every listed migration loads in PGlite with only these stand-ins; no statement needed stubbing.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -25,9 +28,12 @@ const MIGRATIONS = [
 const PRELUDE = `
   create role anon nologin; create role authenticated nologin; create role service_role nologin;
   create role supabase_auth_admin nologin;
+  alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
   create schema auth;
   create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb default '{}',
     last_sign_in_at timestamptz, created_at timestamptz default now());
+  grant usage on schema auth to supabase_auth_admin;
+  grant select, update on auth.users to supabase_auth_admin;
   create function auth.uid() returns uuid language sql stable
     as $uid$ select nullif(current_setting('test.uid', true), '')::uuid $uid$;
 `;
@@ -153,6 +159,194 @@ await t('safe_timestamptz returns NULL on bad input instead of raising', async (
   const r = (await db.query("select public.safe_timestamptz('not a time') bad, public.safe_timestamptz(null) nul, public.safe_timestamptz('2026-10-29T12:00:00Z') ok")).rows[0];
   assert.equal(r.bad, null); assert.equal(r.nul, null);
   assert.equal(new Date(r.ok).toISOString(), '2026-10-29T12:00:00.000Z');
+});
+
+await t('a sign-in fired as supabase_auth_admin (as GoTrue does) still cancels', async () => {
+  await mark(A);
+  await db.exec('set role supabase_auth_admin');
+  try { await signIn(A, "now() + interval '1 second'"); }
+  finally { await db.exec('reset role'); }
+  const m = await meta(A);
+  assert.equal(m.deletion_requested_at, undefined, 'mark gone');
+  assert.ok(m.deletion_cancelled_at, 'notice set');
+});
+
+await t('the cancel trigger waits at most 2s for a row lock', async () => {
+  const r = (await db.query("select proconfig from pg_proc where oid = 'public.cancel_deletion_on_signin()'::regprocedure")).rows[0];
+  assert.ok((r.proconfig || []).includes('lock_timeout=2s'), String(r.proconfig));
+});
+
+// ── The purge ────────────────────────────────────────────────────────────
+// A: marked 8 days ago (due), auth email Simi@X.com, profile email Simi.Profile@X.com. B: marked 6 days ago.
+// C: unmarked, other@x.com. D: an unparseable mark. Each has a row of every kind the purge touches.
+const C = '00000000-0000-0000-0000-00000000000c', D = '00000000-0000-0000-0000-00000000000d';
+const E = '00000000-0000-0000-0000-00000000000e';
+const PURGE_TABLES = ['admin_audit_log', 'waitlist', 'notify_signups', 'diagnostic_pending', 'client_errors', 'user_bug_reports'];
+async function seedUser(id, email, markJson, listEmails = [email]) {
+  await db.query('insert into auth.users (id, email) values ($1, $2)', [id, email]);
+  if (markJson !== undefined) {
+    await db.query("update public.profiles set metadata = metadata || jsonb_build_object('deletion_requested_at', " + markJson + ') where id = $1', [id]);
+  }
+  await db.query("insert into public.quiz_history (user_id, cert, score, total) values ($1, 'secplus', 3, 5)", [id]);
+  await db.query("insert into public.cert_entitlements (user_id, cert) values ($1, 'secplus')", [id]); // writes an audit row
+  await db.query('insert into public.subscriptions (user_id) values ($1)', [id]); // writes an audit row
+  await db.query('insert into public.ai_usage (user_id, call_date, call_count) values ($1, current_date, 2)', [id]);
+  await db.query('insert into public.web_vitals (user_id, lcp_ms) values ($1, 1200)', [id]);
+  await db.query("insert into public.client_errors (fingerprint, type, message, user_id) values ('fp', 'error', 'boom', $1)", [id]);
+  await db.query("insert into public.user_bug_reports (report_id, title, user_id) values ($2, 'broken', $1)", [id, 'r-' + id]);
+  await db.query("insert into public.admin_audit_log (actor_id, action, target_table, target_op, target_id, old_data, new_data) values ($1, 'role_change', 'profiles', 'UPDATE', $2, '{\"role\":\"user\"}', '{\"role\":\"admin\"}')", [id, id]);
+  for (const [i, e] of listEmails.entries()) {
+    await db.query("insert into public.waitlist (email, cert) values ($1, 'AZ-900')", [e]);
+    await db.query("insert into public.notify_signups (email, cert) values ($1, 'CCNA')", [e]);
+    await db.query("insert into public.diagnostic_pending (token, email, cert, results) values ($1, $2, 'secplus', '{}')", ['tok-' + id + '-' + i, e]);
+  }
+}
+async function seed() {
+  await db.exec('delete from auth.users; truncate ' + PURGE_TABLES.map((x) => 'public.' + x).join(', ') + ';');
+  await seedUser(A, 'Simi@X.com', "now() - interval '8 days'", ['simi@x.com', 'SIMI.PROFILE@x.com']);
+  await db.query("update public.profiles set email = 'Simi.Profile@X.com' where id = $1", [A]);
+  await seedUser(B, 'b@x.com', "now() - interval '6 days'");
+  await seedUser(C, 'other@x.com', undefined, ['other@x.com', 'xsimi@x.com']);
+  await seedUser(D, 'd@x.com', "'not a date'::text");
+}
+const purge = async () => (await db.query('select public.purge_deleted_accounts() as n')).rows[0].n;
+const count = async (sql, params) => Number((await db.query('select count(*)::int as c from ' + sql, params)).rows[0].c);
+const USER_TABLES = ['public.profiles where id = $1', 'public.quiz_history where user_id = $1', 'public.cert_entitlements where user_id = $1',
+  'public.subscriptions where user_id = $1', 'public.ai_usage where user_id = $1', 'public.web_vitals where user_id = $1'];
+// Every row any user owns, in a stable order: the before/after picture for "untouched" and "changes nothing".
+async function dump(where = 'true') {
+  const out = {};
+  for (const tb of ['auth.users', 'public.profiles', 'public.quiz_history', 'public.cert_entitlements', 'public.subscriptions',
+    'public.ai_usage', 'public.web_vitals', ...PURGE_TABLES.map((x) => 'public.' + x)]) {
+    out[tb] = (await db.query('select to_jsonb(x) j from ' + tb + ' x where ' + where + ' order by to_jsonb(x)::text')).rows.map((r) => r.j);
+  }
+  return out;
+}
+// Rows mentioning any of these ids or emails anywhere (as a whole JSON string value, case-insensitive).
+const others = (ids, emails) => "(to_jsonb(x)::text ~* '\"(" + [...ids, ...emails].join('|').replace(/\./g, '\\.') + ")\"')";
+
+await t('the purge removes A and every cascaded row, and returns 1', async () => {
+  await seed();
+  assert.equal(await purge(), 1);
+  assert.equal(await count('auth.users where id = $1', [A]), 0, 'auth.users');
+  for (const tb of USER_TABLES) assert.equal(await count(tb, [A]), 0, tb);
+});
+
+await t("A's error and bug reports stay with user_id null", async () => {
+  await seed();
+  const before = await count('public.client_errors') + await count('public.user_bug_reports');
+  await purge();
+  assert.equal(await count('public.client_errors') + await count('public.user_bug_reports'), before, 'no report deleted');
+  assert.equal(await count('public.client_errors where user_id = $1', [A]), 0);
+  assert.equal(await count('public.user_bug_reports where user_id = $1', [A]), 0);
+  assert.equal(await count('public.client_errors where user_id is null'), 1);
+  assert.equal(await count("public.user_bug_reports where user_id is null and report_id = $1", ['r-' + A]), 1);
+});
+
+await t("A's waitlist, notify and diagnostic rows go by either email, case-insensitively", async () => {
+  await seed();
+  await purge();
+  for (const tb of ['public.waitlist', 'public.notify_signups', 'public.diagnostic_pending']) {
+    assert.equal(await count(tb + " where lower(email) in ('simi@x.com', 'simi.profile@x.com')"), 0, tb + ': A gone');
+    assert.equal(await count(tb + " where email in ('other@x.com', 'xsimi@x.com', 'b@x.com', 'd@x.com')"), 4, tb + ': others stay');
+  }
+});
+
+await t("A's audit rows stay with actor_id, target_id, old_data, new_data null; no new audit rows appear", async () => {
+  await seed();
+  // A as an admin acting on C: A's id goes, C's stays.
+  await db.query("insert into public.admin_audit_log (actor_id, action, target_table, target_op, target_id, old_data, new_data) values ($1, 'role_change', 'profiles', 'UPDATE', $2, '{}', '{}')", [A, C]);
+  const before = await count('public.admin_audit_log');
+  // About A: A's role_change row, the subscription rows (target_id = A), the entitlement rows (A only inside
+  // new_data.user_id; target_id is the entitlement's own id) and A acting on C.
+  const aRows = await count('public.admin_audit_log x where ' + others([A], []));
+  assert.ok(aRows >= 4, 'seed has audit rows about A: ' + aRows);
+  assert.ok(await count("public.admin_audit_log x where action = 'entitlement_write' and target_id <> $1 and " + others([A], []), [A]) >= 1,
+    'an entitlement row names A only inside its data');
+  await db.exec('begin');
+  try {
+    await purge();
+    // Same transaction, after the purge: an ordinary write is audited again (the flag does not leak).
+    await db.query("insert into public.cert_entitlements (user_id, cert) values ($1, 'post-purge')", [C]);
+  } finally { await db.exec('commit'); }
+  assert.equal(await count('public.admin_audit_log'), before + 1, 'only the post-purge write was audited');
+  assert.equal(await count('public.admin_audit_log x where ' + others([A, 'simi@x.com', 'simi.profile@x.com'], [])), 0, 'A appears in no audit row');
+  assert.equal(await count('public.admin_audit_log where old_data is null and new_data is null'), aRows, 'the rows about A stay, stripped');
+  assert.equal(await count("public.admin_audit_log where actor_id is null and target_id is null and action = 'role_change'"), 1, 'A on A: both ids gone');
+  const cross = (await db.query("select * from public.admin_audit_log where target_id = $1 and action = 'role_change' and actor_id is null", [C])).rows;
+  assert.equal(cross.length, 1, 'A acting on C: actor blanked, C kept');
+  assert.equal(cross[0].old_data, null); assert.equal(cross[0].new_data, null);
+  assert.equal(cross[0].target_table, 'profiles'); assert.equal(cross[0].target_op, 'UPDATE');
+  assert.equal(await count("public.admin_audit_log where action in ('subscription_write', 'entitlement_write') and target_op = 'DELETE'"), 0, 'the cascade wrote no audit rows');
+});
+
+await t('B (6 days), C (unmarked) and D (unparseable) and all their rows are untouched', async () => {
+  await seed();
+  const where = others([B, C, D], ['b@x.com', 'other@x.com', 'xsimi@x.com', 'd@x.com']) + ' and not ' + others([A], []);
+  const before = await dump(where);
+  assert.ok(before['public.waitlist'].length === 4 && before['public.profiles'].length === 3, 'seed sanity');
+  await purge();
+  assert.deepEqual(await dump(where), before);
+});
+
+await t('a failing account does not stop the next one', async () => {
+  await seed();
+  await seedUser(E, 'e@x.com', "now() - interval '9 days'");
+  await db.exec(`create function public.t_block_a() returns trigger language plpgsql as $f$
+    begin if old.id = '${A}' then raise exception 'blocked for test'; end if; return old; end $f$;
+    create trigger t_block_a before delete on public.profiles for each row execute function public.t_block_a();`);
+  try {
+    const beforeA = await dump(others([A], ['simi@x.com', 'simi.profile@x.com']));
+    assert.equal(await purge(), 1);
+    assert.equal(await count('auth.users where id = $1', [E]), 0, 'E purged');
+    assert.deepEqual(await dump(others([A], ['simi@x.com', 'simi.profile@x.com'])), beforeA, 'A rolled back whole');
+  } finally { await db.exec('drop trigger t_block_a on public.profiles; drop function public.t_block_a();'); }
+});
+
+await t('a second run purges 0 and changes nothing', async () => {
+  await seed();
+  assert.equal(await purge(), 1);
+  const before = await dump();
+  assert.equal(await purge(), 0);
+  assert.deepEqual(await dump(), before);
+});
+
+await t('authenticated and service_role cannot execute the purge', async () => {
+  await seed();
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    const r = (await db.query("select has_function_privilege($1, 'public.purge_deleted_accounts()', 'execute') ok", [role])).rows[0];
+    assert.equal(r.ok, false, role + ' holds EXECUTE');
+    await db.exec('set role ' + role);
+    try { await assert.rejects(db.query('select public.purge_deleted_accounts()'), /permission denied/, role); }
+    finally { await db.exec('reset role'); }
+  }
+  assert.equal(await count('auth.users where id = $1', [A]), 1, 'nothing purged');
+});
+
+// Last: it removes what every case above depends on.
+await t('the rollback removes the trigger, the five functions and restores admin_audit_record', async () => {
+  const file = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20261029_account_deletion.sql'), 'utf8');
+  const at = file.lastIndexOf('\n-- ROLLBACK:');
+  assert.ok(at > 0, 'ROLLBACK marker');
+  const rollback = file.slice(file.indexOf('\n', at + 1) + 1).split('\n').map((l) => {
+    assert.ok(l === '' || l.startsWith('--'), 'every rollback line is commented: ' + l);
+    return l.replace(/^-- ?/, '');
+  }).join('\n');
+  await db.exec(rollback);
+  assert.equal((await db.query("select count(*)::int c from pg_trigger where tgname = 'on_signin_cancel_deletion'")).rows[0].c, 0, 'trigger');
+  for (const fn of ['purge_deleted_accounts()', 'cancel_deletion_on_signin()', 'request_account_deletion()', 'clear_deletion_notice()', 'safe_timestamptz(text)']) {
+    assert.equal((await db.query('select to_regprocedure($1) p', ['public.' + fn])).rows[0].p, null, fn);
+  }
+  const original = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20260531_phase5_admin_audit_log.sql'), 'utf8').match(/as \$audit_fn\$([\s\S]*?)\$audit_fn\$/)[1];
+  const live = (await db.query("select prosrc, prosecdef, proconfig from pg_proc where oid = 'public.admin_audit_record()'::regprocedure")).rows[0];
+  assert.equal(live.prosrc, original, 'admin_audit_record body is the original, verbatim');
+  assert.equal(live.prosecdef, true); assert.deepEqual(live.proconfig, ['search_path=public']);
+  const before = await count('public.admin_audit_log');
+  await db.exec("begin; select set_config('certanvil.purging', 'on', true);");
+  try { await db.query('insert into public.subscriptions (user_id) values ($1)', [B]); }
+  finally { await db.exec('commit'); }
+  assert.ok(await count('public.admin_audit_log') > before, 'audited even with the flag on');
+  assert.equal(await count("public.admin_audit_log where id > (select max(id) from public.admin_audit_log) - 5 and target_id = $1 and action = 'subscription_write' and target_op = 'INSERT'", [B]), 1);
 });
 
 console.log('deletion-db: ' + n + '/' + (n + failed) + ' passed');
