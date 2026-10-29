@@ -196,3 +196,97 @@ test.describe('Stage 5d: off the app', () => {
     expect(errs).toEqual([]);
   });
 });
+
+// ── Task 5: the ask after the first finished quiz ──
+const FRESH = (extra) => Object.assign({ chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' }, extra || {});
+const state = (page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('__prefs') || '{}'); return p.reminders ? JSON.parse(p.reminders) : null; });
+async function quizThenHome(page) {
+  await page.evaluate(async () => { window.dispatchEvent(new Event('ca:quiz-finished')); await new Promise((r) => setTimeout(r, 300)); window.renderIosHome(); });
+}
+const sheetOpen = (page) => page.locator('#irm-sheet.open');
+
+test.describe('Stage 5d: the ask', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('no sheet on Home before any finished quiz', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => window.renderIosHome());
+    await page.waitForTimeout(600);
+    await expect(sheetOpen(page)).toHaveCount(0);
+  });
+
+  test('after a finished quiz, the next Home shows the sheet with "Remind me at 7:00 pm"', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await quizThenHome(page);
+    await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#irm-sheet')).toContainText('Remind me at');
+    await expect(page.locator('#irm-time-val')).toHaveText('7:00 pm');
+    await expect(page.locator('#irm-sheet')).toContainText('your 15');
+    await expect(page.locator('#irm-sheet')).toContainText('One a day at most. Turn it off any time in Settings.');
+    await expect(page.locator('#irm-sheet')).not.toContainText('Almost done');
+  });
+
+  test('Pro sheet has no "15"', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' }, fake: { signedOut: false, tier: 'pro', metaOverride: { tier: 'pro', entitlements: {} } } });
+    await page.waitForTimeout(800);
+    await quizThenHome(page);
+    await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#irm-sheet')).not.toContainText('15');
+  });
+
+  test('the time row opens the picker; Done updates the row and the saved time', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await quizThenHome(page);
+    await page.click('#irm-time');
+    await expect(page.locator('#irm-tsheet.open')).toBeVisible();
+    await page.click('#irm-wheel button[data-k="h"][data-v="8"]');
+    await page.click('#irm-ts-done');
+    await expect(page.locator('#irm-time-val')).toHaveText('8:00 pm');
+    await expect.poll(async () => (await state(page)).time).toBe('20:00');
+  });
+
+  test('Turn on reminders, granted: on, asked done, reminders scheduled', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'prompt', requestAnswer: 'granted' }) } });
+    await quizThenHome(page);
+    await page.click('#irm-on');
+    await expect(sheetOpen(page)).toHaveCount(0, { timeout: 3000 });
+    await expect.poll(async () => { const s = await state(page); return s && s.on && s.asked; }).toBe('done');
+    await expect.poll(async () => (await notifCalls(page)).some((c) => c.op === 'schedule')).toBe(true);
+  });
+
+  test('Turn on reminders, denied: asked done, nothing scheduled, never shown again', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}', __notif: JSON.stringify({ perm: 'prompt', requestAnswer: 'denied' }) } });
+    await quizThenHome(page);
+    await page.click('#irm-on');
+    await expect.poll(async () => (await state(page)).asked).toBe('done');
+    expect((await notifCalls(page)).some((c) => c.op === 'schedule')).toBe(false);
+    await quizThenHome(page);
+    await page.waitForTimeout(500);
+    await expect(sheetOpen(page)).toHaveCount(0);
+  });
+
+  test('Maybe later: shown again only after 4 more finished quizzes, then never', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await quizThenHome(page);
+    await page.click('#irm-later');
+    await expect.poll(async () => (await state(page)).asked).toBe('later');
+    for (let i = 0; i < 3; i++) { await quizThenHome(page); await page.waitForTimeout(250); await expect(sheetOpen(page)).toHaveCount(0); }
+    await quizThenHome(page);
+    await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
+    await page.click('#irm-later');
+    await expect.poll(async () => (await state(page)).asked).toBe('done');
+    for (let i = 0; i < 5; i++) await quizThenHome(page);
+    await page.waitForTimeout(400);
+    await expect(sheetOpen(page)).toHaveCount(0);
+  });
+
+  test('not shown while a first-run sheet is open; shown on the next Home', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => { const s = document.getElementById('ist-sheet'); if (s) s.classList.add('open'); });
+    await quizThenHome(page);
+    await page.waitForTimeout(500);
+    await expect(sheetOpen(page)).toHaveCount(0);
+    await page.evaluate(() => { const s = document.getElementById('ist-sheet'); if (s) s.classList.remove('open'); window.renderIosHome(); });
+    await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
+  });
+});

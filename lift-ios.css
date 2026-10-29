@@ -3036,3 +3036,70 @@ html.isi-open { overflow: hidden; }
 #ist-sheet .ist-conn.on { color: var(--text-dim); }
 #ist-sheet .ist-merr { margin: 12px 0 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--red, oklch(0.62 0.17 28)); }
 #ist-sheet .ist-mnote { margin: 12px 0 2px; font: 500 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
+
+/* ── Stage 5d (29 Oct): study reminders. The ask after a finished quiz, and its time picker.
+   Lift of june-e2e @ ed2ab300 (onboarding-notifications-prime.html ?v=quiz / quiz-pro / time).
+   Motion (BRAND §6): the sheet rises once, 520ms in; the time sheet 360ms in / 200ms out; transform + opacity only. ── */
+#irm-root .irm-scrim { position: fixed; inset: 0; z-index: 9100; background: rgba(0,0,0,.32); opacity: 0; pointer-events: none; transition: opacity .3s var(--ios-ease); }
+#irm-root .irm-scrim.open { opacity: 1; pointer-events: auto; transition: opacity .52s var(--ios-ease); }
+#irm-root .irm-sheet { position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top) + 10px); bottom: 0; z-index: 9101; display: flex; flex-direction: column;
+  background: var(--bg); color: var(--text); border-radius: 22px 22px 0 0; box-shadow: 0 -12px 40px -18px rgba(0,0,0,.45);
+  transform: translateY(100%); transition: transform .3s var(--ios-ease); }
+#irm-root .irm-sheet.open { transform: none; transition: transform .52s var(--ios-ease); }
+#irm-root .irm-grip { width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 8px auto 0; flex: 0 0 auto; }
+#irm-root .irm-hdr { padding: 10px 22px 6px; }
+#irm-root .irm-hdr h1 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 21px; letter-spacing: -0.01em; margin: 0; color: var(--text); }
+#irm-root .irm-body { flex: 1 1 auto; overflow-y: auto; padding: 0 22px 8px; -webkit-overflow-scrolling: touch; }
+#irm-root .irm-hero { text-align: center; margin: 6px 4px 4px; }
+#irm-root .irm-bell { width: 64px; height: 64px; margin: 0 auto 14px; border-radius: 18px; display: grid; place-items: center;
+  background: color-mix(in oklab, var(--accent) 12%, var(--surface2)); border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); }
+#irm-root .irm-bell svg { width: 31px; height: 31px; stroke: var(--accent-deep); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#irm-root .irm-hero h2 { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 25px; line-height: 1.12; letter-spacing: -0.015em; margin: 0 0 10px; color: var(--text); }
+#irm-root .irm-hero p { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 0 auto; max-width: 36ch; }
+#irm-root .irm-covers { list-style: none; margin: 18px 0 0; padding: 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+#irm-root .irm-covers li { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; }
+#irm-root .irm-covers li + li { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+#irm-root .irm-ci { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 11%, var(--surface2)); }
+#irm-root .irm-ci svg { width: 17px; height: 17px; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#irm-root .irm-ct { font: 650 13.5px/1.3 Inter, sans-serif; color: var(--text); }
+#irm-root .irm-cs { font-size: 12.5px; line-height: 1.45; color: var(--text-mid); margin-top: 2px; }
+#irm-root .irm-cs b { color: var(--text); font-weight: 650; }
+#irm-root .irm-timerow { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 56px; margin-top: 10px; padding: 11px 15px; border: 1px solid var(--border); border-radius: 16px;
+  background: var(--surface); color: var(--text); text-align: left; cursor: pointer; font: inherit; transition: transform .15s var(--ios-ease); }
+#irm-root .irm-timerow:active { transform: scale(0.985); }
+@media (hover: hover) and (pointer: fine) { #irm-root .irm-timerow:hover { background: color-mix(in oklab, var(--text) 3%, var(--surface)); } }
+#irm-root .irm-tl { flex: 1 1 auto; font: 650 13.5px/1.3 Inter, sans-serif; }
+#irm-root .irm-tv { font: 700 14px/1 Inter, sans-serif; color: var(--accent-deep); font-variant-numeric: lining-nums tabular-nums; }
+#irm-root .irm-chev { width: 16px; height: 16px; stroke: var(--text-dim); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#irm-root .irm-quiet { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 14px 0 4px; font-size: 12px; color: var(--text-dim); }
+#irm-root .irm-quiet svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+#irm-root .irm-footer { padding: 10px 22px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); }
+#irm-root .irm-btn { width: 100%; min-height: 48px; border: none; border-radius: 13px; padding: 14px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif;
+  box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+#irm-root .irm-btn:active { transform: scale(0.98); }
+#irm-root .irm-btn:disabled { opacity: .6; }
+#irm-root .irm-ghost { width: 100%; min-height: 44px; border: none; border-radius: 13px; padding: 12px; margin-top: 8px; cursor: pointer; background: transparent; color: var(--text-mid); font: 650 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+#irm-root .irm-ghost:active { transform: scale(0.98); }
+/* the time picker: an iOS-style wheel inside the app's own sheet */
+#irm-root .irm-tscrim { position: fixed; inset: 0; z-index: 9110; background: rgba(0,0,0,.28); opacity: 0; pointer-events: none; transition: opacity .2s var(--ios-ease); }
+#irm-root .irm-tscrim.open { opacity: 1; pointer-events: auto; transition: opacity .36s var(--ios-ease); }
+#irm-root .irm-tsheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 9111; background: var(--surface); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+  padding: 6px 12px calc(18px + env(safe-area-inset-bottom)); transform: translateY(105%); transition: transform .2s var(--ios-ease); }
+#irm-root .irm-tsheet.open { transform: none; transition: transform .36s var(--ios-ease); }
+#irm-root .irm-ts-head { display: flex; align-items: center; justify-content: space-between; }
+#irm-root .irm-ts-head h3 { font: 650 15px/1 Inter, sans-serif; margin: 0; color: var(--text); text-transform: none; letter-spacing: normal; }   /* the app's global h3 is uppercase */
+#irm-root .irm-ts-btn { min-width: 64px; min-height: 44px; border: 0; background: none; cursor: pointer; font: 600 15px/1 Inter, sans-serif; color: var(--text-mid); padding: 0 8px; transition: transform .15s var(--ios-ease); }
+#irm-root .irm-ts-btn.done { color: var(--accent-deep); font-weight: 750; }
+#irm-root .irm-ts-btn:active { transform: scale(0.97); }
+#irm-root .irm-wheel { position: relative; display: flex; justify-content: center; gap: 6px; margin: 6px 4px 4px; height: 190px; overflow: hidden; }
+#irm-root .irm-wheel::before { content: ""; position: absolute; left: 0; right: 0; top: 76px; height: 38px; border-radius: 10px; background: color-mix(in oklab, var(--text) 7%, transparent); pointer-events: none; }
+#irm-root .irm-wcol { position: relative; display: flex; flex-direction: column; width: 72px; }
+#irm-root .irm-wcol button { height: 38px; border: 0; background: none; cursor: pointer; font: 500 21px/38px Inter, sans-serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; padding: 0; }
+#irm-root .irm-wcol button.d1 { opacity: .45; font-size: 19px; }
+#irm-root .irm-wcol button.d2 { opacity: .2; font-size: 17px; }
+#irm-root .irm-wcol button.d0 { font-weight: 650; }
+#irm-root .irm-ts-note { margin: 4px 8px 0; text-align: center; font: 500 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
+@media (prefers-reduced-motion: reduce) {
+  #irm-root .irm-sheet, #irm-root .irm-sheet.open, #irm-root .irm-tsheet, #irm-root .irm-tsheet.open { transform: none; transition: opacity .2s ease; }
+  #irm-root .irm-sheet:not(.open), #irm-root .irm-tsheet:not(.open) { opacity: 0; pointer-events: none; }
+}

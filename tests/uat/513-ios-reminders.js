@@ -21,6 +21,8 @@ const { fs, path, ROOT, test, results } = require('./_context');
     // Task 4: both results screens tell the reminders a session finished (once per session)
     test('ios-quiz and ios-exam results dispatch ca:quiz-finished', /ca:quiz-finished/.test(read('features/ios-quiz.js')) && /ca:quiz-finished/.test(read('features/ios-exam.js')));
     test('index.html loads features/ios-reminders.js', /<script defer src="features\/ios-reminders\.js[^"]*"><\/script>/.test(read('index.html')));
+    test('drills and Sim Lab never count as a finished quiz', !/ca:quiz-finished/.test(read('features/ios-drills.js')) && !/ca:quiz-finished/.test(read('features/sim-lab.js') + read('features/ios-simlab.js')));
+    test('ios-home tells the reminders Home is showing (ca:home-shown)', /ca:home-shown/.test(read('features/ios-home.js')));
   } catch (err) {
     test('Stage 5d reminders: block (threw)', false);
     results.errors.push('513 ios-reminders block threw: ' + err.message);
