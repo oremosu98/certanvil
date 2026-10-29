@@ -34,10 +34,12 @@
 
 | Where | String |
 |---|---|
-| Notice, app and website | Welcome back. Your account won't be deleted. |
+| Notice, app and website | Welcome back. We've cancelled the deletion and your account is safe. |
 | Website, after deleting | Your account will be deleted in 7 days. Sign back in before then to keep it. |
 | /account confirm dialog (replaces the "Cancel deletion" line) | Changed your mind? Sign back in within 7 days and your account stays. |
 | Privacy §06 Self-delete | **Self-delete**: from the app's Settings or certanvil.com/account. Signing back in within 7 days cancels it. After 7 days we erase your account and everything linked to it (profile, quiz history, subscription records and telemetry), remove your link from any error or bug reports you sent, and take your email off our waiting lists. |
+
+Copy pass (29 Oct): changed the notice from "Your account won't be deleted" to "We've cancelled the deletion and your account is safe", because the old line implied the cancellation without saying it and gave no reassurance; the other three strings are unchanged.
 
 ---
 
