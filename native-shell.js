@@ -99,6 +99,7 @@
     },
     // Stage 5b: read a one-time key and remove it (the lock toast)
     take: function (k) { return pget(k).then(function (v) { if (v) pdel(k); return v; }); },
+    get: function (k) { return pget(k); },   // Stage 5d: the reminders' settings
     set: function (k, v) { return pset(k, v); },
     forget: function (k) { return pdel(k); },
     chosen: function () {

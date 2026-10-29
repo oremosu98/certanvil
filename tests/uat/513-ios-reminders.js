@@ -18,6 +18,9 @@ const { fs, path, ROOT, test, results } = require('./_context');
     const pr = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/reminders-planner.test.mjs')], { encoding: 'utf8', timeout: 30000, env: Object.assign({}, process.env, { TZ: 'Europe/London' }) });
     test('reminder planner suite passes in Europe/London (' + ((pr.stdout || '').match(/reminders-planner: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
       pr.status === 0 && /reminders-planner: (\d+)\/\1 passed/.test(pr.stdout || ''));
+    // Task 4: both results screens tell the reminders a session finished (once per session)
+    test('ios-quiz and ios-exam results dispatch ca:quiz-finished', /ca:quiz-finished/.test(read('features/ios-quiz.js')) && /ca:quiz-finished/.test(read('features/ios-exam.js')));
+    test('index.html loads features/ios-reminders.js', /<script defer src="features\/ios-reminders\.js[^"]*"><\/script>/.test(read('index.html')));
   } catch (err) {
     test('Stage 5d reminders: block (threw)', false);
     results.errors.push('513 ios-reminders block threw: ' + err.message);

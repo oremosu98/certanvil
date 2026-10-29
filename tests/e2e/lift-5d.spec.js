@@ -126,3 +126,73 @@ test.describe('Stage 5d: caNative.reminders', () => {
     expect(got).toBe(true);
   });
 });
+
+// ── Task 4: state and rescheduling ──
+const ON_PREFS = (extra) => Object.assign({ chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com',
+  reminders: JSON.stringify(Object.assign({ on: true, time: '19:00', asked: 'done', quizzes: 1, laterAtQuiz: null, lastStudiedDay: null }, extra || {})) });
+const GRANTED = { __notif: JSON.stringify({ perm: 'granted', requestAnswer: 'granted' }) };
+const lastSchedule = async (page) => { const c = (await notifCalls(page)).filter((x) => x.op === 'schedule'); return c.length ? c[c.length - 1].notifications : null; };
+const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+test.describe('Stage 5d: rescheduling', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('launch schedules the plan (7 reminders, or 6 after the time today)', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: GRANTED });
+    await expect.poll(async () => (await lastSchedule(page) || []).length, { timeout: 6000 }).toBeGreaterThanOrEqual(6);
+    const n = await lastSchedule(page);
+    expect(n.map((x) => x.id).every((id) => id >= 5001 && id <= 5007)).toBe(true);
+    expect(n[0].title).toBe('CertAnvil');
+  });
+
+  test('finishing a quiz drops today\'s and stores lastStudiedDay as the local date', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: GRANTED });
+    await expect.poll(async () => (await lastSchedule(page) || []).length, { timeout: 6000 }).toBeGreaterThanOrEqual(6);
+    const before = (await lastSchedule(page)).map((x) => x.id);
+    await page.evaluate(() => window.dispatchEvent(new Event('ca:quiz-finished')));
+    await expect.poll(async () => (await lastSchedule(page)).map((x) => x.id).includes(5001), { timeout: 4000 }).toBe(false);
+    const st = await page.evaluate(() => JSON.parse(JSON.parse(localStorage.getItem('__prefs')).reminders));
+    expect(st.lastStudiedDay).toBe(localDay());
+    expect(st.quizzes).toBe(2);
+    if (before.includes(5001)) expect((await lastSchedule(page)).length).toBe(before.length - 1);
+  });
+
+  test('a second cert opened the same day keeps today\'s dropped', async ({ page }) => {
+    await boot(page, { prefs: Object.assign(ON_PREFS({ time: '23:59', lastStudiedDay: localDay() }), { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' }), seed: GRANTED, query: '?cert=secplus' });
+    await expect.poll(async () => (await lastSchedule(page) || []).length, { timeout: 6000 }).toBe(6);
+    expect((await lastSchedule(page)).map((x) => x.id)).not.toContain(5001);
+  });
+
+  test('permission denied: cancelAll and nothing scheduled on app-active', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: { __notif: JSON.stringify({ perm: 'denied' }) } });
+    await page.evaluate(() => { localStorage.setItem('__notifCalls', '[]'); window.__fireAppActive(); });
+    await expect.poll(async () => (await notifCalls(page)).some((c) => c.op === 'cancel'), { timeout: 4000 }).toBe(true);
+    expect((await notifCalls(page)).some((c) => c.op === 'schedule')).toBe(false);
+  });
+
+  test('the tier resolving as Pro reschedules without the free 15 line', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: GRANTED, fake: { signedOut: false, tier: 'pro', metaOverride: { tier: 'pro', entitlements: {} } } });
+    await expect.poll(async () => { const n = await lastSchedule(page); return !!n && n.every((x) => !/15 questions/.test(x.body)); }, { timeout: 8000 }).toBe(true);
+  });
+
+  test('a launch and an app-active together leave one set, never two', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: GRANTED });
+    await page.evaluate(() => { window.__fireAppActive(); window.__fireAppActive(); });
+    await page.waitForTimeout(1500);
+    const calls = await notifCalls(page);
+    // every schedule is preceded by a cancel (serialised): never two schedules back to back
+    let prev = null; for (const c of calls) { if (c.op === 'schedule') expect(prev).toBe('cancel'); if (c.op === 'schedule' || c.op === 'cancel') prev = c.op; }
+  });
+});
+
+test.describe('Stage 5d: off the app', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test('website: no reminder calls and no errors', async ({ page }) => {
+    const errs = []; page.on('pageerror', (e) => errs.push(String(e)));
+    await boot(page, { native: false, prefs: ON_PREFS(), seed: GRANTED });
+    await page.evaluate(() => window.dispatchEvent(new Event('ca:quiz-finished')));
+    await page.waitForTimeout(800);
+    expect(await notifCalls(page)).toEqual([]);
+    expect(errs).toEqual([]);
+  });
+});
