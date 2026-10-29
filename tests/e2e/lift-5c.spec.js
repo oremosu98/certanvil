@@ -401,7 +401,65 @@ test.describe('Stage 5c final review fixes', () => {
     await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
     await deleteAccount(page);
     await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
-    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed');
+    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (sheet)');
+  });
+
+  test('the app logs why a revoke failed: the server\'s answer, or a timeout', async ({ page }) => {
+    await routeRevoke(page, 'failed');
+    await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
+    await deleteAccount(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (server 409 failed)');
+  });
+});
+
+// ── Deferred minors, closed 29 Oct ──
+test.describe('Stage 5c deferred minors', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('a rejected linkIdentity shows Couldn\'t add Apple instead of a dead button', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ linkReject: true }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await expect(page.locator('#ist-sheet .ist-merr')).toHaveText("Couldn't add Apple. Try again.");
+    await expect(page.locator('#ist-sheet [data-act="add-apple"]')).toBeEnabled();
+  });
+
+  test('with no crypto.subtle, Continue with Apple says it failed and can be tapped again', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(Crypto.prototype, 'subtle', { get: () => undefined }); });
+    await boot(page);
+    await openIn(page);
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect(page.locator('#ios-signin .isi-perr')).toBeVisible();
+    await page.click('#ios-signin [data-act="apple"]');
+    await expect(page.locator('#ios-signin .isi-perr')).toBeVisible();
+  });
+
+  test('with no crypto.subtle, Add Apple says it failed and the button comes back', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(Crypto.prototype, 'subtle', { get: () => undefined }); });
+    await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
+    await openMethods(page);
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await expect(page.locator('#ist-sheet .ist-merr')).toHaveText("Couldn't add Apple. Try again.");
+    await expect(page.locator('#ist-sheet [data-act="add-apple"]')).toBeEnabled();
+  });
+
+  test('the delete sheet\'s Apple note follows the fresh account, not the stored session', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ freshIdentities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="delete"]');
+    await expect(page.locator('#delete-account-modal')).toContainText('You sign in with Apple, so Apple will ask you to confirm.');
+  });
+
+  test('the methods fetch landing mid-link does not bring back an enabled Add', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ getUserDelay: 1200 }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'ok', delay: 2500 }) } });
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="methods"]');
+    await page.click('#ist-sheet [data-act="add-apple"]');
+    await page.waitForTimeout(1600);   // the fetch has landed; the Apple sheet is still open
+    await expect(page.locator('#ist-sheet [data-act="add-apple"]')).toBeDisabled();
+    await expect(page.locator('#ist-sheet')).toContainText('Connected', { timeout: 6000 });
   });
 });
 

@@ -3,7 +3,7 @@
 // here with the user's Supabase access token. We check the caller, exchange the code with a client secret minted
 // from the .p8 key, refuse unless the code's Apple ID is the account's own Apple identity, then revoke the refresh
 // token. Nothing is stored. The deletion itself never waits on this: the app schedules it whatever we answer.
-// Env: APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (PEM, PKCS#8), SUPABASE_URL, SUPABASE_ANON_KEY.
+// Env: APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (PEM, PKCS#8), SUPABASE_URL, SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY (service role as the last fallback).
 import { logServerError } from './_lib/log-server-error.js';
 
 export const config = { runtime: 'edge' };
@@ -24,8 +24,9 @@ function cors(req) {
 function json(payload, status, req) {
   return new Response(JSON.stringify(payload), { status, headers: Object.assign({ 'Content-Type': 'application/json' }, cors(req)) });
 }
-function log(result, status) {
-  logServerError({ endpoint: 'apple-revoke', status, message: 'apple-revoke: ' + result });
+// Awaited: Edge can drop a write still in flight after the response. detail says which step failed and why.
+function log(result, status, detail) {
+  return logServerError({ endpoint: 'apple-revoke', status, message: 'apple-revoke: ' + result + (detail ? ' (' + detail + ')' : '') });
 }
 
 function b64url(bytes) {
@@ -69,7 +70,7 @@ export default async function handler(req) {
 
   const auth = req.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
-  if (!token) { log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
+  if (!token) { await log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
   let body = null;
   try { body = await req.json(); } catch (_) { body = null; }
   const code = body && typeof body.code === 'string' ? body.code : '';
@@ -77,9 +78,9 @@ export default async function handler(req) {
 
   // Who is asking, and which Apple identity is theirs (the caller's own token returns their identities).
   const ures = await fetch(process.env.SUPABASE_URL + '/auth/v1/user', {
-    headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
+    headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
   }).catch(() => null);
-  if (!ures || ures.status !== 200) { log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
+  if (!ures || ures.status !== 200) { await log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
   const user = await ures.json().catch(() => null);
   const ident = ((user && user.identities) || []).filter((i) => i && i.provider === 'apple')[0];
   const accountSub = ident ? (ident.id || (ident.identity_data && ident.identity_data.sub) || null) : null;
@@ -90,19 +91,22 @@ export default async function handler(req) {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: secret, code, grant_type: 'authorization_code' }).toString()
     });
-    if (ex.status !== 200) { log('failed', 502); return json({ result: 'failed' }, 502, req); }
+    if (ex.status !== 200) {
+      const why = await ex.json().then((j) => (j && j.error) || '', () => '');
+      await log('failed', 502, 'token ' + ex.status + (why ? ' ' + why : '')); return json({ result: 'failed' }, 502, req);
+    }
     const tok = await ex.json();
-    if (decideRevoke(jwtSub(tok.id_token), accountSub) !== 'ok') { log('sub-mismatch', 409); return json({ result: 'sub-mismatch' }, 409, req); }
-    if (!tok.refresh_token) { log('failed', 502); return json({ result: 'failed' }, 502, req); }
+    if (decideRevoke(jwtSub(tok.id_token), accountSub) !== 'ok') { await log('sub-mismatch', 409); return json({ result: 'sub-mismatch' }, 409, req); }
+    if (!tok.refresh_token) { await log('failed', 502, 'no refresh token'); return json({ result: 'failed' }, 502, req); }
     const rv = await fetch(APPLE + '/auth/revoke', {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: secret, token: tok.refresh_token, token_type_hint: 'refresh_token' }).toString()
     });
-    if (rv.status !== 200) { log('failed', 502); return json({ result: 'failed' }, 502, req); }
-    log('ok', 200);
+    if (rv.status !== 200) { await log('failed', 502, 'revoke ' + rv.status); return json({ result: 'failed' }, 502, req); }
+    await log('ok', 200);
     return json({ result: 'ok' }, 200, req);
   } catch (e) {
-    log('failed', 502);
+    await log('failed', 502, 'threw ' + String((e && e.message) || e).slice(0, 80));
     return json({ result: 'failed' }, 502, req);
   }
 }
