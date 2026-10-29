@@ -381,3 +381,44 @@ test.describe('Stage 5d: Settings off the app', () => {
     await expect(remRow(page)).toHaveCount(0);
   });
 });
+
+// ── Final review fixes ──
+test.describe('Stage 5d final review fixes', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('the countdown names the cert ("Network+"), not CertAnvil', async ({ page }) => {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    const iso = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: Object.assign({ nplus_exam_date: iso }, GRANTED) });
+    await expect.poll(async () => { const n = await lastSchedule(page); return n && n[0].body; }, { timeout: 6000 }).toMatch(/Your Network\+ exam is in 7 days/);
+  });
+
+  test('the ask waits while the sign-in screen is open', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => document.documentElement.classList.add('isi-open'));
+    await quizThenHome(page);
+    await page.waitForTimeout(500);
+    await expect(sheetOpen(page)).toHaveCount(0);
+    await page.evaluate(() => { document.documentElement.classList.remove('isi-open'); window.renderIosHome(); });
+    await expect(sheetOpen(page)).toBeVisible({ timeout: 3000 });
+  });
+
+  test('the ask waits while the full-screen check is open', async ({ page }) => {
+    await boot(page, { prefs: FRESH(), seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => document.documentElement.classList.add('ifr-check'));
+    await quizThenHome(page);
+    await page.waitForTimeout(500);
+    await expect(sheetOpen(page)).toHaveCount(0);
+  });
+
+  test('closing the Reminders sheet while a change saves does not reopen it', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: Object.assign({ nplus_onb_skips: '{"at":1}' }, GRANTED) });
+    await openSettings(page);
+    await remRow(page).click();
+    await page.evaluate(() => { const R = window.iosReminders, orig = R.reschedule; R.reschedule = function () { return new Promise((r) => setTimeout(r, 700)).then(orig); }; });
+    await page.click('#ist-sheet [data-act="rem-sw"]');
+    await page.evaluate(() => { const s = document.getElementById('ist-sheet-scrim'); if (s) s.click(); });
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#ist-sheet.open')).toHaveCount(0);
+  });
+});

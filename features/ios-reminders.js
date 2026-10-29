@@ -58,7 +58,7 @@
 
   // ── Rescheduling: replace the 7 reminders with a fresh plan. Serialised, never throws. ──
   function certName() {
-    var p = window.CERT_PACK, n = (p && (p.shortName || p.name)) || '';
+    var p = window.CERT_PACK, n = (p && p.meta && p.meta.name) || '';   // the pack's name lives in meta
     return String(n).replace(/^(CompTIA|Microsoft|AWS)\s+/, '') || 'CertAnvil';
   }
   function isPro() {
@@ -158,8 +158,8 @@
 
   // ── The ask (approved drawing rem-prime / rem-prime-pro): a sheet over Home after a finished quiz or exam ──
   function busy() {   // another sheet, the first-run picker or the sign-in screen is up: wait for the next Home
-    var s = document.getElementById('ist-sheet'), si = document.getElementById('ios-signin');
-    return !!((s && s.classList.contains('open')) || document.documentElement.classList.contains('ifr-picking') || (si && si.offsetParent !== null && si.innerHTML));
+    var s = document.getElementById('ist-sheet'), c = document.documentElement.classList;
+    return !!((s && s.classList.contains('open')) || c.contains('ifr-picking') || c.contains('ifr-check') || c.contains('isi-open'));
   }
   function primeHtml(st, pro) {
     var lede = pro ? 'A daily nudge for your practice and any reviews that are due, plus a heads-up as your exam gets close.'
@@ -205,7 +205,9 @@
       var st = a[0], perm = a[1];
       if (st.asked === 'done') return;
       if (perm !== 'prompt') return IR.save({ asked: 'done' });
-      if (st.asked === 'never' || (st.asked === 'later' && (st.quizzes || 0) >= (st.laterAtQuiz || 0) + 4)) showPrime(st);
+      if (!(st.asked === 'never' || (st.asked === 'later' && (st.quizzes || 0) >= (st.laterAtQuiz || 0) + 4))) return;
+      if (busy() || document.getElementById('irm-sheet')) { IR._offerPending = true; return; }   // something opened meanwhile: next Home
+      showPrime(st);
     }).catch(function () {});
   };
 

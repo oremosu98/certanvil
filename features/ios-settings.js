@@ -386,17 +386,19 @@
   }
   // Stage 5d: Settings → Reminders. The switch asks iOS the first time; the row reads the live permission.
   var _remWheel = false;
-  function _drawRem() {
+  function _drawRem(redraw) {
     var R = window.iosReminders; if (!R) return Promise.resolve();
     return R.sheetModel().then(function (sm) {
+      var sh = document.getElementById('ist-sheet');
+      if (redraw && !(sh && sh.classList.contains('open') && sh.querySelector('.ist-rem, .ist-denied'))) return;   // closed meanwhile: stay closed
       sm.wheel = _remWheel;
       openSheet(_iosStRemSheetHtml(sm), function (b) {
         var a = b.getAttribute('data-act');
         if (a === 'rem-not') { closeSheet(); return; }
         if (a === 'rem-open') { closeSheet(); if (window.caNative) window.caNative.openAppSettings(); return; }
-        if (a === 'rem-time') { if (sm.on) { _remWheel = !_remWheel; _drawRem(); } return; }
-        if (a === 'rem-sw') { b.disabled = true; R.setOn(!sm.on).then(function () { if (sm.on) _remWheel = false; return _drawRem(); }); return; }   // switching off closes the wheel
-        if (a === 'rem-w') { var p = { h: sm.parts.h, m: sm.parts.m, ap: sm.parts.ap }, k = b.getAttribute('data-k'), v = b.getAttribute('data-v'); p[k] = k === 'ap' ? v : +v; R.setTime(p).then(_drawRem); }
+        if (a === 'rem-time') { if (sm.on) { _remWheel = !_remWheel; _drawRem(true); } return; }
+        if (a === 'rem-sw') { b.disabled = true; R.setOn(!sm.on).then(function () { if (sm.on) _remWheel = false; return _drawRem(true); }); return; }   // switching off closes the wheel
+        if (a === 'rem-w') { var p = { h: sm.parts.h, m: sm.parts.m, ap: sm.parts.ap }, k = b.getAttribute('data-k'), v = b.getAttribute('data-v'); p[k] = k === 'ap' ? v : +v; R.setTime(p).then(function () { return _drawRem(true); }); }
       });
     });
   }

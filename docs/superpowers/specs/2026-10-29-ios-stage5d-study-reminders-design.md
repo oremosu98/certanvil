@@ -27,8 +27,8 @@ at 14 / 7 / 3 / 1 days.
 
 ### The ask
 - **When:** the next time Home appears after a **finished practice quiz or exam** (the `ios-quiz` and `ios-exam`
-  results screens; any of their exit buttons), the priming screen slides up. Drills, Sim Lab and review sessions do
-  not count. "First" means the first one counted in the app (an app-wide counter, below), so someone with web history
+  results screens; any of their exit buttons), the priming screen slides up. The Drills tab's own drills (subnet, ports and the like), Sim Lab and review sessions do
+  not count; a "Drill my mistakes" quiz runs through the quiz engine and does count (ruling, 29 Oct: it is studying). "First" means the first one counted in the app (an app-wide counter, below), so someone with web history
   is asked after their next quiz in the app.
 - **The screen:** the June mockup with three changes: the "Almost done" onboarding step label goes; a row "Remind me
   at 7:00 pm" opens a time picker; the Pro variant drops "15" from the practice line. Copy is locked in the plan's copy
