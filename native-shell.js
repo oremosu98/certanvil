@@ -43,7 +43,33 @@
     socialInit = Promise.resolve(socialPlugin().initialize(cfg));
     return socialInit;
   }
+  // Stage 5d (29 Oct): study reminders through @capacitor/local-notifications (8.3.1) and the app's iOS settings page
+  // through @capacitor/app-launcher (8.0.1). Ids 5001-5007 are the reminders' only ids.
+  var REMINDER_IDS = [5001, 5002, 5003, 5004, 5005, 5006, 5007];
+  function notifPlugin() { return P.LocalNotifications || null; }
+  function permOf(r) { var d = r && r.display; return d === 'granted' || d === 'denied' ? d : 'prompt'; }   // prompt-with-rationale → prompt
+  var reminders = {
+    ready: function () { return !!notifPlugin(); },
+    permission: function () { return notifPlugin() ? notifPlugin().checkPermissions().then(permOf, function () { return 'prompt'; }) : Promise.resolve('denied'); },
+    request: function () { return notifPlugin() ? notifPlugin().requestPermissions().then(function (r) { return permOf(r) === 'granted' ? 'granted' : 'denied'; }, function () { return 'denied'; }) : Promise.resolve('denied'); },
+    schedule: function (list) {
+      if (!notifPlugin() || !list || !list.length) return Promise.resolve();
+      return notifPlugin().schedule({ notifications: list.map(function (n) { return { id: n.id, title: n.title, body: n.body, schedule: { at: n.at } }; }) }).then(function () {});
+    },
+    cancelAll: function () {
+      return notifPlugin() ? notifPlugin().cancel({ notifications: REMINDER_IDS.map(function (id) { return { id: id }; }) }).then(function () {}, function () {}) : Promise.resolve();
+    }
+  };
+  // Returning to the foreground: features re-plan on this (ca:app-active)
+  try {
+    if (P.App && P.App.addListener) P.App.addListener('appStateChange', function (s) {
+      if (s && s.isActive) { try { window.dispatchEvent(new Event('ca:app-active')); } catch (_) {} }
+    });
+  } catch (_) {}
   window.caNative = {
+    reminders: reminders,
+    canOpenAppSettings: function () { return !!P.AppLauncher; },
+    openAppSettings: function () { return P.AppLauncher ? P.AppLauncher.openUrl({ url: 'app-settings:' }).then(function () {}, function () {}) : Promise.resolve(); },
     // The plugin passes the nonce through untouched: callers send sha256(raw) here and the raw nonce to Supabase.
     // Resolves { idToken, authorizationCode?, givenName?, familyName? }; rejects { cancelled: true } on a user cancel.
     social: function (provider, opts) {
