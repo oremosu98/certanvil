@@ -1374,9 +1374,15 @@
         '<h2 class="dlpb-title">Deleting your account&hellip;</h2>' +
         '<p class="dlpb-lede">Scheduling removal. This takes a moment.</p>';
     }
+    // Stage 5c: an Apple-linked account confirms with Apple first so its grant is revoked (Apple's rule).
+    // Whatever that returns, the deletion is scheduled.
+    var S = window.iosSignIn;
+    var apple = (S && S._hasApple && S._appleRevoke) ? sb.auth.getUser().then(function (u) {
+      return S._hasApple(u && u.data && u.data.user) ? S._appleRevoke() : null;
+    }).catch(function () { return null; }) : Promise.resolve(null);
     // Read metadata fresh so we don't clobber keys written since page load
     // (cloud-store debounce flushes into the same jsonb column).
-    sb.from('profiles').select('metadata').eq('id', userId).single().then(function (pr) {
+    apple.then(function () { return sb.from('profiles').select('metadata').eq('id', userId).single(); }).then(function (pr) {
       var meta = (pr && pr.data && pr.data.metadata) || {};
       var nextMeta = Object.assign({}, meta, { deletion_requested_at: new Date().toISOString() });
       return sb.from('profiles').update({ metadata: nextMeta }).eq('id', userId);

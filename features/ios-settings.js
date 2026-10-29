@@ -17,7 +17,7 @@
       examLabel = parseInt(p[2], 10) + ' ' + MON[parseInt(p[1], 10) - 1].slice(0, 3) + (typeof ex.days === 'number' ? ' · ' + ex.days + (ex.days === 1 ? ' day' : ' days') : '');
     }
     return {
-      out: !s.signedIn, email: s.email || '', pro: !!s.pro, certName: (s.cert && s.cert.name) || '', certCode: (s.cert && s.cert.code) || '',
+      out: !s.signedIn, email: s.email || '', pro: !!s.pro, methodsRow: !!s.methodsRow, methods: s.methods || ['email'], certName: (s.cert && s.cert.name) || '', certCode: (s.cert && s.cert.code) || '',
       passPlanHtml: s.passPlanHtml || '', sync: !!g.sync && !!s.signedIn, examLabel: examLabel, goal: Number(s.goal) || 15, glanceGoal: Number(g.goal) || Number(s.goal) || 15,
       today: Number(g.today) || 0, review: s.review || { size: 5, topUp: false }, wrongCount: Number(s.wrongCount) || 0, still: !!s.still,
       backups: (s.backups || []).map(function (b) {
@@ -31,6 +31,7 @@
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     function svg(p, n) { return '<svg viewBox="0 0 24 24" aria-hidden="true" width="' + (n || 16) + '" height="' + (n || 16) + '" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; }
     var I = {
+      key: '<circle cx="8" cy="15" r="4"></circle><path d="M11 12l9-9M17 6l3 3M15 8l2 2"></path>',
       chev: '<path d="M9 6l6 6-6 6"></path>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path>',
       cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.8A3.6 3.6 0 0 1 17.5 18z"></path>', cal: '<rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path>',
       goal: '<circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="4"></circle>', today: '<path d="M4 19l5-6 4 3 7-9"></path>',
@@ -65,6 +66,7 @@
       h += '<div class="ist-group reveal"><div class="ist-row ist-who"><span class="ist-av" aria-hidden="true">' + e((m.email || '?').charAt(0).toUpperCase()) + '</span>'
         + '<span class="ist-rl ist-em">' + e(m.email) + '<span>Signed in</span></span><span class="ist-plan' + (m.pro ? ' pro">Pro' : '">Free') + '</span></div>'
         + row('cert', 'swap', 'Cert', null, e(m.certName))
+        + (m.methodsRow ? row('methods', 'key', 'Sign-in methods', null, '<span class="ist-mv">' + e(_iosStMethodsLabel(m.methods)) + '</span>') : '')   // Stage 5c
         + (m.pro ? '' : row('gopro', 'star', 'Go Pro', 'Unlimited questions and every cert', null, { cls: 'pro' }))
         + '</div>';
     }
@@ -110,6 +112,29 @@
   }
 
   // m = {certs: [{id, glyph, name, code, tier}], active, pro}
+  // Stage 5c (28 Oct): the account's sign-in methods. methods = providers the account has, e.g. ['email', 'apple'].
+  function _iosStMethodsLabel(methods) {
+    var on = methods || [], out = ['Email'];
+    if (on.indexOf('apple') >= 0) out.push('Apple');
+    if (on.indexOf('google') >= 0) out.push('Google');
+    return out.join(', ');
+  }
+  // m = {email, methods, apple, google (providers this app can add), err}
+  function _iosStMethodsSheetHtml(m) {
+    function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    var MAIL = '<svg viewBox="0 0 24 24" aria-hidden="true" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M3 7l9 6 9-6"></path></svg>';
+    var APPLE = '<svg viewBox="0 0 24 24" aria-hidden="true" width="17" height="17"><path fill="currentColor" d="M16.4 12.6c0-2 1.6-3 1.7-3.05-0.93-1.36-2.38-1.55-2.9-1.57-1.23-0.12-2.4 0.72-3.03 0.72-0.62 0-1.59-0.7-2.62-0.68-1.35 0.02-2.6 0.78-3.29 1.99-1.4 2.43-0.36 6.02 1.0 7.99 0.67 0.96 1.46 2.05 2.5 2.0 1.0-0.04 1.38-0.65 2.6-0.65 1.21 0 1.56 0.65 2.62 0.63 1.08-0.02 1.77-0.98 2.43-1.95 0.77-1.11 1.08-2.19 1.1-2.25-0.02-0.01-2.11-0.81-2.13-3.22zM14.5 6.6c0.55-0.67 0.92-1.6 0.82-2.53-0.79 0.03-1.76 0.53-2.33 1.2-0.51 0.59-0.96 1.54-0.84 2.45 0.88 0.07 1.79-0.45 2.35-1.12z"/></svg>';
+    var G = '<svg viewBox="0 0 24 24" aria-hidden="true" width="17" height="17"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.3z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#FBBC05" d="M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2L6.4 14z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.4L6.4 10C7.2 7.7 9.4 6 12 6z"/></svg>';
+    var on = m.methods || [], CONN = '<span class="ist-conn">Connected</span>';
+    function meth(icon, name, sub, right) { return '<div class="ist-meth"><span class="ist-mi">' + icon + '</span><span class="ist-mn">' + name + (sub ? '<span>' + e(sub) + '</span>' : '') + '</span>' + right + '</div>'; }
+    var rows = meth(MAIL, 'Email code', m.email, '<span class="ist-conn on">On</span>');
+    if (m.apple || on.indexOf('apple') >= 0) rows += meth(APPLE, 'Apple', null, on.indexOf('apple') >= 0 ? CONN : '<button type="button" class="ist-add" data-act="add-apple">Add</button>');
+    if (m.google || on.indexOf('google') >= 0) rows += meth(G, 'Google', null, on.indexOf('google') >= 0 ? CONN : '<button type="button" class="ist-add" data-act="add-google">Add</button>');
+    return '<div class="ist-grip"></div><h3 id="ist-sheet-title">Sign-in methods</h3><p>Any of these opens this account.</p><div class="ist-meths">' + rows + '</div>'
+      + (m.err ? '<p class="ist-merr" role="alert">' + e(m.err) + '</p>' : '')
+      + '<p class="ist-mnote">Signed up with Apple\'s Hide My Email? Add Apple here so both open this account.</p>';
+  }
+
   function _iosStCertSheetHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     var TICK = '<svg class="ist-tick" viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg>';
@@ -288,6 +313,44 @@
     _cal = { year: base ? parseInt(base[0], 10) : now.getFullYear(), month: base ? parseInt(base[1], 10) - 1 : now.getMonth(), selected: cur };
     _drawExam();
   };
+  // Stage 5c: the account's identities (cached; the row's value patches in place once known)
+  var _istMethods = null, _istMethodsAsked = false;
+  function _methodsFetch() {
+    var c = window.certanvilSupabase;
+    if (!c || !c.auth) return Promise.resolve(_istMethods || ['email']);
+    return c.auth.getUser().then(function (u) {
+      var ids = (u && u.data && u.data.user && u.data.user.identities) || [];
+      var list = ['email'];
+      ids.forEach(function (i) { if (i && i.provider && i.provider !== 'email' && list.indexOf(i.provider) < 0) list.push(i.provider); });
+      _istMethods = list;
+      var v = document.querySelector('#ios-settings .ist-mv'); if (v) v.textContent = _iosStMethodsLabel(list);
+      return list;
+    }, function () { return _istMethods || ['email']; });
+  }
+  window.iosSettings._methods = function () { if (!_istMethodsAsked) { _istMethodsAsked = true; _methodsFetch(); } return _istMethods || ['email']; };
+  window.iosSettings._methodsReset = function () { _istMethods = null; _istMethodsAsked = false; };
+  function _drawMethods(err) {
+    var N = window.caNative;
+    openSheet(_iosStMethodsSheetHtml({ email: (_state && _state.email) || '', methods: _istMethods || ['email'], err: err,
+      apple: !!(N && N.socialReady && N.socialReady('apple')), google: !!(N && N.socialReady && N.socialReady('google')) }), function (b) {
+      var a = b.getAttribute('data-act'); if (a !== 'add-apple' && a !== 'add-google') return;
+      var prov = a.slice(4), label = prov === 'apple' ? 'Apple' : 'Google', c = window.certanvilSupabase, S = window.iosSignIn;
+      if (!N || !N.social || !c || !S || !S._nonce) return;
+      b.disabled = true;
+      var n;
+      S._nonce().then(function (x) { n = x; return N.social(prov, { nonce: n.hashed }); }).then(function (r) {
+        return c.auth.linkIdentity({ provider: prov, token: r.idToken, nonce: n.raw }).then(function (res) {
+          var er = res && res.error;
+          if (!er) return _methodsFetch().then(function () { _drawMethods(); });
+          _drawMethods(er.code === 'identity_already_exists'
+            ? (prov === 'apple' ? 'That Apple ID already has its own CertAnvil account. To use it, sign out and continue with Apple.'
+                                : 'That Google account already has its own CertAnvil account. To use it, sign out and continue with Google.')
+            : 'Couldn\'t add ' + label + '. Try again.');
+        });
+      }, function (e) { if (e && e.cancelled) { b.disabled = false; return; } _drawMethods('Couldn\'t add ' + label + '. Try again.'); });
+    });
+  }
+  ON.methods = function () { _drawMethods(); _methodsFetch().then(function () { var sh = document.getElementById('ist-sheet'); if (sh && sh.classList.contains('open') && sh.querySelector('.ist-meths')) _drawMethods(); }); };
   ON.cert = function () {
     var certs = _call('getAvailableCerts') || [];
     openSheet(_iosStCertSheetHtml({ certs: certs, active: window.CURRENT_CERT || 'netplus', pro: !!(_state && _state.pro) }), function (b) {
@@ -368,7 +431,7 @@
     _repaint();
   });
 
-  window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml;
+  window._iosStModel = _iosStModel; window._iosStHtml = _iosStHtml; window._iosStMethodsSheetHtml = _iosStMethodsSheetHtml; window._iosStMethodsLabel = _iosStMethodsLabel;
   window._iosStCertSheetHtml = _iosStCertSheetHtml; window._iosStExamSheetHtml = _iosStExamSheetHtml;
   window.iosSettings = window.iosSettings || {};
   window.iosSettings.isPhone = isPhone;

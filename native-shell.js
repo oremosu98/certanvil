@@ -28,7 +28,43 @@
     var R = window.certanvilRouter, url = R && R.certHost ? R.certHost(certId) : '';
     try { return new URL(url).hostname; } catch (_) { return ''; }
   }
+  // Stage 5c (28 Oct): Sign in with Apple and Google through @capgo/capacitor-social-login (8.7.5). The Google client IDs
+  // are public (not secrets); empty means Google stays hidden. window.CA_SOCIAL_IDS overrides them (tests).
+  var SOCIAL = { googleIOS: '614075733544-jra264mi2kev9sshpr9pbf3fvhd00r7u.apps.googleusercontent.com',
+                 googleWeb: '614075733544-fvsfvvovt37tqu75pj8cf7a71ja2789v.apps.googleusercontent.com' };   // Google Cloud, 28 Oct
+  function socialIds() { return window.CA_SOCIAL_IDS || SOCIAL; }
+  var socialInit = null;
+  function socialPlugin() { return P.SocialLogin || null; }
+  function initSocial() {
+    if (socialInit) return socialInit;
+    // useProperTokenExchange: Apple's authorization code comes back as authorizationCode (the revoke needs it)
+    var ids = socialIds(), cfg = { apple: { clientId: 'com.certanvil.app', useProperTokenExchange: true } };
+    if (ids.googleIOS && ids.googleWeb) cfg.google = { iOSClientId: ids.googleIOS, iOSServerClientId: ids.googleWeb };
+    socialInit = Promise.resolve(socialPlugin().initialize(cfg));
+    return socialInit;
+  }
   window.caNative = {
+    // The plugin passes the nonce through untouched: callers send sha256(raw) here and the raw nonce to Supabase.
+    // Resolves { idToken, authorizationCode?, givenName?, familyName? }; rejects { cancelled: true } on a user cancel.
+    social: function (provider, opts) {
+      if (!socialPlugin()) return Promise.reject({ cancelled: false, message: 'unavailable' });
+      opts = opts || {};
+      var o = { scopes: opts.scopes || (provider === 'apple' ? ['name', 'email'] : ['email', 'profile']) };
+      if (opts.nonce) o.nonce = opts.nonce;
+      return initSocial().then(function () { return socialPlugin().login({ provider: provider, options: o }); }).then(function (res) {
+        var r = (res && res.result) || {}, pf = r.profile || {};
+        if (!r.idToken) throw { cancelled: false, message: 'no token' };
+        var code = r.authorizationCode || (provider === 'apple' && r.accessToken && r.accessToken.token) || undefined;   // legacy envelope
+        return { idToken: r.idToken, authorizationCode: code, givenName: pf.givenName || null, familyName: pf.familyName || null };
+      }, function (e) {
+        throw { cancelled: !!(e && e.code === 'USER_CANCELLED'), message: (e && e.message) || 'failed' };
+      });
+    },
+    socialReady: function (provider) {
+      if (!socialPlugin()) return false;
+      if (provider === 'google') { var ids = socialIds(); return !!(ids.googleIOS && ids.googleWeb); }
+      return provider === 'apple';
+    },
     // Resolves once every write is done, so the next page's launch check sees the new host.
     choose: function (certId, opts) {
       var locked = !!(opts && opts.locked);

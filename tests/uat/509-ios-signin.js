@@ -28,6 +28,18 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       st.indexOf('Did you mean <b>sam@gmail.com</b>?') >= 0 && /data-act="fix-yes"[^>]*>Yes, fix it</.test(st) && /data-act="fix-no"[^>]*>No, keep mine</.test(st)
       && st.indexOf('value="sam@gmial.com"') >= 0);
 
+    // Stage 5c: providers on the sign-in screen and the welcome line
+    const sp = run('_isiSignInHtml(__s)', { email: '', typo: null, apple: true, google: true });
+    const sperr = run('_isiSignInHtml(__s)', { email: '', typo: null, apple: true, google: false, providerErr: 'apple' });
+    test('sign-in: Apple first then Google when both are ready; the 5b look when neither',
+      sp.indexOf('data-act="apple"') > 0 && sp.indexOf('data-act="google"') > sp.indexOf('data-act="apple"') && !/data-act="apple"[^>]*hidden/.test(sp)
+      && sp.indexOf('>Continue with Google<') > 0 && s.indexOf('data-act="google"') < 0 && /data-act="apple"[^>]*hidden/.test(s));
+    test('sign-in: the provider failure line, verbatim',
+      sperr.indexOf("Apple sign-in didn't finish. Try again, or use your email.") >= 0 && sperr.indexOf('data-act="google"') < 0
+      && run('_isiSignInHtml(__s)', { apple: true, google: true, providerErr: 'google' }).indexOf("Google sign-in didn't finish. Try again, or use your email.") >= 0);
+    test('welcome: the line names only the ready providers',
+      run('_isiWelcomeHtml(__s)', { apple: true, google: true }).indexOf('Sign in with Apple, Google or email') >= 0
+      && run('_isiWelcomeHtml(__s)', { apple: true, google: false }).indexOf('Sign in with Apple or email') >= 0);
     const SG = (v) => run('_isiSuggest(__s)', v);
     const MAP = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gamil.com': 'gmail.com', 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
       'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'iclod.com': 'icloud.com', 'icoud.com': 'icloud.com' };

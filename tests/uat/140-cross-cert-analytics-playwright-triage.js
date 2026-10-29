@@ -419,8 +419,11 @@ test('v4.99.17 IndexHtml: auth-playtest-pill element present + hidden by default
   /<span class="auth-mode-pill" id="auth-playtest-pill" hidden>/.test(landingIndexAfterPatch));
 test('v4.99.17 IndexHtml: password input group present + hidden by default',
   /<div class="auth-input-group" id="auth-password-group" hidden>[\s\S]{0,300}type="password"/.test(landingIndexAfterPatch));
-test('v4.99.17 IndexHtml: magic-link-only elements wrapped in auth-magic-only',
-  /<div id="auth-magic-only">[\s\S]{0,800}auth-divider/.test(landingIndexAfterPatch));
+// Stage 5c (28 Oct): the "or" divider moved with the Apple/Google buttons into #auth-providers (above the email);
+// playtest mode hides that block too (landing/auth.js), so the guard checks both wrappers.
+test('v4.99.17 IndexHtml: magic-link-only elements wrapped in auth-magic-only (Stage 5c: providers + divider in #auth-providers, hidden in playtest)',
+  /<div id="auth-magic-only">/.test(landingIndexAfterPatch) && /<div class="auth-providers" id="auth-providers">[\s\S]{0,4000}auth-divider/.test(landingIndexAfterPatch)
+  && /getElementById\('auth-providers'\)[\s\S]{0,120}isPlaytest/.test(fs.readFileSync(path.join(ROOT, 'landing/auth.js'), 'utf8')));
 
 const landingStylesCss = fs.readFileSync(path.join(ROOT, 'landing/styles.css'), 'utf8');
 test('v4.99.17 LandingCss: .auth-mode-pill class defined',

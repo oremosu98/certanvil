@@ -783,3 +783,13 @@ html[data-theme] body .er-row.is-expanded>.er-form{flex:1 1 100%!important;}
 html[data-theme] body .er-row.is-expanded>.er-action-cluster{display:none!important;}
 /* Stage 5a (27 Oct): inside the iOS app (html.is-native, set by native-hide.js) no web purchase link shows (Apple 3.1.1). */
 html.is-native a[href*="pricing"],html.is-native a[href*="manage-subscription"]{display:none!important;}
+
+/* Stage 5c (28 Oct): inside the iOS app the web Apple/Google buttons would fail (Google refuses web views); the app has its own */
+html.is-native #auth-providers{display:none!important}
+/* Stage 5c: the provider buttons are live (the base .auth-oauth-btn was the disabled "Soon" style); Apple is black, first */
+html[data-theme] body #auth-providers .auth-oauth-btn{opacity:1;cursor:pointer;font-size:14px;padding:12px 14px;transition:transform .15s cubic-bezier(0.16,1,0.3,1),border-color .2s}
+html[data-theme] body #auth-providers .auth-oauth-btn:active{transform:scale(.985)}
+html[data-theme] body #auth-providers .auth-oauth-apple{background:#000;color:#fff;border-color:#000}
+html[data-theme="dark"] body #auth-providers .auth-oauth-apple{background:#fff;color:#000;border-color:#fff}
+@media (hover:hover) and (pointer:fine){html[data-theme] body #auth-providers .auth-oauth-btn:not(.auth-oauth-apple):hover{border-color:var(--dg-text-2)}}
+@media (prefers-reduced-motion:reduce){html[data-theme] body #auth-providers .auth-oauth-btn{transition:none}}

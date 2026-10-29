@@ -255,6 +255,8 @@
     if (authMagicOnly) {
       if (isPlaytest) authMagicOnly.setAttribute('hidden', '');
       else authMagicOnly.removeAttribute('hidden');
+      var prov = document.getElementById('auth-providers');
+      if (prov) { if (isPlaytest) prov.setAttribute('hidden', ''); else prov.removeAttribute('hidden'); }
     }
     // v4.99.22 — auth-cta-secondary (the prominent password-fallback button)
     // lives outside auth-magic-only so it gets toggled explicitly here.
@@ -390,6 +392,33 @@
   // .certanvil.com, and the SIGNED_IN listener below returns them to `return=`. shouldCreateUser defaults to true.
   function sendCode(email) {
     return supabase.auth.signInWithOtp({ email: email });
+  }
+
+  // ── Apple / Google (Stage 5c): Supabase's redirect flow, back to THIS page with return= in the query ──
+  // The landing exchanges the code (detectSessionInUrl, PKCE) and the SIGNED_IN listener below follows return=.
+  // via= names the provider so an error that comes back can say which one.
+  function startOAuth(provider) {
+    var ret = pendingReturnUrl || '';
+    var redirectTo = window.location.origin + window.location.pathname + '?action=signin&return=' + encodeURIComponent(ret) + '&via=' + provider;
+    clearAuthError();
+    return supabase.auth.signInWithOAuth({ provider: provider, options: { redirectTo: redirectTo } }).then(function (r) {
+      if (r && r.error) showAuthError(providerFailed(provider));
+    }, function () { showAuthError(providerFailed(provider)); });
+  }
+  function providerFailed(provider) {
+    return (provider === 'google' ? 'Google' : 'Apple') + " sign-in didn't finish. Try again, or use your email.";
+  }
+  ['apple', 'google'].forEach(function (p) {
+    var b = document.getElementById('auth-' + p);
+    if (b) b.addEventListener('click', function () { startOAuth(p); });
+  });
+  // A provider error comes back on the query; show it once the modal is open.
+  function showOAuthErrorFromQuery() {
+    try {
+      var q = new URLSearchParams(window.location.search);
+      if (!q.get('error') && !q.get('error_description')) return;
+      showAuthError(providerFailed(q.get('via')));
+    } catch (_) {}
   }
 
   // ── Topbar render: signed-in vs signed-out ──────────────────────────────
@@ -1021,7 +1050,7 @@
           if (signinRequested) {
             // Defer one tick so the modal-open animation doesn't race the
             // initial paint.
-            setTimeout(function () { openAuthModal(); }, 50);
+            setTimeout(function () { openAuthModal(); showOAuthErrorFromQuery(); }, 50);
           }
         }
       })
@@ -1039,6 +1068,9 @@
       // pending return URL (from `?action=signin&return=…`), bounce them
       // there now. This handles the case where the magic link came back to
       // landing, and (Stage 5b) every code sign-in, which never leaves this page.
+      // Stage 5c (review fix): only ever bounce to certanvil.com or its subdomains. return= arrives on the query
+      // and now survives an Apple/Google round trip, so an unchecked one would send a real sign-in anywhere.
+      if (pendingReturnUrl && !returnUrlSharesApexCookie(pendingReturnUrl)) pendingReturnUrl = null;
       if (pendingReturnUrl) {
         var ret = pendingReturnUrl;
         pendingReturnUrl = null;
