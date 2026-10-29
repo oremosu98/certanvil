@@ -1359,8 +1359,8 @@
 
   // ── GAP-6 (v7.45.0): in-app account deletion (Apple 5.1.1(v)) ───────────
   // Settings danger-zone row, signed-in users only. Same 7-day-grace
-  // mechanism as the /account danger zone: stamps
-  // profiles.metadata.deletion_requested_at, then signs the user out.
+  // mechanism as the /account danger zone: request_account_deletion() stamps
+  // profiles.metadata.deletion_requested_at on the server, then every session is signed out.
   // Mockup: onboarding-account-deletion.html (row → honest confirm sheet
   // with type-your-email → deleting state → goodbye).
 
@@ -1380,15 +1380,10 @@
     var apple = (S && S._hasApple && S._appleRevoke) ? sb.auth.getUser().then(function (u) {
       return S._hasApple(u && u.data && u.data.user) ? S._appleRevoke() : null;
     }).catch(function () { return null; }) : Promise.resolve(null);
-    // Read metadata fresh so we don't clobber keys written since page load
-    // (cloud-store debounce flushes into the same jsonb column).
-    apple.then(function () { return sb.from('profiles').select('metadata').eq('id', userId).single(); }).then(function (pr) {
-      var meta = (pr && pr.data && pr.data.metadata) || {};
-      var nextMeta = Object.assign({}, meta, { deletion_requested_at: new Date().toISOString() });
-      return sb.from('profiles').update({ metadata: nextMeta }).eq('id', userId);
-    }).then(function (r) {
-      if (r && r.error) throw r.error;
-      return sb.auth.signOut();
+    // The server stamps the mark (and sees the whole row, so nothing is clobbered), then every device is signed out.
+    apple.then(function () { return sb.rpc('request_account_deletion'); }).then(function (r) {
+      if (!r || r.error || !r.data) throw (r && r.error) || new Error('no profile');
+      return sb.auth.signOut({ scope: 'global' });
     }).then(function () {
       if (card) {
         card.innerHTML =
@@ -1409,6 +1404,36 @@
       }
     });
   }
+
+  // Signing back in within the grace period makes the DB trigger set metadata.deletion_cancelled_at.
+  // Tell the person once, then clear the flag so no surface repeats it.
+  var _noticeWired = false, _noticeShown = false;
+  function _deletionNotice() {
+    var sb = window.certanvilSupabase;
+    if (_noticeShown || !sb) return;
+    sb.auth.getSession().then(function (r) {
+      var uid = r && r.data && r.data.session && r.data.session.user && r.data.session.user.id;
+      if (!uid || _noticeShown) return null;
+      return sb.from('profiles').select('metadata').eq('id', uid).maybeSingle().then(function (pr) {
+        var meta = pr && pr.data && pr.data.metadata;
+        if (_noticeShown || !meta || !meta.deletion_cancelled_at) return null;
+        if (typeof window.showToast !== 'function') return null;
+        _noticeShown = true;
+        window.showToast("Welcome back. We've cancelled the deletion and your account is safe.", 'info');
+        return sb.rpc('clear_deletion_notice');
+      });
+    }).catch(function () {});
+  }
+  function _wireDeletionNotice() {
+    var sb = window.certanvilSupabase;
+    if (!sb || !sb.auth) { setTimeout(_wireDeletionNotice, 100); return; }
+    if (_noticeWired) return;
+    _noticeWired = true;
+    sb.auth.onAuthStateChange(function (ev, session) {
+      if (session && (ev === 'SIGNED_IN' || ev === 'INITIAL_SESSION')) setTimeout(_deletionNotice, 0);
+    });
+  }
+  _wireDeletionNotice();
 
   // ── Sidebar collapse ──
   const STORAGE_SIDEBAR_COLLAPSED = 'nplus_sidebar_collapsed';
@@ -2384,6 +2409,7 @@
   window._topbarStartClock           = _topbarStartClock;
   window.syncSettingsExamDate        = syncSettingsExamDate;
   window._confirmDeleteAccount       = _confirmDeleteAccount;
+  window._deletionNotice             = _deletionNotice;
   window.toggleSidebarCollapsed      = toggleSidebarCollapsed;
   window._initSidebarCollapsed       = _initSidebarCollapsed;
   window.renderHeroV2                = renderHeroV2;
