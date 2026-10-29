@@ -384,7 +384,8 @@
     busy = true;
     function failed() { busy = false; show('signin', { providerErr: name }); }
     var n;
-    return _isiNonce().then(function (x) { n = x; return N.social(name, { nonce: n.hashed }); }).then(function (r) {
+    // Promise.resolve().then: a nonce that throws (no crypto.subtle) reaches the failure path below and frees busy
+    return Promise.resolve().then(_isiNonce).then(function (x) { n = x; return N.social(name, { nonce: n.hashed }); }).then(function (r) {
       // Only now, with a token in hand, is the phone's pick set aside (a cancelled sheet never touches it).
       return new Promise(function (res) { withClient(res, function () { res(null); }); }).then(function (c) {
         if (!c) { failed(); return; }

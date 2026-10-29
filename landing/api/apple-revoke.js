@@ -3,7 +3,7 @@
 // here with the user's Supabase access token. We check the caller, exchange the code with a client secret minted
 // from the .p8 key, refuse unless the code's Apple ID is the account's own Apple identity, then revoke the refresh
 // token. Nothing is stored. The deletion itself never waits on this: the app schedules it whatever we answer.
-// Env: APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (PEM, PKCS#8), SUPABASE_URL, SUPABASE_ANON_KEY.
+// Env: APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (PEM, PKCS#8), SUPABASE_URL, SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY (service role as the last fallback).
 import { logServerError } from './_lib/log-server-error.js';
 
 export const config = { runtime: 'edge' };
@@ -77,7 +77,7 @@ export default async function handler(req) {
 
   // Who is asking, and which Apple identity is theirs (the caller's own token returns their identities).
   const ures = await fetch(process.env.SUPABASE_URL + '/auth/v1/user', {
-    headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
+    headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
   }).catch(() => null);
   if (!ures || ures.status !== 200) { log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }
   const user = await ures.json().catch(() => null);

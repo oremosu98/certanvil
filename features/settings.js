@@ -912,6 +912,13 @@
           '</div>' +
         '</div>';
       document.body.appendChild(modal);
+      // Stage 5c: the stored session's identities can be stale; the deletion reads a fresh getUser, so the note does too.
+      var S5 = window.iosSignIn;
+      if (S5 && S5._hasApple) sb.auth.getUser().then(function (u) {
+        var has = S5._hasApple(u && u.data && u.data.user), el = modal.querySelector('.dla-apple'), after = modal.querySelector('.dlpb-pro-line');
+        if (has && !el && after) after.insertAdjacentHTML('afterend', '<p class="dlpb-pro-line dla-apple">You sign in with Apple, so Apple will ask you to confirm. That also stops CertAnvil using your Apple ID.</p>');
+        else if (!has && el) el.remove();
+      }).catch(function () {});
 
       var input = document.getElementById('dla-email');
       var confirmBtn = document.getElementById('dla-confirm');

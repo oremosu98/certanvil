@@ -46,7 +46,9 @@
     storage:{ from:function(){ return { upload:function(){return Promise.resolve({data:null,error:null});}, download:function(){return Promise.resolve({data:null,error:null});} }; } },
     auth:{
       getSession:function(){ return Promise.resolve({data:{session:session},error:null}); },
-      getUser:function(){ return Promise.resolve({data:{user:session?user:null},error:null}); },
+      // Stage 5c minors: getUserDelay (ms) holds getUser back; freshIdentities adds providers that only getUser sees (a stale stored session).
+      getUser:function(){ var u=session?user:null; if(u && F.freshIdentities){ u=Object.assign({},user,{identities:user.identities.concat(F.freshIdentities.map(function(p){ return { provider:p, identity_id:'id-'+p }; }))}); }
+        return new Promise(function(r){ setTimeout(function(){ r({data:{user:u},error:null}); }, F.getUserDelay||0); }); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
       signOut:function(){ window.__fakeLog.push('auth:signOut'); return Promise.resolve({error:null}); },
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
@@ -57,6 +59,7 @@
         return Promise.resolve({data:{provider:o.provider,url:'about:blank'},error:null}); },
       // Stage 5c: Settings → Sign-in methods. __FAKE_SB.linkError: 'identity_already_exists' | 'other'.
       linkIdentity:function(o){ o=o||{}; try{ var c=JSON.parse(localStorage.getItem('__linkCalls')||'[]'); c.push({provider:o.provider,token:o.token,nonce:o.nonce||null}); localStorage.setItem('__linkCalls',JSON.stringify(c)); }catch(e){}
+        if (F.linkReject) return Promise.reject(new Error('network'));
         if (F.linkError==='identity_already_exists') return Promise.resolve({data:null,error:{message:'Identity is already linked to another user',code:'identity_already_exists',status:422,name:'AuthApiError'}});
         if (F.linkError) return Promise.resolve({data:null,error:{message:'link failed',status:500,name:'AuthApiError'}});
         user.identities.push({ provider:o.provider, identity_id:'id-'+o.provider }); listeners.forEach(function(cb){ try{ cb('USER_UPDATED',session); }catch(e){} });

@@ -100,4 +100,14 @@ await t('CORS: a cert subdomain is allowed; other origins are not', async () => 
   assert.equal(dev.headers.get('access-control-allow-origin'), 'http://localhost:3140');
 });
 
-console.log('apple-revoke: ' + n + '/7 passed');
+await t('the apikey falls back to SUPABASE_PUBLISHABLE_KEY (the name its sibling endpoints use)', async () => {
+  const anon = process.env.SUPABASE_ANON_KEY;
+  delete process.env.SUPABASE_ANON_KEY; process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_x';
+  try {
+    stub();
+    await handler(req({ code: 'c' }));
+    assert.equal(calls.find((c) => c.url.endsWith('/auth/v1/user')).init.headers.apikey, 'sb_publishable_x');
+  } finally { process.env.SUPABASE_ANON_KEY = anon; delete process.env.SUPABASE_PUBLISHABLE_KEY; }
+});
+
+console.log('apple-revoke: ' + n + '/8 passed');

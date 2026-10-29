@@ -314,7 +314,7 @@
     _drawExam();
   };
   // Stage 5c: the account's identities (cached; the row's value patches in place once known)
-  var _istMethods = null, _istMethodsAsked = false;
+  var _istMethods = null, _istMethodsAsked = false, _istLinking = false;   // _istLinking: an Add is in flight; the late redraw waits
   function _methodsFetch() {
     var c = window.certanvilSupabase;
     if (!c || !c.auth) return Promise.resolve(_istMethods || ['email']);
@@ -336,21 +336,23 @@
       var a = b.getAttribute('data-act'); if (a !== 'add-apple' && a !== 'add-google') return;
       var prov = a.slice(4), label = prov === 'apple' ? 'Apple' : 'Google', c = window.certanvilSupabase, S = window.iosSignIn;
       if (!N || !N.social || !c || !S || !S._nonce) return;
-      b.disabled = true;
-      var n;
-      S._nonce().then(function (x) { n = x; return N.social(prov, { nonce: n.hashed }); }).then(function (r) {
+      b.disabled = true; _istLinking = true;
+      var n, fail = function () { _istLinking = false; _drawMethods('Couldn\'t add ' + label + '. Try again.'); };
+      // Promise.resolve().then: a nonce that throws (no crypto.subtle) lands in the handler below, not a dead button
+      Promise.resolve().then(S._nonce).then(function (x) { n = x; return N.social(prov, { nonce: n.hashed }); }).then(function (r) {
         return c.auth.linkIdentity({ provider: prov, token: r.idToken, nonce: n.raw }).then(function (res) {
+          _istLinking = false;
           var er = res && res.error;
           if (!er) return _methodsFetch().then(function () { _drawMethods(); });
           _drawMethods(er.code === 'identity_already_exists'
             ? (prov === 'apple' ? 'That Apple ID already has its own CertAnvil account. To use it, sign out and continue with Apple.'
                                 : 'That Google account already has its own CertAnvil account. To use it, sign out and continue with Google.')
             : 'Couldn\'t add ' + label + '. Try again.');
-        });
-      }, function (e) { if (e && e.cancelled) { b.disabled = false; return; } _drawMethods('Couldn\'t add ' + label + '. Try again.'); });
+        }, fail);
+      }, function (e) { if (e && e.cancelled) { _istLinking = false; b.disabled = false; return; } fail(); });
     });
   }
-  ON.methods = function () { _drawMethods(); _methodsFetch().then(function () { var sh = document.getElementById('ist-sheet'); if (sh && sh.classList.contains('open') && sh.querySelector('.ist-meths')) _drawMethods(); }); };
+  ON.methods = function () { _drawMethods(); _methodsFetch().then(function () { var sh = document.getElementById('ist-sheet'); if (!_istLinking && sh && sh.classList.contains('open') && sh.querySelector('.ist-meths')) _drawMethods(); }); };
   ON.cert = function () {
     var certs = _call('getAvailableCerts') || [];
     openSheet(_iosStCertSheetHtml({ certs: certs, active: window.CURRENT_CERT || 'netplus', pro: !!(_state && _state.pro) }), function (b) {
