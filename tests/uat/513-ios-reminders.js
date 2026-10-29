@@ -13,6 +13,11 @@ const { fs, path, ROOT, test, results } = require('./_context');
     const ns = read('native-shell.js');
     test('native-shell.js defines caNative.reminders, openAppSettings and the app-active event',
       /\breminders: reminders\b/.test(ns) && /var reminders = \{/.test(ns) && /openAppSettings: function/.test(ns) && /ca:app-active/.test(ns));
+    // Task 3: the planner suite, run in a real UK time zone so the clock-change weeks are tested
+    const { spawnSync } = require('child_process');
+    const pr = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/reminders-planner.test.mjs')], { encoding: 'utf8', timeout: 30000, env: Object.assign({}, process.env, { TZ: 'Europe/London' }) });
+    test('reminder planner suite passes in Europe/London (' + ((pr.stdout || '').match(/reminders-planner: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
+      pr.status === 0 && /reminders-planner: (\d+)\/\1 passed/.test(pr.stdout || ''));
   } catch (err) {
     test('Stage 5d reminders: block (threw)', false);
     results.errors.push('513 ios-reminders block threw: ' + err.message);
