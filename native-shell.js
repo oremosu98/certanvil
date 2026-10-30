@@ -97,6 +97,8 @@
       return Promise.all([pset('chosenCert', certId), pset('lastCertHost', hostOf(certId)), locked ? pset('lockedCert', certId) : pdel('lockedCert')])
         .then(function () {});
     },
+    // F3: "Back" from the first-run account screen returns to the picker with nothing chosen
+    unchoose: function () { return Promise.all([pdel('chosenCert'), pdel('lockedCert'), pdel('lastCertHost')]).then(function () {}); },
     // Stage 5b: read a one-time key and remove it (the lock toast)
     take: function (k) { return pget(k).then(function (v) { if (v) pdel(k); return v; }); },
     get: function (k) { return pget(k); },   // Stage 5d: the reminders' settings
@@ -148,13 +150,53 @@
     })();
   }
   function wall(locked) { if (window._certLock && window._certLock.showWall) window._certLock.showWall(locked); }
+  // F3: the app opens on the picker. requireAccount decides whether a signed-out person must see the account screen.
+  // Pure: only a settled, online, session-less, signed-out launch qualifies. Offline never counts (a signed-in person
+  // with no signal reads as signed out until auth settles).
+  function settledSignedOut(env) { return !!env && env.flag === false && !env.hasSession && !env.offline; }
+  window._nsSettledSignedOut = settledSignedOut;
+  function hasStoredSession() {
+    try { for (var i = 0; i < localStorage.length; i++) { if (/^sb-.*-auth-token$/.test(localStorage.key(i) || '')) return true; } } catch (_) {}
+    return false;
+  }
+  function isOffline() { return document.documentElement.classList.contains('ifr-offline') || navigator.onLine === false; }
+  function historyEmpty() {
+    try {
+      if (typeof STORAGE !== 'object' || !STORAGE.HISTORY) return true;
+      var a = JSON.parse(localStorage.getItem(STORAGE.HISTORY) || '[]');
+      return !(Array.isArray(a) && a.length);
+    } catch (_) { return true; }
+  }
+  function installBack() {
+    var S = window.iosSignIn;
+    if (!S || S._backToPicker) return;
+    S._backToPicker = function () {
+      window.caNative.unchoose().then(function () {
+        try { if (typeof STORAGE === 'object') localStorage.removeItem(STORAGE.FREE_CERT_ID); } catch (_) {}
+        S.close();
+        if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
+      });
+    };
+  }
+  window.caNative.requireAccount = function (from) {
+    if (!window.CA_NATIVE) return;
+    installBack();
+    whenSignedOut(function () {
+      var S = window.iosSignIn;
+      if (!S || !S.open || document.documentElement.classList.contains('isi-open')) return;
+      if (!settledSignedOut({ flag: window._certanvilSignedIn, hasSession: hasStoredSession(), offline: isOffline() })) return;
+      var name = window.iosFirstRun && window.iosFirstRun.certName ? window.iosFirstRun.certName() : null;
+      S.open({ from: from, cert: name, back: from === 'firstrun' && historyEmpty() });
+    });
+  };
   function onReady() {
     var here = window.CURRENT_CERT || null;
+    installBack();
     window.caNative.chosen().then(function (c) {
       if (!c.chosenCert) {
-        // Stage 5b: June's welcome first (Get started opens the picker); a pending code screen keeps its place.
+        // F3: straight to the exam picker. A pending sign-in code keeps its place (ios-signin.js restores it).
         var S = window.iosSignIn;
-        if (S && S.welcome) { if (!(S._pending && S._pending())) S.welcome(); return; }
+        if (S && S._pending && S._pending()) return;
         if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
         return;
       }
@@ -165,6 +207,7 @@
         try { if (typeof STORAGE === 'object' && !localStorage.getItem(STORAGE.FREE_CERT_ID)) localStorage.setItem(STORAGE.FREE_CERT_ID, here); } catch (_) {}
       });
       if (OURS.test(host) && host !== 'certanvil.com') pset('lastCertHost', host);
+      window.caNative.requireAccount(historyEmpty() ? 'firstrun' : 'signedout');
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady); else setTimeout(onReady, 0);

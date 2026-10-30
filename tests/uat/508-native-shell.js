@@ -1,6 +1,6 @@
 // Stage 5a (27 Oct): the iOS native shell (ADR-004). The Capacitor config, the iPhone-only project, the build
 // exclusions, and native-shell.js staying a no-op on the website.
-const { fs, path, ROOT, test, results } = require('./_context');
+const { fs, path, ROOT, test, results, vm, _fnBody } = require('./_context');
 (function () {
   console.log('\n\x1b[1m── Stage 5a native shell ──\x1b[0m');
   try {
@@ -42,6 +42,25 @@ const { fs, path, ROOT, test, results } = require('./_context');
     const all = fs.readdirSync(path.join(ROOT, 'landing')).filter((f) => /\.html$/.test(f)).map((f) => [f, read('landing/' + f)]);
     const missing = all.filter(([, h]) => /href="dg-system\.css/.test(h) && !/<script src="native-hide\.js"><\/script>/.test(h.slice(0, h.indexOf('</head>')))).map(([f]) => f);
     test('every landing page that loads dg-system.css also loads native-hide.js (no pricing link anywhere in the app)', missing.length === 0);
+    // F3 Task 3: the app opens on the picker; requireAccount guards a signed-out launch, never an offline signed-in one
+    const sfn = _fnBody(ns, 'settledSignedOut');
+    const sctx = vm.createContext({});
+    vm.runInContext(sfn + '\nthis.f = settledSignedOut;', sctx);
+    const SS = (e) => sctx.f(e);
+    test('_nsSettledSignedOut: true only when the flag is false, no stored session and online',
+      !!sfn && SS({ flag: false }) === true && SS({ flag: false, hasSession: true }) === false && SS({ flag: false, offline: true }) === false
+      && SS({ flag: true }) === false && SS({ flag: undefined }) === false && /window\._nsSettledSignedOut\s*=\s*settledSignedOut/.test(ns));
+    const ready = _fnBody(ns, 'onReady');
+    test('onReady with no chosenCert opens the picker directly (no S.welcome) and keeps the pending-code guard',
+      !!ready && !/welcome/.test(ready) && /_pending/.test(ready) && /iosFirstRun\.picker|IFR\.picker|window\.iosFirstRun\.picker/.test(ready)
+      && ready.indexOf('_pending') < ready.indexOf('.picker('));
+    test('onReady with a chosenCert runs requireAccount only after the lockedCert holdLock branch has returned',
+      ready.indexOf('holdLock(c.lockedCert); return;') > 0 && ready.indexOf("caNative.requireAccount(") > ready.indexOf('holdLock(c.lockedCert); return;'));
+    test('requireAccount: native only, not twice (isi-open), cert name from iosFirstRun.certName, back only on firstrun with empty history; unchoose + _backToPicker defined',
+      /caNative\.requireAccount\s*=\s*function/.test(ns) && /isi-open/.test(ns) && /iosFirstRun\.certName/.test(ns) && /sb-\.\*-auth-token/.test(ns)
+      && /ifr-offline/.test(ns) && /unchoose: function/.test(ns) && /_backToPicker\s*=/.test(ns) && /STORAGE\.HISTORY/.test(ns) && /STORAGE\.FREE_CERT_ID/.test(ns));
+    const fr = read('features/ios-firstrun.js');
+    test('iosFirstRun.certName returns the cert name', /IFR\.certName\s*=\s*function\s*\(\)\s*\{\s*return certInfo\(\)\.name;\s*\}/.test(fr));
   } catch (err) {
     test('Stage 5a native shell: block (threw)', false);
     results.errors.push('508 native-shell block threw: ' + err.message);
