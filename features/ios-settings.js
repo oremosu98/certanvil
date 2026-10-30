@@ -41,6 +41,7 @@
       trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>',
       doc: '<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4M10 12h5M10 16h5"></path>', shield: '<path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"></path>',
       bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path>',
+      home: '<path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path>',   // F3: the Home tab's own glyph
       theme: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
     };
     function row(act, icon, label, sub, val, o) {
@@ -78,7 +79,8 @@
       + row('exam', 'cal', 'Exam date', null, e(m.examLabel))
       + (m.remRow ? row('reminders', 'bell', 'Reminders', null, '<span class="ist-rmv">' + e(m.remLabel) + '</span>') : '')   // Stage 5d
       + row(null, 'goal', 'Daily goal', null, m.glanceGoal + ' a day')
-      + row(null, 'today', 'Today', null, m.today + ' of ' + m.glanceGoal) + '</div>';
+      + row(null, 'today', 'Today', null, m.today + ' of ' + m.glanceGoal)
+      + (m.out ? '' : row('tour', 'home', 'Replay the tour', 'Four quick tips on Home', null)) + '</div>';   // F3: signed in only, like the tour
     h += '<div class="ist-card reveal"><div class="ist-k">Daily goal' + (m.pro ? '' : '<span class="ist-lock">' + svg(I.lock, 10) + 'Pro</span>') + '</div>'
       + '<div class="ist-big"><b>' + (m.pro ? m.goal : 15) + '</b><span>questions a day</span></div>'
       + (m.pro ? seg('goal-pick', [10, 20, 30, 50], m.goal) + '<button type="button" class="ist-pri ist-wide" data-act="goal-save">Save</button><p class="ist-note">This sets the Today card on Home. Pick a number you can hit every day.</p>'
@@ -341,6 +343,17 @@
       }
     }
     else _call('showToast', 'Couldn’t sign out here. Reload the app and try again.', 'error');   // never a silent tap
+  };
+  // F3: back to Home through the Home tab (it re-renders Home), then the tour from tip 1 once Home is drawn
+  ON.tour = function () {
+    var done = false, go = function () {
+      if (done) return; done = true; window.removeEventListener('ca:home-shown', go);
+      if (window.iosTour) window.iosTour.start();
+    };
+    window.addEventListener('ca:home-shown', go);
+    setTimeout(function () { if (!done) { done = true; window.removeEventListener('ca:home-shown', go); } }, 3000);
+    var t = document.querySelector('#lift-tabbar .lift-tab[data-page="setup"]');
+    if (t) t.click(); else _call('showPage', 'setup');
   };
   ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
   ON['goal-pick'] = function (b) {

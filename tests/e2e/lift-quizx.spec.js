@@ -26,7 +26,7 @@ async function boot(page, viewport, run) {
   await page.setViewportSize(viewport);
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
-    try { localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); localStorage.removeItem('nplus_gauntlet_free_count'); } catch (_) {}
+    try { localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); localStorage.setItem('ca_tour_seen', '1'); localStorage.removeItem('nplus_gauntlet_free_count'); } catch (_) {}
   });
   await page.goto('/');
   await page.waitForLoadState('load');

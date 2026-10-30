@@ -53,8 +53,8 @@ async function boot(page, opts) {
   await page.addInitScript(([prefs, seed]) => {
     if (!sessionStorage.getItem('seeded')) {
       sessionStorage.setItem('seeded', '1');
-      localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1');
-      if (prefs) localStorage.setItem('__prefs', JSON.stringify(prefs));
+      localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); localStorage.setItem('ca_tour_seen', '1');
+      if (prefs) localStorage.setItem('__prefs', JSON.stringify(Object.assign({ tourSeen: '1' }, prefs)));   // F3: the first-Home tour is lift-f3's
       Object.keys(seed || {}).forEach((k) => localStorage.setItem(k, seed[k]));
     }
   }, [opts.prefs || { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' }, opts.seed || {}]);

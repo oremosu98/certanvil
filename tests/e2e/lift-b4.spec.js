@@ -17,7 +17,7 @@ async function boot(page, viewport, opts) {
   }
   await page.addInitScript(() => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
-    try { localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); } catch (_) {}
+    try { localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); localStorage.setItem('ca_tour_seen', '1'); } catch (_) {}
   });
   await page.goto('/');
   await page.waitForLoadState('load');

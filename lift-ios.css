@@ -3129,3 +3129,41 @@ html.isi-open { overflow: hidden; }
 #ist-sheet .ist-rem .ist-rl { flex: 1 1 0; min-width: 0; }
 #ist-sheet .ist-rem .ist-rv { flex: 0 0 auto; font: 600 13px/1.2 Inter, sans-serif; text-align: right; }
 @media (prefers-reduced-motion: reduce) { #ist-sheet .ist-rem .ist-sw, #ist-sheet .ist-rem .ist-sw::after { transition: none; } }
+
+/* F3 (30 Oct): the first-Home tour (features/ios-tour.js), lifted from mockups/cert-ios-home.html ?v=tour. A ring cuts
+   the element out of a dimmed screen; the bubble sits below it, or above when it would cross the tabs. Fixed to the
+   real viewport. BRAND §6 timings on --ios-ease: overlay in 240ms / out 180ms, bubble enter 220ms from
+   translateY(6px) scale(0.96), step change out 120ms (translateY(4px) scale(0.98) + 2px blur) / in 220ms.
+   Reduced motion keeps the fades only. */
+#ios-tour { position: fixed; inset: 0; z-index: 9000; opacity: 0; pointer-events: none; -webkit-tap-highlight-color: transparent; transition: opacity .18s var(--ios-ease); }
+#ios-tour[hidden] { display: none; }
+#ios-tour.open { opacity: 1; pointer-events: auto; transition-duration: .24s; }
+#ios-tour .tour-ring { position: fixed; border-radius: 18px; pointer-events: none;
+  box-shadow: 0 0 0 1.5px color-mix(in oklab, var(--accent) 70%, transparent), 0 0 0 9999px color-mix(in oklab, #07080b 58%, transparent);
+  transition: opacity .12s var(--ios-ease); }
+#ios-tour .tour-tip { position: fixed; box-sizing: border-box; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 14px 12px 16px; box-shadow: 0 18px 40px -22px rgba(0,0,0,0.55); transform-origin: var(--tip-ox, 50%) top;
+  transition: opacity .22s var(--ios-ease), transform .22s var(--ios-ease), filter .22s var(--ios-ease); }
+#ios-tour .tour-tip.above { transform-origin: var(--tip-ox, 50%) bottom; }
+#ios-tour .tour-tip::before { content: ""; position: absolute; left: calc(var(--tip-ox, 50%) - 7px); top: -7px; width: 12px; height: 12px; background: var(--surface);
+  border-left: 1px solid var(--border); border-top: 1px solid var(--border); transform: rotate(45deg); border-top-left-radius: 3px; }
+#ios-tour .tour-tip.above::before { top: auto; bottom: -7px; transform: rotate(225deg); }
+#ios-tour.stepping .tour-tip, #ios-tour.stepping .tour-ring { opacity: 0; transition-duration: .12s; }
+#ios-tour.stepping .tour-tip { transform: translateY(4px) scale(0.98); filter: blur(2px); }
+#ios-tour.entering .tour-tip { opacity: 0; transform: translateY(6px) scale(0.96); }
+#ios-tour .tt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#ios-tour .tt-count { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
+html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright); }
+#ios-tour .tt-x { width: 44px; height: 44px; margin: -12px -10px -12px 0; padding: 0; display: grid; place-items: center; border: none; background: none; cursor: pointer; color: var(--text-dim); transition: transform .15s var(--ios-ease); }
+#ios-tour .tt-x svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+#ios-tour .tt-x:active { transform: scale(0.97); }
+#ios-tour .tt-h { font-family: Fraunces, Georgia, serif; font-weight: 600; font-size: 18px; line-height: 1.2; letter-spacing: -0.01em; text-transform: none; margin: 6px 0 5px; padding: 0; color: var(--text); }   /* the app's global h3 is uppercase */
+#ios-tour .tt-p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-mid); }
+#ios-tour .tt-p b { color: var(--text); font-weight: 650; }
+#ios-tour .tt-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
+#ios-tour .tt-next { min-height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+#ios-tour .tt-next:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  #ios-tour .tour-tip, #ios-tour.stepping .tour-tip, #ios-tour.entering .tour-tip { transform: none; filter: none; }
+  #ios-tour .tt-x:active, #ios-tour .tt-next:active { transform: none; }
+}

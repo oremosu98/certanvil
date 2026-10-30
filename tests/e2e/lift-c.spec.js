@@ -21,7 +21,7 @@ async function boot(page, viewport, opts) {
   await page.addInitScript((seed) => {
     if (sessionStorage.getItem('seeded')) return; sessionStorage.setItem('seeded', '1');
     try {
-      localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1');
+      localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1'); localStorage.setItem('ca_tour_seen', '1');
       Object.keys(seed || {}).forEach((k) => localStorage.setItem(k, seed[k]));
     } catch (_) {}
   }, opts.seed || {});
