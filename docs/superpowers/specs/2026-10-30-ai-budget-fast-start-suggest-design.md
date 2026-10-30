@@ -48,8 +48,7 @@ The founder approved all three on 30 Oct. They ship in the bundle, on the gated 
     Engineer. Each row has a badge, the name, "Vendor · code" and a tick ring.
   - The button counts the picks ("Send 2 suggestions"), or reads "Pick at least one". Under it:
     "Only we see these. One vote per exam."
-  - Thanks screen: the chosen badges stacked, "Thanks, noted. We build the most-asked exams first. The
-    day CCNA or CySA+ lands, we'll tell you."
+  - Thanks screen: the chosen badges stacked, "Thanks, noted. When CCNA or CySA+ lands, we'll tell you."
 - **Who:** signed in only. One vote per person per exam; a repeat vote is ignored. When an exam is
   added, everyone who asked for it is told.
 - **Private:** no public counts.

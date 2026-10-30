@@ -29,7 +29,8 @@ The label shows only when all four are true. The sheet lists the four with ticks
 3. Every exam area at or above the cert's pass line.
 4. Two full timed exams at a pass in the last 14 days.
 
-The sheet heading reads "Book it? Not yet · 1 of 4" or "Ready to book · 4 of 4". The score itself
+The sheet heading reads "Book it? Not yet · 1 of 4" or "Ready to book · 4 of 4". The first
+unmet item carries its next step as a button (e.g. "Start a full exam", "Practise Network Security"). The score itself
 is unchanged; only when the app says "ready" changes. That keeps it clear of readiness tuning (#139).
 
 ## 3. No repeat questions across days

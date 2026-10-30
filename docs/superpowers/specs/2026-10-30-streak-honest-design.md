@@ -33,10 +33,11 @@ in a bundle with the other persona items, not on its own.
    Calm tone, never red.
 5. **Warnings (iOS app, only when reminders are on):**
    - When a streak of 1 or more is on the line, the daily reminder leads with it:
-     "Your 5-day streak ends tonight. A quick set keeps it."
+     "Your 5-day streak ends tonight. One question keeps it." Tapping a streak reminder
+     opens the 1-question Daily Challenge (it counts for the streak).
      The exam-tomorrow line still wins on that one day.
    - Last call at 9 pm local, if not studied that day, and only when the chosen reminder time is
-     before 9 pm: "Last call: your 5-day streak ends at midnight."
+     before 9 pm: "Last call: your 5-day streak ends at midnight. One question keeps it."
    - Never more than two a day, and none once that day is studied.
    - A streak line only appears on days the streak can still be alive: today, if not yet studied;
      tomorrow, if studied today. Days further out get the usual line.

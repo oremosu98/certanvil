@@ -18,13 +18,13 @@ never be checked against reality.
 ## The design
 1. **When to ask.** From the day after the cert's exam date, Home's top card asks "How did your
    Network+ exam go?" It offers three choices: **Passed**, **Didn't pass** and **Haven't sat it yet**.
-   It keeps asking on each open until answered.
+   Under it: "Tell us and we'll update your plan." It keeps asking on each open until answered.
 2. **One flow: the June "Log your result" screen.** Home's Passed and Didn't pass open it with that
-   answer already picked. The hub's "Took your exam? Log your result" opens the same screen. Changes from
-   June: open to Free as well as Pro; "Not yet" becomes "Didn't pass"; no test-centre field; the
+   answer already picked. The hub's "Took your exam? Log your result" opens the same screen. Its intro reads "Sat the exam? Add your result. A pass marks the cert as passed in your hub."
+   Changes from June: open to Free as well as Pro; "Not yet" becomes "Didn't pass"; no test-centre field; the
    date is pre-filled from the exam date; the score is optional either way.
 3. **After Passed:** a one-time celebration and a "Passed" badge. Home's top card becomes "Pick your
-   next cert". The cert stays open for anyone who wants to keep practising.
+   next cert". The card says "We predicted 553 on exam day. Your streak carries on with your next cert." The cert stays open for anyone who wants to keep practising.
 4. **After Didn't pass:** "That's a hard exam. Your progress is all still here." with **Set a new date**
    (and Not now). "I haven't sat it yet" on Home goes straight to the exam-date setting.
 5. **What's saved:** the outcome, the score if given, the date, and the readiness the app showed on the
