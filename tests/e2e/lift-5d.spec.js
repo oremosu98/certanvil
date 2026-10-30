@@ -61,7 +61,9 @@ function stubScript() {
 async function boot(page, opts) {
   opts = opts || {};
   await page.setViewportSize(PHONE);
-  const F = Object.assign({ role: 'user', noResults: true, signedOut: true, metaOverride: { tier: 'free', entitlements: {} } }, opts.fake || {});
+  // F3: a signed-out launch in the app now shows the account screen over everything (requireAccount, spec §2), so
+  // reminders (the ask, Settings → Reminders) are only reachable signed in. Boot a signed-in free user by default.
+  const F = Object.assign({ role: 'user', noResults: true, signedOut: false, tier: 'free', metaOverride: { tier: 'free', entitlements: {} } }, opts.fake || {});
   await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + JSON.stringify(F) + ';' + FAKE }));
   await page.addInitScript(([prefs, seed]) => {
     if (!sessionStorage.getItem('seeded')) {

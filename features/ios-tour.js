@@ -94,7 +94,7 @@
   function place() {
     if (!host || host.hidden) return;
     var el = anchor(i);
-    if (!el) { var k = firstFrom(i + 1); if (k < 0) { close(); return; } i = k; draw(); return; }
+    if (!el) { var k = firstFrom(i + 1); if (k < 0) { close(); return; } i = k; draw(); focusNext(); return; }   // keep focus in the bubble
     var hr = host.getBoundingClientRect(), z = (host.offsetWidth && hr.width / host.offsetWidth) || 1;
     var vw = host.offsetWidth || window.innerWidth, vh = host.offsetHeight || window.innerHeight;
     function cv(b) { return { left: (b.left - hr.left) / z, top: (b.top - hr.top) / z, width: b.width / z, height: b.height / z, bottom: (b.bottom - hr.top) / z }; }
@@ -170,14 +170,19 @@
       setTimeout(function () { starting = false; if (!isOpen() && ready()) open(); }, SETTLE_MS);   // after Home's own reveal
     });
   }
-  // Replay: Home re-renders before showPage reveals it, so wait (up to 2s) until the readiness card is really on screen
+  // Replay: Home re-renders before showPage reveals it, so wait (up to 2s) for the normal Home's readiness card to be
+  // really on screen. Day-0, capped, offline, another sheet, or Home never showing: give up silently.
+  function homeReady() {
+    var p = document.getElementById('page-setup');
+    return !!(p && p.classList.contains('active')) && !!(window.iosFirstRun && window.iosFirstRun.homeState && window.iosFirstRun.homeState() === null)
+      && !html().classList.contains('ifr-offline') && !blocked() && !!anchor(0);
+  }
   function start() {
     if (isOpen()) close();
     var t0 = Date.now();
     (function tick() {
-      var p = document.getElementById('page-setup');
-      if (p && p.classList.contains('active') && anchor(0)) { open(); return; }
-      if (Date.now() - t0 < 2000) setTimeout(tick, 50); else open();
+      if (homeReady()) { open(); return; }
+      if (Date.now() - t0 < 2000) setTimeout(tick, 50);
     })();
   }
 
@@ -187,9 +192,11 @@
     if (!isOpen()) { maybeStart(); return; }
     // Home re-rendered under an open tour: keep the step, re-place on the new elements. Day-0, capped or offline ends it.
     var st = window.iosFirstRun && window.iosFirstRun.homeState ? window.iosFirstRun.homeState() : null;
-    if (st !== null || html().classList.contains('ifr-offline')) { close(); return; }
+    if (st !== null || html().classList.contains('ifr-offline') || blocked()) { close(); return; }
     settle();
   });
+  // The sign-in screen (or another full screen) opening over Home ends the tour; it would otherwise sit above it
+  try { new MutationObserver(function () { if (isOpen() && blocked()) close(); }).observe(html(), { attributes: true, attributeFilter: ['class'] }); } catch (_) {}
   window.addEventListener('resize', function () { if (isOpen()) place(); });
   var raf = 0;
   // Capture catches whichever element scrolls Home (the document or .ih-body); rebuilt scrollers need no rebinding
@@ -198,7 +205,7 @@
     raf = requestAnimationFrame(function () { raf = 0; place(); });
   }, { passive: true, capture: true });
   document.addEventListener('keydown', function (ev) {
-    if (!isOpen()) return;
+    if (!isOpen() || document.getElementById('irm-sheet')) return;   // the reminders sheet owns the keyboard
     if (ev.key === 'Escape') { ev.preventDefault(); close(); return; }
     if (ev.key === 'Tab') {   // keep focus inside the bubble while it is modal
       var f = tip.querySelectorAll('button'), a = f[0], z = f[f.length - 1];

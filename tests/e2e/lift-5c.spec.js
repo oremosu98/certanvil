@@ -279,9 +279,13 @@ test.describe('Stage 5c: Settings → Sign-in methods', () => {
     await expect(page.locator('#ios-settings [data-act="methods"]')).toContainText('Email, Apple');
   });
 
-  test('no Sign-in methods row signed out', async ({ page }) => {
+  // F3 (spec §2): a signed-out app launch shows the account screen over everything, so signed-out Settings is
+  // unreachable in the app. What holds now: the account screen is up and no Sign-in methods row is ever drawn
+  // (the model's signed-out case is UAT 506).
+  test('no Sign-in methods row signed out: the account screen covers the app', async ({ page }) => {
     await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });
-    await openSettings(page);
+    await expect(page.locator('#ios-signin')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('html')).toHaveClass(/\bisi-open\b/);
     await expect(page.locator('#ios-settings [data-act="methods"]')).toHaveCount(0);
   });
 });

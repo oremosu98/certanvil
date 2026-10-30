@@ -23,6 +23,10 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       && out.indexOf('Right now your progress lives only on this phone, so deleting the app would lose it. Sign in to back it up and carry on from any device.') >= 0
       && /data-act="signin"/.test(out) && !/data-act="signout"/.test(out) && !/data-act="delete"/.test(out) && /Cloud sync[\s\S]*?>Off</.test(out));
 
+    // F3: in the app a signed-out Settings sits behind the account screen; the model still never draws the row
+    const outM = H({ signedIn: false, email: null, methodsRow: true, methods: ['email', 'apple'] });
+    test('Settings phone: no Sign-in methods row signed out, even where the app offers it', outM.indexOf('data-act="methods"') < 0 && outM.indexOf('Sign-in methods') < 0);
+
     const free = H({ email: 'a&b<c>@x.io' });
     test('Settings phone: free signed in escapes the email, shows Free, the Go Pro row and both free lines',
       free.indexOf('a&amp;b&lt;c&gt;@x.io') >= 0 && free.indexOf('a&b<c>') < 0 && />Free</.test(free)

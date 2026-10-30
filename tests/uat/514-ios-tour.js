@@ -52,6 +52,15 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /id="ios-tour"|\.id = 'ios-tour'/.test(src) && /'aria-modal', 'true'/.test(src) && /'aria-labelledby', 'it-h'/.test(src));
     test('tour re-places on resize, Home scroll (passive) and ca:home-shown without restarting',
       /addEventListener\('resize'/.test(src) && /addEventListener\('scroll'[\s\S]{0,240}passive: true/.test(src) && /addEventListener\('ca:home-shown'/.test(src));
+    const rem = fs.readFileSync(path.join(ROOT, 'features', 'ios-reminders.js'), 'utf8');
+    test('the reminders ask waits while the tour is open (busy() checks html.itr-open, which the tour sets)',
+      /contains\('itr-open'\)/.test(_fnBody(rem, 'busy')) && /classList\.add\('itr-open'\)/.test(src));
+    test('Replay gives up unless the normal Home shows (homeState, offline, blocked, the readiness card) and never opens on a timeout',
+      /homeState\(\) === null/.test(_fnBody(src, 'homeReady')) && /ifr-offline/.test(_fnBody(src, 'homeReady')) && /blocked\(\)/.test(_fnBody(src, 'homeReady'))
+      && /if \(homeReady\(\)\) \{ open\(\); return; \}/.test(_fnBody(src, 'start')) && (_fnBody(src, 'start').match(/open\(\)/g) || []).length === 1);
+    test('a blocking screen opening closes the tour; the keyboard is ignored under the reminders sheet; a skipped step keeps focus',
+      /MutationObserver\(function \(\) \{ if \(isOpen\(\) && blocked\(\)\) close\(\); \}\)/.test(src) && /getElementById\('irm-sheet'\)\) return;/.test(src)
+      && /i = k; draw\(\); focusNext\(\); return;/.test(_fnBody(src, 'place')));
     test('index.html loads features/ios-tour.js right after ios-reminders.js',
       /<script defer src="features\/ios-reminders\.js"><\/script>\s*<script defer src="features\/ios-tour\.js"><\/script>/.test(html));
 

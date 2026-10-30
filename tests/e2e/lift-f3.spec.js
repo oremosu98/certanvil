@@ -156,6 +156,51 @@ test.describe('F3: the first-Home tour', () => {
     await expectRingOn(page, '#ios-home .ih-rec', 5);
   });
 
+  // ── fix round 1: edge cases ──
+  test('Replay gives up silently when the normal Home is not there (capped Home, or another page)', async ({ page }) => {
+    await boot(page, { fake: { quotaUsed: 15 }, prefs: Object.assign({ tourSeen: '1' }, PREFS), seed: Object.assign({ nplus_history: HISTORY }, SKIP) });
+    await expect(page.locator('html')).toHaveClass(/ifr-capped/, { timeout: 5000 });
+    await page.evaluate(() => window.iosTour.start());
+    await page.waitForTimeout(2600);
+    await expect(tour(page)).toHaveCount(0);
+    await page.click('#lift-tabbar .lift-tab[data-page="settings"]');
+    await expect(page.locator('#ios-settings')).toBeVisible();
+    await page.evaluate(() => window.iosTour.start());
+    await page.waitForTimeout(2600);
+    await expect(tour(page)).toHaveCount(0);
+  });
+
+  test('a step whose anchor vanished is skipped and focus stays on Next', async ({ page }) => {
+    await boot(page);
+    await expect(tour(page)).toHaveClass(/\bopen\b/, { timeout: 5000 });
+    await tour(page).locator('[data-act="next"]').click();
+    await expect(page.locator('#it-h')).toHaveText('Not sure what to do?');
+    await page.evaluate(() => { document.querySelector('#ios-home .ih-rec').remove(); window.dispatchEvent(new Event('resize')); });
+    await expect(tour(page).locator('.tt-count')).toHaveText('3 of 4');
+    expect(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act'))).toBe('next');
+    await expectRingOn(page, '#lift-tabbar .lift-tab[data-page="drills"]', 2);
+  });
+
+  test('the sign-in screen opening over Home closes the tour', async ({ page }) => {
+    await boot(page);
+    await expect(tour(page)).toHaveClass(/\bopen\b/, { timeout: 5000 });
+    await page.evaluate(() => window.iosSignIn.open({ from: 'settings' }));
+    await expect(page.locator('#ios-signin')).toBeVisible();
+    await expect(tour(page)).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.classList.contains('itr-open'))).toBe(false);
+  });
+
+  test('while the reminders sheet is up the tour ignores the keyboard; the reminders ask waits for the tour', async ({ page }) => {
+    await boot(page);
+    await expect(tour(page)).toHaveClass(/\bopen\b/, { timeout: 5000 });
+    await page.evaluate(() => { const d = document.createElement('div'); d.id = 'irm-sheet'; document.body.appendChild(d); });
+    await page.keyboard.press('Escape');
+    await expect(tour(page)).toHaveClass(/\bopen\b/);
+    await page.evaluate(() => document.getElementById('irm-sheet').remove());
+    await page.keyboard.press('Escape');
+    await expect(tour(page)).toBeHidden();
+  });
+
   test('day-0 Home never shows it', async ({ page }) => {
     await boot(page, { seed: {} });
     await expect(page.locator('html')).toHaveClass(/ifr-day0/);

@@ -159,7 +159,7 @@
   // ── The ask (approved drawing rem-prime / rem-prime-pro): a sheet over Home after a finished quiz or exam ──
   function busy() {   // another sheet, the first-run picker or the sign-in screen is up: wait for the next Home
     var s = document.getElementById('ist-sheet'), c = document.documentElement.classList;
-    return !!((s && s.classList.contains('open')) || c.contains('ifr-picking') || c.contains('ifr-check') || c.contains('isi-open'));
+    return !!((s && s.classList.contains('open')) || c.contains('ifr-picking') || c.contains('ifr-check') || c.contains('isi-open') || c.contains('itr-open'));   // F3: or the first-Home tour
   }
   function primeHtml(st, pro) {
     var lede = pro ? 'A daily nudge for your practice and any reviews that are due, plus a heads-up as your exam gets close.'
