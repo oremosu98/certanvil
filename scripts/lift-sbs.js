@@ -135,11 +135,36 @@ const SCREENS = [
   ['c-capped', 'onboarding-free-capped-home.html', 'c-capped'],
   ['c-limit', 'cert-ios-daily-limit.html', 'c-limit'],
   ['c-offline', 'onboarding-loading-states.html?v=offline', 'c-offline'],
+  // F3 (30 Oct): the phone first run, in the app (CertAnvilApp UA + stubbed Capacitor, as tests/e2e/lift-f3.spec.js)
+  ['f3-picker', 'onboarding-free-cert-picker.html?v=first', 'f3-picker'],
+  ['f3-account', 'onboarding-signup-signin.html?v=firstrun', 'f3-account'],
+  ['f3-account-out', 'onboarding-signup-signin.html?v=signedout', 'f3-account-out'],
+  ['f3-day0', 'onboarding-free-home-day0.html', 'f3-day0'],
+  ['f3-day0-pro', 'onboarding-free-home-day0.html?v=pro', 'f3-day0-pro'],
+  ['f3-tour-1', 'cert-ios-home.html?v=tour&step=1', 'f3-tour-1'],
+  ['f3-tour-2', 'cert-ios-home.html?v=tour&step=2', 'f3-tour-2'],
+  ['f3-tour-3', 'cert-ios-home.html?v=tour&step=3', 'f3-tour-3'],
+  ['f3-tour-4', 'cert-ios-home.html?v=tour&step=4', 'f3-tour-4'],
+  ['f3-tour-row', 'cert-ios-settings.html?v=free&focus=tour', 'f3-tour-row'],
 ];
 // Lift C: every first-run state is a brand-new user except capped Home (which has practised)
 function firstRunSeed(step) {
   if (!/^c-/.test(step || '')) return null;
   return { wrong: 0, fresh: step !== 'c-capped', firstRun: true };
+}
+// F3: the app's own boot per state. Signed out for the picker and account screens; the picker has no choice yet;
+// the signed-out account screen is a returning user (history); tour states are past day 0 (a Skip) with the tour unseen.
+const NATIVE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 CertAnvilApp';
+function f3Seed(step) {
+  if (!/^f3-/.test(step || '')) return null;
+  const free = { tier: 'free', metaOverride: { tier: 'free', entitlements: {} } };
+  const prefs = { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' };
+  return {
+    fake: Object.assign({ role: 'user', noResults: true, signedOut: /^f3-(picker|account)/.test(step) }, step === 'f3-day0-pro' ? {} : free),
+    prefs: step === 'f3-picker' ? {} : Object.assign(step === 'f3-tour-row' ? { tourSeen: '1' } : {}, prefs),
+    history: step === 'f3-account-out',
+    skip: /^f3-tour/.test(step),
+  };
 }
 // B3a: Drills seeds per state (wrong-bank size, fresh user, cert)
 function drillsSeed(step) {
@@ -192,6 +217,7 @@ async function shootE2E(browser, file, theme) {
   const p = await browser.newPage({ viewport: { width: 1100, height: 1000 }, deviceScaleFactor: 2 });
   await p.addInitScript(t => { try { localStorage.setItem('ca-theme', t); } catch (_) {} }, theme);
   await p.goto(E2E + file);
+  await p.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);   // the onboarding drawings don't read ca-theme
   await p.waitForTimeout(1500);
   const scr = (await p.$('#screen')) || (await p.$('.screen'));
   const buf = await scr.screenshot();
@@ -201,11 +227,12 @@ async function shootE2E(browser, file, theme) {
 
 async function shootReal(browser, step, theme) {
   // reduced motion: pagers jump instead of gliding, so a mid-swipe frame is never captured (end states are identical)
-  const ctx = await browser.newContext({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme, reducedMotion: 'reduce' });
+  const f3 = f3Seed(step);
+  const ctx = await browser.newContext(Object.assign({ viewport: VP, deviceScaleFactor: 2, isMobile: true, hasTouch: true, colorScheme: theme, reducedMotion: 'reduce' }, f3 ? { userAgent: NATIVE_UA } : {}));
   await ctx.route('**/*', r => {
     const u = new URL(r.request().url());
     if (u.hostname !== '127.0.0.1' && u.hostname !== 'localhost') return r.abort();
-    if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + (step === 'st-signed-out' ? '{"signedOut":true}' : '{"role":"admin"}') + ';' + FAKE });   // B4: the signed-out state has no session
+    if (/\/lib\/supabase\.js$/.test(u.pathname)) return r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + (f3 ? JSON.stringify(f3.fake) : step === 'st-signed-out' ? '{"signedOut":true}' : '{"role":"admin"}') + ';' + FAKE });   // B4: the signed-out state has no session
     return r.continue();
   });
   await ctx.addInitScript(([t, h, q, ex, dr]) => {
@@ -219,6 +246,29 @@ async function shootReal(browser, step, theme) {
     if (ex) localStorage.setItem('nplus_exam_state', JSON.stringify(ex));
     if (dr && dr.firstRun) localStorage.setItem('onb_mock', '1');   // Lift C: the check runs on mock questions (no AI)
   }, [theme, HISTORY, /^srv/.test(step || '') ? SRQ : null, /^ex/.test(step || '') ? examState(step) : null, drillsSeed(step) || firstRunSeed(step)]);
+  if (f3) {
+    // F3: the app shell's Preferences live in localStorage __prefs (lift-f3.spec.js's stub); seeded once, after the reset above
+    await ctx.addInitScript((c) => {
+      if (!sessionStorage.getItem('f3')) {
+        sessionStorage.setItem('f3', 1);
+        localStorage.setItem('__prefs', JSON.stringify(c.prefs)); localStorage.setItem('nplus_a2hs_dismissed', '1');
+        if (!c.history) localStorage.setItem('nplus_history', '[]');
+        if (c.skip) localStorage.setItem('nplus_onb_skips', '{"at":1}');
+      }
+      const read = () => { try { return JSON.parse(localStorage.getItem('__prefs') || '{}'); } catch (_) { return {}; } };
+      const write = (o) => localStorage.setItem('__prefs', JSON.stringify(o));
+      window.Capacitor = { isNativePlatform: () => true, Plugins: {
+        Preferences: {
+          get: ({ key }) => Promise.resolve({ value: read()[key] == null ? null : read()[key] }),
+          set: ({ key, value }) => Promise.resolve().then(() => { const o = read(); o[key] = value; write(o); }),
+          remove: ({ key }) => Promise.resolve().then(() => { const o = read(); delete o[key]; write(o); }) },
+        Haptics: { impact: () => Promise.resolve(), notification: () => Promise.resolve() },
+        Browser: { open: () => Promise.resolve() }, StatusBar: { setStyle: () => Promise.resolve() },
+        SocialLogin: { initialize: () => Promise.resolve(), login: () => new Promise(() => {}) },   // present, as on the device: Apple + Google show
+        LocalNotifications: { checkPermissions: () => Promise.resolve({ display: 'prompt' }), requestPermissions: () => new Promise(() => {}),
+          schedule: () => Promise.resolve({ notifications: [] }), cancel: () => Promise.resolve() } } };   // Account shows Reminders (Off), as on the device
+    }, f3);
+  }
   const p = await ctx.newPage();
   await p.goto(APP + '?nc=' + Date.now());
   await p.waitForTimeout(3000);
@@ -334,6 +384,18 @@ async function shootReal(browser, step, theme) {
         }
         if (step === 'wn-leave') { await p.locator('#wn-round-root .iwn-leave').click(); await p.waitForTimeout(600); }
       }
+    }
+  } else if (f3) {
+    // F3: each state is where the app boots itself; the tour is walked with Next, the Account row scrolled into view
+    const n = +((step.match(/^f3-tour-(\d)$/) || [])[1] || 0);
+    if (n) {
+      await p.waitForSelector('#ios-tour.open', { timeout: 8000 });
+      for (let i = 1; i < n; i++) { await p.locator('#ios-tour [data-act="next"]').click(); await p.waitForTimeout(500); }
+      await p.waitForTimeout(600);
+    }
+    if (step === 'f3-tour-row') {
+      await p.locator('#lift-tabbar .lift-tab[data-page="settings"]').click(); await p.waitForTimeout(1800);
+      await p.evaluate(() => document.querySelector('#ios-settings [data-act="tour"]').scrollIntoView({ block: 'center' })); await p.waitForTimeout(500);
     }
   } else if (/^c-/.test(step || '')) {
     // Lift C: pin the tier (the fake session is an admin), then open each state the way a person reaches it
@@ -500,7 +562,7 @@ async function shootReal(browser, step, theme) {
   await p.addStyleTag({ content: '.success-toast, .error-toast, .toast, .celebration-toast { display: none !important; }' });
   await p.waitForTimeout(300);
   // B1 screens are one fixed viewport (a full-page capture resizes it mid-shot); the review-done recap scrolls
-  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn|dl|st)/.test(step || '') });
+  const buf = await p.screenshot({ fullPage: !/^(prog|ana|srv$|ex|sl|xs|gt|wn|dl|st|f3)/.test(step || '') });
   await ctx.close();
   return buf;
 }
