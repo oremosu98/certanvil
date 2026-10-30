@@ -191,6 +191,13 @@ The stage 8 review notes say this in one line, and the reviewer demo account cov
   themes, X or a tap outside closes it, and Account's "Replay the tour" brings it back.
 - Desktop unchanged.
 
+## Layout calls (founder, 30 Oct, after the side-by-sides)
+
+- **The "By continuing you agree…" line sits just under the form**, as drawn, on every sign-in screen (it was
+  pinned to the screen's foot since 5b).
+- **Main buttons keep today's height** (50px; Lock in 48px) against the drawn 45px / 43px. Approved difference
+  from the June drawing; no change.
+
 ## Rejected approaches
 
 - **Account before picking the exam:** a sign-up wall before the person has chosen anything.
