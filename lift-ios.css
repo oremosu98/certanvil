@@ -2684,6 +2684,7 @@ html[data-theme="light"] .ifr-skip { color: var(--accent-deep); }
 .ifr-hi { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 7px; }
 .ifr-greet h1 { font: 600 24px/1.12 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 0; color: var(--text); }
 .ifr-lede { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 9px 0 0; }
+#ios-home .ifr-lede { font-size: 14px; color: var(--text-mid); max-width: 32ch; margin: 8px 0 0; }
 .ifr-hb { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 14px 15px; margin-top: 14px; }
 .ifr-hb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .ifr-hb-quota { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); padding-top: 4px; margin-top: 12px; }
@@ -2725,8 +2726,6 @@ html[data-theme="light"] .ifr-ghost { color: var(--accent-deep); }
 .ifr-start-ring svg { width: 20px; height: 20px; }
 .ifr-start-t { font: 650 15px/1.1 Inter, sans-serif; color: var(--text); }
 .ifr-start-s { font-size: 12.5px; color: var(--text-mid); margin-top: 3px; }
-.ifr-aha { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 18px; font-size: 12px; color: var(--text-dim); }
-.ifr-aha svg { width: 14px; height: 14px; color: var(--accent-deep); }
 .ifr-see { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 15px; border: 1px solid var(--border); border-radius: 16px; }
 .ifr-see-t { font: 650 14px/1.2 Inter, sans-serif; color: var(--text); }
 .ifr-see-s { font-size: 12.5px; color: var(--text-mid); margin-top: 2px; }

@@ -45,9 +45,10 @@ module.exports = { boot, setTier, HISTORY };
 for (const vp of PHONES) {
   test.describe(`Lift C day-0 and capped Home @${vp.width}`, () => {
     test('new free user sees day-0 with no tab bar', async ({ page }) => {
-      await boot(page, vp);
+      await boot(page, vp, { signed: true });
+      await setTier(page, 'free', 0);
       const home = page.locator('#ios-home');
-      await expect(home).toContainText("Let's place your readiness.");
+      await expect(home).toContainText("Network+ is set.");
       await expect(home).toContainText('15 of 15 ready');
       await expect(home.locator('[data-act="check"]')).toHaveText('Take the 30-second check');
       await expect(page.locator('html')).toHaveClass(/ifr-day0/);
@@ -70,7 +71,7 @@ for (const vp of PHONES) {
     test('day-0 with nothing left goes to the quota screen', async ({ page }) => {
       await boot(page, vp, { signed: true });
       await setTier(page, 'free', 15);
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       await page.evaluate(() => { window.__quota = 0; window._showQuotaExceededUI = function () { window.__quota++; }; });
       await page.locator('#ios-home [data-act="today"]').click();
       expect(await page.evaluate(() => window.__quota)).toBe(1);
@@ -90,12 +91,12 @@ for (const vp of PHONES) {
       await boot(page, vp, { signed: true });
       await setTier(page, 'pro');
       const home = page.locator('#ios-home');
-      await expect(home).toContainText("Let's place your readiness.");
+      await expect(home).toContainText("Network+ is set.");
       await expect(home).not.toContainText('New practice');
       await expect(home.locator('[data-act="today"]')).toHaveText('Start a quiz');
     });
     test('crossing 899px clears html.ifr-day0', async ({ page }) => {
-      await boot(page, vp);
+      await boot(page, vp, { signed: true });
       await expect(page.locator('html')).toHaveClass(/ifr-day0/);
       await page.setViewportSize(DESKTOP);
       await page.evaluate(() => renderIosHome());
@@ -114,7 +115,7 @@ test.describe('Lift C desktop Home @1280', () => {
 
 // ── Task 3: the 30-second check (mock questions: ?onbmock=1, no AI) ──
 async function openCheck(page, vp, opts) {
-  await boot(page, vp, Object.assign({ query: '?onbmock=1' }, opts || {}));
+  await boot(page, vp, Object.assign({ query: '?onbmock=1', signed: true }, opts || {}));
   await page.locator('#ios-home [data-act="check"]').click();
   await expect(page.locator('#ios-check')).toBeVisible({ timeout: 8000 });
 }
@@ -153,9 +154,9 @@ for (const vp of PHONES) {
       await page.locator('#ios-check [data-act="practise"]').click();
       await expect(page.locator('#ios-check')).toBeHidden();
       await expect(page.locator('html')).not.toHaveClass(/ifr-day0|ifr-check/);
-      await expect(page.locator('#ios-home')).not.toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
       await page.reload(); await page.waitForTimeout(700);
-      await expect(page.locator('#ios-home')).not.toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
     });
     test("Skip the check lands on today's new-user Home", async ({ page }) => {
       await openCheck(page, vp);
@@ -169,7 +170,7 @@ for (const vp of PHONES) {
       await answerAll(page, 2);
       expect(await page.evaluate(() => localStorage.getItem('nplus_readiness_snapshots'))).toBeNull();
       await page.goto('/'); await page.waitForTimeout(700);
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
     });
     test('the check sends no metered call', async ({ page }) => {
       await boot(page, vp, { signed: true });
@@ -189,7 +190,7 @@ for (const vp of PHONES) {
       await page.waitForFunction(() => window._ifrUnmetered === false, null, { timeout: 20000 });   // set when the check starts, cleared when it ends
       await expect(page.locator('#page-setup')).toHaveClass(/active/);
       await expect(page.locator('html')).not.toHaveClass(/ifr-check/);
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       expect(await page.evaluate(() => localStorage.getItem('nplus_readiness_snapshots'))).toBeNull();
     });
   });
@@ -322,11 +323,11 @@ for (const vp of PHONES) {
       await page.locator('#ist-sheet [data-act="lock-go"]').click();
       await page.locator('#ist-sheet [data-act="last-go"]').click();
       await expect(page.locator('#onb-firstrun')).toBeHidden();
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
       await page.reload(); await page.waitForTimeout(1200);
       await expect(page.locator('#onb-firstrun')).toBeHidden();
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
     });
     test('Lock in on another cert saves it and navigates there', async ({ page }) => {
       await onb(page);
@@ -341,7 +342,7 @@ for (const vp of PHONES) {
       await onb(page, { nplus_freeCertId: 'netplus' });
       await page.waitForTimeout(800);
       await expect(page.locator('#onb-firstrun')).toBeHidden();
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
     });
     test('a user who practised is never routed into first run', async ({ page }) => {
       await onb(page, { nplus_history: HISTORY });
@@ -387,10 +388,10 @@ for (const vp of PHONES) {
       await expect(page.locator('#page-setup')).toHaveClass(/active/);
       await expect(page.locator('#ios-home')).toBeVisible();
     });
-    test("a signed-out Start today's 15 keeps day-0 (nothing started)", async ({ page }) => {
+    test('a signed-out new user never sees day-0 (F3)', async ({ page }) => {
       await boot(page, vp);
-      await page.locator('#ios-home [data-act="today"]').click();
-      await page.waitForTimeout(400);
+      await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
+      await expect(page.locator('#ios-home [data-act="today"]')).toHaveCount(0);
       expect(await page.evaluate(() => localStorage.getItem('nplus_onb_skips'))).toBeNull();
     });
     test('Home follows the quota when it arrives after first paint', async ({ page }) => {
@@ -448,7 +449,7 @@ for (const vp of PHONES) {
     test('Yes, lock in lands on day-0', async ({ page }) => {
       await toLast(page);
       await page.locator('#ist-sheet [data-act="last-go"]').click();
-      await expect(page.locator('#ios-home')).toContainText("Let's place your readiness.");
+      await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
     });
   });

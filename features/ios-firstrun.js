@@ -18,7 +18,7 @@
     var now = new Date(), next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
     return {
       placed: placed,
-      day0: !placed && !s.skipped,
+      day0: !placed && !s.skipped && s.signedIn === true,
       capped: !s.pro && !!s.signedIn && remaining === 0,
       remaining: remaining,
       hoursToReset: Math.max(1, Math.ceil((next - now.getTime()) / 3600000))
@@ -50,7 +50,7 @@
     var ring = m.pro ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>' : '15';
     return '<div class="ifr-home ifr-day0">' +
       '<div class="ifr-d0-top"><button type="button" class="ifr-skip" data-act="skip">Skip</button></div>' +
-      '<div class="ifr-greet ifr-rv"><div class="ifr-hi">Your exam is set</div><h1>Let\'s place your readiness.</h1></div>' +
+      '<div class="ifr-greet ifr-rv"><div class="ifr-hi">You\'re in</div><h1>' + e(c.name) + ' is set.</h1><p class="ifr-lede">Practise a little each day and your readiness climbs towards the pass mark.</p></div>' +
       '<div class="ifr-hb ifr-rv"><div class="ifr-hb-top"><div class="ifr-hb-cert"><span class="ifr-mark">' + e(c.glyph) + '</span>' +
         '<span><span class="ifr-hb-name">' + e(c.name) + '</span><span class="ifr-hb-code">' + e(c.code) + '</span></span></div>' +
         '<span class="ifr-plan">' + (m.pro ? 'Pro' : 'Free') + '</span></div>' + quota + '</div>' +
@@ -63,7 +63,6 @@
         '<div><div class="ifr-start-t">Just start practising</div><div class="ifr-start-s">' +
         (m.pro ? 'Go straight to a quiz. Your readiness still builds as you go.' : 'Go straight to today\'s 15. Your readiness still builds as you go.') +
         '</div></div></div><button type="button" class="ifr-ghost" data-act="today">' + (m.pro ? 'Start a quiz' : 'Start today\'s 15') + '</button></div>' +
-      '<div class="ifr-aha ifr-rv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg><span>Answer a few and watch your readiness move.</span></div>' +
     '</div>';
   }
 
@@ -303,7 +302,14 @@
   };
 
   // Called first by renderIosHome on phones. Returns true when it drew day-0, capped or offline Home.
+  var LOADED_AT = Date.now(), AUTH_WAIT_MS = 1500;
   IFR.renderHome = function (root) {
+    // Cold launch, no flash: until auth settles (true/false) draw nothing and retry, then fall back to signed out.
+    if (IFR.isPhone() && !offline() && typeof window._certanvilSignedIn !== 'boolean' && Date.now() - LOADED_AT < AUTH_WAIT_MS) {
+      root.innerHTML = '';
+      setTimeout(function () { if (typeof renderIosHome === 'function') renderIosHome(); }, 250);
+      return true;
+    }
     if (offline()) { html().classList.remove('ifr-day0'); html().classList.remove('ifr-capped'); root.innerHTML = _ifrOfflineHtml(); return true; }
     var st = IFR.homeState();
     html().classList.toggle('ifr-day0', st === 'day0'); html().classList.toggle('ifr-capped', st === 'capped');

@@ -17,6 +17,8 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     test('first run state: no history and no snapshot is day-0; a snapshot alone is placed; a skip ends day-0',
       ST({}).day0 === true && ST({}).placed === false && ST({ snapshot: { score: 465 } }).placed === true && ST({ snapshot: { score: 465 } }).day0 === false
       && ST({ skipped: true }).day0 === false && ST({ historyRows: 3 }).placed === true);
+    test('first run state (F3): signed out is never day-0',
+      ST({ signedIn: false }).day0 === false && ST({}).day0 === true);
     test('first run state: free signed in with 0 left is capped; Pro or signed out never is',
       ST({ historyRows: 3, remaining: 0 }).capped === true && ST({ historyRows: 3, remaining: 0, pro: true }).capped === false
       && ST({ historyRows: 3, remaining: 0, signedIn: false }).capped === false);
@@ -29,9 +31,13 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     const D = (o) => run('_ifrDay0Html(__s)', Object.assign({ cert: { name: 'Network+', code: 'N10-009', glyph: 'N+' }, pro: false, remaining: 15, scale: scN }, o));
     const d0 = D({}), d0p = D({ pro: true });
     test('day-0 Home (free): headline, quota rows, the check and today\'s 15, the cert\'s own scale',
-      d0.indexOf('Your exam is set') >= 0 && d0.indexOf("Let's place your readiness.") >= 0 && d0.indexOf('15 of 15 ready') >= 0
+      d0.indexOf('15 of 15 ready') >= 0
       && d0.indexOf('Scored 100 to 900, with 720 to pass.') >= 0 && /data-act="check"/.test(d0) && /data-act="today"[^>]*>Start today's 15</.test(d0)
       && d0.indexOf('never counts against <b>your daily 15</b>') >= 0);
+    test('day-0 Home (F3): the "You\'re in" welcome with a lede, no readiness headline, no aha row',
+      [d0, d0p].every(h => h.indexOf('<div class="ifr-hi">You\'re in</div>') >= 0 && h.indexOf('<h1>Network+ is set.</h1>') >= 0
+        && h.indexOf('Practise a little each day and your readiness climbs towards the pass mark.') >= 0
+        && h.indexOf("Let's place your readiness") < 0 && h.indexOf('Your exam is set') < 0 && h.indexOf('ifr-aha') < 0));
     test('day-0 Home (Pro): no quota rows, no "daily 15", Start a quiz',
       d0p.indexOf('New practice') < 0 && d0p.indexOf('daily 15') < 0 && />Start a quiz</.test(d0p) && />Pro</.test(d0p));
     test('day-0 Home (30 Oct): Skip sits top right, before the greeting, and is the only "skip" on screen (the card says "Go straight to")',
