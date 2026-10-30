@@ -246,3 +246,209 @@ test.describe('F3: the tour on the website (phone)', () => {
     await expect(tour(page)).toHaveCount(0);
   });
 });
+
+// ── Task 8: the flows. Signed out unless a test says otherwise (boot() above waits for a signed-in app). ──
+// opts: {fake, prefs, seed, offline, query, ua (default: the app), cookie, width}
+async function bootOut(page, opts) {
+  opts = opts || {};
+  await page.setViewportSize(opts.size || PHONE);
+  const F = Object.assign({ role: 'user', noResults: true, signedOut: true, tier: 'free', metaOverride: { tier: 'free', entitlements: {} } }, opts.fake || {});
+  await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + JSON.stringify(F) + ';' + FAKE }));
+  await page.addInitScript(([prefs, seed, native]) => {
+    if (!sessionStorage.getItem('seeded')) {
+      sessionStorage.setItem('seeded', '1');
+      localStorage.setItem('nplus_theme', 'dark'); localStorage.setItem('nplus_a2hs_dismissed', '1');
+      if (native) localStorage.setItem('__prefs', JSON.stringify(prefs));
+      else localStorage.setItem('ca_tour_seen', '1');
+      Object.keys(seed || {}).forEach((k) => localStorage.setItem(k, seed[k]));
+    }
+  }, [opts.prefs || {}, opts.seed || {}, opts.native !== false]);
+  if (opts.offline) await page.addInitScript(() => { Object.defineProperty(navigator, 'onLine', { get: () => false }); });
+  if (opts.native !== false) await page.addInitScript(stubScript());
+  if (opts.cookie) await page.context().addCookies([{ name: opts.cookie[0], value: opts.cookie[1], url: 'http://localhost:3131' }]);
+  await page.goto('/' + (opts.query || ''));
+  await page.waitForLoadState('load');
+  await page.waitForFunction(() => window._certanvilSignedIn !== undefined, null, { timeout: 10000 });
+  await page.waitForTimeout(1200);
+}
+const acct = (page) => page.locator('#ios-signin');
+const picker = (page) => page.locator('#onb-firstrun');
+const lockIn = async (page, certName) => {
+  if (certName) await page.click('#onb-firstrun .ifr-cert[data-id="' + certName + '"]');
+  await page.click('#onb-firstrun [data-act="lock"]');
+  await page.click('#ist-sheet [data-act="lock-go"]');
+  await expect(page.locator('#ist-sheet')).toContainText('One last check');
+  await page.click('#ist-sheet [data-act="last-go"]');
+};
+const typeCode = async (page, code) => { await page.locator('#isi-boxes input').first().focus(); await page.keyboard.type(code, { delay: 30 }); };
+
+test.describe('F3: the flows in the app', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+
+  test('fresh install: picker, Lock in, both reminders, then the account screen on the same page', async ({ page }) => {
+    await bootOut(page);
+    await expect(picker(page)).toContainText('Which exam are you studying for?');
+    const url = page.url();
+    await lockIn(page);
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await expect(acct(page)).toContainText('Network+');
+    await expect(acct(page).locator('[data-act="back"]')).toBeVisible();
+    expect(page.url()).toBe(url);
+    expect(await prefs(page)).toMatchObject({ chosenCert: 'netplus', lockedCert: 'netplus' });
+  });
+
+  test('picking Security+ on the Network+ page navigates to ?cert=secplus and shows the account screen there', async ({ page }) => {
+    await bootOut(page);
+    await lockIn(page, 'secplus');
+    await page.waitForURL(/cert=secplus/, { timeout: 10000 });
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    // (localhost loads only the Network+ pack whatever ?cert says, so the exam's display name can't show here; the choice itself is what's checked)
+    await expect(acct(page).locator('.isi-sub')).toContainText('progress is saved to it');
+    expect(await prefs(page)).toMatchObject({ chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' });
+    await expect(acct(page).locator('[data-act="back"]')).toBeVisible();
+  });
+
+  test('Back on the account screen clears the choice, the lock and the free cert, and shows the picker', async ({ page }) => {
+    await bootOut(page);
+    await lockIn(page);
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(picker(page)).toContainText('Which exam are you studying for?');
+    await expect(acct(page)).toBeHidden();
+    const p = await prefs(page);
+    expect(p.chosenCert).toBeUndefined(); expect(p.lockedCert).toBeUndefined(); expect(p.lastCertHost).toBeUndefined();
+    expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBeNull();
+  });
+
+  test('signing in with the code lands on day-0 ("You\'re in", "Network+ is set."); Skip reaches the normal Home with the tour', async ({ page }) => {
+    await bootOut(page);
+    await lockIn(page);
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(acct(page)).toContainText('Check your email');
+    await typeCode(page, '123456');
+    await expect(page.locator('html')).toHaveClass(/ifr-day0/, { timeout: 10000 });
+    await expect(acct(page)).toBeHidden();
+    await expect(page.locator('.ifr-home.ifr-day0')).toContainText('You\'re in');
+    await expect(page.locator('.ifr-home.ifr-day0 h1')).toHaveText('Network+ is set.');
+    await page.click('.ifr-home.ifr-day0 [data-act="skip"]');
+    await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
+    await expect(page.locator('#ios-home .ih-rd')).toBeVisible();
+    await expect(tour(page)).toHaveClass(/\bopen\b/, { timeout: 6000 });
+    await expect(page.locator('#it-h')).toHaveText('Your readiness score');
+  });
+
+  test('reload signed out with a choice and no history: the account screen with Back', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS });
+    await expect(acct(page)).toBeVisible();
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await expect(acct(page).locator('[data-act="back"]')).toBeVisible();
+    await page.reload();
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await expect(acct(page).locator('[data-act="back"]')).toBeVisible();
+  });
+
+  test('reload signed out with history: "Sign in to keep studying" and no Back', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS, seed: { nplus_history: HISTORY } });
+    await expect(acct(page)).toBeVisible();
+    await expect(acct(page).locator('h1')).toHaveText('Sign in to keep studying');
+    await expect(acct(page).locator('[data-act="back"]')).toHaveCount(0);
+    await page.reload();
+    await expect(acct(page)).toBeVisible({ timeout: 8000 });
+    await expect(acct(page).locator('h1')).toHaveText('Sign in to keep studying');
+    await expect(acct(page).locator('[data-act="back"]')).toHaveCount(0);
+  });
+
+  test('a stored session cookie or localStorage key means no account screen even though the flag says signed out', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS, seed: { 'sb-x-auth-token': '{"access_token":"x"}' } });
+    expect(await page.evaluate(() => window._certanvilSignedIn)).toBe(false);
+    await page.waitForTimeout(1500);
+    await expect(acct(page)).toBeHidden();
+    await expect(picker(page)).toBeHidden();
+  });
+
+  test('a stored session cookie alone also keeps the account screen away', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS, cookie: ['sb-certanvil-auth', 'base64-abc'] });
+    expect(await page.evaluate(() => window._certanvilSignedIn)).toBe(false);
+    await page.waitForTimeout(1500);
+    await expect(acct(page)).toBeHidden();
+  });
+
+  test('offline (html.ifr-offline, navigator.onLine false): no account screen', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS, offline: true });
+    expect(await page.evaluate(() => window._certanvilSignedIn)).toBe(false);
+    await page.waitForTimeout(1500);
+    await expect(acct(page)).toBeHidden();
+    await expect(page.locator('html')).toHaveClass(/ifr-offline/);
+  });
+
+  test('Account → Sign out shows "Sign in to keep studying" with no Back', async ({ page }) => {
+    await boot(page, { prefs: Object.assign({ tourSeen: '1' }, PREFS) });
+    await page.click('#lift-tabbar .lift-tab[data-page="settings"]');
+    await expect(page.locator('#ios-settings [data-act="signout"]')).toBeVisible();
+    await page.click('#ios-settings [data-act="signout"]');
+    await expect(acct(page)).toBeVisible({ timeout: 20000 });
+    await expect(acct(page).locator('h1')).toHaveText('Sign in to keep studying');
+    await expect(acct(page).locator('[data-act="back"]')).toHaveCount(0);
+  });
+
+  test('a code sent from the account step survives a reload; Change returns to the account step with Back', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS });
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(acct(page)).toContainText('Check your email');
+    await page.reload();
+    await expect(acct(page)).toContainText('Check your email', { timeout: 8000 });
+    await acct(page).locator('.isi-change [data-act="change"]').click();
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await expect(acct(page).locator('[data-act="back"]')).toBeVisible();
+  });
+
+  test('a code sent after the signed-out screen returns to it without Back', async ({ page }) => {
+    await bootOut(page, { prefs: PREFS, seed: { nplus_history: HISTORY } });
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(acct(page)).toContainText('Check your email');
+    await page.reload();
+    await expect(acct(page)).toContainText('Check your email', { timeout: 8000 });
+    await acct(page).locator('.isi-change [data-act="change"]').click();
+    await expect(acct(page).locator('h1')).toHaveText('Sign in to keep studying');
+    await expect(acct(page).locator('[data-act="back"]')).toHaveCount(0);
+  });
+});
+
+test.describe('F3: the flows on the website', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('mobile web, 390px, signed out: no day-0, the normal Home with Sign in, no account screen', async ({ page }) => {
+    await bootOut(page, { native: false, size: { width: 390, height: 844 }, seed: SKIP });
+    await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
+    await expect(acct(page)).toBeHidden();
+    await expect(picker(page)).toBeHidden();
+    await expect(page.locator('#ios-home .ih-tb-signin')).toBeVisible();
+  });
+
+  test('mobile web, 390px, signed out and brand new: still no day-0 and no account screen', async ({ page }) => {
+    await bootOut(page, { native: false, size: { width: 390, height: 844 } });
+    await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
+    await expect(acct(page)).toBeHidden();
+    await expect(picker(page)).toBeHidden();
+    await expect(page.locator('#ios-home .ih-tb-signin')).toBeVisible();
+  });
+
+  test('desktop, 1280px: first run and Home unchanged', async ({ page }) => {
+    await bootOut(page, { native: false, size: { width: 1280, height: 800 } });
+    await expect(acct(page)).toBeHidden();
+    await expect(picker(page)).toBeHidden();
+    await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
+    await expect(page.locator('#ios-home')).toBeHidden();
+    await expect(page.locator('#page-setup')).toHaveClass(/\bactive\b/);
+    await expect(page.locator('a.topbar-signin-pill')).toBeVisible();
+  });
+});
