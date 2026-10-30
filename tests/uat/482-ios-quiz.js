@@ -43,6 +43,30 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       r.review[0].n === '01' && r.review[0].meta === 'DNS & DHCP - Concepts' && r.review[0].verdict === 'Wrong' && r.review[2].verdict === 'Correct' && r.review[2].meta === 'Cabling');
     test('Results: mistakes = wrong answers this session; em-dash in a sub becomes a comma',
       r.mistakes === 3 && R(Object.assign({}, base, { sub: 'A few gaps \u2014 keep at it.' })).sub === 'A few gaps, keep at it.');
+    // ── Readiness change card (30 Oct) ──
+    vm.runInContext((_fnBody(js, '_iosReadinessChangeModel') || ''), ctx);
+    const RC = (o) => vm.runInContext('_iosReadinessChangeModel(__o)', Object.assign(ctx, { __o: o }));
+    const st = (current, lastBefore) => ({ current, lastBefore, today: '2026-10-30' });
+    const up = RC({ before: 612, after: 626, practice: false, cert: 'Network+', streak: st(4, '2026-10-29') });
+    test('Readiness change: up reads "Readiness · Network+", 612 → 626, "+14", streak kept day 4',
+      up.kind === 'up' && up.label === 'Readiness · Network+' && up.from === 612 && up.to === 626 && up.delta === '+14' && up.tone === 'up' && up.streak === 'Streak kept · day 4');
+    const dn = RC({ before: 626, after: 618, practice: false, cert: 'Network+', streak: st(4, '2026-10-30') });
+    test('Readiness change: drop uses the minus sign, calm tone; second set today is "already counted"',
+      dn.kind === 'down' && dn.delta === '−8' && dn.tone === 'down' && dn.streak === 'Day 4 · today already counted');
+    const held = RC({ before: 626, after: 626, practice: false, cert: 'Network+', streak: st(5, '2026-10-29') });
+    test('Readiness change: held reads "Readiness held · Network+", "No change", no from',
+      held.kind === 'held' && held.label === 'Readiness held · Network+' && held.delta === 'No change' && held.from === null && held.to === 626);
+    const first = RC({ before: null, after: 584, practice: false, cert: 'Network+', streak: st(1, null) });
+    test('Readiness change: first reading is "placed", with its note and "Streak started · day 1"',
+      first.kind === 'placed' && first.label === 'Readiness placed · Network+' && first.from === null && first.delta === null
+      && first.note === 'Your first reading on Network+. It moves with every set you finish.' && first.streak === 'Streak started · day 1');
+    const pr = RC({ before: 626, after: 626, practice: true, cert: 'Network+', streak: st(4, '2026-10-29') });
+    test('Readiness change: a mistake drill is "Practice only" with no number',
+      pr.kind === 'practice' && pr.label === 'Practice only' && pr.to === null && pr.note === "Mistake drills don't change your readiness. They're for fixing what you got wrong.");
+    test('Readiness change: a broken streak restarting reads "Streak started · day 1"',
+      RC({ before: 600, after: 610, practice: false, cert: 'Security+', streak: st(1, '2026-10-27') }).streak === 'Streak started · day 1');
+    test('Readiness change: no readiness outside practice → null (card omitted)',
+      RC({ before: 600, after: null, practice: false, cert: 'Network+', streak: st(2, '2026-10-29') }) === null);
     // ── Review answers model ──
     vm.runInContext((_fnBody(js, '_iosReviewModel') || ''), ctx);
     const Q = (question, answer, extra) => Object.assign({ type: 'mcq', question, options: { A: '443', B: '80', C: '22', D: '53' }, answer, explanation: 'Why ' + question }, extra || {});

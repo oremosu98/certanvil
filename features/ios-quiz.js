@@ -78,6 +78,25 @@
     };
   }
 
+  // 30 Oct: the readiness change card that replaced the scaled score. Pure: readiness before/after finish(),
+  // whether it was a mistake drill, and the streak, in; the card's content out. null = no card.
+  function _iosReadinessChangeModel(o) {
+    var s = o.streak || {}, n = s.current || 0;
+    var streak = (s.lastBefore && s.lastBefore === s.today) ? 'Day ' + n + ' · today already counted'
+      : (n <= 1 ? 'Streak started · day 1' : 'Streak kept · day ' + n);
+    var base = { kind: '', label: '', from: null, to: null, delta: null, tone: '', note: '', streak: streak };
+    var set = function (k) { for (var i in k) base[i] = k[i]; return base; };
+    if (o.practice) return set({ kind: 'practice', label: 'Practice only', note: "Mistake drills don't change your readiness. They're for fixing what you got wrong." });
+    var to = o.after, from = o.before;
+    if (typeof to !== 'number' || !isFinite(to)) return null;
+    if (typeof from !== 'number' || !isFinite(from)) return set({ kind: 'placed', label: 'Readiness placed · ' + o.cert, to: to,
+      note: 'Your first reading on ' + o.cert + '. It moves with every set you finish.' });
+    var d = Math.round(to - from);
+    if (d === 0) return set({ kind: 'held', label: 'Readiness held · ' + o.cert, to: to, delta: 'No change', tone: 'held' });
+    return set({ kind: d > 0 ? 'up' : 'down', label: 'Readiness · ' + o.cert, from: from, to: to,
+      delta: (d > 0 ? '+' : '−') + Math.abs(d), tone: d > 0 ? 'up' : 'down' });
+  }
+
   var CHECK = '<path d="M20 6L9 17l-5-5"></path>';
   var DOWN = '<path d="M12 5v14M5 12l7 7 7-7"></path>';
   var UP = '<path d="M12 19V5M5 12l7-7 7 7"></path>';
@@ -137,6 +156,7 @@
   }
 
   window._iosResultsModel = _iosResultsModel;
+  window._iosReadinessChangeModel = _iosReadinessChangeModel;
   window.renderIosResults = renderIosResults;
 
   // ── Review answers (cert-ios-review-answers.html) ───────────────────────
