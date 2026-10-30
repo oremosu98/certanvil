@@ -147,7 +147,9 @@
     else h.innerHTML = _isiCodeHtml(Object.assign({ email: st.email, left: leftSec(), msg: '', kind: '', expired: false }, extra || {}));
     h.hidden = false; document.documentElement.classList.add('isi-open');
     if (view === 'code') wireBoxes(extra && extra.keep);
-    if (view === 'signin') { var i = document.getElementById('isi-email'); if (i && !st.typo) setTimeout(function () { try { i.focus(); } catch (_) {} }, 360); }
+    // F3 Task 9: no auto-focus when Apple/Google show. In the app the keyboard would rise over them (the main way in
+    // for a new person) and shift the fixed screen; the email-only screen (the website) keeps it.
+    if (view === 'signin' && !pv.apple && !pv.google) { var i = document.getElementById('isi-email'); if (i && !st.typo) setTimeout(function () { try { i.focus(); } catch (_) {} }, 360); }
   }
   function close() {
     var h = hostEl(); clearInterval(timer); st.view = null;

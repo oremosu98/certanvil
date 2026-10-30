@@ -128,6 +128,17 @@ test.describe('Stage 5c: Apple and Google on the sign-in screen', () => {
     await expect(page.locator('.isi-toast')).toContainText('Your free exam on this account is Network+', { timeout: 6000 });
   });
 
+  // F3 Task 9 (Simulator): focusing the email field raised the keyboard over Apple/Google and shifted the fixed screen
+  test('with Apple and Google shown, opening the screen does not focus the email field', async ({ page }) => {
+    await page.addInitScript(IDS);
+    await boot(page);
+    await openSignIn(page);
+    await expect(page.locator('#ios-signin [data-act="apple"]')).toBeVisible();
+    await expect(page.locator('#ios-signin [data-act="google"]')).toBeVisible();
+    await page.waitForTimeout(800);   // past the 360ms focus delay
+    expect(await page.evaluate(() => document.activeElement === document.getElementById('isi-email'))).toBe(false);
+  });
+
   test('the Apple sheet gets the plugin\'s nonce form and Supabase the raw one', async ({ page }) => {
     await boot(page);
     await openIn(page);
@@ -205,6 +216,11 @@ test.describe('Stage 5c on the phone website', () => {
     await page.evaluate(() => window.iosSignIn.open({ from: 'settings' }));
     expect(await page.evaluate(() => window.CA_NATIVE)).toBe(false);
     await expect(page.locator('#ios-signin [data-act="apple"]:visible, #ios-signin [data-act="google"]')).toHaveCount(0);
+  });
+  test('with no provider shown, the email field is focused on open (5b)', async ({ page }) => {
+    await boot(page, { native: false });
+    await page.evaluate(() => window.iosSignIn.open({ from: 'settings' }));
+    await expect(page.locator('#isi-email')).toBeFocused({ timeout: 3000 });
   });
 });
 
