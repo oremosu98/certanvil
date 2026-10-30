@@ -521,6 +521,7 @@
   mountRestore();
 
   IFR.certName = function () { return certInfo().name; };   // F3: the account screen names the exam
+  IFR.closePicker = closePicker;   // sign-in from the picker closes it over Home
   IFR.goToCert = goToCert;   // Stage 5b: sign-in opens the account's cert the same way
   IFR.clearPhoneState = function () { ['ifr-day0', 'ifr-capped', 'ifr-offline'].forEach(function (k) { html().classList.remove(k); }); if (chk) closeCheck(); if (lim) closeLimit(); };
 

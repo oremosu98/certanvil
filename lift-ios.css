@@ -2764,6 +2764,8 @@ html[data-theme="light"] .ifr-ghost { color: var(--accent-deep); }
 .ifr-fh-mark svg { width: 100%; height: 100%; }
 .ifr-fh-name { font: 700 15px/1 Inter, sans-serif; letter-spacing: -0.01em; color: var(--text); }
 .ifr-first-head h1 { margin: 0; max-width: 15ch; font: 600 27px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.015em; color: var(--text); }
+@keyframes ifr-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) { .ifr-first-head { animation: ifr-rise .5s var(--ios-ease) backwards; } }
 .ifr-first-signin { width: 100%; min-height: 44px; margin-top: 4px; border: 0; background: none; cursor: pointer; font: 500 13.5px/1 Inter, sans-serif; color: var(--text-mid); transition: transform .15s var(--ios-ease); }
 .ifr-first-signin b { color: var(--accent-bright); font-weight: 650; }
 html[data-theme="light"] .ifr-first-signin b { color: var(--accent-deep); }

@@ -89,6 +89,12 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       /id === certId\(\)/.test(enter) && /goToCert\(id\)/.test(enter) && /caNative\.requireAccount\('firstrun'\)/.test(enter)
       && /saveChoice\(chosen, true\)\.then\(function \(\) \{ enterApp\(chosen\); \}\)/.test(tap)
       && /enterApp\(id\)/.test(tap) && /tadSwitchCert/.test(tap));
+    const sis = fs.readFileSync(path.join(ROOT, 'features', 'ios-signin.js'), 'utf8'), av = _fnBody(sis, '_afterVerify') || sis.slice(sis.indexOf('IS._afterVerify'));
+    test('F3 fix: sign-in from the picker closes it (closePicker exported; called in _afterVerify before the tier decision)',
+      /IFR\.closePicker = closePicker/.test(src) && av.indexOf('FR.closePicker()') > 0 && av.indexOf('FR.closePicker()') < av.indexOf('knownTier()'));
+    const css4 = fs.readFileSync(path.join(ROOT, 'lift-ios.css'), 'utf8');
+    test('F3 fix: the first-run header rises in on the locked curve, only when motion is allowed',
+      /prefers-reduced-motion: no-preference\) \{ \.ifr-first-head \{ animation: ifr-rise \.5s var\(--ios-ease\) backwards/.test(css4) && /@keyframes ifr-rise/.test(css4));
     test('lock-in sheet: the three June terms, Lock in and Go back',
       lk.indexOf('Lock in Network+?') >= 0 && lk.indexOf('20 questions a day') >= 0 && lk.indexOf('A fresh set each morning') >= 0
       && /data-act="lock-go"/.test(lk) && /data-act="lock-back"/.test(lk));

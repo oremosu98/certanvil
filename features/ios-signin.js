@@ -281,6 +281,7 @@
       // never flushes; 'none' has no cloud store): after a 'timeout' the hydrate may still land and flush every local
       // key, so the key stays absent and that hydrate fills the account's value instead.
       if (r !== 'ok' || !N) { if (r !== 'timeout') restore(y); close(); return; }
+      var FR = window.iosFirstRun; if (FR && FR.closePicker) FR.closePicker();   // signing in from the picker: it must not stay open over Home
       return Promise.all([N.chosen(), knownTier()]).then(function (a) {
         var c = a[0], tier = a[1];
         if (!tier) { close(); return; }   // spec §Pro: until the tier is known nothing changes
