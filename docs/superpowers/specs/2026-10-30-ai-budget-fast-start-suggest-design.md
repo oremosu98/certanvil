@@ -52,10 +52,18 @@ The founder approved all three on 30 Oct. They ship in the bundle, on the gated 
     day CCNA or CySA+ lands, we'll tell you."
 - **Who:** signed in only. One vote per person per exam; a repeat vote is ignored. When an exam is
   added, everyone who asked for it is told.
-- **Private:** no public counts. The founder reads a tally view sorted by votes, starting as a
-  database view; an admin page comes later.
-- **Storage:** a new table. RLS lets a user insert their own votes and read only their own. It is a
-  migration with a tested `-- ROLLBACK:` block.
+- **Private:** no public counts.
+- **Where the founder reads them:**
+  - **Admin dashboard** (`landing/admin.html`, already admin-gated by `is_admin()`) gets a **Cert
+    requests** section beside Users, Cert packs and Recent ships. It's a table sorted by votes, with
+    columns for cert, total votes, new this week and last asked. Typed requests are normalised (case,
+    spacing, a vendor prefix such as "Cisco CCNA" counting as CCNA), so the same exam isn't split across
+    rows.
+  - **Monday email** to the founder: "Cert requests this week: 12 new. Top: CCNA 41 (+5), CySA+ 18
+    (+3). New typed ones: ITIL 4, CEH." It is sent through Resend, as `/api/notify` already does.
+  - **"Tell them it's live"** on a row emails everyone who asked for that exam, once, when it's added.
+- **Storage:** a new table. RLS lets a user insert their own votes and read only their own; admins read
+  everything through `is_admin()`. It is a migration with a tested `-- ROLLBACK:` block.
 
 ## Rejected approaches
 - **Public vote counts:** they look thin at launch, and counters are saas-gated (#123).
