@@ -51,9 +51,9 @@ const { fs, path, ROOT, test, results, vm, _fnBody } = require('./_context');
       !!sfn && SS({ flag: false }) === true && SS({ flag: false, hasSession: true }) === false && SS({ flag: false, offline: true }) === false
       && SS({ flag: true }) === false && SS({ flag: undefined }) === false && /window\._nsSettledSignedOut\s*=\s*settledSignedOut/.test(ns));
     const ready = _fnBody(ns, 'onReady');
-    test('onReady with no chosenCert opens the picker directly (no S.welcome) and keeps the pending-code guard',
-      !!ready && !/welcome/.test(ready) && /_pending/.test(ready) && /iosFirstRun\.picker|IFR\.picker|window\.iosFirstRun\.picker/.test(ready)
-      && ready.indexOf('_pending') < ready.indexOf('.picker('));
+    test('onReady with no chosenCert opens the welcome (30 Oct), keeps the pending-code guard, and falls back to the picker only without S.welcome',
+      !!ready && /S\.welcome\(\)/.test(ready) && /_pending/.test(ready) && /iosFirstRun\.picker|IFR\.picker|window\.iosFirstRun\.picker/.test(ready)
+      && ready.indexOf('_pending') < ready.indexOf('S.welcome()') && ready.indexOf('S.welcome()') < ready.indexOf('.picker('));
     test('onReady with a chosenCert runs requireAccount only after the lockedCert holdLock branch has returned',
       ready.indexOf('holdLock(c.lockedCert); return;') > 0 && ready.indexOf("caNative.requireAccount(") > ready.indexOf('holdLock(c.lockedCert); return;'));
     test('requireAccount: native only, not twice (isi-open), cert name from iosFirstRun.certName, back only on firstrun with empty history; unchoose + _backToPicker defined',

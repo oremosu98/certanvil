@@ -247,6 +247,7 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
 
   test('sign in from the picker opens the account\'s cert', async ({ page }) => {
     await boot(page, { fake: { accountFreeCert: 'secplus', tier: 'free' }, prefs: {} });
+    await page.click('#ios-signin [data-act="start"]');
     await page.click('#onb-firstrun [data-act="signin"]');   // F3: the picker's "Already have an account? Sign in"
     await page.fill('#isi-email', 'sam@example.test');
     await page.click('#ios-signin [data-act="continue"]');
@@ -259,6 +260,7 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
 
   test('sign in from the picker returns to the picker when the account has none', async ({ page }) => {
     await boot(page, { fake: { tier: 'free' }, prefs: {} });
+    await page.click('#ios-signin [data-act="start"]');
     await page.click('#onb-firstrun [data-act="signin"]');   // F3: the picker's "Already have an account? Sign in"
     await page.fill('#isi-email', 'sam@example.test');
     await page.click('#ios-signin [data-act="continue"]');
@@ -275,28 +277,39 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
 });
 const prefs = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__prefs') || '{}'));
 
-// ── Task 4 (repointed in F3): the exam picker first, and sign-in never leaves the app ──
+// ── Task 4: the welcome first (restored 30 Oct, founder), then the F3 picker; sign-in never leaves the app ──
 test.describe('Stage 5b: first launch and every sign-in in the app', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
 
-  test('a fresh install shows the picker', async ({ page }) => {
+  test('a fresh install shows the welcome', async ({ page }) => {
     await boot(page, { prefs: {} });
-    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
-    await expect(page.locator('#onb-firstrun [data-act="signin"]')).toContainText('Already have an account? Sign in');
-    await expect(host(page)).toBeHidden();
+    await expect(host(page)).toContainText("Know when you're ready");
+    await expect(host(page)).toContainText('Sign in with email');
+    await expect(page.locator('#onb-firstrun')).toBeHidden();
   });
 
-  test('the picker leads to both reminders as in 5a', async ({ page }) => {
+  test('Get started opens the picker and both reminders as in 5a', async ({ page }) => {
     await boot(page, { prefs: {} });
+    await page.click('#ios-signin [data-act="start"]');
     await expect(host(page)).toBeHidden();
     await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
+    await expect(page.locator('#onb-firstrun [data-act="signin"]')).toContainText('Already have an account? Sign in');
     await page.click('#onb-firstrun [data-act="lock"]');
     await page.click('#ist-sheet [data-act="lock-go"]');
     await expect(page.locator('#ist-sheet')).toContainText('One last check');
   });
 
-  test('Already have an account opens sign-in, and back returns to the picker', async ({ page }) => {
+  test('Already have an account opens sign-in, and back returns to the welcome', async ({ page }) => {
     await boot(page, { prefs: {} });
+    await page.click('#ios-signin [data-act="signin"]');
+    await expect(host(page)).toContainText('Sign in or create your account');
+    await page.click('#ios-signin [data-act="back"]');
+    await expect(host(page)).toContainText("Know when you're ready");
+  });
+
+  test('the picker\'s own Sign in opens sign-in, and back returns to the picker', async ({ page }) => {
+    await boot(page, { prefs: {} });
+    await page.click('#ios-signin [data-act="start"]');
     await page.click('#onb-firstrun [data-act="signin"]');
     await expect(host(page)).toContainText('Sign in or create your account');
     await page.click('#ios-signin [data-act="back"]');

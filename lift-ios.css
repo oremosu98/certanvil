@@ -2988,6 +2988,29 @@ html[data-theme="light"] .isi-apple { background: oklch(0.17 0.010 280); color: 
 .isi-textbtn { background: none; border: 0; padding: 4px 0; cursor: pointer; font: 650 13.5px/1.2 Inter, sans-serif; color: var(--accent); }
 .isi-change { margin-top: auto; padding-top: 20px; text-align: center; }
 .isi-change .isi-textbtn { color: var(--text-mid); }
+/* June's welcome */
+.isi-welcome { align-items: stretch; text-align: center; }
+.isi-brand { display: flex; align-items: center; justify-content: center; gap: 9px; margin-top: 14px; }
+.isi-hero { display: flex; flex-direction: column; align-items: center; margin-top: 28px; }
+.isi-gauge { position: relative; width: 232px; height: 232px; }
+.isi-gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.isi-g-track { fill: none; stroke: color-mix(in oklab, var(--text) 12%, transparent); stroke-width: 12; }
+.isi-g-fill { fill: none; stroke: var(--green, oklch(0.6 0.14 150)); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 691; stroke-dashoffset: 126; }
+.isi-g-tick { stroke: var(--text-dim); stroke-width: 3; stroke-linecap: round; }
+.isi-g-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.isi-g-num { font: 700 64px/1 Fraunces, Georgia, serif; color: var(--green, oklch(0.6 0.14 150)); letter-spacing: -0.02em; }
+.isi-g-of { margin-top: 8px; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+.isi-g-ready { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; padding: 6px 12px; border-radius: 999px; font: 700 12px/1 Inter, sans-serif; color: var(--green, oklch(0.6 0.14 150));
+  background: color-mix(in oklab, var(--green, oklch(0.6 0.14 150)) 14%, transparent); border: 1px solid color-mix(in oklab, var(--green, oklch(0.6 0.14 150)) 35%, transparent); }
+.isi-g-ready svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.isi-g-pass { margin-top: 14px; font: 800 11px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); }
+.isi-copy { margin-top: auto; padding-top: 24px; }
+.isi-copy h1 { font: 600 30px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.015em; margin: 0; color: var(--text); }
+.isi-copy p { margin: 10px auto 0; max-width: 32ch; font-size: 14.5px; line-height: 1.5; color: var(--text-mid); }
+.isi-cta { margin-top: 24px; }
+.isi-cta-sub { margin-top: 12px; font: 600 12.5px/1 Inter, sans-serif; color: var(--text-dim); }
+.isi-link { display: block; width: 100%; margin-top: 14px; padding: 8px; background: none; border: 0; cursor: pointer; font: 600 14px/1.3 Inter, sans-serif; color: var(--text-mid); }
+.isi-link b { color: var(--accent); font-weight: 700; }
 /* the one-time lock toast */
 .isi-toast { position: fixed; z-index: 9000; left: 16px; right: 16px; top: calc(12px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px;
   background: var(--surface); border: 1px solid var(--border); box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); transform: translateY(-16px); opacity: 0; pointer-events: none; }
@@ -3004,8 +3027,10 @@ html[data-theme="light"] .isi-apple { background: oklch(0.17 0.010 280); color: 
   .isi-screen > .isi-rv:nth-child(4) { animation-delay: .12s; } .isi-screen > .isi-rv:nth-child(5) { animation-delay: .16s; }
   .isi-screen > .isi-rv:nth-child(6) { animation-delay: .2s; }
   .isi-typo { animation: isiRise .32s var(--ios-ease) backwards; }
+  .isi-g-fill { animation: isiSweep 1.1s var(--ios-ease) .15s backwards; }
   .isi-boxes.shake { animation: isiShake .32s var(--ios-ease); }
   @keyframes isiRise { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes isiSweep { from { stroke-dashoffset: 691; } }
   @keyframes isiShake { 20% { transform: translateX(-6px); } 45% { transform: translateX(5px); } 70% { transform: translateX(-3px); } 100% { transform: none; } }
 }
 @media (prefers-reduced-motion: reduce) {

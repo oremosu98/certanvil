@@ -280,13 +280,16 @@ const lockIn = async (page, certName) => {
   await expect(page.locator('#ist-sheet')).toContainText('One last check');
   await page.click('#ist-sheet [data-act="last-go"]');
 };
+// 30 Oct (founder): a fresh install opens on the welcome; Get started opens the picker
+const toPicker = async (page) => { await expect(acct(page)).toContainText("Know when you're ready"); await page.click('#ios-signin [data-act="start"]'); };
 const typeCode = async (page, code) => { await page.locator('#isi-boxes input').first().focus(); await page.keyboard.type(code, { delay: 30 }); };
 
 test.describe('F3: the flows in the app', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
 
-  test('fresh install: picker, Lock in, both reminders, then the account screen on the same page', async ({ page }) => {
+  test('fresh install: welcome, Get started, picker, Lock in, both reminders, then the account screen on the same page', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await expect(picker(page)).toContainText('Which exam are you studying for?');
     const url = page.url();
     await lockIn(page);
@@ -300,6 +303,7 @@ test.describe('F3: the flows in the app', () => {
 
   test('picking Security+ on the Network+ page navigates to ?cert=secplus and shows the account screen there', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await lockIn(page, 'secplus');
     await page.waitForURL(/cert=secplus/, { timeout: 10000 });
     await expect(acct(page)).toBeVisible({ timeout: 8000 });
@@ -312,6 +316,7 @@ test.describe('F3: the flows in the app', () => {
 
   test('Back on the account screen clears the choice, the lock and the free cert, and shows the picker', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await lockIn(page);
     await expect(acct(page)).toBeVisible({ timeout: 8000 });
     expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBe('netplus');
@@ -325,6 +330,7 @@ test.describe('F3: the flows in the app', () => {
 
   test('signing in with the code lands on day-0 ("You\'re in", "Network+ is set."); Skip reaches the normal Home with the tour', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await lockIn(page);
     await expect(acct(page)).toBeVisible({ timeout: 8000 });
     await page.fill('#isi-email', 'sam@example.test');
@@ -424,6 +430,7 @@ test.describe('F3: the flows in the app', () => {
 
   test('relaunch mid-code started from the picker: Change it, Back reopens the picker (not signed-out Home)', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await expect(picker(page)).toContainText('Which exam are you studying for?');
     await page.click('#onb-firstrun [data-act="signin"]');
     await page.fill('#isi-email', 'sam@example.test');
@@ -438,8 +445,46 @@ test.describe('F3: the flows in the app', () => {
     await expect(acct(page)).toBeHidden();
   });
 
+  test('welcome -> Get started -> picker -> Lock in -> account screen with Back to the picker, not the welcome', async ({ page }) => {
+    await bootOut(page);
+    await expect(acct(page)).toContainText("Know when you're ready");
+    await expect(picker(page)).toBeHidden();
+    await toPicker(page);
+    await expect(picker(page)).toContainText('Which exam are you studying for?');
+    await lockIn(page);
+    await expect(acct(page).locator('h1')).toHaveText('Create your account to start');
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(picker(page)).toContainText('Which exam are you studying for?');
+    await expect(acct(page)).toBeHidden();
+  });
+
+  test('welcome -> Sign in -> Back returns to the welcome', async ({ page }) => {
+    await bootOut(page);
+    await acct(page).locator('[data-act="signin"]').click();
+    await expect(acct(page).locator('h1')).toHaveText('Sign in or create your account');
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(acct(page)).toContainText("Know when you're ready");
+    await expect(picker(page)).toBeHidden();
+  });
+
+  test('relaunch mid-code started from the welcome: Change it, Back returns to the welcome', async ({ page }) => {
+    await bootOut(page);
+    await acct(page).locator('[data-act="signin"]').click();
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(acct(page)).toContainText('Check your email');
+    await page.reload(); await page.waitForLoadState('load');
+    await expect(acct(page)).toContainText('Check your email', { timeout: 8000 });
+    await expect(picker(page)).toBeHidden();
+    await acct(page).locator('.isi-change [data-act="change"]').click();
+    await expect(acct(page).locator('h1')).toHaveText('Sign in or create your account');
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(acct(page)).toContainText("Know when you're ready");
+  });
+
   test('picker -> Sign in -> Back with the picker still underneath just closes the account screen', async ({ page }) => {
     await bootOut(page);
+    await toPicker(page);
     await page.click('#onb-firstrun [data-act="signin"]');
     await expect(acct(page)).toBeVisible();
     await acct(page).locator('[data-act="back"]').click();

@@ -1,13 +1,33 @@
 // ════════════════════════════════════════════════════
 // features/ios-signin.js — Stage 5b (28 Oct 2026): sign in by email code inside the iOS app.
 // The June E2E (feat/cert-ios-e2e @ a345d1da, HUD "5b ›") drawn for the real app: June's
-// first-run and signed-out variants, one "Sign in or create your account" screen with the typo check, the 6-digit
+// welcome, first-run and signed-out variants, one "Sign in or create your account" screen with the typo check, the 6-digit
 // code screen and its errors, and the one-time toast when the account's free exam opens.
 // Pure view functions first (UAT runs each body alone in a vm, so every one carries its
 // own escape helper), then the one full-screen host #ios-signin (CA_NATIVE only).
 // ════════════════════════════════════════════════════
 (function () {
   'use strict';
+
+  // June's welcome (onboarding-native-welcome). 5c turns the line into "Sign in with Apple or email".
+  // m = {apple, google}: the providers ready in this app (Stage 5c); none = 5b's email line
+  function _isiWelcomeHtml(m) {
+    var BRAND = '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>'
+      + '<line x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.55"/>'
+      + '<path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return '<div class="isi-screen isi-welcome">'
+      + '<div class="isi-brand isi-rv"><span class="isi-mark">' + BRAND + '</span><span class="isi-brand-name">CertAnvil</span></div>'
+      + '<div class="isi-hero" aria-hidden="true"><div class="isi-gauge"><svg viewBox="0 0 232 232"><circle class="isi-g-track" cx="116" cy="116" r="110"></circle>'
+      + '<circle class="isi-g-fill" cx="116" cy="116" r="110"></circle><g transform="rotate(198 116 116)"><line class="isi-g-tick" x1="116" y1="2" x2="116" y2="15"></line></g></svg>'
+      + '<div class="isi-g-center"><div class="isi-g-num">735</div><div class="isi-g-of">out of 900</div>'
+      + '<div class="isi-g-ready"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>Pass range</div></div></div>'
+      + '<div class="isi-g-pass">Pass mark 720</div></div>'
+      + '<div class="isi-copy isi-rv"><h1>Know when you\'re ready</h1><p>Real exam questions and a readiness score that climbs as you study, so exam day is never a guess.</p></div>'
+      + '<div class="isi-cta isi-rv"><button class="isi-primary" type="button" data-act="start">Get started</button>'
+      + '<div class="isi-cta-sub">Sign in with ' + (m && m.apple ? (m.google ? 'Apple, Google or email' : 'Apple or email') : (m && m.google ? 'Google or email' : 'email')) + '</div>'
+      + '<button class="isi-link" type="button" data-act="signin">Already have an account? <b>Sign in</b></button></div>'
+      + '</div>';
+  }
 
   // m = {from: 'picker'|'firstrun'|'signedout'|'home'|..., cert, back (firstrun shows Back only when true), email, typo: {fix} | null, msg (a send failure), apple, google (Stage 5c: providers ready), providerErr: 'apple' | 'google'}
   function _isiSignInHtml(m) {
@@ -143,7 +163,8 @@
     var h = hostEl(); if (!h) return;
     st.view = view; clearInterval(timer);
     var pv = providers();
-    if (view === 'signin') h.innerHTML = _isiSignInHtml({ from: st.from, cert: st.cert, back: st.back, email: st.email, typo: st.typo, msg: extra && extra.msg, apple: pv.apple, google: pv.google, providerErr: extra && extra.providerErr });
+    if (view === 'welcome') h.innerHTML = _isiWelcomeHtml(pv);
+    else if (view === 'signin') h.innerHTML = _isiSignInHtml({ from: st.from, cert: st.cert, back: st.back, email: st.email, typo: st.typo, msg: extra && extra.msg, apple: pv.apple, google: pv.google, providerErr: extra && extra.providerErr });
     else h.innerHTML = _isiCodeHtml(Object.assign({ email: st.email, left: leftSec(), msg: '', kind: '', expired: false }, extra || {}));
     h.hidden = false; document.documentElement.classList.add('isi-open');
     if (view === 'code') wireBoxes(extra && extra.keep);
@@ -232,7 +253,8 @@
     var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b || !hostEl().contains(b)) return;
     var a = b.getAttribute('data-act');
     if (a === 'back') {
-      if (st.from === 'firstrun') { st.typo = null; if (IS._backToPicker) IS._backToPicker(); }
+      if (st.from === 'welcome') { st.typo = null; show('welcome'); }
+      else if (st.from === 'firstrun') { st.typo = null; if (IS._backToPicker) IS._backToPicker(); }
       else if (st.from === 'picker' && !document.documentElement.classList.contains('ifr-picking')) {
         // A relaunch restored the code screen from the picker but the picker is not underneath (native-shell skips
         // it while a code is pending): closing would leave signed-out Home. Reopen the picker instead.
@@ -240,6 +262,7 @@
       } else close();
     }
     else if (a === 'signin') show('signin');
+    else if (a === 'start') { close(); var F = window.iosFirstRun; if (F && F.picker) F.picker({ tier: (window._quotaState && window._quotaState.tier) === 'pro' ? 'pro' : 'free', native: true }); }
     else if (a === 'continue') {
       var i = document.getElementById('isi-email'), v = i ? i.value.trim() : '';
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { if (i) { i.setAttribute('aria-invalid', 'true'); i.focus(); } return; }
@@ -429,13 +452,14 @@
     return !!(window.CA_NATIVE && N && N.socialReady && N.socialReady('apple') && user && (user.identities || []).some(function (i) { return i && i.provider === 'apple'; }));
   };
 
-  // o = {from: 'picker' | 'firstrun' | 'signedout' | 'home' | 'settings' | 'custom' | 'diagnostic', cert, back}
+  // o = {from: 'welcome' | 'picker' | 'firstrun' | 'signedout' | 'home' | 'settings' | 'custom' | 'diagnostic', cert, back}
   // Task 3 (native-shell) sets IS._backToPicker, called when Back is tapped from 'firstrun'.
   IS.open = function (o) {
     st.from = (o && o.from) || 'home'; st.cert = o && o.cert; st.back = o && o.back; st.typo = null;
     var p = readPending();
     if (p) { st.email = p.email; show('code'); } else show('signin');
   };
+  IS.welcome = function () { st.from = 'welcome'; st.typo = null; show('welcome'); };
   IS.close = close;
   // Every sign-in in the app comes here: the in-app screens in the iOS app, today's certanvil.com page on the web.
   IS.go = function (from) {
@@ -460,6 +484,6 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window._isiSignInHtml = _isiSignInHtml; window._isiCodeHtml = _isiCodeHtml;
+  window._isiWelcomeHtml = _isiWelcomeHtml; window._isiSignInHtml = _isiSignInHtml; window._isiCodeHtml = _isiCodeHtml;
   window._isiToastHtml = _isiToastHtml; window._isiSuggest = _isiSuggest;
 })();

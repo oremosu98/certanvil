@@ -8,7 +8,7 @@
        with the cert-lock wall, and records the free cert on the locked cert's own page;
      - reopens the last cert on the next launch; opens links that leave *.certanvil.com in the in-app browser;
      - keeps the status bar readable for the theme; a light haptic on an answer pick, one success haptic at results.
-   F3: the app opens on the exam picker; caNative.requireAccount sends a signed-out person to the account screen.
+   F3: the welcome opens the app, then the exam picker; caNative.requireAccount sends a signed-out person to the account screen.
    Plugins are reached through window.Capacitor.Plugins (injected by the native shell). */
 (function () {
   var C = window.Capacitor;
@@ -212,9 +212,9 @@
     installBack();
     window.caNative.chosen().then(function (c) {
       if (!c.chosenCert) {
-        // F3: straight to the exam picker. A pending sign-in code keeps its place (ios-signin.js restores it).
+        // The welcome first (Get started opens the picker); a pending sign-in code keeps its place (ios-signin.js restores it).
         var S = window.iosSignIn;
-        if (S && S._pending && S._pending()) return;
+        if (S && S.welcome) { if (!(S._pending && S._pending())) S.welcome(); return; }
         if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
         return;
       }

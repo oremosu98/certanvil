@@ -62,10 +62,13 @@ const prefs = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__p
 
 test.describe('Stage 5a in the app: first launch, the saved choice, the lock', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
-  test('a fresh install opens the picker on Network+', async ({ page }) => {
+  test('a fresh install opens the welcome, and Get started opens the picker on Network+', async ({ page }) => {
     await bootNative(page);
     await expect(page.locator('html')).toHaveClass(/is-native/);
-    // F3: the app opens straight on the exam picker (no welcome)
+    // 30 Oct (founder): the welcome is the first screen again; Get started opens the F3 picker
+    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");
+    await expect(page.locator('#onb-firstrun')).toBeHidden();
+    await page.click('#ios-signin [data-act="start"]');
     await expect(page.locator('#onb-firstrun')).toBeVisible();
     await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
     await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveText('Lock in Network+');
@@ -82,10 +85,10 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await page.reload(); await page.waitForTimeout(900);
     await expect(page.locator('#onb-firstrun')).toBeHidden();
   });
-  test('relaunch with nothing chosen opens the picker again', async ({ page }) => {
+  test('relaunch with nothing chosen opens the welcome again', async ({ page }) => {
     await bootNative(page);
     await page.reload(); await page.waitForTimeout(900);
-    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');   // F3: the picker again
+    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");   // the welcome again
   });
   test('a locked free user on another cert sees the lock wall with Back to their cert', async ({ page }) => {
     await bootNative(page, { prefs: { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' } });

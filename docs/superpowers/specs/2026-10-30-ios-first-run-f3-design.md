@@ -32,7 +32,8 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
 
 1. **The account is created after picking the exam.** Picker → lock in → create account → day-0. Nobody
    reaches Home signed out.
-2. **The app opens on the exam picker.** The 735-ring welcome leaves the app.
+2. ~~The app opens on the exam picker; the 735-ring welcome leaves the app.~~ **Reversed 30 Oct, after the build:** the
+   735 welcome stays as the first screen of a fresh install, and **Get started** opens the picker.
 3. **Day-0 Home is the welcome.** No separate welcome screen to tap through.
 4. **The walkthrough is four tips that point at the real screen.** Shows once, can be replayed from Account.
 
@@ -40,11 +41,13 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
 
 ### 1. The path for a brand-new person (iPhone app)
 
-1. **Exam picker first.** June's Lift C picker (`iosFirstRun.picker({ native: true })`) gains a header with the
+1. **Welcome, then the exam picker.** A fresh install opens June's 735 welcome (`iosSignIn.welcome()`, unchanged);
+   **Get started** opens the picker, and "Already have an account? Sign in" on the welcome opens sign-in with
+   Back returning to it. The rest of this step is the picker as built. June's Lift C picker (`iosFirstRun.picker({ native: true })`) gains a header with the
    CertAnvil mark and "Which exam are you studying for?", and a footer link "Already have an account?
-   **Sign in**" (opens `iosSignIn.open({ from: 'picker' })`). `native-shell.js` opens the picker directly when
-   `chosenCert` is missing, except while a code entry is pending (today's `_pending()` guard stays, so the
-   picker never opens over a half-finished sign-in). `iosSignIn.welcome()` and `_isiWelcomeHtml` are removed.
+   **Sign in**" (opens `iosSignIn.open({ from: 'picker' })`). `native-shell.js` opens the welcome when
+   `chosenCert` is missing, except while a code entry is pending (today's `_pending()` guard stays, so nothing
+   opens over a half-finished sign-in); it falls back to the picker only if `iosSignIn.welcome` is missing.
 2. **Lock in.** Reminder 1 and reminder 2 unchanged. Pro picks with **Start with <cert>** as today.
 3. **Create your account.** One function decides it: `caNative.requireAccount(from)` opens the existing
    sign-in screen when the user is settled signed out (see §2 for "settled"). It is called from two places,
@@ -153,7 +156,7 @@ The stage 8 review notes say this in one line, and the reviewer demo account cov
   (`from: 'signedout'`). F4's goodbye screen sits in front of that, and F4 decides whether deletion should
   also clear the pick.
 - The `isi-welcome` / `isi-gauge` CSS and the 735 welcome UAT/Playwright checks (`tests/uat/509-ios-signin.js`,
-  `tests/e2e/lift-5a.spec.js`, `tests/e2e/lift-5b.spec.js`) are removed or repointed at the picker.
+  `tests/e2e/lift-5a.spec.js`, `tests/e2e/lift-5b.spec.js`) were removed in the build and restored on 30 Oct.
 
 ## Process
 
@@ -182,7 +185,7 @@ The stage 8 review notes say this in one line, and the reviewer demo account cov
 
 ## Acceptance
 
-- A fresh install opens on the picker; no 735 ring anywhere in the app.
+- A fresh install opens on the 735 welcome; Get started opens the picker. After that, no 735 ring anywhere in the app.
 - Nobody reaches day-0 or Home signed out in the app, on launch or after Account → Sign out; a signed-in
   user offline is never sent to the account screen; on the mobile website, signed out shows the normal Home
   with Sign in, and every button on it works.
@@ -205,7 +208,7 @@ The stage 8 review notes say this in one line, and the reviewer demo account cov
   it is the biggest build by far.
 - **A plain "what this is" welcome before the picker:** clearer than the ring, but one more tap before anything
   happens, and a second welcome after the account step.
-- **Keep the 735 ring, labelled as an example:** still leads with a score before the person has done anything.
+- **Drop the 735 ring (picker first):** built, then reversed by the founder on 30 Oct; the ring welcome stays as the first screen.
 - **A separate "You're in" screen before day-0:** one more tap after four steps, saying what day-0 says.
 - **A celebration banner over day-0:** motion that has to justify itself to stage 2 for little gain.
 - **A swipe-through card tour:** describes the screen instead of pointing at it.
