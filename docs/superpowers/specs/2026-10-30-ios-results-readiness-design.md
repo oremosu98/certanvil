@@ -29,7 +29,17 @@ topic" after a short set. Nothing on the screen shows readiness moving or the st
    - Before = this cert's `READINESS_SNAPSHOTS` entry read before `_writeReadinessSnapshot()` overwrites it; after =
      the new snapshot. The phone results re-render once the snapshot is written (today they render first).
 2. **Copy:** the five grade lines talk about the session, not the person or the exam; no Messer, no "exam-ready".
-   Final wording from the visual pass. The copy is shared, so desktop gets the same lines.
+   The copy is shared, so desktop gets the same lines. From the visual pass (30 Oct):
+   | Grade | Headline | Line |
+   |---|---|---|
+   | A | Strong *session.* | Nearly all right. Keep it fresh with a review now and then. |
+   | B | Good *session.* | A few to go back over. Review answers shows which. |
+   | C | Getting *there.* | Go back over the misses, then try another set. |
+   | D | Tough *set.* | Read the explanation for each miss before the next one. |
+   | F | Hard *going.* | Read the explanation for each miss, then try another set. |
+   Practice-only card: "Mistake drills don't change your readiness. They're for fixing what you got wrong."
+   First reading: "Your first reading on <cert>. It moves with every set you finish." Readiness change counts from the
+   old number to the new one (900ms, BRAND §6 data motion; reduced motion shows it static).
 3. **Unchanged:** right / wrong / time stats, the difficulty split, the answer list, and the buttons — **Redo this
    quiz** stays primary (founder kept the Lift A decision), then Drill mistakes, Review answers, Back to menu.
 4. **Exam Simulator results unchanged** (the exam-style score is honest there).
