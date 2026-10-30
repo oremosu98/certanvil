@@ -190,7 +190,8 @@
     if (r.score === null) {
       h += '<div class="ih-rd ih-locked ih-reveal"><div class="ih-rd-top"><span class="ih-rd-eyebrow">Readiness</span><span class="ih-rd-tier ih-locked">Locked</span></div>'
         + '<div class="ih-rd-score"><span class="ih-rd-num">--</span><span class="ih-rd-of">/ ' + e(r.max) + '</span></div><div class="ih-bar"></div>'
-        + '<p class="ih-rd-insight">' + e(r.insight) + '</p></div>';
+        + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
+        + (m.signedIn ? '<button class="ih-rd-check" type="button" data-act="check">Or take the 30-second check' + svg('chev') + '</button>' : '') + '</div>';   // 30 Oct: the check after Skip
     } else {
       h += '<div class="ih-rd ih-reveal' + (r.tier === 'Pass ready' ? ' ih-passed' : '') + '" data-act="readiness" role="button" tabindex="0">'
         + '<div class="ih-rd-top"><span class="ih-rd-eyebrow">Readiness</span><span class="ih-rd-tier' + (r.tier === 'Close' ? ' ih-close' : (r.tier === 'Behind' ? ' ih-behind' : '')) + '">' + e(r.tier) + '</span></div>'
@@ -278,6 +279,7 @@
       settings: function () { tab('settings'); },
       cert: function () { tab('settings'); },
       theme: function () { if (typeof toggleTheme === 'function') toggleTheme(); renderIosHome(); },
+      check: function () { if (window.iosFirstRun && iosFirstRun.startCheck) iosFirstRun.startCheck(); },
       signin: function () { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('home'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; }
     };
     root.querySelectorAll('[data-act]').forEach(function (el) {

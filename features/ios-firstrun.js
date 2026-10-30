@@ -49,6 +49,7 @@
       : 'A 30-second check, free, and it never counts against <b>your daily 15</b>. It gives you a starting number so you can watch it move.';
     var ring = m.pro ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>' : '15';
     return '<div class="ifr-home ifr-day0">' +
+      '<div class="ifr-d0-top"><button type="button" class="ifr-skip" data-act="skip">Skip</button></div>' +
       '<div class="ifr-greet ifr-rv"><div class="ifr-hi">Your exam is set</div><h1>Let\'s place your readiness.</h1></div>' +
       '<div class="ifr-hb ifr-rv"><div class="ifr-hb-top"><div class="ifr-hb-cert"><span class="ifr-mark">' + e(c.glyph) + '</span>' +
         '<span><span class="ifr-hb-name">' + e(c.name) + '</span><span class="ifr-hb-code">' + e(c.code) + '</span></span></div>' +
@@ -60,7 +61,7 @@
         '<p class="ifr-diag-p">' + diagP + '</p><button type="button" class="ifr-btn" data-act="check">Take the 30-second check</button></div>' +
       '<div class="ifr-start ifr-rv"><div class="ifr-start-head"><div class="ifr-start-ring">' + ring + '</div>' +
         '<div><div class="ifr-start-t">Just start practising</div><div class="ifr-start-s">' +
-        (m.pro ? 'Skip the check and start a quiz. Your readiness still builds as you go.' : 'Skip the check and dive into today\'s 15. Your readiness still builds as you go.') +
+        (m.pro ? 'Go straight to a quiz. Your readiness still builds as you go.' : 'Go straight to today\'s 15. Your readiness still builds as you go.') +
         '</div></div></div><button type="button" class="ifr-ghost" data-act="today">' + (m.pro ? 'Start a quiz' : 'Start today\'s 15') + '</button></div>' +
       '<div class="ifr-aha ifr-rv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg><span>Answer a few and watch your readiness move.</span></div>' +
     '</div>';
@@ -316,6 +317,7 @@
     var ACT = {
       check: function () { if (IFR.startCheck) IFR.startCheck(); },
       today: startToday,
+      skip: function () { IFR.recordSkip(); if (typeof renderIosHome === 'function') renderIosHome(); },   // 30 Oct: leave day 0 for the cert's Home
       review: function () { if (typeof window.startSrReview === 'function') window.startSrReview(); },
       gopro: goPro
     };

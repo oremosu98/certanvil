@@ -138,6 +138,11 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home .ih-mo-go { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; min-height: 32px; padding: 0; border: 0; background: none; cursor: pointer; font: 800 12px/1 Inter, sans-serif; color: var(--accent-deep); transition: transform .14s var(--ios-ease); }
 #ios-home .ih-mo-go:active { transform: scale(0.97); }
 #ios-home .ih-mo-go svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* 30 Oct: after Skip on day 0, the locked readiness card keeps the check one tap away */
+#ios-home .ih-rd-check { display: inline-flex; align-items: center; gap: 3px; min-height: 44px; margin: 2px 0 -10px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--accent-bright); font: 650 13.5px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+html[data-theme="light"] #ios-home .ih-rd-check { color: var(--accent-deep); }
+#ios-home .ih-rd-check:active { transform: scale(0.97); }
+#ios-home .ih-rd-check svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 #ios-home .ih-tb-signin { flex: 0 0 auto; display: inline-flex; align-items: center; font: 800 12px/1 Inter, sans-serif; color: var(--on-accent); background: var(--accent); border: 0; border-radius: 999px; padding: 9px 13px; cursor: pointer; transition: transform .14s var(--ios-ease); }
 #ios-home .ih-tb-signin:active { transform: scale(0.97); }
 #ios-home .ih-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin: 22px 2px 4px; }
@@ -2670,6 +2675,11 @@ html.ifr-day0 #lift-tabbar, html.ifr-check #lift-tabbar { display: none !importa
 .ifr-home button, .ifr-check button, .ifr-picker button { font-family: inherit; }
 .ifr-home svg, .ifr-check svg, .ifr-picker svg, .ifr-off svg, #ist-sheet .ifr-sheet-head svg, #ist-sheet .ifr-ti svg, .ifr-restore svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ifr-home { padding: 12px 20px 28px; }
+/* 30 Oct: Skip, top right like an iOS nav bar; leaves day 0 for the cert's normal Home */
+.ifr-d0-top { display: flex; justify-content: flex-end; margin: 0 -8px -6px; }
+.ifr-skip { min-height: 44px; padding: 0 8px; border: 0; background: none; cursor: pointer; color: var(--accent-bright); font: 600 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+html[data-theme="light"] .ifr-skip { color: var(--accent-deep); }
+.ifr-skip:active { transform: scale(0.97); }
 .ifr-greet { margin: 10px 2px 4px; }
 .ifr-hi { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 7px; }
 .ifr-greet h1 { font: 600 24px/1.12 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 0; color: var(--text); }

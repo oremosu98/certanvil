@@ -34,6 +34,11 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       && d0.indexOf('never counts against <b>your daily 15</b>') >= 0);
     test('day-0 Home (Pro): no quota rows, no "daily 15", Start a quiz',
       d0p.indexOf('New practice') < 0 && d0p.indexOf('daily 15') < 0 && />Start a quiz</.test(d0p) && />Pro</.test(d0p));
+    test('day-0 Home (30 Oct): Skip sits top right, before the greeting, and is the only "skip" on screen (the card says "Go straight to")',
+      [d0, d0p].every(h => /<button type="button" class="ifr-skip" data-act="skip">Skip<\/button>/.test(h) && h.indexOf('data-act="skip"') < h.indexOf('ifr-greet')
+        && (h.match(/skip/gi) || []).length === 3 && h.indexOf('Go straight to') >= 0));
+    test('day-0 Home (30 Oct): Skip records the skip, then redraws Home (normal Home, tab bar back)',
+      /skip:\s*function \(\) \{ IFR\.recordSkip\(\); if \(typeof renderIosHome === 'function'\) renderIosHome\(\); \}/.test(src));
 
     const cap = run('_ifrCappedHtml(__s)', { cert: { name: 'Network+', code: 'N10-009', glyph: 'N+' }, due: 5, hours: 5 });
     test('capped Home: Done for today, Start review, See Pro, the reset hours',

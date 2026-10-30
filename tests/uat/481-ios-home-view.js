@@ -1,7 +1,7 @@
 // tests/uat/481-ios-home-view.js
 // Scope: Lift A Home view (features/ios-home.js _iosHomeHtml): the June E2E Home markup and copy
 // rendered from the model, with every interpolated string escaped.
-const { _fnBody, js, results, test, vm } = require('./_context');
+const { _fnBody, fs, js, path, results, ROOT, test, vm } = require('./_context');
 
 (function () {
   console.log('\n\x1b[1m── Lift A Home view ──\x1b[0m');
@@ -44,6 +44,11 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('New user: locked readiness "--", no meta line, no Coming up, no Drill Mistakes, first-quiz line',
       nu.includes('ih-rd ih-locked') && nu.includes('class="ih-rd-num">--<') && !nu.includes('ih-rd-meta') && !nu.includes('Coming up')
       && !nu.includes('data-act="mistakes"') && nu.includes('First quiz finds your weak spots.') && nu.includes('ih-tb-streak ih-zero'));
+    const nuOut = html(Object.assign({}, base, { state: 'new', signedIn: false, readiness: { score: null, max: 900, pass: 720, tier: 'Locked', insight: 'x' }, week: null, mistakes: 0 }));
+    test('Locked readiness (30 Oct): signed in offers "Or take the 30-second check"; signed out and scored do not',
+      /<button class="ih-rd-check" type="button" data-act="check">Or take the 30-second check/.test(nu) && !nuOut.includes('data-act="check"') && !h.includes('data-act="check"'));
+    test('Home mount (30 Oct): data-act="check" opens the 30-second check',
+      /check: function \(\) \{ if \(window\.iosFirstRun && iosFirstRun\.startCheck\) iosFirstRun\.startCheck\(\); \}/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-home.js'), 'utf8')));
     const out = html(Object.assign({}, base, { signedIn: false }));
     test('Signed out (web): Sign in pill instead of the streak', out.includes('class="ih-tb-signin" data-act="signin"') && !out.includes('ih-tb-streak'));
     const x = html(Object.assign({}, base, { greeting: '<img src=x onerror=alert(1)>', momentum: Object.assign({}, base.momentum, { pick: { topic: '<b>x</b>', detail: '' } }) }));
