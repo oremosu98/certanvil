@@ -1820,14 +1820,15 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     animateCount('r-streak', 0, bestStreak, 600);
   
     // v4.54.3: editorial display headings with italic-accent em for the key word.
+    // 30 Oct 2026: about the session, never the person or the exam (no Messer, no "exam-ready").
     // Each row: [headline with <em> accent (innerHTML), lede paragraph].
     // Italic em uses the app-wide accent-light colour via CSS.
     const headlines = {
-      A: ['Crushing <em>it.</em>',       "You're exam-ready on this topic."],
-      B: ['Solid <em>session.</em>',     'A few gaps \u2014 keep at it.'],
-      C: ['Getting <em>there.</em>',     'Review your weak spots and retry.'],
-      D: ['Keep <em>studying.</em>',     'Go back to the notes then come back.'],
-      F: ['More <em>work needed.</em>',  'Rewatch the Messer videos on this topic.']
+      A: ['Strong <em>session.</em>',  'Nearly all right. Keep it fresh with a review now and then.'],
+      B: ['Good <em>session.</em>',    'A few to go back over. Review answers shows which.'],
+      C: ['Getting <em>there.</em>',   'Go back over the misses, then try another set.'],
+      D: ['Tough <em>set.</em>',       'Read the explanation for each miss before the next one.'],
+      F: ['Hard <em>going.</em>',      'Read the explanation for each miss, then try another set.']
     };
     const headlineEl = document.getElementById('result-headline');
     if (headlineEl) headlineEl.innerHTML = headlines[grade][0];

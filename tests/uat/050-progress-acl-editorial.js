@@ -808,7 +808,10 @@ test('v4.99.82 tombstone: milestone descs must NOT hardcode 720 (use EXAM_PASS_S
 test('v4.54.3 JS: verdict adds pass/fail class + text',
   /function finish\([\s\S]{0,5500}results-v2-verdict-pass[\s\S]{0,300}results-v2-verdict-fail/.test(js));
 test('v4.54.3 JS: headlines use HTML italic em (not plain text)',
-  /headlines\s*=\s*\{[\s\S]{0,400}Crushing <em>/.test(js));
+  /headlines\s*=\s*\{[\s\S]{0,600}Strong <em>session\.<\/em>/.test(js));
+test('30 Oct: grade copy talks about the session, never Messer or "exam-ready"',
+  !/Messer videos/.test(js) && !/exam-ready on this topic/.test(js)
+  && /Hard <em>going\.<\/em>',\s+'Read the explanation for each miss, then try another set\.'/.test(js));
 test('v4.54.3 JS: result-headline uses innerHTML (supports em tag)',
   /headlineEl\.innerHTML\s*=\s*headlines\[grade\]\[0\]/.test(js));
 
