@@ -2823,7 +2823,8 @@ html.ifr-offline #connectivity-banner { display: none !important; }
 .ifr-pnote svg { flex: 0 0 auto; width: 16px; height: 16px; color: var(--accent-deep); margin-top: 1px; }
 .ifr-pnote p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-mid); }
 .ifr-pnote b { color: var(--text); }
-.ifr-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin: 12px 2px 10px; }
+.ifr-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); margin: 16px 2px 10px; }
+.ifr-picker .ifr-body { padding-top: 4px; }   /* the drawing's picker body: 4px + the label's 16px = 20px under the note */
 .ifr-cert { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 64px; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; transition: transform .12s var(--ios-ease); }
 .ifr-cert:active { transform: scale(0.99); }
 .ifr-cert.sel { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
@@ -3169,10 +3170,9 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
 #ios-tour .tt-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
 #ios-tour .tt-next { min-height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
 #ios-tour .tt-next:active { transform: scale(0.97); }
-/* F3 Task 9: the tour moves focus to Next for keyboards and VoiceOver; on a touch screen that focus is not the
-   person's own, so the global focus glow (dg-system.css `*:focus-visible`, !important) stays off and Next looks as
-   drawn. Keyboards keep the glow. */
-@media (pointer: coarse) { #ios-tour .tt-next:focus-visible { box-shadow: none !important; } }
+/* F3 Task 9: the tour focuses Next on open. A quiet 2px ring in place of the global 4px glow (dg-system.css
+   `*:focus-visible`, !important); kept for everyone, since hardware keyboards and Switch Control match pointer: coarse too. */
+#ios-tour .tt-next:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px; box-shadow: none !important; }
 @media (prefers-reduced-motion: reduce) {
   #ios-tour .tour-tip, #ios-tour.stepping .tour-tip, #ios-tour.entering .tour-tip { transform: none; filter: none; }
   #ios-tour .tt-x:active, #ios-tour .tt-next:active { transform: none; }
