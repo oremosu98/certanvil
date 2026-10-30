@@ -8,6 +8,7 @@
        with the cert-lock wall, and records the free cert on the locked cert's own page;
      - reopens the last cert on the next launch; opens links that leave *.certanvil.com in the in-app browser;
      - keeps the status bar readable for the theme; a light haptic on an answer pick, one success haptic at results.
+   F3: the app opens on the exam picker; caNative.requireAccount sends a signed-out person to the account screen.
    Plugins are reached through window.Capacitor.Plugins (injected by the native shell). */
 (function () {
   var C = window.Capacitor;
@@ -155,9 +156,23 @@
   // with no signal reads as signed out until auth settles).
   function settledSignedOut(env) { return !!env && env.flag === false && !env.hasSession && !env.offline; }
   window._nsSettledSignedOut = settledSignedOut;
-  function hasStoredSession() {
-    try { for (var i = 0; i < localStorage.length; i++) { if (/^sb-.*-auth-token$/.test(localStorage.key(i) || '')) return true; } } catch (_) {}
+  // certanvil.com hosts keep the session in the cookie `sb-certanvil-auth` (chunked as `.N` past 3500 bytes, lib/supabase.js);
+  // localhost and preview hosts keep it in localStorage under sb-*-auth or sb-*-auth-token.
+  function storedSession(cookieStr, keys) {
+    var parts = String(cookieStr || '').split(';');
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i].replace(/^\s+/, ''), eq = p.indexOf('=');
+      if (eq > 0 && /^sb-certanvil-auth(\.\d+)?$/.test(p.slice(0, eq)) && p.slice(eq + 1).length > 0) return true;
+    }
+    for (var j = 0; j < (keys || []).length; j++) { if (/^sb-.*-auth(-token)?$/.test(keys[j] || '')) return true; }
     return false;
+  }
+  window._nsHasStoredSession = storedSession;
+  function hasStoredSession() {
+    var keys = [];
+    try { for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i)); } catch (_) {}
+    var ck = ''; try { ck = document.cookie || ''; } catch (_) {}
+    return storedSession(ck, keys);
   }
   function isOffline() { return document.documentElement.classList.contains('ifr-offline') || navigator.onLine === false; }
   function historyEmpty() {
@@ -171,11 +186,14 @@
     var S = window.iosSignIn;
     if (!S || S._backToPicker) return;
     S._backToPicker = function () {
-      window.caNative.unchoose().then(function () {
+      function go() {
         try { if (typeof STORAGE === 'object') localStorage.removeItem(STORAGE.FREE_CERT_ID); } catch (_) {}
         S.close();
         if (window.iosFirstRun && window.iosFirstRun.picker) window.iosFirstRun.picker({ tier: tier() === 'pro' ? 'pro' : 'free', native: true });
-      });
+      }
+      // Back always continues, even if clearing Preferences fails
+      var u; try { u = window.caNative.unchoose(); } catch (_) { u = null; }
+      Promise.resolve(u).then(go, go);
     };
   }
   window.caNative.requireAccount = function (from) {

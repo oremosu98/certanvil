@@ -57,8 +57,17 @@ const { fs, path, ROOT, test, results, vm, _fnBody } = require('./_context');
     test('onReady with a chosenCert runs requireAccount only after the lockedCert holdLock branch has returned',
       ready.indexOf('holdLock(c.lockedCert); return;') > 0 && ready.indexOf("caNative.requireAccount(") > ready.indexOf('holdLock(c.lockedCert); return;'));
     test('requireAccount: native only, not twice (isi-open), cert name from iosFirstRun.certName, back only on firstrun with empty history; unchoose + _backToPicker defined',
-      /caNative\.requireAccount\s*=\s*function/.test(ns) && /isi-open/.test(ns) && /iosFirstRun\.certName/.test(ns) && /sb-\.\*-auth-token/.test(ns)
+      /caNative\.requireAccount\s*=\s*function/.test(ns) && /isi-open/.test(ns) && /iosFirstRun\.certName/.test(ns) && /hasStoredSession\(\)/.test(ns)
       && /ifr-offline/.test(ns) && /unchoose: function/.test(ns) && /_backToPicker\s*=/.test(ns) && /STORAGE\.HISTORY/.test(ns) && /STORAGE\.FREE_CERT_ID/.test(ns));
+    const hfn = _fnBody(ns, 'storedSession'), hctx = vm.createContext({});
+    vm.runInContext(hfn + '\nthis.f = storedSession;', hctx);
+    const HS = (c, k) => hctx.f(c, k);
+    test('_nsHasStoredSession: certanvil cookie (plain or chunked) or sb-*-auth(-token) key counts; unrelated or empty does not',
+      !!hfn && HS('a=1; sb-certanvil-auth=abc', []) === true && HS('sb-certanvil-auth.0=abc; sb-certanvil-auth.1=def', []) === true
+      && HS('', ['sb-xyz-auth-token']) === true && HS('', ['sb-certanvil-auth']) === true
+      && HS('a=1; theme=dark', ['nplus_history', 'sb-xyz-other']) === false && HS('sb-certanvil-auth=', []) === false && HS('', []) === false && HS() === false
+      && /window\._nsHasStoredSession\s*=\s*storedSession/.test(ns));
+    test('_backToPicker continues whether or not unchoose resolves', /Promise\.resolve\(u\)\.then\(go, go\)/.test(ns));
     const fr = read('features/ios-firstrun.js');
     test('iosFirstRun.certName returns the cert name', /IFR\.certName\s*=\s*function\s*\(\)\s*\{\s*return certInfo\(\)\.name;\s*\}/.test(fr));
   } catch (err) {
