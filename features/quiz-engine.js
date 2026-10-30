@@ -1791,6 +1791,16 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // v4.42.0: snapshot streak BEFORE updateStreak so we can detect an
     // increment and flag a pulse animation for the next goSetup() render.
     const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();
+    // 30 Oct: phone results show readiness before → after and whether the streak moved, so capture both
+    // before updateStreak() and _writeReadinessSnapshot() overwrite them.
+    try {
+      const _snapBefore = (typeof _readReadinessSnapshots === 'function' ? _readReadinessSnapshots() : {})[CURRENT_CERT];
+      window._iosResultsCtx = {
+        before: _snapBefore && typeof _snapBefore.score === 'number' ? _snapBefore.score : null,
+        practice: !!wrongDrillMode,
+        streakLastBefore: (function () { try { return getStreak().last || null; } catch (_) { return null; } })()
+      };
+    } catch (_) { window._iosResultsCtx = null; }
     const total = questions.length;
     const pct   = total > 0 ? Math.round((score / total) * 100) : 0;
     const grade = pct >= 90 ? 'A' : pct >= 80 ? 'B' : pct >= 70 ? 'C' : pct >= 60 ? 'D' : 'F';
@@ -1887,7 +1897,6 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     document.getElementById('btn-review').classList.toggle('is-hidden', log.length === 0);
   
     renderResultsDifficultyBreakdown();
-    if (window.renderIosResults) { try { renderIosResults(); } catch (_) {} }   // v8.183.0 Lift A: E2E results at phone width
   
     updateStreak();
     renderStreakBadge();
@@ -1981,6 +1990,9 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // Writes per-cert score to STORAGE.READINESS_SNAPSHOTS and cloud-flushes
     // so landing's /analytics page can render the live gauge for this cert.
     _writeReadinessSnapshot();
+    // v8.183.0 Lift A: E2E results at phone width. Rendered after the snapshot (30 Oct) so the readiness
+    // card shows the new number; showPage('results') comes later, so nothing paints in between.
+    if (window.renderIosResults) { try { renderIosResults(); } catch (_) {} }
   
     // Daily challenge completion hook — count any finished daily-challenge run
     if (dailyChallengeMode) {

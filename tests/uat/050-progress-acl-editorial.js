@@ -794,7 +794,7 @@ test('v4.54.3 HTML: regression \u2014 legacy .results-stats/.results-actions rem
 test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',
   /function finish\([\s\S]{0,2000}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
 test('v4.54.3 JS: finish() writes scaled score via animateCount to #r-v2-score',
-  /function finish\([\s\S]{0,4000}animateCount\('r-v2-score'/.test(js));
+  /function finish\([\s\S]{0,4800}animateCount\('r-v2-score'/.test(js));
 test('v4.54.3 JS: scaled score on the cert scale (v8.128.0: scaledExamScore, was 100 + (pct/100) * 800)',
   /const scaled\s*=\s*scaledExamScore\(pct,\s*100\)/.test(js));
 test('v4.54.3 JS: passed = scaled >= EXAM_PASS_SCORE (cert-aware, was hardcoded 720 pre-v4.99.82)',
@@ -1010,7 +1010,7 @@ test('v4.54.8 JS: _renderResultsReviewList builds rows with N\u00ba + prompt + t
   js.includes('function _renderResultsReviewList(') &&
   /_renderResultsReviewList[\s\S]{0,2500}results-v2-review-row[\s\S]{0,800}results-v2-review-mark/.test(js));
 test('v4.54.8 JS: finish() wires elapsed + review list + drill-btn visibility',
-  /function finish\(\)[\s\S]{0,5000}r-elapsed[\s\S]{0,2000}_renderResultsReviewList\(\)[\s\S]{0,600}btn-drill-mistakes/.test(js));
+  /function finish\(\)[\s\S]{0,5800}r-elapsed[\s\S]{0,2000}_renderResultsReviewList\(\)[\s\S]{0,600}btn-drill-mistakes/.test(js));
 test('v4.54.8 CSS: .results-v2-review-list uses 56/1fr/auto grid + hover lift + verdict badges',
   /\.results-v2-review-row\s*\{[\s\S]{0,500}grid-template-columns:\s*56px\s+1fr\s+auto/.test(css) &&
   /\.results-v2-review-mark-ok\s*\{/.test(css) &&

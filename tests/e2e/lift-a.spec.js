@@ -157,6 +157,12 @@ test.describe('Lift A quiz: pick, then confirm (phone)', () => {
   });
 });
 
+// Readiness skips Mixed rows, and an injected quiz is saved as Mixed. A real quiz saves per-topic rows,
+// so tag the injected one with a topic from the cert pack for the readiness card to have a number.
+async function useRealTopic(page) {
+  await page.evaluate(() => { topic = activeQuizTopic = Object.keys(TOPIC_DOMAINS)[0]; });
+}
+
 async function finishQuiz(page) {
   for (let i = 0; i < 2; i++) {
     await page.locator('#options .option').first().click();
@@ -169,9 +175,12 @@ async function finishQuiz(page) {
 test.describe('Lift A results (phone)', () => {
   test('phone: finishing a quiz shows the E2E results with Redo this quiz + Back to menu', async ({ page }) => {
     await inject(page, PHONE, QUIZ);
+    await useRealTopic(page);
     await finishQuiz(page);
     await expect(page.locator('#ios-results .ir-done-kick')).toHaveText('Session complete');
-    await expect(page.locator('#ios-results .ir-scaled-of')).toHaveText('/ 900');
+    await expect(page.locator('#ios-results .ir-rch-lbl')).toHaveText(/^Readiness (placed )?· /);
+    await expect(page.locator('#ios-results .ir-rch-streak')).toContainText('day');
+    await expect(page.locator('#ios-results .ir-scaled')).toHaveCount(0);
     await expect(page.locator('#ios-results [data-act="redo"]')).toHaveText('Redo this quiz');
     await expect(page.locator('#ios-results .ir-qrow')).toHaveCount(2);
     await page.evaluate(() => { window.__redo = 0; window.retryQuiz = () => { window.__redo++; }; });
@@ -181,11 +190,24 @@ test.describe('Lift A results (phone)', () => {
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
   });
 
-  test('phone: CLF-C02 results use its own scale (/ 1000)', async ({ page }) => {
-    await page.addInitScript(() => { try { localStorage.setItem('nplus_dev_cert', 'clfc02'); } catch (_) {} });
+  test('phone: a mistake drill shows "Practice only" and no number', async ({ page }) => {
     await inject(page, PHONE, QUIZ);
+    await page.evaluate(() => { wrongDrillMode = true; });
     await finishQuiz(page);
-    await expect(page.locator('#ios-results .ir-scaled-of')).toHaveText('/ 1000');
+    await expect(page.locator('#ios-results .ir-rch-lbl')).toHaveText('Practice only');
+    await expect(page.locator('#ios-results .ir-rch-num')).toHaveCount(0);
+  });
+
+  test('phone: theme toggle after finishing keeps the final readiness number', async ({ page }) => {
+    await inject(page, PHONE, QUIZ);
+    await useRealTopic(page);
+    await finishQuiz(page);
+    await page.waitForTimeout(1200);
+    const n = await page.locator('#ios-results .ir-rch-num').textContent();
+    const want = await page.evaluate(() => String(window._readReadinessSnapshots()[CURRENT_CERT].score));
+    expect(n).toBe(want);
+    await page.locator('#ios-results [data-act="theme"]').click();
+    await expect(page.locator('#ios-results .ir-rch-num')).toHaveText(want, { timeout: 100 });
   });
 
   test('desktop: results page is the existing desktop layout', async ({ page }) => {

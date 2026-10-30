@@ -61,12 +61,9 @@
     });
     var keys = order.filter(function (d) { return by[d]; });
     var cap = function (s) { s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); };
-    var gap = o.pass - o.scaled;
     return {
       headline: { lead: em ? em[1].trim() : String(o.headlineHtml || ''), em: em ? em[2] : '' },
       sub: String(o.sub || '').replace(/\s*—\s*/g, ', '),
-      scaledLabel: 'Scaled score - ' + o.vendorCode, scaled: o.scaled, max: o.max,
-      verdict: gap > 0 ? { text: gap + ' below pass, keep going', dir: 'down' } : { text: 'Pass mark cleared', dir: 'up' },
       rows: [{ k: 'Correct', v: String(o.score), tone: 'good' }, { k: 'Wrong', v: String(o.total - o.score), tone: 'bad' },
         { k: 'Raw', v: o.pct + '%', tone: '' }, { k: 'Time', v: String(o.elapsed || '0s'), tone: '' }, { k: 'Best streak', v: String(o.bestStreak || 0), tone: '' }],
       split: keys.length > 1 ? keys.map(function (d) { return { num: by[d].r + '/' + by[d].n, label: DIFF[d] || d }; }) : [],
@@ -98,12 +95,11 @@
   }
 
   var CHECK = '<path d="M20 6L9 17l-5-5"></path>';
-  var DOWN = '<path d="M12 5v14M5 12l7 7 7-7"></path>';
-  var UP = '<path d="M12 19V5M5 12l7-7 7 7"></path>';
   var SUN = '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>';
   var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>';
   function _iosThemeIcon() { return document.documentElement.getAttribute('data-theme') === 'light' ? MOON : SUN; }
 
+  var FLAME = '<path d="M12 3c1.5 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.5C9 10 9 11 10 11.5 9.5 9 11 5.5 12 3z"></path>';
   var _irFinishedLog = null;
   function renderIosResults() {
     var root = document.getElementById('ios-results');
@@ -111,16 +107,23 @@
     if (!isPhone() || typeof log === 'undefined' || !log.length) { root.innerHTML = ''; return; }   // never leave a stale session behind
     var total = log.length, pct = Math.round(score / total * 100);
     // Stage 5d: a finished session, once per session (re-renders of the same log don't count again)
-    if (_irFinishedLog !== log) { _irFinishedLog = log; try { window.dispatchEvent(new Event('ca:quiz-finished')); } catch (_) {} }
-    var scaled = (typeof scaledExamScore === 'function') ? scaledExamScore(pct, 100) : Math.round(100 + pct * 8);
+    var firstRender = _irFinishedLog !== log;
+    if (firstRender) { _irFinishedLog = log; try { window.dispatchEvent(new Event('ca:quiz-finished')); } catch (_) {} }
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA';
     var hl = document.getElementById('result-headline'), sub = document.getElementById('result-sub'), el = document.getElementById('r-elapsed');
-    var m = _iosResultsModel({ score: score, total: total, pct: pct, scaled: scaled,
-      pass: (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720, max: (typeof EXAM_MAX_SCORE === 'number') ? EXAM_MAX_SCORE : 900,
-      vendorCode: String(rawName).split(/\s+/)[0] + ' ' + ((typeof CERT_CODE === 'string' && CERT_CODE) || ''),
+    var m = _iosResultsModel({ score: score, total: total, pct: pct,
       headlineHtml: hl ? hl.innerHTML : '', sub: sub ? sub.textContent : '', elapsed: el ? el.textContent : '',
       bestStreak: (typeof bestStreak === 'number') ? bestStreak : 0, log: log,
       topicDomains: (typeof TOPIC_DOMAINS === 'object' && TOPIC_DOMAINS) || {} });
+    // 30 Oct: the readiness change card (before → after from finish(), the streak) in place of the scaled score
+    var ctx = window._iosResultsCtx || {}, rc = null;
+    try {
+      var snap = (typeof _readReadinessSnapshots === 'function' ? _readReadinessSnapshots() : {})[CURRENT_CERT];
+      var st = (typeof getStreak === 'function') ? getStreak() : {};
+      rc = _iosReadinessChangeModel({ before: ctx.before, after: snap && snap.score, practice: !!ctx.practice,
+        cert: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
+        streak: { current: st.current || 0, lastBefore: ctx.streakLastBefore || null, today: new Date().toISOString().slice(0, 10) } });
+    } catch (_) { rc = null; }
     var e = function (s) { return escHtml(String(s)); };
     var svg = function (p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; };
     root.innerHTML =
@@ -129,9 +132,11 @@
       + '<div class="ir-done-head ir-reveal"><span class="ir-done-kick">' + svg(CHECK) + 'Session complete</span>'
       + '<h2 class="ir-done-title">' + e(m.headline.lead) + (m.headline.em ? ' <em>' + e(m.headline.em) + '</em>' : '') + '</h2>'
       + '<p class="ir-done-sub">' + e(m.sub) + '</p></div>'
-      + '<div class="ir-scaled ir-reveal' + (m.verdict.dir === 'up' ? ' ir-pass' : '') + '"><span class="ir-scaled-lbl">' + e(m.scaledLabel) + '</span>'
-      + '<div class="ir-scaled-row"><span class="ir-scaled-num">' + e(m.scaled) + '</span><span class="ir-scaled-of">/ ' + e(m.max) + '</span></div>'
-      + '<span class="ir-scaled-pill">' + svg(m.verdict.dir === 'up' ? UP : DOWN) + e(m.verdict.text) + '</span></div>'
+      + (rc ? '<div class="ir-rch ir-reveal' + (rc.kind === 'practice' ? ' ir-practice' : '') + '"><span class="ir-rch-lbl">' + e(rc.label) + '</span>'
+        + (rc.kind === 'practice' ? '' : '<div class="ir-rch-row">' + (rc.from !== null ? '<span class="ir-rch-from">' + e(rc.from) + '</span><span class="ir-rch-arrow" aria-hidden="true">&rarr;</span>' : '')
+          + '<span class="ir-rch-num">' + e(rc.to) + '</span>' + (rc.delta ? '<span class="ir-rch-delta ir-' + rc.tone + '">' + e(rc.delta) + '</span>' : '') + '</div>')
+        + (rc.note ? '<p class="ir-rch-note">' + e(rc.note) + '</p>' : '')
+        + '<div class="ir-rch-streak">' + svg(FLAME) + '<span>' + e(rc.streak) + '</span></div></div>' : '')
       + '<div class="ir-stats ir-reveal">' + m.rows.map(function (r) { return '<div class="ir-stat"><span class="ir-sl">' + e(r.k) + '</span><span class="ir-sv' + (r.tone ? ' ir-' + r.tone : '') + '">' + e(r.v) + '</span></div>'; }).join('') + '</div>'
       + (m.split.length ? '<div class="ir-split ir-reveal">' + m.split.map(function (c) { return '<div class="ir-split-cell"><span class="ir-cn">' + e(c.num) + '</span><span class="ir-cl">' + e(c.label) + '</span></div>'; }).join('') + '</div>' : '')
       + '<div class="ir-sect ir-reveal"><p class="ir-sect-kick">Review - this session</p><h3 class="ir-sect-title">Every <em>answer.</em></h3>'
@@ -140,6 +145,21 @@
       + '<div class="ir-rfoot"><button class="ir-btn-primary" type="button" data-act="redo">Redo this quiz</button><div class="ir-sec-row">'
       + (m.mistakes > 0 ? '<button class="ir-btn-ghost" type="button" data-act="drill">Drill my ' + m.mistakes + ' mistake' + (m.mistakes === 1 ? '' : 's') + '</button>' : '')
       + '<button class="ir-btn-ghost" type="button" data-act="review">Review answers</button><button class="ir-btn-ghost" type="button" data-act="menu">Back to menu</button></div></div>';
+    // Count from the old readiness to the new one, once per finished session (BRAND §6 data motion, 900ms).
+    var num = root.querySelector('.ir-rch-num');
+    var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (num && rc && firstRender && !still && (rc.kind === 'up' || rc.kind === 'down')) {
+      var from = rc.from, to = rc.to, t0 = null;
+      num.textContent = from;
+      var step = function (t) {
+        if (!t0) t0 = t;
+        var p = Math.min((t - t0) / 900, 1);
+        if (!num.isConnected) return;
+        num.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
     var ACT = {
       redo: function () { retryQuiz(); },
       drill: function () { drillMistakesFromResults(); },

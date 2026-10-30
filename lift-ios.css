@@ -382,14 +382,21 @@ body:has(#page-results.active #ios-results:not(:empty)) #app-topbar, body:has(#p
 #ios-results .ir-done-title { font: 600 30px/1.08 Fraunces, serif; letter-spacing: -0.014em; color: var(--text); margin: 0; }
 #ios-results .ir-done-title em { font-style: normal; color: var(--accent); }
 #ios-results .ir-done-sub { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 10px 0 0; max-width: 34ch; }
-#ios-results .ir-scaled { border: 1px solid color-mix(in oklab, var(--accent) 20%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 5%, var(--surface)); padding: 16px 17px; margin-top: 18px; }
-#ios-results .ir-scaled-lbl { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
-#ios-results .ir-scaled-row { display: flex; align-items: baseline; gap: 9px; margin: 11px 0 12px; }
-#ios-results .ir-scaled-num { font: 600 52px/1 Fraunces, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
-#ios-results .ir-scaled-of { font: 700 14px/1 Inter, sans-serif; letter-spacing: 0.04em; color: var(--text-dim); }
-#ios-results .ir-scaled-pill { display: inline-flex; align-items: center; gap: 7px; font: 700 11.5px/1 Inter, sans-serif; color: var(--miss);
-    background: color-mix(in oklab, var(--miss) 12%, transparent); border: 1px solid color-mix(in oklab, var(--miss) 32%, transparent); border-radius: 999px; padding: 7px 11px; }
-#ios-results .ir-scaled-pill svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+/* 30 Oct: the readiness change card (replaced the scaled score). Lift of cert-ios-results.html .rch*; a drop is never red. */
+#ios-results .ir-rch { border: 1px solid color-mix(in oklab, var(--accent) 20%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 5%, var(--surface)); padding: 16px 17px; margin-top: 18px; }
+#ios-results .ir-rch-lbl { font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+#ios-results .ir-rch-row { display: flex; align-items: baseline; gap: 10px; margin: 11px 0 12px; flex-wrap: wrap; }
+#ios-results .ir-rch-from { font: 600 22px/1 Fraunces, serif; color: var(--text-dim); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-results .ir-rch-arrow { font: 600 18px/1 Inter, sans-serif; color: var(--text-dim); }
+#ios-results .ir-rch-num { font: 600 52px/1 Fraunces, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum","tnum"; }
+#ios-results .ir-rch-delta { align-self: center; display: inline-flex; align-items: center; gap: 5px; font: 700 12px/1 Inter, sans-serif; border-radius: 999px; padding: 6px 10px;
+    color: var(--green); background: color-mix(in oklab, var(--green) 12%, transparent); border: 1px solid color-mix(in oklab, var(--green) 30%, transparent); }
+#ios-results .ir-rch-delta.ir-down, #ios-results .ir-rch-delta.ir-held { color: var(--text-mid); background: color-mix(in oklab, var(--text) 6%, transparent); border-color: var(--border); }
+#ios-results .ir-rch-note { font-size: 13px; line-height: 1.45; color: var(--text-mid); margin: 0 0 12px; max-width: 36ch; }
+#ios-results .ir-practice .ir-rch-lbl { display: block; margin-bottom: 11px; }
+#ios-results .ir-rch-streak { display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid color-mix(in oklab, var(--border) 64%, transparent); font: 600 13px/1.2 Inter, sans-serif; color: var(--text); }
+#ios-results .ir-rch-streak svg { width: 16px; height: 16px; flex: 0 0 auto; stroke: var(--accent-deep); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+html[data-theme="dark"] #ios-results .ir-rch-streak svg { stroke: var(--accent-bright); }
 #ios-results .ir-stats { margin-top: 16px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface); overflow: hidden; }
 #ios-results .ir-stat { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; }
 #ios-results .ir-stat + .ir-stat { border-top: 1px solid color-mix(in oklab, var(--border) 64%, transparent); }
@@ -440,7 +447,7 @@ body:has(#page-results.active #ios-results:not(:empty)) #app-topbar, body:has(#p
 @media (prefers-reduced-motion: no-preference) {
 #ios-results .ir-reveal { animation: ir-rise .5s var(--ios-ease) backwards; }
 #ios-results .ir-done-head { animation-delay: .04s; }
-#ios-results .ir-scaled { animation-delay: .10s; }
+#ios-results .ir-rch { animation-delay: .10s; }
 #ios-results .ir-stats { animation-delay: .16s; }
 #ios-results .ir-split { animation-delay: .20s; }
 #ios-results .ir-sect { animation-delay: .24s; }
@@ -452,7 +459,6 @@ body:has(#page-results.active #ios-results:not(:empty)) #app-topbar, body:has(#p
 #ios-results .ir-body { flex: 1 0 auto !important; overflow: visible !important; }
 #ios-results .ir-rfoot { position: sticky !important; bottom: 0 !important; z-index: 30; }
 #ios-results .ir-qrow { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
-#ios-results .ir-scaled.ir-pass .ir-scaled-pill { color: var(--green); background: color-mix(in oklab, var(--green) 12%, transparent); border-color: color-mix(in oklab, var(--green) 32%, transparent); }
 
 /* Milestone toast (showCelebrationToast) as the E2E .mtoast: drops from the top, never over the dock */
 html[data-theme] body .celebration-toast { position: fixed !important; z-index: 2000 !important; left: 16px !important; right: 16px !important; top: calc(52px + env(safe-area-inset-top)) !important; bottom: auto !important; width: auto !important; max-width: none !important; margin: 0 !important; display: grid !important; grid-template-columns: 34px 1fr; column-gap: 12px; align-items: center; background: var(--surface) !important; border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--border)) !important; border-radius: 16px !important; padding: 14px 15px !important; box-shadow: 0 20px 50px -24px rgba(0,0,0,.5) !important; transform: translateY(-160%) !important; opacity: 0 !important; transition: transform .22s cubic-bezier(0.32,0.72,0,1), opacity .2s var(--ios-ease) !important; font-family: Inter, -apple-system, sans-serif !important; }

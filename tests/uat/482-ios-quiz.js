@@ -24,16 +24,13 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     const log = [L('DHCP stem', false, 'Foundational', 'DNS & DHCP'), L('OSPF stem', false, 'Exam Level', 'OSPF'), L('Media stem', true, 'Exam Level', 'Cabling'),
       L('SD-WAN stem', true, 'Foundational', 'SD-WAN'), L('Proxy stem', false, 'Exam Level', 'Firewalls')];
     const R = (o) => vm.runInContext('_iosResultsModel(__o)', Object.assign(ctx, { __o: o }));
-    const base = { score: 2, total: 5, pct: 40, scaled: 420, pass: 720, max: 900, vendorCode: 'CompTIA N10-009', headlineHtml: 'More <em>work needed.</em>',
-      sub: 'Rewatch the Messer videos on this topic.', elapsed: '1m 13s', bestStreak: 2, log,
+    const base = { score: 2, total: 5, pct: 40, headlineHtml: 'Hard <em>going.</em>',
+      sub: 'Read the explanation for each miss, then try another set.', elapsed: '1m 13s', bestStreak: 2, log,
       topicDomains: { 'DNS & DHCP': 'concepts', 'OSPF': 'implementation' } };
     const r = R(base);
-    test('Results: headline lead/em split, sub, "Scaled score - CompTIA N10-009", 420 / 900',
-      r.headline.lead === 'More' && r.headline.em === 'work needed.' && r.sub === 'Rewatch the Messer videos on this topic.'
-      && r.scaledLabel === 'Scaled score - CompTIA N10-009' && r.scaled === 420 && r.max === 900);
-    test('Results: below pass reads "300 below pass, keep going" (down); cleared reads "Pass mark cleared" (up)',
-      r.verdict.text === '300 below pass, keep going' && r.verdict.dir === 'down'
-      && R(Object.assign({}, base, { scaled: 760 })).verdict.text === 'Pass mark cleared' && R(Object.assign({}, base, { scaled: 760 })).verdict.dir === 'up');
+    test('Results: headline lead/em split and sub; no scaled score or pass verdict in the model',
+      r.headline.lead === 'Hard' && r.headline.em === 'going.' && r.sub === 'Read the explanation for each miss, then try another set.'
+      && !('scaled' in r) && !('verdict' in r));
     test('Results: stat rows Correct / Wrong / Raw / Time / Best streak',
       JSON.stringify(r.rows.map(x => [x.k, x.v])) === JSON.stringify([['Correct', '2'], ['Wrong', '3'], ['Raw', '40%'], ['Time', '1m 13s'], ['Best streak', '2']]));
     test('Results: difficulty split cells "1/2 Basic" and "1/3 Exam level"',
