@@ -61,6 +61,10 @@ const { fs, path, ROOT, test, results } = require('./_context');
     const rv = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/apple-revoke.test.mjs')], { encoding: 'utf8', timeout: 30000 });
     test('apple-revoke endpoint suite passes (' + ((rv.stdout || '').match(/apple-revoke: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
       rv.status === 0 && /apple-revoke: (\d+)\/\1 passed/.test(rv.stdout || ''));
+    // 30 Oct: the same endpoint with production's env (no SUPABASE_URL) — every revoke answered 401 and nothing logged.
+    const rn = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/apple-revoke-noenv.test.mjs')], { encoding: 'utf8', timeout: 30000 });
+    test('apple-revoke works with no SUPABASE_URL env, as on the landing project (' + ((rn.stdout || '').match(/apple-revoke-noenv: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
+      rn.status === 0 && /apple-revoke-noenv: (\d+)\/\1 passed/.test(rn.stdout || ''));
     // The account-deletion revoke is a cross-origin call from the cert app; the app's CSP must allow it, or WebKit
     // blocks it before it leaves the phone and the app logs "apple-revoke: failed (network)" (seen 29 Oct).
     const revokeUrl = ((read('features/ios-signin.js').match(/REVOKE_URL = '([^']+)'/) || [])[1]) || '';

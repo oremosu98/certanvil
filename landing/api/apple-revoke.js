@@ -9,6 +9,9 @@ import { logServerError } from './_lib/log-server-error.js';
 export const config = { runtime: 'edge' };
 
 const CLIENT_ID = 'com.certanvil.app';
+// The landing project has no SUPABASE_URL env (30 Oct, found as every revoke answering 401): the public project URL,
+// as notify.js uses.
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://appmuaqwuethndvalarl.supabase.co';
 const APPLE = 'https://appleid.apple.com';
 
 function allowedOrigin(origin) {
@@ -77,7 +80,7 @@ export default async function handler(req) {
   if (!code) return json({ error: 'Missing code' }, 400, req);
 
   // Who is asking, and which Apple identity is theirs (the caller's own token returns their identities).
-  const ures = await fetch(process.env.SUPABASE_URL + '/auth/v1/user', {
+  const ures = await fetch(SUPABASE_URL + '/auth/v1/user', {
     headers: { apikey: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '', Authorization: 'Bearer ' + token }
   }).catch(() => null);
   if (!ures || ures.status !== 200) { await log('unauthorized', 401); return json({ result: 'unauthorized' }, 401, req); }

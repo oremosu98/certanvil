@@ -4,7 +4,9 @@
 // ESM export because landing/api/ uses Vercel Edge Runtime (not Node.js CJS).
 // Never throws. Returns the write's promise: on Edge an unawaited write can be dropped once the response is sent,
 // so an endpoint whose log matters (apple-revoke) awaits it; others still fire and forget.
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
+// The landing project has no SUPABASE_URL env (30 Oct): fall back to the project's public URL, as notify.js does,
+// or nothing is ever written.
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://appmuaqwuethndvalarl.supabase.co';
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 export function logServerError(entry) {
