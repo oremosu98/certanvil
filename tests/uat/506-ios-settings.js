@@ -100,6 +100,11 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     const bare = b4css.split('\n').filter(l => /^\s*\.ist-/.test(l));
     test('the B4 CSS is scoped to #ios-settings / #ist-sheet and carries no dead rules',
       bare.length === 0 && !/\.ist-(del|danger-btn)|\.ist-k \.lock-pill|\.ist-row\.(static|out)\b|\.ist-chips/.test(b4css));
+    // ── F3 Task 5: signing out in the app lands on the account screen ──
+    const so = (src.match(/ON\.signout = function \(\) \{[\s\S]*?\n  \};/) || [''])[0];
+    test('F3: ON.signout in the app waits for _certanvilSignedIn === false (250ms, 15s) then calls requireAccount(\'signedout\')',
+      /CA_NATIVE/.test(so) && /_certanvilSignedIn === false/.test(so) && /250/.test(so) && /15000/.test(so) && /requireAccount\('signedout'\)/.test(so)
+      && so.indexOf('l.click()') < so.indexOf('requireAccount'));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
     test('auth-state.js (gated lane) is untouched by Lift B4',
       require('crypto').createHash('sha256').update(auth).digest('hex') === '87af4f136c474b725d2144de8258597665cf6aacc0bd5b65761ffb0e0625a86d');

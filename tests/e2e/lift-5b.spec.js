@@ -435,3 +435,17 @@ test.describe('Stage 5b: legal pages in Settings', () => {
     expect(page.url()).toBe(before);
   });
 });
+
+// ── F3 Task 5: Account → Sign out in the app goes straight to the account screen ──
+test.describe('F3: sign out in the app', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  test('Account → Sign out shows "Sign in to keep studying" with no Back', async ({ page }) => {
+    await boot(page, { fake: { signedOut: false, tier: 'free' }, seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.click('#ios-home [data-act="settings"]');
+    await expect(page.locator('#ios-settings [data-act="signout"]')).toBeVisible();
+    await page.click('#ios-settings [data-act="signout"]');
+    await expect(host(page)).toBeVisible({ timeout: 10000 });
+    await expect(host(page)).toContainText('Sign in to keep studying');
+    await expect(page.locator('#ios-signin .isi-back')).toHaveCount(0);
+  });
+});

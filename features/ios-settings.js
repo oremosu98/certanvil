@@ -328,7 +328,18 @@
   // Sign out is today's account-menu link: it uploads first and only clears this device once the cloud has it all.
   ON.signout = function () {
     var l = document.getElementById('topbar-signout-link');
-    if (l) l.click();
+    if (l) {
+      l.click();
+      // F3: in the app, signing out lands on the account screen. The flag stays true until the upload-then-clear
+      // finishes (requireAccount's own wait gives up on true), so wait for it to flip to false first. 15s, then stay put.
+      if (window.CA_NATIVE && window.caNative && window.caNative.requireAccount) {
+        var t0 = Date.now();
+        (function wait() {
+          if (window._certanvilSignedIn === false) { window.caNative.requireAccount('signedout'); return; }
+          if (Date.now() - t0 < 15000) setTimeout(wait, 250);
+        })();
+      }
+    }
     else _call('showToast', 'Couldn’t sign out here. Reload the app and try again.', 'error');   // never a silent tap
   };
   ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
