@@ -30,6 +30,7 @@
       + '<button class="isi-apple" type="button" data-act="apple"' + (m && m.apple ? '' : ' hidden') + '>' + APPLE + 'Continue with Apple</button>'
       + (m && m.google ? '<button class="isi-google" type="button" data-act="google">' + GOOGLE + 'Continue with Google</button>' : '')
       + (m && m.providerErr ? '<p class="isi-perr" id="isi-perr" role="alert">' + (m.providerErr === 'google' ? 'Google' : 'Apple') + ' sign-in didn\'t finish. Try again, or use your email.</p>' : '')
+      + (m && (m.apple || m.google) ? '<p class="isi-or">or</p>' : '')   // F3 Task 9: the drawing's "or" between the providers and email (5c spec)
       + '<div class="isi-field"><label for="isi-email">Email</label><input id="isi-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="' + e(m && m.email) + '"' + (typo ? ' aria-invalid="true"' : '') + '></div>'
       + (typo ? '<div class="isi-typo" role="alert"><p>Did you mean <b>' + e(typo.fix) + '</b>?</p><div class="isi-typo-row">'
           + '<button class="isi-primary" type="button" data-act="fix-yes">Yes, fix it</button><button class="isi-outline" type="button" data-act="fix-no">No, keep mine</button></div></div>'

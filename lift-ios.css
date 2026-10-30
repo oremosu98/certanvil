@@ -2770,6 +2770,8 @@ html[data-theme="light"] .ifr-ghost { color: var(--accent-deep); }
 .ifr-first-signin b { color: var(--accent-bright); font-weight: 650; }
 html[data-theme="light"] .ifr-first-signin b { color: var(--accent-deep); }
 .ifr-first-signin:active { transform: scale(0.97); }
+.ifr-first .ifr-pnote { margin-top: 0; }   /* F3 Task 9: the drawing's note sits on the head's 14px; Sign in sits 4px under Lock in */
+.ifr-first .ifr-foot { gap: 0; }
 .ifr-kicker { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-bright); margin: 10px 0 12px; }
 .ifr-ac { border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 16px; }
 .ifr-ac-top { display: flex; align-items: center; gap: 10px; }
@@ -2817,20 +2819,21 @@ html.ifr-offline #connectivity-banner { display: none !important; }
 /* Picker (behind the onboarding switch): #onb-firstrun full screen on phones. */
 #onb-firstrun.ifr-on { position: fixed !important; inset: 0 !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; background: var(--bg) !important; z-index: 8995; }
 .ifr-picker { height: 100%; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
-.ifr-pnote { display: flex; gap: 10px; margin: 6px 20px 4px; padding: 12px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); }
-.ifr-pnote svg { flex: 0 0 auto; width: 17px; height: 17px; color: var(--accent-deep); margin-top: 1px; }
+.ifr-pnote { display: flex; gap: 10px; margin: 6px 20px 0; padding: 11px 13px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); }
+.ifr-pnote svg { flex: 0 0 auto; width: 16px; height: 16px; color: var(--accent-deep); margin-top: 1px; }
 .ifr-pnote p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-mid); }
 .ifr-pnote b { color: var(--text); }
 .ifr-sect { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--text-dim); margin: 12px 2px 10px; }
-.ifr-cert { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 58px; margin-bottom: 8px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; transition: transform .12s var(--ios-ease); }
+.ifr-cert { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 64px; margin-bottom: 10px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--text); text-align: left; cursor: pointer; transition: transform .12s var(--ios-ease); }
 .ifr-cert:active { transform: scale(0.99); }
-.ifr-cert.sel { border-width: 2px; padding: 10px 12px; border-color: var(--accent); background: color-mix(in oklab, var(--accent) 8%, var(--surface)); }
+.ifr-cert.sel { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); background: color-mix(in oklab, var(--accent) 7%, var(--surface)); }
+.ifr-cert .ifr-mark { width: 40px; height: 40px; border-radius: 11px; }   /* F3 Task 9: the drawing's 40px row mark (day 0's card keeps 34px) */
 .ifr-meta { flex: 1; min-width: 0; }
 .ifr-nm { display: block; font: 650 15px/1.15 Inter, sans-serif; }
 .ifr-cd { display: block; font: 600 11.5px/1 'Roboto Mono', monospace; color: var(--text-dim); margin-top: 3px; }
-.ifr-pick { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border); display: grid; place-items: center; color: transparent; }
+.ifr-pick { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid color-mix(in oklab, var(--text) 22%, var(--border)); display: grid; place-items: center; color: transparent; }
 .ifr-cert.sel .ifr-pick { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.ifr-pick svg { width: 13px; height: 13px; stroke-width: 3; }
+.ifr-pick svg { width: 13px; height: 13px; stroke-width: 2.6; }
 #ist-sheet .ifr-sheet-head { display: flex; align-items: center; gap: 11px; margin: 4px 0 8px; }
 #ist-sheet .ifr-sheet-head h2 { margin: 0; font: 600 21px/1.15 Fraunces, Georgia, serif; color: var(--text); }
 #ist-sheet .ifr-sheet-lock { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 14%, var(--surface3)); color: var(--accent-deep); }
@@ -2942,7 +2945,8 @@ html.isi-open { overflow: hidden; }
 .isi-primary, .isi-outline, .isi-apple { width: 100%; min-height: 50px; border-radius: 14px; padding: 0 15px; cursor: pointer; font: 700 15px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
 .isi-primary { border: 0; background: var(--accent); color: var(--on-accent, var(--bg)); box-shadow: 0 12px 26px -14px color-mix(in oklab, var(--accent) 70%, transparent); }
 .isi-outline { border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 650; }
-.isi-apple { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; background: var(--text); color: var(--bg); font-weight: 600; }
+.isi-apple { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; background: oklch(0.98 0.004 275); color: oklch(0.16 0.010 275); font-weight: 600; }   /* the drawing's --apple-bg/--apple-fg: white on dark */
+html[data-theme="light"] .isi-apple { background: oklch(0.17 0.010 280); color: oklch(0.98 0.004 85); }   /* black on light (Apple's button rules) */
 .isi-apple[hidden] { display: none; }
 .isi-apple svg { width: 17px; height: 17px; fill: currentColor; margin-top: -1px; }
 .isi-primary:active, .isi-outline:active, .isi-apple:active { transform: scale(0.985); }
@@ -3018,6 +3022,8 @@ html.isi-open { overflow: hidden; }
 .isi-google:active { transform: scale(0.985); }
 @media (hover: hover) and (pointer: fine) { .isi-google:hover { border-color: color-mix(in oklab, var(--text) 30%, var(--border)); } }
 .isi-perr { margin: 0; font: 550 13px/1.45 Inter, sans-serif; color: var(--red, oklch(0.62 0.17 28)); }
+.isi-or { display: flex; align-items: center; gap: 12px; margin: 3px 0; color: var(--text-dim); font: 600 11px/1 Inter, sans-serif; letter-spacing: 0.06em; text-transform: uppercase; }
+.isi-or::before, .isi-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
 /* Stage 5c (28 Oct): Settings → Sign-in methods (June E2E cert-ios-settings ?v=methods) */
 #ist-sheet .ist-meths { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
@@ -3163,6 +3169,10 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
 #ios-tour .tt-foot { display: flex; justify-content: flex-end; margin-top: 12px; }
 #ios-tour .tt-next { min-height: 44px; padding: 0 18px; border: none; border-radius: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
 #ios-tour .tt-next:active { transform: scale(0.97); }
+/* F3 Task 9: the tour moves focus to Next for keyboards and VoiceOver; on a touch screen that focus is not the
+   person's own, so the global focus glow (dg-system.css `*:focus-visible`, !important) stays off and Next looks as
+   drawn. Keyboards keep the glow. */
+@media (pointer: coarse) { #ios-tour .tt-next:focus-visible { box-shadow: none !important; } }
 @media (prefers-reduced-motion: reduce) {
   #ios-tour .tour-tip, #ios-tour.stepping .tour-tip, #ios-tour.entering .tour-tip { transform: none; filter: none; }
   #ios-tour .tt-x:active, #ios-tour .tt-next:active { transform: none; }
