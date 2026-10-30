@@ -64,6 +64,12 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       RC({ before: 600, after: 610, practice: false, cert: 'Security+', streak: st(1, '2026-10-27') }).streak === 'Streak started · day 1');
     test('Readiness change: no readiness outside practice → null (card omitted)',
       RC({ before: 600, after: null, practice: false, cert: 'Network+', streak: st(2, '2026-10-29') }) === null);
+    test('Readiness change: a snapshot not rewritten by this finish is not a reading → null (no fake "held")',
+      RC({ before: 612, after: 612, afterAt: '2026-10-30T10:00:00.000Z', startedAt: '2026-10-30T10:05:00.000Z', practice: false, cert: 'Network+', streak: st(2, '2026-10-29') }) === null);
+    test('Readiness change: a snapshot written during this finish counts',
+      RC({ before: 600, after: 612, afterAt: '2026-10-30T10:05:01.000Z', startedAt: '2026-10-30T10:05:00.000Z', practice: false, cert: 'Network+', streak: st(2, '2026-10-29') }).kind === 'up');
+    test('Readiness change: the onboarding estimate is not a "before" → first real quiz reads "placed", not a drop',
+      RC({ before: 612, beforeSource: 'onb-calibration', after: 480, practice: false, cert: 'Network+', streak: st(1, null) }).kind === 'placed');
     // ── Review answers model ──
     vm.runInContext((_fnBody(js, '_iosReviewModel') || ''), ctx);
     const Q = (question, answer, extra) => Object.assign({ type: 'mcq', question, options: { A: '443', B: '80', C: '22', D: '53' }, answer, explanation: 'Why ' + question }, extra || {});

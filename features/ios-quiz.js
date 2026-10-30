@@ -84,8 +84,11 @@
     var base = { kind: '', label: '', from: null, to: null, delta: null, tone: '', note: '', streak: streak };
     var set = function (k) { for (var i in k) base[i] = k[i]; return base; };
     if (o.practice) return set({ kind: 'practice', label: 'Practice only', note: "Mistake drills don't change your readiness. They're for fixing what you got wrong." });
-    var to = o.after, from = o.before;
+    // Only a snapshot this finish wrote is a reading (it skips the write when readiness can't be computed), and the
+    // onboarding estimate is not a "before": the first real quiz after it reads "placed", not a jump or a drop.
+    var to = o.after, from = o.beforeSource === 'onb-calibration' ? null : o.before;
     if (typeof to !== 'number' || !isFinite(to)) return null;
+    if (o.startedAt && !(o.afterAt && o.afterAt >= o.startedAt)) return null;
     if (typeof from !== 'number' || !isFinite(from)) return set({ kind: 'placed', label: 'Readiness placed · ' + o.cert, to: to,
       note: 'Your first reading on ' + o.cert + '. It moves with every set you finish.' });
     var d = Math.round(to - from);
@@ -120,7 +123,8 @@
     try {
       var snap = (typeof _readReadinessSnapshots === 'function' ? _readReadinessSnapshots() : {})[CURRENT_CERT];
       var st = (typeof getStreak === 'function') ? getStreak() : {};
-      rc = _iosReadinessChangeModel({ before: ctx.before, after: snap && snap.score, practice: !!ctx.practice,
+      rc = _iosReadinessChangeModel({ before: ctx.before, beforeSource: ctx.beforeSource || null, after: snap && snap.score,
+        afterAt: snap && snap.computed_at, startedAt: ctx.at || null, practice: !!ctx.practice,
         cert: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
         streak: { current: st.current || 0, lastBefore: ctx.streakLastBefore || null, today: new Date().toISOString().slice(0, 10) } });
     } catch (_) { rc = null; }

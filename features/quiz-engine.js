@@ -1797,6 +1797,8 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       const _snapBefore = (typeof _readReadinessSnapshots === 'function' ? _readReadinessSnapshots() : {})[CURRENT_CERT];
       window._iosResultsCtx = {
         before: _snapBefore && typeof _snapBefore.score === 'number' ? _snapBefore.score : null,
+        beforeSource: (_snapBefore && _snapBefore.source) || null,
+        at: new Date().toISOString(),
         practice: !!wrongDrillMode,
         streakLastBefore: (function () { try { return getStreak().last || null; } catch (_) { return null; } })()
       };
