@@ -132,7 +132,7 @@
   }
   // localStorage, not sessionStorage: iOS can end the app while the user reads Mail, and a cold launch starts a
   // new session (native-shell's ca_launched relies on that). The 15-minute TTL bounds it.
-  function writePending(email, sentAt, from) { try { localStorage.setItem(PENDING, JSON.stringify({ email: email, sentAt: sentAt, from: from || 'picker' })); } catch (_) {} }
+  function writePending(email, sentAt, from, cert, back) { try { localStorage.setItem(PENDING, JSON.stringify({ email: email, sentAt: sentAt, from: from || 'picker', cert: cert || null, back: back === true ? true : (back === false ? false : null) })); } catch (_) {} }
   function clearPending() { try { localStorage.removeItem(PENDING); } catch (_) {} }
   function sentAt() { var p = readPending(); return p ? p.sentAt : 0; }
   function leftSec() { return Math.max(0, Math.ceil((RESEND_MS - (Date.now() - sentAt())) / 1000)); }
@@ -192,9 +192,9 @@
     Promise.resolve().then(function () { return c.auth.signInWithOtp({ email: email }); }).then(function (r) {
       busy = false;
       var err = r && r.error;
-      if (err && err.status === 429) { writePending(email, keepSent || Date.now(), st.from); show('code', { msg: COPY.rate, kind: 'err' }); return; }
+      if (err && err.status === 429) { writePending(email, keepSent || Date.now(), st.from, st.cert, st.back); show('code', { msg: COPY.rate, kind: 'err' }); return; }
       if (err) { var m = isNet(err) ? COPY.net : COPY.refused; if (st.view === 'code') say(m, 'err'); else show('signin', { msg: m }); return; }
-      writePending(email, Date.now(), st.from);
+      writePending(email, Date.now(), st.from, st.cert, st.back);
       show('code', resend ? { msg: COPY.sent, kind: 'ok' } : {});
     }, function () { busy = false; if (st.view === 'code') say(COPY.net, 'err'); else show('signin', { msg: COPY.net }); });
   }
@@ -445,7 +445,7 @@
     }, true);
     showToast();   // the one-time "we've opened your account's exam" note, on the page it opened
     var p = readPending();
-    if (p) { st.from = p.from || 'picker'; st.email = p.email; show('code'); }   // a relaunch or cert change mid-code comes back here
+    if (p) { st.from = p.from || 'picker'; st.cert = p.cert || undefined; st.back = p.back == null ? undefined : p.back; st.email = p.email; show('code'); }   // a relaunch or cert change mid-code comes back here
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 

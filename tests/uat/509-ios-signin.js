@@ -49,7 +49,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       && run('_isiSignInHtml(__s)', { from: 'firstrun', cert: 'A<b>', back: true }).indexOf('A&lt;b&gt;') >= 0);
     test('the welcome screen is gone and the pending record carries where the user came from',
       src.indexOf('_isiWelcomeHtml') < 0 && src.indexOf("Know when you're ready") < 0 && src.indexOf('IS.welcome') < 0 && src.indexOf("'start'") < 0
-      && /writePending\(email, Date\.now\(\), st\.from\)/.test(src) && /st\.from = p\.from \|\| 'picker'/.test(src)
+      && /writePending\(email, Date\.now\(\), st\.from, st\.cert, st\.back\)/.test(src) && /st\.from = p\.from \|\| 'picker'; st\.cert = p\.cert/.test(src) && /st\.back = p\.back == null/.test(src)
       && /st\.from === 'firstrun'[\s\S]{0,80}IS\._backToPicker/.test(src));
     const SG = (v) => run('_isiSuggest(__s)', v);
     const MAP = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gamil.com': 'gmail.com', 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
