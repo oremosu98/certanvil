@@ -74,6 +74,21 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     test('picker: AI-901 label, escaped names, Lock in for free; Pro reads Start with and has no lock action',
       pk.indexOf('AI-901') >= 0 && pk.indexOf('AI-900') < 0 && pk.indexOf('A&amp;B &lt;x&gt;') >= 0 && /data-act="lock"[^>]*>Lock in Network\+</.test(pk)
       && />Start with Network\+</.test(pkP) && !/data-act="lock"/.test(pkP));
+    const pf = run('_ifrPickerHtml(__s)', { certs: CERTS, selected: 'netplus', pro: false, first: true });
+    test('F3 first-run picker: brand mark, the question as h1, Sign in link; no "Pick your exam" header, no foot hint',
+      pf.indexOf('ifr-first-head') >= 0 && pf.indexOf('<svg viewBox="0 0 100 100"') >= 0 && pf.indexOf('>CertAnvil<') >= 0
+      && pf.indexOf('<h1>Which exam are you studying for?</h1>') >= 0
+      && /<button[^>]*data-act="signin"[^>]*>Already have an account\? <b>Sign in<\/b><\/button>/.test(pf)
+      && pf.indexOf('Pick your exam') < 0 && pf.indexOf('foot-hint') < 0 && /data-act="lock"/.test(pf) && noDash(pf));
+    test('F3 first-run picker: first:false (website switch-on) is unchanged',
+      pk.indexOf('<h1>Pick your exam</h1>') >= 0 && pk.indexOf('ifr-foot-hint') >= 0 && pk.indexOf('signin') < 0 && pk.indexOf('ifr-first-head') < 0);
+    const tap = _fnBody(src, 'onPickTap') || '', enter = _fnBody(src, 'enterApp') || '', pickFn = src.slice(src.indexOf('IFR.picker = function'), src.indexOf('IFR.picker = function') + 700);
+    test('F3 wiring: Sign in opens the account screen from the picker; first comes from decision.native',
+      /a === 'signin'/.test(tap) && /iosSignIn\.open\(\{ from: 'picker' \}\)/.test(tap) && /first: !!decision\.native/.test(pickFn) && /first: pick\.first/.test(src));
+    test('F3 wiring: the same-cert pick (no reload) still opens the account screen via requireAccount("firstrun"); a different cert only navigates',
+      /id === certId\(\)/.test(enter) && /goToCert\(id\)/.test(enter) && /caNative\.requireAccount\('firstrun'\)/.test(enter)
+      && /saveChoice\(chosen, true\)\.then\(function \(\) \{ enterApp\(chosen\); \}\)/.test(tap)
+      && /enterApp\(id\)/.test(tap) && /tadSwitchCert/.test(tap));
     test('lock-in sheet: the three June terms, Lock in and Go back',
       lk.indexOf('Lock in Network+?') >= 0 && lk.indexOf('20 questions a day') >= 0 && lk.indexOf('A fresh set each morning') >= 0
       && /data-act="lock-go"/.test(lk) && /data-act="lock-back"/.test(lk));

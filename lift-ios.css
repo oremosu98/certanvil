@@ -2757,6 +2757,17 @@ html[data-theme="light"] .ifr-ghost { color: var(--accent-deep); }
 .ifr-note p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-mid); }
 .ifr-foot { padding: 10px 20px calc(14px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; border-top: 1px solid color-mix(in oklab, var(--border) 50%, transparent); background: var(--bg); }
 .ifr-foot-hint { margin: 2px 0 0; text-align: center; font-size: 12px; color: var(--text-dim); }
+/* F3: the picker as the app's opening screen (lifted from the approved ?v=first drawing). */
+.ifr-first-head { padding: 18px 22px 14px; }
+.ifr-fh-brand { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.ifr-fh-mark { width: 26px; height: 26px; color: var(--accent); display: inline-flex; }
+.ifr-fh-mark svg { width: 100%; height: 100%; }
+.ifr-fh-name { font: 700 15px/1 Inter, sans-serif; letter-spacing: -0.01em; color: var(--text); }
+.ifr-first-head h1 { margin: 0; max-width: 15ch; font: 600 27px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.015em; color: var(--text); }
+.ifr-first-signin { width: 100%; min-height: 44px; margin-top: 4px; border: 0; background: none; cursor: pointer; font: 500 13.5px/1 Inter, sans-serif; color: var(--text-mid); transition: transform .15s var(--ios-ease); }
+.ifr-first-signin b { color: var(--accent-bright); font-weight: 650; }
+html[data-theme="light"] .ifr-first-signin b { color: var(--accent-deep); }
+.ifr-first-signin:active { transform: scale(0.97); }
 .ifr-kicker { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-bright); margin: 10px 0 12px; }
 .ifr-ac { border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 18px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); padding: 16px; }
 .ifr-ac-top { display: flex; align-items: center; gap: 10px; }

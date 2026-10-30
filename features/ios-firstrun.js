@@ -180,12 +180,17 @@
     var name = sel ? e(sel.name) : '';
     var note = m.pro ? 'Pro covers <b>every exam</b>. Start with the one you’re sitting next.'
       : 'Free covers <b>one full exam</b>. Focusing on one is the fastest way to pass, so start with the exam you’re sitting next. You can add the rest with Pro.';
-    return '<div class="ifr-picker">' +
-      '<div class="ifr-hdr"><h1>Pick your exam</h1><span class="ifr-tag">' + (m.pro ? 'Pro' : 'Free') + '</span></div>' +
+    var BRAND = '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="currentColor" stroke-width="7" stroke-linecap="round"/><line x1="30" y1="84" x2="70" y2="16" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.55"/><path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    var head = m.first
+      ? '<div class="ifr-first-head"><div class="ifr-fh-brand"><span class="ifr-fh-mark">' + BRAND + '</span><span class="ifr-fh-name">CertAnvil</span></div><h1>Which exam are you studying for?</h1></div>'
+      : '<div class="ifr-hdr"><h1>Pick your exam</h1><span class="ifr-tag">' + (m.pro ? 'Pro' : 'Free') + '</span></div>';
+    var hint = m.first ? '' : '<p class="ifr-foot-hint">' + (m.pro ? 'You can add the others any time from Switch cert in Settings.' : 'You can change your mind right up until you lock in.') + '</p>';
+    var signin = m.first ? '<button type="button" class="ifr-first-signin" data-act="signin">Already have an account? <b>Sign in</b></button>' : '';
+    return '<div class="ifr-picker' + (m.first ? ' ifr-first' : '') + '">' +
+      head +
       '<div class="ifr-pnote"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><p>' + note + '</p></div>' +
       '<div class="ifr-body"><div class="ifr-sect">Choose one to study</div>' + rows + '</div>' +
-      '<div class="ifr-foot"><button type="button" class="ifr-btn" data-act="' + (m.pro ? 'start' : 'lock') + '">' + (m.pro ? 'Start with ' : 'Lock in ') + name + '</button>' +
-        '<p class="ifr-foot-hint">' + (m.pro ? 'You can add the others any time from Switch cert in Settings.' : 'You can change your mind right up until you lock in.') + '</p></div>' +
+      '<div class="ifr-foot"><button type="button" class="ifr-btn" data-act="' + (m.pro ? 'start' : 'lock') + '">' + (m.pro ? 'Start with ' : 'Lock in ') + name + '</button>' + hint + signin + '</div>' +
     '</div>';
   }
 
@@ -436,7 +441,7 @@
   function pickHost() { return document.getElementById('onb-firstrun'); }
   function drawPicker() {
     var h = pickHost(); if (!h || !pick) return;
-    h.innerHTML = _ifrPickerHtml({ certs: PICK_IDS.map(function (id) { return { id: id, glyph: MARKS[id], name: PICK_NAMES[id], code: PICK_CODES[id] }; }), selected: pick.selected, pro: pick.pro });
+    h.innerHTML = _ifrPickerHtml({ certs: PICK_IDS.map(function (id) { return { id: id, glyph: MARKS[id], name: PICK_NAMES[id], code: PICK_CODES[id] }; }), selected: pick.selected, pro: pick.pro, first: pick.first });
   }
   function closePicker() {
     var h = pickHost(); if (h) { h.hidden = true; h.innerHTML = ''; h.classList.remove('ifr-on'); }
@@ -458,14 +463,22 @@
     if (!N || !N.choose) return Promise.resolve();
     return Promise.race([N.choose(id, { locked: locked }), new Promise(function (r) { setTimeout(r, 2000); })]).catch(function () {});
   }
+  // Picking the exam this page is already on does not reload, so the account screen is opened here (a different
+  // cert navigates, and that page's launch guard opens it).
+  function enterApp(id) {
+    var same = id === certId();
+    goToCert(id);
+    if (same && window.caNative && caNative.requireAccount) caNative.requireAccount('firstrun');
+  }
   function onPickTap(ev) {
     var b = ev.target.closest('[data-act]'); if (!b || !pick) return;
     var a = b.getAttribute('data-act');
     if (a === 'cert') { pick.selected = b.getAttribute('data-id'); drawPicker(); }
+    else if (a === 'signin') { if (window.iosSignIn && window.iosSignIn.open) window.iosSignIn.open({ from: 'picker' }); }
     else if (a === 'start') {   // Pro: no lock-in
       var id = pick.selected;
       saveChoice(id, false).then(function () {
-        if (id !== certId() && typeof window.tadSwitchCert === 'function') { closePicker(); window.tadSwitchCert(id); } else goToCert(id);
+        if (id !== certId() && typeof window.tadSwitchCert === 'function') { closePicker(); window.tadSwitchCert(id); } else enterApp(id);
       });
     } else if (a === 'lock' && window.iosSettings && window.iosSettings.openSheet) {
       var chosen = pick.selected;
@@ -485,7 +498,7 @@
           window.iosSettings.closeSheet(true);
           var shc = document.getElementById('ist-sheet'); if (shc) shc.classList.remove('ifr-step-in');
           if (window.onbFirstRun && window.onbFirstRun.persistFreeCert) window.onbFirstRun.persistFreeCert(chosen);
-          saveChoice(chosen, true).then(function () { goToCert(chosen); });
+          saveChoice(chosen, true).then(function () { enterApp(chosen); });
         }
       });
     }
@@ -493,7 +506,7 @@
   IFR.picker = function (decision) {
     var h = pickHost(); if (!h) return;
     decision = decision || {};
-    pick = { selected: (decision.certId && PICK_NAMES[decision.certId]) ? decision.certId : (PICK_NAMES[certId()] ? certId() : 'netplus'), pro: decision.tier === 'pro' };
+    pick = { selected: (decision.certId && PICK_NAMES[decision.certId]) ? decision.certId : (PICK_NAMES[certId()] ? certId() : 'netplus'), pro: decision.tier === 'pro', first: !!decision.native };
     if (!h.__ifrBound) { h.addEventListener('click', onPickTap); h.__ifrBound = true; }
     h.classList.add('ifr-on'); html().classList.add('ifr-picking'); h.hidden = false;
     drawPicker();
