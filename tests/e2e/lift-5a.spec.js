@@ -84,6 +84,8 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await expect(page.locator('#onb-firstrun')).toBeHidden();
     await page.reload(); await page.waitForTimeout(900);
     await expect(page.locator('#onb-firstrun')).toBeHidden();
+    // with an exam chosen the welcome never returns (signed out, the account screen is what shows here)
+    await expect(page.locator('#ios-signin')).not.toContainText("Know when you're ready");
   });
   test('relaunch with nothing chosen opens the welcome again', async ({ page }) => {
     await bootNative(page);
