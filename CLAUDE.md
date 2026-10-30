@@ -29,7 +29,7 @@
 | index.html | 2374 | 156 KB |
 | dg-system.css | 5630 | 533 KB |
 | tests/uat.js + tests/uat/ (76 modules) | 33355 | — |
-UAT checks: 5734 · E2E `test(` count: 641 · APP_VERSION: 8.200.0 · stamped-at: worktree
+UAT checks: 5734 · E2E `test(` count: 641 · APP_VERSION: 8.201.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.201.0 | iOS first run (F3): welcome, then the exam picker, account after lock-in, day 0 as the welcome, a four-tip tour |
 | v8.200.0 | iOS: Skip on day 0 + check link on locked readiness; Home readiness label fixed (0-1 pass chance) |
 | v8.199.0 | Study reminders in the iOS app (Stage 5d) |
-| v8.198.0 | Account deletion does what it promises |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
