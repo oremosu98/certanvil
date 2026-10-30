@@ -6,16 +6,11 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
   try {
     const read = (p) => { const f = path.join(ROOT, p); return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : ''; };
     const src = read('features/ios-signin.js');
-    const NAMES = ['_isiWelcomeHtml', '_isiSignInHtml', '_isiCodeHtml', '_isiToastHtml', '_isiSuggest'];
+    const NAMES = ['_isiSignInHtml', '_isiCodeHtml', '_isiToastHtml', '_isiSuggest'];
     const ctx = vm.createContext({ Math, String, Array, Object, JSON, Number, Date, RegExp });
     vm.runInContext(NAMES.map(n => _fnBody(src, n) || '').join('\n'), ctx);
     const run = (expr, s) => { ctx.__s = s; try { return vm.runInContext(expr, ctx); } catch (_) { return ''; } };
     const noInline = (h) => !/\son[a-z]+=/.test(h);
-
-    const w = run('_isiWelcomeHtml()');
-    test('welcome: June\'s copy, Get started, the 5b email line and Already have an account',
-      w.indexOf("Know when you're ready") >= 0 && w.indexOf('>Get started<') >= 0 && w.indexOf('Sign in with email') >= 0
-      && w.indexOf('Apple') < 0 && /Already have an account\? <b>Sign in<\/b>/.test(w) && /data-act="start"/.test(w) && /data-act="signin"/.test(w));
 
     const s = run('_isiSignInHtml(__s)', { email: '', typo: null });
     const st = run('_isiSignInHtml(__s)', { email: 'sam@gmial.com', typo: { fix: 'sam@gmail.com' } });
@@ -37,9 +32,25 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     test('sign-in: the provider failure line, verbatim',
       sperr.indexOf("Apple sign-in didn't finish. Try again, or use your email.") >= 0 && sperr.indexOf('data-act="google"') < 0
       && run('_isiSignInHtml(__s)', { apple: true, google: true, providerErr: 'google' }).indexOf("Google sign-in didn't finish. Try again, or use your email.") >= 0);
-    test('welcome: the line names only the ready providers',
-      run('_isiWelcomeHtml(__s)', { apple: true, google: true }).indexOf('Sign in with Apple, Google or email') >= 0
-      && run('_isiWelcomeHtml(__s)', { apple: true, google: false }).indexOf('Sign in with Apple or email') >= 0);
+    // F3 Task 2: first-run and signed-out variants; the 735 welcome is gone
+    const fr = run('_isiSignInHtml(__s)', { email: '', from: 'firstrun', cert: 'Network+', back: true });
+    const frNo = run('_isiSignInHtml(__s)', { email: '', from: 'firstrun', cert: 'Network+', back: false });
+    const so = run('_isiSignInHtml(__s)', { email: '', from: 'signedout', cert: 'Network+', back: true });
+    const hm = run('_isiSignInHtml(__s)', { email: '', from: 'home' });
+    const BACK = 'data-act="back"';
+    test('first-run: Create your account to start, the cert named, Back only when asked',
+      fr.indexOf('Create your account to start') >= 0 && fr.indexOf('Your <b>Network+</b> progress is saved to it, so you keep it if you switch phones.') >= 0
+      && fr.indexOf(BACK) >= 0 && frNo.indexOf(BACK) < 0 && run('_isiSignInHtml(__s)', { from: 'firstrun', cert: 'N' }).indexOf(BACK) < 0);
+    test('signed-out: Sign in to keep studying, never a Back',
+      so.indexOf('Sign in to keep studying') >= 0 && so.indexOf('Your <b>Network+</b> progress is waiting in your account.') >= 0 && so.indexOf(BACK) < 0);
+    test('every other entry keeps today\'s copy and Back; the cert name is escaped',
+      hm.indexOf('Sign in or create your account') >= 0 && hm.indexOf('<b>Free to start.</b>') >= 0 && hm.indexOf(BACK) >= 0
+      && run('_isiSignInHtml(__s)', { from: 'picker' }).indexOf(BACK) >= 0
+      && run('_isiSignInHtml(__s)', { from: 'firstrun', cert: 'A<b>', back: true }).indexOf('A&lt;b&gt;') >= 0);
+    test('the welcome screen is gone and the pending record carries where the user came from',
+      src.indexOf('_isiWelcomeHtml') < 0 && src.indexOf("Know when you're ready") < 0 && src.indexOf('IS.welcome') < 0 && src.indexOf("'start'") < 0
+      && /writePending\(email, Date\.now\(\), st\.from\)/.test(src) && /st\.from = p\.from \|\| 'picker'/.test(src)
+      && /st\.from === 'firstrun'[\s\S]{0,80}IS\._backToPicker/.test(src));
     const SG = (v) => run('_isiSuggest(__s)', v);
     const MAP = { 'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gmail.co': 'gmail.com', 'gamil.com': 'gmail.com', 'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
       'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com', 'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'iclod.com': 'icloud.com', 'icoud.com': 'icloud.com' };
@@ -71,7 +82,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
       t.indexOf('Your free exam on this account is <b>Network+</b>, so we\'ve opened it.') >= 0 && /role="status"/.test(t));
 
     test('no view has an inline handler or a dash flourish',
-      [w, s, st, c, cx, t].every((h) => h.length > 0 && noInline(h) && h.indexOf('—') < 0));
+      [s, st, c, cx, t].every((h) => h.length > 0 && noInline(h) && h.indexOf('—') < 0));
     // Task 3: the lock rule (spec §After sign-in)
     const ns = read('native-shell.js'), cl = read('lib/cert-lock.js');
     test('native-shell records the free cert for signed-out users only (never over an account\'s)',
