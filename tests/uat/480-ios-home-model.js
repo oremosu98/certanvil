@@ -40,7 +40,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       return vm.runInContext('_iosHomeModel(__now)', ctx);
     }
     const hist = [row('Ethernet Basics', 8, 10), row('VLANs', 1, 2), Object.assign(row('Ethernet Basics', 8, 10), { via: 'mixed-split' })];
-    const rd = { predicted: 553, recentAccuracy: 70, recentAnswers: 200, passProbability: 55, examReady: false, whatIf: [{ topic: 'VLANs' }] };
+    const rd = { predicted: 553, recentAccuracy: 70, recentAnswers: 200, passProbability: 0.55, examReady: false, whatIf: [{ topic: 'VLANs' }] };
 
     const nu = mk({});
     test('New user: state new, readiness Locked with no score, rec "Start your first quiz"',
@@ -69,8 +69,8 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Tier: Pass ready / On track / Close / Behind',
       mk({ history: hist, readiness: Object.assign({}, rd, { examReady: true }) }).readiness.tier === 'Pass ready'
       && ret.readiness.tier === 'On track'
-      && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 25 }) }).readiness.tier === 'Close'
-      && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 5 }) }).readiness.tier === 'Behind');
+      && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 0.25 }) }).readiness.tier === 'Close'
+      && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 0.05 }) }).readiness.tier === 'Behind');
 
     const paused = JSON.stringify({ questions: new Array(90).fill({}), answered: 31, paused: true, timeLeft: 2520, savedAt: TUE_9AM.getTime() - 3600000, endTime: TUE_9AM.getTime() });
     const ex = mk({ history: hist, readiness: rd, store: { nplus_exam_state: paused }, sr: { todo: 7, later: 0, counts: [7, 2, 0, 0, 0, 0, 0] } });

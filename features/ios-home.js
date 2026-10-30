@@ -41,7 +41,7 @@
     if (r && typeof r.predicted === 'number') {
       readiness.score = r.predicted;
       readiness.fillPct = Math.round(Math.min(1, Math.max(0, r.predicted / max)) * 1000) / 10;
-      readiness.tier = r.examReady ? 'Pass ready' : (r.passProbability >= 50 ? 'On track' : (r.passProbability >= 20 ? 'Close' : 'Behind'));
+      readiness.tier = r.examReady ? 'Pass ready' : (r.passProbability >= 0.5 ? 'On track' : (r.passProbability >= 0.2 ? 'Close' : 'Behind'));
       readiness.insight = r.predicted >= pass ? 'Above the pass mark. Keep it there.' : ('About ' + (pass - r.predicted) + ' points to a pass.');
       if (typeof r.recentAccuracy === 'number') {
         var n = Math.min(200, r.recentAnswers || 200);
