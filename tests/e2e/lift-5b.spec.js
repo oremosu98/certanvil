@@ -163,7 +163,9 @@ test.describe('Stage 5b: sign in with a code inside the app', () => {
     await expect(host(page)).toContainText('We sent a 6-digit code to sam@example.test.');
     await shiftSent(page, 901);
     await page.reload(); await page.waitForLoadState('load'); await page.waitForTimeout(900);
-    await expect(host(page)).toBeHidden();
+    // F3: the expired code is gone; this signed-out launch (cert chosen, no history) lands on the account screen instead of nothing
+    await expect(host(page)).not.toContainText('We sent a 6-digit code');
+    await expect(host(page)).toContainText('Create your account to start');
   });
 
   test('Wrong email? Change it returns to the email, filled in', async ({ page }) => {
@@ -243,10 +245,9 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
     expect(await page.evaluate(() => localStorage.getItem('nplus_freeCertId'))).toBeNull();
   });
 
-  test('sign in from the welcome opens the account\'s cert', async ({ page }) => {
+  test('sign in from the picker opens the account\'s cert', async ({ page }) => {
     await boot(page, { fake: { accountFreeCert: 'secplus', tier: 'free' }, prefs: {} });
-    await page.evaluate(() => window.iosSignIn.welcome());
-    await page.click('#ios-signin [data-act="signin"]');
+    await page.click('#onb-firstrun [data-act="signin"]');   // F3: the picker's "Already have an account? Sign in"
     await page.fill('#isi-email', 'sam@example.test');
     await page.click('#ios-signin [data-act="continue"]');
     await typeCode(page, '123456');
@@ -256,15 +257,14 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
     expect(await prefs(page)).toMatchObject({ chosenCert: 'secplus', lockedCert: 'secplus' });
   });
 
-  test('sign in from the welcome opens the picker when the account has none', async ({ page }) => {
+  test('sign in from the picker returns to the picker when the account has none', async ({ page }) => {
     await boot(page, { fake: { tier: 'free' }, prefs: {} });
-    await page.evaluate(() => window.iosSignIn.welcome());
-    await page.click('#ios-signin [data-act="signin"]');
+    await page.click('#onb-firstrun [data-act="signin"]');   // F3: the picker's "Already have an account? Sign in"
     await page.fill('#isi-email', 'sam@example.test');
     await page.click('#ios-signin [data-act="continue"]');
     await typeCode(page, '123456');
     await expect(page.locator('#onb-firstrun')).toBeVisible({ timeout: 8000 });
-    await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
   });
 
   test('a signed-in free user on the wrong cert gets the cert-lock wall', async ({ page }) => {
@@ -275,37 +275,37 @@ test.describe('Stage 5b: the lock rule after sign-in', () => {
 });
 const prefs = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('__prefs') || '{}'));
 
-// ── Task 4: June's welcome first, and sign-in never leaves the app ──
+// ── Task 4 (repointed in F3): the exam picker first, and sign-in never leaves the app ──
 test.describe('Stage 5b: first launch and every sign-in in the app', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
 
-  test('a fresh install shows the welcome', async ({ page }) => {
+  test('a fresh install shows the picker', async ({ page }) => {
     await boot(page, { prefs: {} });
-    await expect(host(page)).toContainText("Know when you're ready");
-    await expect(host(page)).toContainText('Sign in with email');
-    await expect(page.locator('#onb-firstrun')).toBeHidden();
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
+    await expect(page.locator('#onb-firstrun [data-act="signin"]')).toContainText('Already have an account? Sign in');
+    await expect(host(page)).toBeHidden();
   });
 
-  test('Get started opens the picker and both reminders as in 5a', async ({ page }) => {
+  test('the picker leads to both reminders as in 5a', async ({ page }) => {
     await boot(page, { prefs: {} });
-    await page.click('#ios-signin [data-act="start"]');
     await expect(host(page)).toBeHidden();
-    await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
     await page.click('#onb-firstrun [data-act="lock"]');
     await page.click('#ist-sheet [data-act="lock-go"]');
     await expect(page.locator('#ist-sheet')).toContainText('One last check');
   });
 
-  test('Already have an account opens sign-in, and back returns to the welcome', async ({ page }) => {
+  test('Already have an account opens sign-in, and back returns to the picker', async ({ page }) => {
     await boot(page, { prefs: {} });
-    await page.click('#ios-signin [data-act="signin"]');
+    await page.click('#onb-firstrun [data-act="signin"]');
     await expect(host(page)).toContainText('Sign in or create your account');
     await page.click('#ios-signin [data-act="back"]');
-    await expect(host(page)).toContainText("Know when you're ready");
+    await expect(host(page)).toBeHidden();
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
   });
 
   for (const [name, run] of [
-    ['Home', async (page) => { await page.click('#ios-home [data-act="signin"]'); }],
+    ['Home', async (page) => { await page.evaluate(() => window.iosSignIn.close()); await page.click('#ios-home [data-act="signin"]'); }],
     ['Settings', async (page) => { await page.evaluate(() => window.iosSettings._on.signin()); }],
     ['Custom quiz', async (page) => { await page.evaluate(() => window.iosSignIn.go('custom')); }],
     ['the topbar pill', async (page) => { await page.evaluate(() => { const a = document.querySelector('a.topbar-signin-pill'); a.click(); }); }],
@@ -423,6 +423,7 @@ test.describe('Stage 5b: legal pages in Settings', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
   test('Settings has About with Privacy Policy and Terms, opening in the in-app sheet', async ({ page }) => {
     await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });
+    await page.evaluate(() => window.iosSignIn.close());   // F3: a signed-out launch opens the account screen over Home; Settings is under it
     await page.click('#ios-home [data-act="settings"]');
     await expect(page.locator('#ios-settings .ist-legal')).toBeVisible();
     const about = page.locator('#ios-settings .ist-legal');

@@ -65,11 +65,9 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
   test('a fresh install opens the picker on Network+', async ({ page }) => {
     await bootNative(page);
     await expect(page.locator('html')).toHaveClass(/is-native/);
-    // Stage 5b: June's welcome comes first; Get started opens the picker
-    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");
-    await page.click('#ios-signin [data-act="start"]');
+    // F3: the app opens straight on the exam picker (no welcome)
     await expect(page.locator('#onb-firstrun')).toBeVisible();
-    await expect(page.locator('#onb-firstrun')).toContainText('Pick your exam');
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');
     await expect(page.locator('#onb-firstrun [data-act="lock"]')).toHaveText('Lock in Network+');
   });
   test('choose writes all keys before goToCert navigates', async ({ page }) => {
@@ -84,10 +82,10 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     await page.reload(); await page.waitForTimeout(900);
     await expect(page.locator('#onb-firstrun')).toBeHidden();
   });
-  test('relaunch with nothing chosen opens the welcome again', async ({ page }) => {
+  test('relaunch with nothing chosen opens the picker again', async ({ page }) => {
     await bootNative(page);
     await page.reload(); await page.waitForTimeout(900);
-    await expect(page.locator('#ios-signin')).toContainText("Know when you're ready");   // Stage 5b: the welcome again
+    await expect(page.locator('#onb-firstrun')).toContainText('Which exam are you studying for?');   // F3: the picker again
   });
   test('a locked free user on another cert sees the lock wall with Back to their cert', async ({ page }) => {
     await bootNative(page, { prefs: { chosenCert: 'secplus', lockedCert: 'secplus', lastCertHost: 'secplus.certanvil.com' } });
@@ -114,7 +112,7 @@ test.describe('Stage 5a in the app: first launch, the saved choice, the lock', (
     expect((await prefs(page)).lastCertHost).toBe('networkplus.certanvil.com');
   });
   test('a pick taps lightly; results tap once', async ({ page }) => {
-    await bootNative(page, { prefs: { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' } });
+    await bootNative(page, { signed: true, prefs: { chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com' } });
     await page.evaluate(() => { const b = document.createElement('button'); b.className = 'ifr-opt'; b.id = 'zz-opt'; document.body.appendChild(b); });
     await page.locator('#zz-opt').click();
     await page.evaluate(() => showPage('results'));
