@@ -63,7 +63,7 @@ for (const vp of PHONES) {
       expect(await page.evaluate(() => !!localStorage.getItem('nplus_onb_skips'))).toBe(true);
     });
     test("after a skip Home is today's new-user Home", async ({ page }) => {
-      await boot(page, vp, { seed: { nplus_onb_skips: '{"at":1}' } });
+      await boot(page, vp, { signed: true, seed: { nplus_onb_skips: '{"at":1}' } });
       await expect(page.locator('#ios-home')).toContainText('Your first session sets the baseline.');
       await expect(page.locator('html')).not.toHaveClass(/ifr-day0/);
       await expect(page.locator('#lift-tabbar')).toBeVisible();

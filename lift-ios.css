@@ -2684,7 +2684,7 @@ html[data-theme="light"] .ifr-skip { color: var(--accent-deep); }
 .ifr-hi { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-bright); margin-bottom: 7px; }
 .ifr-greet h1 { font: 600 24px/1.12 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 0; color: var(--text); }
 .ifr-lede { font-size: 13.5px; line-height: 1.5; color: var(--text-mid); margin: 9px 0 0; }
-#ios-home .ifr-lede { font-size: 14px; color: var(--text-mid); max-width: 32ch; margin: 8px 0 0; }
+#ios-home .ifr-day0 .ifr-lede { font-size: 14px; color: var(--text-mid); max-width: 32ch; margin: 8px 0 0; }
 .ifr-hb { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 14px 15px; margin-top: 14px; }
 .ifr-hb-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .ifr-hb-quota { border-top: 1px solid color-mix(in oklab, var(--border) 60%, transparent); padding-top: 4px; margin-top: 12px; }
