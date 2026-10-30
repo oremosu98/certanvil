@@ -305,7 +305,7 @@ test.describe('Stage 5b: first launch and every sign-in in the app', () => {
   });
 
   for (const [name, run] of [
-    ['Home', async (page) => { await page.evaluate(() => window.iosSignIn.close()); await page.click('#ios-home [data-act="signin"]'); }],
+    // (no 'Home' row: since F3, signed-out Home is unreachable in the app while online; the pill and go('home') rows cover the in-app opener)
     ['Settings', async (page) => { await page.evaluate(() => window.iosSettings._on.signin()); }],
     ['Custom quiz', async (page) => { await page.evaluate(() => window.iosSignIn.go('custom')); }],
     ['the topbar pill', async (page) => { await page.evaluate(() => { const a = document.querySelector('a.topbar-signin-pill'); a.click(); }); }],
@@ -422,8 +422,7 @@ test.describe('Stage 5b: a refused send says so (found in the founder test, 28 O
 test.describe('Stage 5b: legal pages in Settings', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
   test('Settings has About with Privacy Policy and Terms, opening in the in-app sheet', async ({ page }) => {
-    await boot(page, { seed: { nplus_onb_skips: '{"at":1}' } });
-    await page.evaluate(() => window.iosSignIn.close());   // F3: a signed-out launch opens the account screen over Home; Settings is under it
+    await boot(page, { fake: { signedOut: false, tier: 'free' }, seed: { nplus_onb_skips: '{"at":1}' } });
     await page.click('#ios-home [data-act="settings"]');
     await expect(page.locator('#ios-settings .ist-legal')).toBeVisible();
     const about = page.locator('#ios-settings .ist-legal');
