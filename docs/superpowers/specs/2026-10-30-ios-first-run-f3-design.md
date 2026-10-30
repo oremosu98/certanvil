@@ -54,7 +54,7 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
      handlers call `requireAccount('firstrun')` after `saveChoice` resolves.
    - **Different cert:** the page navigates; the next page's `onReady` guard calls it (§2).
    The screen: title "Create your account to start", a line naming the exam ("Your Network+ progress is saved
-   to it."), Apple / Google / email code as today. After verify, today's `_afterVerify` decides the cert: an
+   to it, so you keep it if you switch phones."), Apple / Google / email code as today. After verify, today's `_afterVerify` decides the cert: an
    existing account's own free exam wins and shows the "we've opened your account's exam" toast, as in 5b.
    An account with no exam yet goes back to the picker (`pickerNow`) and a free pick there shows both lock
    sheets again: intended, since that is the moment the lock is made.
@@ -64,8 +64,9 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
    **Pending code:** the pending record stores its `from` (`writePending(email, sentAt, from)`), so a relaunch
    mid-code restores the code screen with the same `from` and Back behaves the same; records without one read
    as `'picker'`.
-4. **Day-0 Home, now the welcome.** Eyebrow "You're in", headline "<Cert> is set.", one line: "15 new
-   questions a day plus 5 review cards. Your readiness climbs as you answer." Then today's check card,
+4. **Day-0 Home, now the welcome.** Eyebrow "You're in", headline "<Cert> is set.", one line: "Practise a little
+   each day and your readiness climbs towards the pass mark." (the quota card below already shows the 15 and the 5,
+   so the line does not repeat them; the old closing "Answer a few…" line goes, it said the same) Then today's check card,
    **Start today's 15** and **Skip** (v8.200.0). Pro: the same, with "Start a quiz" and no daily-15 wording.
    Day-0 already shows once per cert, so the welcome does too.
 5. **Normal Home, with the tour** the first time it appears (section 3).
@@ -87,7 +88,8 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
   the owned cert's page after the user goes back there.
 - **App, in session:** the Account tab's **Sign out** (`features/ios-settings.js` `ON.signout`) is the only
   in-app sign-out. In the app, once `renderAnonymous` has run, it calls `requireAccount('signedout')`.
-  `from: 'signedout'` has no Back: the screen stays until the person signs back in.
+  `from: 'signedout'` has no Back: the screen stays until the person signs back in. Its copy: "Sign in to keep
+  studying" / "Your <cert> progress is waiting in your account."
 - **Everywhere (app and mobile web):** `_ifrState` returns day-0 only when `signedIn === true`. Signed out,
   `#ios-home` shows its normal signed-out state with the Sign in button. No dead buttons on any target.
 - **Cold launch, no flash:** while `_certanvilSignedIn` is still unknown, `renderIosHome` holds the first-run
@@ -102,14 +104,15 @@ design change. There is also no "you're in" moment (item 1) and no walkthrough (
   1. Readiness card: what the number is and that it climbs as you answer.
   2. Recommended next (`.ih-rec`): tap it when you're not sure what to do; it picks your next session.
   3. Drills tab.
-  4. Progress tab, ending "Replay this tour any time from Account."
-  Copy is drafted in the drawing and goes through humanizer and marketing-psychology there.
+  4. Progress tab, ending "You can replay this tour any time from Account."
+  Copy as drawn (humanizer and marketing-psychology passed, 30 Oct): "Your readiness score" / "Not sure what to do?" /
+  "Drills for weak spots" / "See how you're doing". A "1 of 4" count, Next (Done on 4) and X; no dots.
 - **Controls:** **Next** (last step: **Done**) and an X on every step; a tap outside closes it. Closing at any
   step counts as seen. It never blocks for more than the tap it takes to close.
 - **Seen flag:** one per device. In the app, Capacitor Preferences `tourSeen` (app-wide, so a Pro user
   switching cert hosts is not shown it again); on the mobile website, localStorage `ca_tour_seen`. Not synced:
   that would need `cloud-store.js` (gated) for a one-time hint.
-- **Replay:** an Account row "Replay the tour" (`features/ios-settings.js`) goes to Home and starts step 1.
+- **Replay:** an Account row "Replay the tour" ("Four quick tips on Home", Study setup group, signed in only; `features/ios-settings.js`) goes to Home and starts step 1.
 - **Anchors move:** `renderIosHome` re-renders `#ios-home` on quota and auth changes, replacing its markup. The
   tour holds selectors, not elements (`.ih-rd`, `.ih-rec`, `.lift-tab[data-page="drills"]`,
   `.lift-tab[data-page="progress"]`), re-queries them after each `ca:home-shown`, and a render while the tour is
@@ -157,6 +160,8 @@ The stage 8 review notes say this in one line, and the reviewer demo account cov
 1. Draw into the June E2E (`feat/cert-ios-e2e`) under a HUD **F3 ›** button: `picker-first`, `picker-lock`,
    `picker-last`, `account-firstrun`, `day0-welcome`, `day0-welcome-pro`, `home-tour-1` … `home-tour-4`,
    `account-replay`. Five-stage visual pass. Founder taps through in the Simulator and approves.
+   **Drawn 30 Oct** (june-e2e `683dff6e`, 12 states, HUD **F3 ›**). Day 0 is drawn as the welcome in place, so
+   the Skip and Lift C HUDs now show it too, and Skip on day 0 lands on Home with the tour.
 2. Plan (writing-plans), build, Simulator walk-through signed in and signed out, one fresh whole-branch review,
    ship on "ship it".
 
