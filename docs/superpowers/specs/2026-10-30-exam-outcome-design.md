@@ -19,17 +19,14 @@ never be checked against reality.
 1. **When to ask.** From the day after the cert's exam date, Home's top card asks "How did your
    Network+ exam go?" It offers three choices: **Passed**, **Didn't pass** and **Haven't sat it yet**.
    It keeps asking on each open until answered.
-2. **Passed:**
-   - Optional score field ("Your score, if you have it"), then Save.
-   - A one-time celebration.
-   - The cert gets a "Passed" badge.
-   - Home's top card becomes "Pick your next cert", which opens the cert picker.
-   - The cert stays open for anyone who wants to keep practising.
-3. **Didn't pass:**
-   - Optional score, then a kind line: "That's a hard exam. Your progress is all still here."
-   - A **Set a new date** button.
-   - Studying carries on as normal.
-4. **Haven't sat it yet:** asks for the new date, or lets them clear the date.
+2. **One flow: the June "Log your result" screen.** Home's Passed and Didn't pass open it with that
+   answer already picked. The hub's "Took your exam? Log your result" opens the same screen. Changes from
+   June: open to Free as well as Pro; "Not yet" becomes "Didn't pass"; no test-centre field; the
+   date is pre-filled from the exam date; the score is optional either way.
+3. **After Passed:** a one-time celebration and a "Passed" badge. Home's top card becomes "Pick your
+   next cert". The cert stays open for anyone who wants to keep practising.
+4. **After Didn't pass:** "That's a hard exam. Your progress is all still here." with **Set a new date**
+   (and Not now). "I haven't sat it yet" on Home goes straight to the exam-date setting.
 5. **What's saved:** the outcome, the score if given, the date, and the readiness the app showed on the
    exam date. That turns into "We predicted 820, you scored 812". It's kept per cert, in the account
    data that already syncs. No database change, so it can go on the fast lane.
@@ -45,6 +42,7 @@ never be checked against reality.
 - **A new database table:** not needed. The synced account data holds it.
 - **Asking once and never again:** people skip it on the day. Asking on each open until it's answered
   costs one card.
+- **A second, inline score form on the Home card:** it duplicated the June screen. One flow only.
 - **Showing the prediction against reality publicly or across users:** a later readiness-tuning job
   (#139).
 
