@@ -36,8 +36,13 @@ The founder approved all three on 30 Oct. They ship in the bundle, on the gated 
 - **The sheet uses the cert list's own look.** It has the same rows and badges.
   - Eyebrow "Help shape CertAnvil", heading "Which exam should we add next?", and the line "Tap any
     you'd study. We build the most-asked first."
-  - A search box, "Search or type an exam", filters the list. If nothing matches, a row offers
-    Suggest "ITIL 4" (marked "Not on our list yet").
+  - **Typing your own exam:**
+    - A search box, "Search or type an exam", filters the list.
+    - Whatever is typed is offered as Suggest "ITIL 4" ("Not on our list yet") unless it exactly
+      matches a listed exam, even when other rows partly match.
+    - A picked typed exam stays in the list as "Your suggestion".
+    - A permanent last row, "Something else? Type any exam in the box above", focuses the search
+      box.
   - Exams are grouped by vendor: Cisco CCNA; CompTIA CySA+, PenTest+ and Linux+; AWS Solutions
     Architect Associate; Microsoft Azure Administrator; ISC2 CISSP; Google Cloud Associate Cloud
     Engineer. Each row has a badge, the name, "Vendor · code" and a tick ring.
