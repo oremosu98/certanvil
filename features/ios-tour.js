@@ -52,6 +52,7 @@
   function blocked() {
     var c = html().classList, s = document.getElementById('ist-sheet');
     return !!(document.getElementById('irm-sheet') || (s && s.classList.contains('open'))
+      || document.getElementById('cl-wall') || c.contains('cl-locked')   // the cert-lock wall (z 9100) sits over the tour
       || c.contains('ifr-picking') || c.contains('ifr-check') || c.contains('isi-open') || c.contains('ic-open'));
   }
 

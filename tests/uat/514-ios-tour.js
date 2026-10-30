@@ -55,6 +55,8 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     const rem = fs.readFileSync(path.join(ROOT, 'features', 'ios-reminders.js'), 'utf8');
     test('the reminders ask waits while the tour is open (busy() checks html.itr-open, which the tour sets)',
       /contains\('itr-open'\)/.test(_fnBody(rem, 'busy')) && /classList\.add\('itr-open'\)/.test(src));
+    test('the tour counts the cert-lock wall as blocking (a wall over the tour would hide its bubble but hold focus)',
+      /cl-wall/.test(_fnBody(src, 'blocked')) && /cl-locked/.test(_fnBody(src, 'blocked')));
     test('Replay gives up unless the normal Home shows (homeState, offline, blocked, the readiness card) and never opens on a timeout',
       /homeState\(\) === null/.test(_fnBody(src, 'homeReady')) && /ifr-offline/.test(_fnBody(src, 'homeReady')) && /blocked\(\)/.test(_fnBody(src, 'homeReady'))
       && /if \(homeReady\(\)\) \{ open\(\); return; \}/.test(_fnBody(src, 'start')) && (_fnBody(src, 'start').match(/open\(\)/g) || []).length === 1);

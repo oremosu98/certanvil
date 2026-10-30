@@ -1,5 +1,5 @@
-// Stage 5b (28 Oct): sign in by email code inside the iOS app (features/ios-signin.js). The welcome, sign-in,
-// typo check, code screen and lock toast as pure views run in a vm sandbox, plus the wiring checks.
+// Stage 5b (28 Oct), reworked in F3: sign in by email code inside the iOS app (features/ios-signin.js). The account
+// screen (create / sign in), typo check, code screen and lock toast as pure views run in a vm sandbox, plus the wiring checks.
 const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
 (function () {
   console.log('\n\x1b[1m── Stage 5b sign in by email code ──\x1b[0m');

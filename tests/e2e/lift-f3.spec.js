@@ -421,6 +421,32 @@ test.describe('F3: the flows in the app', () => {
     await expect(acct(page).locator('h1')).toHaveText('Sign in to keep studying');
     await expect(acct(page).locator('[data-act="back"]')).toHaveCount(0);
   });
+
+  test('relaunch mid-code started from the picker: Change it, Back reopens the picker (not signed-out Home)', async ({ page }) => {
+    await bootOut(page);
+    await expect(picker(page)).toContainText('Which exam are you studying for?');
+    await page.click('#onb-firstrun [data-act="signin"]');
+    await page.fill('#isi-email', 'sam@example.test');
+    await page.click('#ios-signin [data-act="continue"]');
+    await expect(acct(page)).toContainText('Check your email');
+    await page.reload(); await page.waitForLoadState('load');
+    await expect(acct(page)).toContainText('Check your email', { timeout: 8000 });
+    await acct(page).locator('.isi-change [data-act="change"]').click();
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(picker(page)).toContainText('Which exam are you studying for?', { timeout: 5000 });
+    await expect(picker(page)).toBeVisible();
+    await expect(acct(page)).toBeHidden();
+  });
+
+  test('picker -> Sign in -> Back with the picker still underneath just closes the account screen', async ({ page }) => {
+    await bootOut(page);
+    await page.click('#onb-firstrun [data-act="signin"]');
+    await expect(acct(page)).toBeVisible();
+    await acct(page).locator('[data-act="back"]').click();
+    await expect(acct(page)).toBeHidden();
+    await expect(picker(page)).toBeVisible();
+    await expect(page.locator('html')).toHaveClass(/ifr-picking/);
+  });
 });
 
 test.describe('F3: the flows on the website', () => {

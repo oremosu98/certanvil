@@ -231,7 +231,14 @@
   function onTap(ev) {
     var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b || !hostEl().contains(b)) return;
     var a = b.getAttribute('data-act');
-    if (a === 'back') { if (st.from === 'firstrun') { st.typo = null; if (IS._backToPicker) IS._backToPicker(); } else close(); }
+    if (a === 'back') {
+      if (st.from === 'firstrun') { st.typo = null; if (IS._backToPicker) IS._backToPicker(); }
+      else if (st.from === 'picker' && !document.documentElement.classList.contains('ifr-picking')) {
+        // A relaunch restored the code screen from the picker but the picker is not underneath (native-shell skips
+        // it while a code is pending): closing would leave signed-out Home. Reopen the picker instead.
+        close(); pickerNow((window._quotaState || {}).tier === 'pro' ? 'pro' : 'free');
+      } else close();
+    }
     else if (a === 'signin') show('signin');
     else if (a === 'continue') {
       var i = document.getElementById('isi-email'), v = i ? i.value.trim() : '';
