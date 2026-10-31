@@ -69,7 +69,8 @@ const { test, vm } = require('./_context');
   test('admin.html: Cert requests section sits between Users and Cert packs',
     adminht.indexOf('id="users"') < adminht.indexOf('id="requests"') && adminht.indexOf('id="requests"') < adminht.indexOf('id="certs"'));
   test('vercel.json: Monday 08:00 cron for the digest', (vercel.crons || []).some((c) => c.path === '/api/admin/cert-requests-digest' && c.schedule === '0 8 * * 1'));
-  test('digest: GET only, cron secret compared in constant time, explicit tally order, 503 list', digest.includes("req.method !== 'GET'") && digest.includes('safeEqual') && digest.includes('order=votes.desc,last_at.desc') && /CRON_SECRET[\s\S]{0,80}FOUNDER_EMAIL[\s\S]{0,80}RESEND_API_KEY/.test(digest));
+  test('digest: GET only, cron secret compared in constant time, explicit tally order, 503 list', digest.includes("req.method !== 'GET'") && digest.includes('safeEqual') && digest.includes('order=votes.desc,last_at.desc') && /CRON_SECRET[\s\S]{0,80}RESEND_API_KEY[\s\S]{0,80}SUPABASE_SERVICE_ROLE_KEY/.test(digest) && digest.includes("if (!founderEmail()) missing.push('FOUNDER_EMAIL')"));
+  test('digest: the founder address falls back to NOTIFY_ADMIN_EMAIL (already set on the landing project)', /process\.env\.FOUNDER_EMAIL \|\| process\.env\.NOTIFY_ADMIN_EMAIL/.test(digest) && digest.includes('to: [founderEmail()]'));
   test('notify: POST only, admin checked server-side, exam_key validated, one recipient per email, stamped per row',
     notify.includes("req.method !== 'POST'") && notify.includes('requireAdmin(req)') && notify.includes('validExamKey(examKey)') && notify.includes('to: [lk.email]') && !/['"]?b?cc['"]?\s*:/i.test(notify) && notify.includes("notified_at=is.null"));
   test('shared lib: constant-time compare folds every byte, no secrets in the source', lib.includes('diff |= x[i] ^ y[i]') && !/re_[A-Za-z0-9]{10,}/.test(lib + digest + notify));

@@ -3,6 +3,7 @@
 // role and sends one Resend email to FOUNDER_EMAIL. With no new requests it still sends a short "0 new" note: a silent
 // Monday is indistinguishable from a broken cron.
 // Env: CRON_SECRET, FOUNDER_EMAIL, RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY (SUPABASE_URL optional, NOTIFY_FROM_EMAIL optional).
+// FOUNDER_EMAIL falls back to NOTIFY_ADMIN_EMAIL, the address the landing project already sends signup notices to.
 // Any of the four missing answers 503 and sends nothing.
 import { missingEnv, unconfigured, jsonResponse, esc, safeEqual, bearer, supabaseUrl, svcHeaders, sendMail } from '../_lib/admin-mail.js';
 import { logServerError } from '../_lib/log-server-error.js';
@@ -45,9 +46,12 @@ export function buildDigest(rows) {
   return { n, subject, html, text };
 }
 
+function founderEmail() { return process.env.FOUNDER_EMAIL || process.env.NOTIFY_ADMIN_EMAIL || ''; }
+
 export default async function handler(req) {
   if (req.method !== 'GET') return jsonResponse({ error: 'Method not allowed' }, 405, { Allow: 'GET' });
-  const missing = missingEnv(['CRON_SECRET', 'FOUNDER_EMAIL', 'RESEND_API_KEY', 'SUPABASE_SERVICE_ROLE_KEY']);
+  const missing = missingEnv(['CRON_SECRET', 'RESEND_API_KEY', 'SUPABASE_SERVICE_ROLE_KEY']);
+  if (!founderEmail()) missing.push('FOUNDER_EMAIL');
   if (missing.length) return unconfigured(missing, 'cert-requests-digest');
 
   const token = bearer(req);
@@ -64,7 +68,7 @@ export default async function handler(req) {
   if (!Array.isArray(rows)) return jsonResponse({ error: 'tally-read-failed' }, 502);
 
   const d = buildDigest(rows);
-  const sent = await sendMail({ to: [process.env.FOUNDER_EMAIL], subject: d.subject, html: d.html, text: d.text });
+  const sent = await sendMail({ to: [founderEmail()], subject: d.subject, html: d.html, text: d.text });
   if (!sent.ok) {
     await logServerError({ endpoint: 'cert-requests-digest', status: 502, message: 'cert-requests-digest: send failed' });
     return jsonResponse({ error: 'send-failed' }, 502);
