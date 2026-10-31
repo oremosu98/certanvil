@@ -532,7 +532,7 @@
     // PBQ recommendation — ACL Builder is the only PBQ today, so always rec it.
     const pbqRec = {
       title: 'Try the ACL Ordering PBQ',
-      sub: 'PBQs are weighted 3-4× on the real exam. ACL ordering is the most-confused firewall concept. Build the muscle now.',
+      sub: 'Performance-based questions are part of the real exam. Practise them in Sim Lab. ACL ordering is the most-confused firewall concept. Build the muscle now.',
       cta: 'Open ACL PBQ →',
       targetFn: 'aclOpenFromPassPlan'
     };

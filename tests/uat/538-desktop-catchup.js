@@ -43,4 +43,10 @@ const { test } = require('./_context');
   test('goodbye/welcome back: desktop layout lives in dg-system.css under min-width:900 with its own keyframes, and the brand mark is phone-hidden', /\.dm-screen \.cover-brand\{display:none;\}\s*@media \(min-width:900px\)\{\s*\.dm-screen\{/.test(css) && /@keyframes dmd-rise/.test(css) && /\.dm-screen \.dm-foot \[data-act="signin"\]\{order:-1;\}/.test(css));
   test('goodbye/welcome back: no em dash in the desktop styles', !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 8'))));
   test('dg-system.css version bumped for the goodbye', /dg-system\.css\?v=8\.204\.0-d[8-9]/.test(html));
+
+  // Task 9: no unbacked PBQ weight claim anywhere in the shipped source
+  const srcFiles = ['index.html', 'app.js'].concat(['features', 'certs'].reduce((a, d) => a.concat(fs.readdirSync(path.join(ROOT, d)).filter((f) => /\.js$/.test(f)).map((f) => d + '/' + f)), []));
+  const claims = srcFiles.filter((f) => /PBQs?[^\n]{0,80}3\s*-\s*4\s*[\u00D7x]|3\s*-\s*4\s*[\u00D7x][^\n]{0,80}PBQs?/i.test(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+  test('no source file claims PBQs carry 3-4x weight (' + (claims.join(', ') || 'none') + ')', claims.length === 0);
+  test('the PBQ copy is the approved line', html.includes('Performance-based questions are part of the real exam. Practise them in Sim Lab.') && fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8').includes('Performance-based questions are part of the real exam. Practise them in Sim Lab. ACL ordering is the most-confused firewall concept. Build the muscle now.'));
 })();
