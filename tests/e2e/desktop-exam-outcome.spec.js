@@ -92,15 +92,16 @@ test.describe('Desktop: How did your exam go', () => {
     await expect(card(page)).toContainText('We predicted 553 on exam day. Your streak carries on with your next cert.');
     await expect(card(page).locator('[data-act="oc-passed"]')).toHaveCount(0);
 
-    await dlg.locator('#il-done-go').click();   // See it in your hub (My certs lands in Task 4: Settings for now)
+    await dlg.locator('#il-done-go').click();   // See it in your hub: the desktop My certs page (Task 4)
     await expect(dlg).toBeHidden();
     expect(await inertLeft(page)).toBe(false);
-    await expect(page.locator('#page-settings')).toHaveClass(/active/);
+    await expect(page.locator('#page-mycerts')).toHaveClass(/active/);
+    await expect(page.locator('#desk-mycerts .dmc-ac .dmc-badge')).toHaveText('Passed');
 
     await page.evaluate(() => showPage('setup'));
     await expect(card(page).locator('[data-act="choose"]')).toHaveText('Choose a cert');
     await card(page).locator('[data-act="choose"]').click();
-    await expect(page.locator('#page-settings')).toHaveClass(/active/);
+    await expect(page.locator('#page-mycerts')).toHaveClass(/active/);
   });
 
   test("Didn't pass offers Set a new date", async ({ page }) => {

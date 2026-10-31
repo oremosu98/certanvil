@@ -76,6 +76,7 @@
     if (first) _passToast();
     try { if (typeof renderIosHome === 'function') renderIosHome(); } catch (_) {}
     try { if (typeof renderDeskOutcome === 'function') renderDeskOutcome(); } catch (_) {}   // desktop Home: the slot and the Passed badges
+    try { if (window.iosHub && typeof window.iosHub.refresh === 'function') window.iosHub.refresh(); } catch (_) {}   // desktop My certs, when it is showing
     return { ok: true, rec: rec, first: first };
   }
 
@@ -173,7 +174,7 @@
     if (desk && !instant) { root.inert = true; setTimeout(hide, 200); } else hide();
     var back = _prevFocus && _prevFocus.isConnected ? _prevFocus : null;
     // desktop: a save redraws the Home card that opened us, so hand focus to the card that took its place
-    if (!back && desk) back = document.querySelector('#desk-oc:not([hidden]) button') || document.getElementById('primaryLaunch');
+    if (!back && desk) back = document.querySelector('#page-mycerts.active #desk-mycerts [data-act="continue"]') || document.querySelector('#desk-oc:not([hidden]) button') || document.getElementById('primaryLaunch');   // My certs redraws too: its main button
     if (back && back.focus) { try { back.focus({ preventScroll: true }); } catch (_) {} }
     _prevFocus = null;
   }
@@ -194,8 +195,8 @@
   }
   function _toExamDate() { if (_isDesk()) _deskExamDate(); else _toSettingsExamSheet(); }
   function _toHub() {
-    if (typeof openHub === 'function' && openHub()) return;
-    if (typeof showPage === 'function') showPage('settings');   // desktop until Task 4: My certs replaces this
+    if (typeof openHub === 'function' && openHub()) return;   // the phone hub, or the desktop My certs page
+    if (typeof showPage === 'function') showPage('settings');   // only if the hub module failed to load
   }
   function _toSettingsExamSheet() {
     // From the hub, the hub is still open and has the tab bar inert: close it first, or the sheet opens under it.

@@ -929,6 +929,8 @@
   ];
   // v4.54.1: Settings section (own sidebar section so it's visually separate from study tools)
   const APP_SIDEBAR_SETTINGS = [
+    // desktop catch-up Task 4: My certs (features/ios-hub.js openHub shows #page-mycerts at 900px and up)
+    { page: 'mycerts',           label: 'My certs',         icon: '\u25A6', handler: () => { if (typeof openHub === 'function') openHub(); } },
     { page: 'settings',          label: 'Settings',         icon: '\u2699', handler: () => { showPage('settings'); if (typeof renderSettingsPage === 'function') renderSettingsPage(); } }
   ];
   // MVP-QUIZ-ONLY (Ships 4+5): all drills deleted (Net+ subnet/ports/acronyms/
@@ -952,6 +954,7 @@
     // MVP-QUIZ-ONLY (Ships 4+5): drill highlight entries removed (subnet/ports/
     // acronyms/osi-sorter/cables/network-analysis/ptr/drills launcher).
     'topic-dive': 'progress',
+    'mycerts': 'mycerts',
     'settings': 'settings'
   };
 
@@ -967,6 +970,7 @@
       // MVP-QUIZ-ONLY (Ship 1): 'irw' + 'pht' sidebar nav icons removed.
       // MVP-QUIZ-ONLY (Ships 4+5): drill sidebar nav icons removed
       // (subnet/ports/acronyms/osi-sorter/cables/network-analysis/ptr).
+      'mycerts': '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 14v5M14 16.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
       'settings': '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" stroke="currentColor" stroke-width="1.4"/></svg>',
       // MVP-QUIZ-ONLY (Ship 1): 'amm' + 'cts' sidebar nav icons removed.
       // MVP-QUIZ-ONLY (Ship 2): 'topology-builder-v2' nav icon removed.
@@ -1173,6 +1177,7 @@
     // MVP-QUIZ-ONLY (Ship 3): 'acl' crumb label removed.
     // MVP-QUIZ-ONLY (Ships 4+5): drill crumb labels removed
     // (subnet/ports/acronyms/osi-sorter/cables/network-analysis/ptr/drills).
+    'mycerts': 'My certs',
     'settings': 'Settings',
     'monitor': 'Production Monitor'
   };
@@ -1888,7 +1893,7 @@
       const act = b.getAttribute('data-act'), lr = window.iosLogResult || {};
       if (act === 'oc-passed' || act === 'oc-failed') { if (typeof openLogResult === 'function') openLogResult({ preselect: act === 'oc-passed' ? 'passed' : 'failed', from: b }); }
       else if (act === 'oc-notyet') { if (typeof lr.examDate === 'function') lr.examDate(); }
-      else if (act === 'choose') { if (typeof lr.toHub === 'function') lr.toHub(); }   // openHub(), else Settings until Task 4's My certs
+      else if (act === 'choose') { if (typeof lr.toHub === 'function') lr.toHub(); }   // openHub(): the My certs page on desktop
     };
     return true;
   }
