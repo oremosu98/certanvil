@@ -70,6 +70,10 @@
     var n = d.value.length;
     c.textContent = _fmt(n) + ' / 5,000'; c.classList.toggle('warn', n > 4750);
     b.disabled = S.sending || !d.value.trim();
+    if (b.getAttribute('aria-busy') !== String(!!S.sending)) {   // while sending: the words only, no icon (no motion)
+      b.setAttribute('aria-busy', String(!!S.sending));
+      b.innerHTML = S.sending ? 'Sending…' : 'Send report' + svg(I.send);
+    }
   }
   function _showSteps(S, focus) {
     var f = S.host.querySelector('.irp-steps'), l = S.host.querySelector('[data-act="steps"]');
@@ -88,7 +92,7 @@
     setTimeout(function () { el.classList.remove('open'); setTimeout(function () { el.remove(); }, 260); }, 3200);
   }
   function _thanks(S, out, first) {
-    if (out.queued && !out.ok) return _toast('Saved', 'We’ll send it when you’re back online.', true);
+    if (out.queued && !out.ok) return _toast('Saved', 'We’ll send it when you’re back online.', true);   // queued only when the network failed (reports.js)
     var no = out.reportNo != null ? ' Report <span class="irp-toast-n">#' + e(out.reportNo) + '</span>' : '';
     _toast('Thanks, ' + (first ? e(first) + ', ' : '') + 'got it.' + no, S.signedIn ? 'We’ll email you when it’s fixed.' : 'We read every report.');
   }
@@ -117,7 +121,11 @@
       if (_cur === S) close();
       setTimeout(function () { _thanks(S, out, r[1]); }, 220);
     }).catch(function () {
-      if (_cur !== S) return;
+      if (_cur !== S) {   // closed while sending: keep what they typed for next time and say so
+        _saveDraft({ desc: form.desc, steps: form.steps, from: S.fromOpt });
+        _toast('Not sent', 'Open Report a problem to try again. What you typed is saved.', true);
+        return;
+      }
       S.sending = false; _refresh(S);
       S.host.querySelector('.irp-err').textContent = 'That didn’t send. Try again in a moment.';
     });

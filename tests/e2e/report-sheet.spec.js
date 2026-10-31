@@ -17,7 +17,7 @@ async function boot(page, vp) {
   await page.waitForFunction(() => typeof window.openReportSheet === 'function' && typeof window._hubFirstName === 'function'
     && (window.innerWidth >= 900 ? document.body.classList.contains('is-state-resolved') : !!document.querySelector('#ios-home [data-act="cert"]')));
 }
-// mode: 'ok' (report #142) | 'offline' (the call throws). name / email: the profile name and the session email.
+// mode: 'ok' (report #142) | 'offline' (the call throws) | 'reject' (the server says no, online) | 'hold' (settled by the test). name / email: the profile name and the session email.
 async function stub(page, o) {
   await page.evaluate((o) => {
     window._certanvilSignedIn = o.signedIn !== false;
@@ -28,7 +28,14 @@ async function stub(page, o) {
         getSession: () => Promise.resolve({ data: { session: o.signedIn === false ? null : { user: { id: 'u-test', email: o.email || 'sam@example.com' } } } }),
         getUser: () => Promise.resolve({ data: { user: o.signedIn === false ? null : { id: 'u-test' } } }),
       },
-      rpc: (fn, args) => { window.__rpc.push({ fn, args }); return o.mode === 'offline' ? Promise.reject(new Error('offline')) : Promise.resolve({ data: 142, error: null }); },
+      rpc: (fn, args) => {
+        window.__rpc.push({ fn, args });
+        if (o.mode === 'offline') return Promise.reject(new Error('offline'));
+        if (o.mode === 'reject') return Promise.resolve({ data: null, error: { message: 'permission denied' }, status: 403 });
+        // 'hold': the call waits until the test settles it with window.__settle('ok' | 'reject')
+        if (o.mode === 'hold') return new Promise((res) => { window.__settle = (how) => res(how === 'ok' ? { data: 142, error: null } : { data: null, error: { message: 'denied' }, status: 500 }); });
+        return Promise.resolve({ data: 142, error: null });
+      },
       from: () => ({ upsert: () => Promise.resolve({ error: null }) }),
     };
   }, o);
@@ -120,6 +127,55 @@ test.describe('Report a problem: phone', () => {
     expect(q).toHaveLength(1);
     expect(q[0].payload.description).toBe('Lost my streak');
     expect(q[0].terminal).toBe(false);
+  });
+
+  test('a server rejection while online is a hard failure: the form stays, nothing is queued, no Saved', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'reject', name: 'Alex' });
+    await phoneSettings(page);
+    await sheet(page).locator('#irp-desc').fill('Lost my streak');
+    await sheet(page).locator('[data-act="send"]').click();
+    await expect(sheet(page).locator('.irp-err')).toHaveText('That didn’t send. Try again in a moment.');
+    await expect(sheet(page)).toBeVisible();
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('Lost my streak');
+    await expect(sheet(page).locator('[data-act="send"]')).toBeEnabled();
+    await expect(toast(page)).toHaveCount(0);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('nplus_bug_reports') || '[]').length)).toBe(0);
+  });
+
+  test('while sending the button reads Sending… with no icon, then Send report again', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'hold', name: 'Alex' });
+    await phoneSettings(page);
+    await sheet(page).locator('#irp-desc').fill('Lost my streak');
+    const send = sheet(page).locator('[data-act="send"]');
+    await send.click();
+    await expect(send).toHaveText('Sending…');
+    await expect(send).toHaveAttribute('aria-busy', 'true');
+    await expect(send).toBeDisabled();
+    expect(await send.locator('svg').count()).toBe(0);
+    await expect.poll(() => send.evaluate((b) => getComputedStyle(b).opacity)).toBe('0.7');   // held brighter than plain disabled (.45)
+    await page.evaluate(() => window.__settle('reject'));
+    await expect(sheet(page).locator('.irp-err')).toHaveText('That didn’t send. Try again in a moment.');
+    await expect(send).toHaveText('Send report');
+    await expect(send).toHaveAttribute('aria-busy', 'false');
+    expect(await send.locator('svg').count()).toBe(1);
+  });
+
+  test('closed while sending and then it fails: what they typed is saved and a Not sent toast says so', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'hold', name: 'Alex' });
+    await phoneSettings(page);
+    await sheet(page).locator('#irp-desc').fill('Lost my streak');
+    await sheet(page).locator('[data-act="steps"]').click();
+    await sheet(page).locator('#irp-steps').fill('1. Finish a quiz');
+    await sheet(page).locator('[data-act="send"]').click();
+    await sheet(page).locator('[data-act="cancel"]').click();
+    await expect(sheet(page)).toHaveCount(0);
+    await page.evaluate(() => window.__settle('reject'));
+    await expect(toast(page)).toHaveClass(/queued/);
+    await expect(toast(page).locator('.irp-toast-t')).toHaveText('Not sent');
+    await expect(toast(page).locator('.irp-toast-l')).toHaveText('Open Report a problem to try again. What you typed is saved.');
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('Lost my streak');
+    await expect(sheet(page).locator('#irp-steps')).toHaveValue('1. Finish a quiz');
   });
 
   test('signed out shows the sign-in line and keeps the typed text after tapping Sign in', async ({ page }) => {

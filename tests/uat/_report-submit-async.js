@@ -65,5 +65,11 @@ function load(opts) {
   const E = load({ rpcResult: { data: null, error: { message: 'x' } } });
   const r5 = await E.mod.submitReport(E.mod.buildPayload({ title: 't', desc: 'd' }, {}));
   test('an RPC error is a retryable failure with no number', r5.type === 'server' && r5.reportNo == null);
+  const F = load({ rpcResult: { data: null, error: { message: 'denied' }, status: 400 } });
+  const r6 = await F.mod.submitReportNow({ title: 't', desc: 'd' });
+  test('a server rejection while online is not queued and not ok', r6.ok === false && r6.queued === false && JSON.parse(F.store.bugq || '[]').length === 0);
+  const Z = load({ rpcResult: { data: null, error: { message: 'TypeError: Failed to fetch' }, status: 0 } });
+  const r7 = await Z.mod.submitReportNow({ title: 't', desc: 'd' });
+  test('a failed fetch (status 0) counts as offline and is queued', r7.result.type === 'offline' && r7.queued === true && JSON.parse(Z.store.bugq || '[]').length === 1);
   console.log(JSON.stringify(results));
 })();

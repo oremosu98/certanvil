@@ -256,6 +256,8 @@
         out.reportNo = (res.data != null && isFinite(n)) ? n : null;
         return out;
       }
+      // supabase-js answers a failed fetch with status 0 rather than throwing: that is the network, not the server.
+      if (res.status === 0 || (typeof navigator !== 'undefined' && navigator.onLine === false)) return classifyError({ status: 0, network: true });
       return classifyError({ status: 500 });
     } catch (e) {
       return classifyError({ status: 0, network: true });
@@ -280,7 +282,9 @@
     var queued = false;
     if (result.type === 'success') {
       _saveQueue(_loadQueue().filter(function(r){ return r.id !== payload.id; }));
-    } else if (result.queueAction === 'enqueue' || result.queueAction === 'requeue') {
+    } else if (result.type === 'offline' || result.type === 'ratelimit') {
+      // Only a network failure is queued from the form. A server rejection while online is a hard failure: the form
+      // stays open with what was typed, so a retry there cannot also send a queued copy later.
       _saveQueue(enqueueReport({
         id: payload.id, payload: payload,
         attempts: 1, last_try: payload.submitted_at,
