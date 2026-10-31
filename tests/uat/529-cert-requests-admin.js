@@ -14,7 +14,7 @@ const { test, vm } = require('./_context');
   const digest = rd('landing/api/admin/cert-requests-digest.js'), notify = rd('landing/api/admin/notify-cert-live.js'), lib = rd('landing/api/_lib/admin-mail.js');
 
   // Run the real functions against a fake tbody.
-  const names = ['escapeHtml', 'formatRelative', 'glyph', 'nextMonday', 'buildCertRequestsModel', 'renderMailPreview', 'renderCertRequests'];
+  const names = ['retryCount', 'sendStep', 'escapeHtml', 'formatRelative', 'glyph', 'nextMonday', 'buildCertRequestsModel', 'renderMailPreview', 'renderCertRequests'];
   function fnSrc(n) { // _fnBody returns the body only; rebuild from the file text
     const i = adminjs.indexOf('function ' + n + '('); let d = 0, j = adminjs.indexOf('{', i);
     for (let k = j; k < adminjs.length; k++) { if (adminjs[k] === '{') d++; else if (adminjs[k] === '}' && --d === 0) return adminjs.slice(i, k + 1); }
@@ -45,6 +45,13 @@ const { test, vm } = require('./_context');
   test('next email label: Monday before 08:00 UTC is today, after is next week',
     vm.runInContext('nextMonday(new Date(Date.UTC(2026,10,2,7)))', ctx) === 'Mon 2 Nov' && vm.runInContext('nextMonday(new Date(Date.UTC(2026,10,2,9)))', ctx) === 'Mon 9 Nov');
 
+  test('retry count = failed + skipped + the server\'s last remaining (never just failed + skipped)',
+    vm.runInContext('retryCount({failed:1,skipped:2},7)', ctx) === 10 && vm.runInContext('retryCount({failed:0,skipped:0},0)', ctx) === 1 && vm.runInContext('retryCount({failed:0,skipped:0},12)', ctx) === 12);
+  test('send loop: continues when the cursor moves, reports stalled when remaining > 0 but next did not advance, done at 0',
+    vm.runInContext("sendStep({remaining:5,next:'b'},'a')", ctx) === 'next' && vm.runInContext("sendStep({remaining:5,next:'a'},'a')", ctx) === 'stalled'
+    && vm.runInContext("sendStep({remaining:5},'')", ctx) === 'stalled' && vm.runInContext("sendStep({remaining:0,next:'b'},'a')", ctx) === 'done');
+  test('admin.js: stalled shows the inline error (not success) and focus moves to the new button or status',
+    adminjs.includes("go === 'stalled'") && adminjs.includes('btn.focus();') && adminjs.includes('d.focus()') && adminjs.includes('retryCount(tot, remaining)'));
   test('admin.js: tally read asks for explicit order votes desc then last_at desc', /from\('cert_request_tally'\)[\s\S]{0,200}order\('votes', \{ ascending: false \}\)\.order\('last_at', \{ ascending: false \}\)/.test(adminjs));
   test('admin.js: confirm text, POST with the access token, inline sent text, button disabled in flight',
     adminjs.includes("'Email ' + people(n) + ' that '") && adminjs.includes("' is live?'") && adminjs.includes("'Bearer ' + token") && adminjs.includes('/api/admin/notify-cert-live') && adminjs.includes("'Sent to ' + people(tot.sent)") && adminjs.includes('yes.disabled = true'));

@@ -363,10 +363,19 @@
     cell._btn.focus();
   }
 
+  // People a retry would email: those who could not be reached plus everyone the server has not got to yet.
+  function retryCount(tot, remaining) { return Math.max(1, (tot.failed || 0) + (tot.skipped || 0) + (Number(remaining) || 0)); }
+  // After a reply: 'next' (call again), 'stalled' (people remain but the cursor did not move), or 'done'.
+  function sendStep(b, after) {
+    if ((Number(b.remaining) || 0) > 0) return b.next && b.next !== after ? 'next' : 'stalled';
+    return 'done';
+  }
+
   function startSend(cell) {
     var btn = cell._btn;
     var key = btn.getAttribute('data-key') || '', label = btn.getAttribute('data-label') || '';
     var tot = { sent: 0, failed: 0, skipped: 0 };
+    var remaining = parseInt(btn.getAttribute('data-pending'), 10) || 0;
     var box = cell.querySelector('.cr-confirm');
     var yes = box.querySelector('.yes'), no = box.querySelector('.no');
     yes.disabled = true; no.disabled = true; yes.textContent = 'Sending…';
@@ -377,9 +386,10 @@
       var d = document.createElement('div');
       d.className = retry ? 'cr-err' : 'cr-sent'; d.setAttribute('role', retry ? 'alert' : 'status'); d.textContent = text;
       if (retry) {
-        btn.setAttribute('data-pending', String(Math.max(1, tot.failed + tot.skipped)));
+        btn.setAttribute('data-pending', String(retryCount(tot, remaining)));
         cell.appendChild(btn); cell.appendChild(d);
-      } else cell.appendChild(d);
+        btn.focus();
+      } else { d.tabIndex = -1; cell.appendChild(d); d.focus(); }
     }
     function summary() {
       var lost = tot.failed + tot.skipped;
@@ -400,9 +410,12 @@
         if (!out.ok) { var err = new Error('http'); err.status = out.status; err.code = out.body && out.body.error; throw err; }
         var b = out.body;
         tot.sent += Number(b.sent) || 0; tot.failed += Number(b.failed) || 0; tot.skipped += Number(b.skipped) || 0;
+        remaining = Number(b.remaining) || 0;
         progress();
         if (b.paused) { stop(summary() + ' Email is busy, try again in a minute.', true); return; }
-        if ((Number(b.remaining) || 0) > 0 && b.next && b.next !== after) return step(b.next);
+        var go = sendStep(b, after);
+        if (go === 'next') return step(b.next);
+        if (go === 'stalled') { stop(summary() + ' Stopped early, try again.', true); return; }
         if (tot.failed + tot.skipped > 0) { stop(summary(), true); return; }
         stop(summary(), false);
       });
@@ -515,7 +528,7 @@
     return tb ? tb.innerHTML : s;
   }
 
-  if (typeof window !== 'undefined') window._adminCertRequests = { build: buildCertRequestsModel, nextMonday: nextMonday };
+  if (typeof window !== 'undefined') window._adminCertRequests = { build: buildCertRequestsModel, nextMonday: nextMonday, retryCount: retryCount, sendStep: sendStep };
 
   init();
 })();
