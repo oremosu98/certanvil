@@ -341,7 +341,7 @@ test.describe('Stage 5c: deleting an Apple account', () => {
     const seen = await routeRevoke(page, 'ok');
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'ok', authorizationCode: 'code-del' }) } });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(seen.length).toBe(1);
     expect(seen[0].body).toEqual({ code: 'code-del' });
     expect(seen[0].auth).toBe('Bearer fake.jwt.token');
@@ -352,7 +352,7 @@ test.describe('Stage 5c: deleting an Apple account', () => {
     const seen = await routeRevoke(page, 'ok');
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'cancel' }) } });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(seen.length).toBe(0);
   });
 
@@ -360,14 +360,14 @@ test.describe('Stage 5c: deleting an Apple account', () => {
     await routeRevoke(page, 'sub-mismatch');
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
   });
 
   test('a non-Apple account deletes without the Apple step', async ({ page }) => {
     const seen = await routeRevoke(page, 'ok');
     await boot(page, { fake: SIGNED, seed: { nplus_onb_skips: '{"at":1}' } });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(seen.length).toBe(0);
     expect(await socialCalls(page)).toEqual([]);
   });
@@ -411,7 +411,7 @@ test.describe('Stage 5c final review fixes', () => {
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'ok', delay: 1500 }) } });
     await page.evaluate(() => { window.iosSignIn._revokeWait = 600; });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(seen.length).toBe(1);
     expect(seen[0].auth).toBe('Bearer fake.jwt.token');
   });
@@ -420,7 +420,7 @@ test.describe('Stage 5c final review fixes', () => {
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}', __social: JSON.stringify({ mode: 'fail' }) } });
     await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (sheet)');
   });
 
@@ -429,7 +429,7 @@ test.describe('Stage 5c final review fixes', () => {
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: { nplus_onb_skips: '{"at":1}' } });
     await page.evaluate(() => { window.__logs = []; window.logError = function (t, m) { window.__logs.push(m); }; });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(await page.evaluate(() => window.__logs)).toContain('apple-revoke: failed (server 409 failed)');
   });
 });
@@ -493,7 +493,7 @@ test.describe('Account deletion: app', () => {
   test('deleting calls request_account_deletion, then signs out everywhere', async ({ page }) => {
     await boot(page, { fake: SIGNED, seed: SEED });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     const l = await log(page);
     expect(l.indexOf('rpc:request_account_deletion')).toBeGreaterThan(-1);
     expect(l.indexOf('auth:signOut:global')).toBeGreaterThan(l.indexOf('rpc:request_account_deletion'));
@@ -512,7 +512,7 @@ test.describe('Account deletion: app', () => {
         return new Promise((r) => setTimeout(() => { window.__fakeLog.push('flush:done'); r(); }, 300)); };
     });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     const l = (await log(page)).filter((e) => /^(flush:|rpc:request_account_deletion)/.test(e));
     expect(l).toEqual(['flush:start', 'flush:done', 'rpc:request_account_deletion']);
   });
@@ -521,7 +521,7 @@ test.describe('Account deletion: app', () => {
     await boot(page, { fake: SIGNED, seed: SEED });
     await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => new Promise(() => {}); });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 9000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 9000 });
     expect(await rpcCalls(page)).toContain('request_account_deletion');
   });
 
@@ -529,7 +529,7 @@ test.describe('Account deletion: app', () => {
     await boot(page, { fake: SIGNED, seed: SEED });
     await page.evaluate(() => { window.cloudStore = window.cloudStore || {}; window.cloudStore.flushNow = () => Promise.reject(new Error('offline')); });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect(await rpcCalls(page)).toContain('request_account_deletion');
   });
 
@@ -538,7 +538,7 @@ test.describe('Account deletion: app', () => {
   test('offline, a failed global sign-out clears this device\'s session without the network', async ({ page }) => {
     await boot(page, { fake: Object.assign({ signOutOffline: true }, SIGNED), seed: SEED });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('You\u2019re signed out.', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect((await log(page)).filter((e) => /^auth:(signOut|removeSession)/.test(e))).toEqual(['auth:signOut:global', 'auth:removeSession']);
     expect(await hasSession(page)).toBe(false);
   });
@@ -556,7 +556,7 @@ test.describe('Account deletion: app', () => {
     await routeRevoke(page, 'ok');
     await boot(page, { fake: Object.assign({ identities: ['apple'] }, SIGNED), seed: Object.assign({ __social: JSON.stringify({ mode: 'ok', authorizationCode: 'c-1' }) }, SEED) });
     await deleteAccount(page);
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     expect((await socialCalls(page)).map((c) => c.provider)).toEqual(['apple']);
     expect(await rpcCalls(page)).toContain('request_account_deletion');
   });
@@ -575,15 +575,78 @@ test.describe('Account deletion: app', () => {
     expect((await log(page)).filter((e) => e.indexOf('auth:signOut') === 0)).toEqual([]);
   });
 
-  test('a cancelled deletion shows the notice once and clears it', async ({ page }) => {
+  test('a cancelled deletion shows the welcome back once and clears it', async ({ page }) => {
     await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
-    await expect(page.getByText(NOTICE)).toBeVisible({ timeout: 8000 });
+    await expect(page.locator('#ios-welcomeback')).toContainText("We've cancelled your account deletion", { timeout: 8000 });
+    await expect(page.locator('#ios-welcomeback h2')).toContainText('Welcome back');
     await expect.poll(async () => (await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+    await page.waitForTimeout(1500);
+    expect((await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
     await page.reload();
     await page.waitForLoadState('load');
     await page.waitForTimeout(1200);
-    await expect(page.getByText(NOTICE)).toHaveCount(0);
+    await expect(page.locator('#ios-welcomeback')).toHaveCount(0);
     expect((await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+  });
+
+  test('welcome back tiles end on the exact numbers, and Back closes it with the page usable', async ({ page }) => {
+    const hist = [{ date: '2026-10-01T10:00:00Z', total: 40, score: 30, pct: 75, mode: 'quiz', topic: 'x' }, { date: '2026-10-02T10:00:00Z', total: 12, score: 9, pct: 75, mode: 'quiz', topic: 'x' },
+      { date: '2026-10-02T10:00:00Z', total: 99, score: 9, pct: 9, via: 'mixed-split', topic: 'y' }];
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: Object.assign({}, SEED, { nplus_history: JSON.stringify(hist), nplus_streak: JSON.stringify({ current: 2, best: 11, last: '2026-10-02' }),
+      nplus_readiness_snapshots: JSON.stringify({ netplus: { score: 553 } }) }) });
+    const tiles = page.locator('#ios-welcomeback .wb-kept b');
+    await expect(tiles).toHaveCount(3, { timeout: 8000 });
+    await expect.poll(() => tiles.allTextContents(), { timeout: 5000 }).toEqual(['553', '52', '11']);
+    const inertWith = await page.evaluate(() => [].filter.call(document.body.children, (c) => c.inert).length);
+    expect(inertWith).toBeGreaterThan(0);
+    await page.click('#ios-welcomeback [data-act="go"]');
+    await expect(page.locator('#ios-welcomeback')).toHaveCount(0);
+    expect(await page.evaluate(() => [].filter.call(document.body.children, (c) => c.inert).length)).toBeLessThan(inertWith);
+    expect(await page.evaluate(() => [].filter.call(document.querySelectorAll('#ios-home, #ios-settings'), (c) => c.inert).length)).toBe(0);
+  });
+
+  test('welcome back under reduced motion has no transforms and numbers are final at once', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: Object.assign({}, SEED, { nplus_streak: JSON.stringify({ current: 1, best: 7, last: '2026-10-02' }) }) });
+    await expect(page.locator('#ios-welcomeback .wb-kept b').nth(2)).toHaveText('7', { timeout: 8000 });
+    await page.waitForTimeout(500);
+    const t = await page.evaluate(() => [].map.call(document.querySelectorAll('#ios-welcomeback .wb-arrow, #ios-welcomeback .wb-mark, #ios-welcomeback .dm-in, #ios-welcomeback .wb-glow'), (e) => getComputedStyle(e).transform));
+    expect(t.length).toBeGreaterThan(4);
+    t.forEach((x) => expect(x === 'none' || x === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true));
+  });
+
+  test('the goodbye names the scheduled day for a fixed clock; Sign back in opens sign-in', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await page.clock.setFixedTime(new Date('2026-10-30T12:00:00Z'));
+    await deleteAccount(page);
+    const gb = page.locator('#ios-goodbye');
+    await expect(gb).toContainText('Goodbye for now', { timeout: 8000 });
+    await expect(gb).toContainText('Your account will be deleted on Fri 6 Nov.');
+    await expect(gb).toContainText("Sign back in before 6 Nov and everything's kept");
+    await expect(gb).not.toContainText('billed by Apple');
+    await page.click('#ios-goodbye [data-act="signin"]');
+    await expect(page.locator('#ios-goodbye')).toHaveCount(0);
+    await expect(page.locator('#ios-signin')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('the goodbye Done button reloads the app', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
+    await page.evaluate(() => { window.__marker = 1; });
+    await Promise.all([page.waitForNavigation(), page.click('#ios-goodbye [data-act="done"]')]);
+    expect(await page.evaluate(() => window.__marker)).toBeUndefined();
+  });
+
+  test('the goodbye under reduced motion has no transforms', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await deleteAccount(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
+    await page.waitForTimeout(500);
+    const t = await page.evaluate(() => [].map.call(document.querySelectorAll('#ios-goodbye .gb-clockwrap, #ios-goodbye .gb-hand, #ios-goodbye .dm-in'), (e) => getComputedStyle(e).transform));
+    expect(t.length).toBeGreaterThan(3);
+    t.forEach((x) => expect(x === 'none' || x === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true));
   });
 
   test('no flag, no notice', async ({ page }) => {

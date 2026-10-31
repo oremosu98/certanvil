@@ -1380,18 +1380,128 @@
     }, function () { return false; });
   }
 
+  // ── Deletion moments (persona bundle T18) ───────────────────────────────
+  // Phones get a full-screen goodbye (mockups/onboarding-account-deletion.html ?v=goodbye) and a full-screen welcome
+  // back (mockups/cert-ios-home.html #wb); desktop keeps the card and the toast. Spec: 2026-10-30-deletion-moments-design.md
+  function _dmPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
+  // "Fri 6 Nov" in the person's own timezone. dayOnly gives "6 Nov". Pure: UAT runs its body in a vm.
+  function _dmDate(d, dayOnly) {
+    var W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return (dayOnly ? '' : W[d.getDay()] + ' ') + d.getDate() + ' ' + M[d.getMonth()];
+  }
+  // The server's stamp when it sent one (request_account_deletion returns it), else now, plus the 7-day grace window.
+  function _dmScheduled(stamp, now) {
+    var t = stamp ? new Date(stamp) : null;
+    if (!t || isNaN(t.getTime())) t = now || new Date();
+    return new Date(t.getTime() + 7 * 86400000);
+  }
+  // Tiles for the welcome back: the cert's readiness snapshot (else the live score), answers asked, best streak. Never NaN.
+  function _dmTiles() {
+    var score = null, answers = 0, best = 0;
+    try {
+      var snaps = (typeof _readReadinessSnapshots === 'function') ? _readReadinessSnapshots() : {};
+      var s = snaps && snaps[CURRENT_CERT];
+      if (s && typeof s.score === 'number' && isFinite(s.score)) score = Math.round(s.score);
+      else if (typeof getReadinessScore === 'function') { var r = getReadinessScore(); if (r && typeof r.predicted === 'number' && isFinite(r.predicted)) score = Math.round(r.predicted); }
+    } catch (_) { score = null; }
+    try {
+      var h = (typeof loadHistory === 'function' ? loadHistory() : []) || [];
+      h.forEach(function (e) {
+        if (!e || (typeof isHistorySplitRow === 'function' && isHistorySplitRow(e))) return;
+        var n = Number(e.total);
+        if (isFinite(n) && n > 0) answers += n;
+      });
+    } catch (_) { answers = 0; }
+    try { var st = (typeof getStreak === 'function') ? getStreak() : null; var b = st && Number(st.best); best = (isFinite(b) && b > 0) ? Math.round(b) : 0; } catch (_) { best = 0; }
+    return { readiness: score, answers: answers, best: best };
+  }
+  var _dmPrevFocus = null, _dmInerted = [];
+  function _dmOpen(id, html, onClick, onKey) {
+    var old = document.getElementById(id); if (old) old.remove();
+    var el = document.createElement('section');
+    el.id = id; el.className = 'dm-screen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
+    el.innerHTML = html;
+    _dmPrevFocus = document.activeElement;
+    [].forEach.call(document.body.children, function (c) { if (c !== el && !c.inert) { c.inert = true; _dmInerted.push(c); } });
+    document.body.appendChild(el);
+    el.addEventListener('click', onClick);
+    if (onKey) el.addEventListener('keydown', onKey);
+    requestAnimationFrame(function () { el.classList.add('dm-open'); var h = el.querySelector('h2'); if (h) h.focus(); });
+    return el;
+  }
+  // Un-inert first, then the 200ms exit, then remove; focus goes back to where it was.
+  function _dmClose(el, then) {
+    _dmInerted.forEach(function (c) { c.inert = false; }); _dmInerted = [];
+    if (_dmPrevFocus && _dmPrevFocus.focus && document.contains(_dmPrevFocus)) { try { _dmPrevFocus.focus(); } catch (_) {} }
+    el.classList.add('dm-leaving');
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); if (then) then(); }, 200);
+  }
+  function _dmGoodbye(modal, stamp, pro) {
+    var when = _dmScheduled(stamp), full = _dmDate(when), short = _dmDate(when, true);
+    var rot = [-90.0, -38.6, 12.9, 64.3, 115.7, 167.1, 218.6], ticks = '';
+    rot.forEach(function (a, i) { ticks += '<g class="gb-tick" style="--i:' + i + '" transform="rotate(' + a + ' 32 32)"><circle cx="32" cy="7.5" r="2.4"></circle></g>'; });
+    var html = '<div class="dm-body"><span class="gb-clockwrap" aria-hidden="true"><svg class="gb-dial" viewBox="0 0 64 64">' + ticks
+      + '<circle class="gb-face" cx="32" cy="32" r="15"></circle><g class="gb-hand"><line x1="32" y1="32" x2="32" y2="23"></line></g>'
+      + '<line class="gb-hour" x1="32" y1="32" x2="37" y2="35"></line><circle class="gb-pin" cx="32" cy="32" r="1.6"></circle></svg></span>'
+      + '<h2 class="dm-in" style="--d:1" tabindex="-1">Goodbye for now</h2>'
+      + '<p class="dm-in" style="--d:2">Your account will be deleted on <b>' + full + '</b>. Thanks for studying with CertAnvil.</p>'
+      + '<div class="gb-keep dm-in gb-last"><b>Changed your mind?</b> Sign back in before ' + short + ' and everything&#39;s kept: your progress, streak and readiness.</div>'
+      + (pro ? '<p class="gb-quiet dm-in" style="--d:4">It&#39;s billed by Apple. Cancel it in iPhone Settings so you&#39;re not charged again.</p>' : '')
+      + '</div><div class="dm-foot dm-in" style="--d:5"><button type="button" class="dm-cta" data-act="done">Done</button>'
+      + '<button type="button" class="dm-ghost" data-act="signin">Sign back in</button></div>';
+    var el = _dmOpen('ios-goodbye', html, function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b) return;
+      if (b.getAttribute('data-act') === 'done') { if (modal) modal.remove(); window.location.reload(); }
+      else _dmClose(el, function () { if (modal) modal.remove(); if (window.iosSignIn && window.iosSignIn.go) window.iosSignIn.go('signedout'); else window.location.reload(); });
+    });
+  }
+  function _dmWelcome() {
+    var t = _dmTiles(), name = '', certName = '';
+    try { name = String(window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || '').trim().split(/\s+/)[0] || ''; } catch (_) { name = ''; }
+    try { certName = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || '').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''); } catch (_) { certName = ''; }
+    var fmt = function (n) { return n.toLocaleString('en-GB'); };
+    var vals = [t.readiness, t.answers, t.best], labels = ['Readiness', 'Answers', 'Best streak'], tiles = '';
+    vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"') + '>' + (v == null ? '&ndash;' : fmt(v)) + '</b><span>' + labels[i] + '</span></div>'; });
+    var html = '<div class="dm-body"><span class="wb-markwrap"><span class="wb-glow" aria-hidden="true"></span><span class="wb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="wb-arrow"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path></g></svg></span></span>'
+      + '<h2 class="dm-in" style="--d:1" tabindex="-1">Welcome back' + (name ? ', ' + escHtml(name) : '') + '.</h2>'
+      + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion. Everything is right where you left it.</p>'
+      + '<div class="wb-kept">' + tiles + '</div></div>'
+      + '<div class="dm-foot dm-in" style="--d:9"><button type="button" class="dm-cta" data-act="go">' + (certName ? 'Back to ' + escHtml(certName) : 'Back to Home') + '</button></div>';
+    var leave = function () { _dmClose(el); };
+    var el = _dmOpen('ios-welcomeback', html, function (ev) { if (ev.target.closest && ev.target.closest('[data-act="go"]')) leave(); },
+      function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); leave(); } });
+    // The tiles count up from zero once they have landed (900ms, data motion); final numbers at once under reduced motion.
+    var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!still) [].forEach.call(el.querySelectorAll('[data-to]'), function (b, i) {
+      var to = +b.getAttribute('data-to'); b.textContent = '0';
+      setTimeout(function () {
+        var t0 = null;
+        (function step(ts) {
+          if (!b.isConnected) return;
+          if (!t0) t0 = ts;
+          var p = Math.min((ts - t0) / 900, 1);
+          b.textContent = fmt(Math.round(to * (1 - Math.pow(1 - p, 3))));
+          if (p < 1) requestAnimationFrame(step); else b.textContent = fmt(to);
+        })(performance.now());
+      }, 480 + i * 60);
+    });
+  }
+  window._dmDate = _dmDate; window._dmScheduled = _dmScheduled; window._dmTiles = _dmTiles;
+
   function _confirmDeleteAccount(modal, userId) {
     var sb = window.certanvilSupabase;
     if (!sb) return;
     var card = modal.querySelector('.dla-card');
     if (card) {
       card.innerHTML =
-        '<h2 class="dlpb-title">Deleting your account&hellip;</h2>' +
-        '<p class="dlpb-lede">Scheduling removal. This takes a moment.</p>';
+        _dmPhone() ? '<h2 class="dlpb-title">Scheduling your deletion&hellip;</h2><p class="dlpb-lede">This takes a moment.</p>'
+          : '<h2 class="dlpb-title">Deleting your account&hellip;</h2><p class="dlpb-lede">Scheduling removal. This takes a moment.</p>';
     }
     // Stage 5c: an Apple-linked account confirms with Apple first so its grant is revoked (Apple's rule).
     // Whatever that returns, the deletion is scheduled.
     var S = window.iosSignIn;
+    var wasPro = false, stamp = null;
+    try { wasPro = typeof _quotaState !== 'undefined' && !!_quotaState && (_quotaState.tier === 'pro' || (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0)); } catch (_) { wasPro = false; }
     var apple = (S && S._hasApple && S._appleRevoke) ? sb.auth.getUser().then(function (u) {
       return S._hasApple(u && u.data && u.data.user) ? S._appleRevoke() : null;
     }).catch(function () { return null; }) : Promise.resolve(null);
@@ -1409,6 +1519,7 @@
     // clearing this device's session without the network; resolves true only once the session is really gone.
     apple.then(flushed).then(function () { return sb.rpc('request_account_deletion'); }).then(function (r) {
       if (!r || r.error || !r.data) throw (r && r.error) || new Error('no profile');
+      stamp = r.data;
       return sb.auth.signOut({ scope: 'global' }).then(function (so) {
         return (so && so.error) ? _dropLocalSession(sb) : true;
       }, function () { return _dropLocalSession(sb); }).catch(function () { return false; });
@@ -1420,6 +1531,8 @@
           '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
         var stay = document.getElementById('dla-done');
         if (stay) stay.addEventListener('click', function () { modal.remove(); });
+      } else if (card && _dmPhone()) {
+        _dmGoodbye(modal, stamp, wasPro);
       } else if (card) {
         card.innerHTML =
           '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
@@ -1452,6 +1565,18 @@
       return sb.from('profiles').select('metadata').eq('id', uid).maybeSingle().then(function (pr) {
         var meta = pr && pr.data && pr.data.metadata;
         if (_noticeShown || !meta || !meta.deletion_cancelled_at) return null;
+        if (_dmPhone()) {
+          // The full moment. Wait (at most 4s) for the cloud copy to land so the tiles show the real numbers, show it,
+          // and only then clear the flag, so a reload before it appeared still gets the moment.
+          _noticeShown = true;
+          var t0 = Date.now();
+          return new Promise(function (res) {
+            (function wait() {
+              var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
+              if (ok || Date.now() - t0 > 4000) res(); else setTimeout(wait, 150);
+            })();
+          }).then(function () { _dmWelcome(); return sb.rpc('clear_deletion_notice'); });
+        }
         if (typeof window.showToast !== 'function') return null;
         _noticeShown = true;
         window.showToast("Welcome back. We've cancelled the deletion and your account is safe.", 'info');

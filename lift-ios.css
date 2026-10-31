@@ -3445,3 +3445,61 @@ html[data-theme] body #pro-only-modal { z-index: 400 !important; }   /* the Pro 
 }
 .sg-err { flex: 0 0 auto; margin: 8px 0 0; text-align: center; font: 600 12px/1.4 Inter, sans-serif; color: var(--miss, var(--red)); }
 .sg-err:empty { display: none; }
+
+/* Persona bundle T18: the goodbye after deleting and the welcome back after cancelling (drawings: onboarding-account-deletion.html ?v=goodbye, cert-ios-home.html #wb). Phone only (this sheet loads at max-width 899px). Motion tokens are BRAND.md §6. */
+.dm-screen { position: fixed; inset: 0; z-index: 320; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; opacity: 0; pointer-events: none; transition: opacity .35s var(--ios-ease); }
+.dm-screen.dm-open { opacity: 1; pointer-events: auto; }
+.dm-screen.dm-leaving { opacity: 0; transition: opacity .2s ease; }
+.dm-screen *, .dm-screen *::before, .dm-screen *::after { box-sizing: border-box; }
+.dm-screen button { font-family: inherit; }
+.dm-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: calc(24px + env(safe-area-inset-top)) 36px 24px; text-align: center; }
+.dm-screen h2 { font: 600 24px/1.15 Fraunces, Georgia, serif; letter-spacing: -0.012em; margin: 0; color: var(--text); }
+html[data-theme] body .dm-screen h2[tabindex="-1"]:focus, html[data-theme] body .dm-screen h2[tabindex="-1"]:focus-visible { outline: none !important; box-shadow: none !important; background: none !important; }
+.dm-screen p { font-size: 14px; line-height: 1.55; color: var(--text-mid); margin: 0; max-width: 32ch; }
+.dm-screen p b, .gb-keep b { color: var(--text); font-weight: 650; }
+.dm-foot { flex: 0 0 auto; padding: 12px 22px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); background: var(--bg); }
+.dm-cta { width: 100%; min-height: 48px; border: 0; border-radius: 13px; padding: 15px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 15px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease); }
+.dm-cta:active { transform: scale(0.985); }
+.dm-ghost { width: 100%; min-height: 46px; margin-top: 10px; border: 1px solid var(--border); border-radius: 13px; padding: 13px; cursor: pointer; background: transparent; color: var(--text-mid); font: 650 14px/1 Inter, sans-serif; transition: background .2s, transform .15s var(--ios-ease); }
+.dm-ghost:active { transform: scale(0.98); }
+@media (hover:hover) and (pointer:fine) { .dm-ghost:hover { background: color-mix(in oklab, var(--text) 5%, transparent); } }
+.gb-clockwrap { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 11%, var(--surface3)); }
+.gb-dial { width: 64px; height: 64px; overflow: visible; }
+.gb-dial line, .gb-face { stroke: var(--accent-deep); fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.gb-face { stroke-width: 2; }
+.gb-pin { fill: var(--accent-deep); }
+.gb-tick circle { fill: var(--accent); stroke: none; }
+.gb-hand { transform-origin: 32px 32px; transform-box: view-box; }
+.gb-keep { max-width: 32ch; padding: 12px 14px; border-radius: 14px; border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface)); font-size: 13px; line-height: 1.5; color: var(--text-mid); text-align: left; }
+.dm-screen p.gb-quiet { font-size: 12px; color: var(--text-dim); }
+.wb-markwrap { position: relative; display: grid; place-items: center; }
+.wb-glow { position: absolute; width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 22%, transparent), transparent); pointer-events: none; }
+.wb-mark { position: relative; width: 60px; height: 60px; border-radius: 17px; display: grid; place-items: center; background: color-mix(in oklab, var(--accent) 13%, var(--surface)); }
+.wb-mark svg { width: 28px; height: 28px; stroke: var(--accent-deep); fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.wb-arrow { transform-origin: 12px 12px; transform-box: view-box; }
+#ios-welcomeback h2 { font-size: 26px; }
+#ios-welcomeback p { max-width: 30ch; }
+.wb-kept { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 310px; margin-top: 6px; }
+.wb-kept div { border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 11px 8px; }
+.wb-kept b { display: block; font: 600 20px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+.wb-kept span { display: block; margin-top: 5px; font: 700 9px/1.2 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); }
+.dm-open .gb-clockwrap { animation: dm-fade .52s var(--ios-ease) backwards; }
+.dm-open .gb-hand { animation: dm-sweep .9s var(--ios-ease) .12s backwards; }
+.dm-open .gb-tick circle { animation: dm-tick .34s var(--ios-ease) backwards; animation-delay: calc(.2s + var(--i) * 95ms); }
+.dm-open .dm-in { animation: dm-rise .54s var(--ios-ease) backwards; animation-delay: calc(.18s + var(--d, 0) * 60ms); }
+.dm-open .gb-last { animation-delay: .86s; }
+.dm-open .wb-glow { animation: dm-fade .9s var(--ios-ease) backwards; }
+.dm-open .wb-mark { animation: dm-fade .52s var(--ios-ease) .05s backwards; }
+.dm-open .wb-arrow { animation: dm-wind .9s var(--ios-ease) .1s backwards; }
+#ios-welcomeback.dm-open .dm-in { animation-delay: calc(.2s + var(--d, 0) * 60ms); }
+@keyframes dm-fade { from { opacity: 0; transform: scale(.96); } }
+@keyframes dm-sweep { from { transform: rotate(-300deg); } }
+@keyframes dm-wind { from { transform: rotate(320deg); } }
+@keyframes dm-tick { from { opacity: 0; } }
+@keyframes dm-rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes dm-fade-only { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .dm-screen { transition: opacity .18s ease; }
+  .dm-open .gb-clockwrap, .dm-open .gb-hand, .dm-open .gb-tick circle, .dm-open .dm-in, .dm-open .wb-glow, .dm-open .wb-mark, .dm-open .wb-arrow { animation: dm-fade-only .3s ease backwards; animation-delay: 0s; }
+  .dm-cta:active, .dm-ghost:active { transform: none; }
+}
