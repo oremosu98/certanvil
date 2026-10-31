@@ -153,9 +153,14 @@ With 100 reports or requests, Admin must not become one long scroll.
 ## Cross-platform
 - **Report a problem:** the same form on the iOS app, mobile web and desktop (sheet on phones, centred
   dialog on desktop).
-- **iOS app and mobile web:** the Admin screen and Preview as Free.
-- **Desktop:** keeps the account-menu link to the web dashboard. No desktop Admin screen; the web
-  dashboard is the desktop one.
+- **Admin and Preview as Free on every platform** (founder, 31 Oct: "everything in unison"). One Admin
+  module, two layouts: on phones it opens from My certs → More; on the desktop web app it is an
+  **Admin** sidebar item (admin account only, with the open-report count) opening the same sections in
+  two columns, with Today across the top; report and group details open as centred dialogs; See all
+  lists replace the main view with a back arrow (drawing `cert-ios-admin.html?v=desktop`, `desktop-report`,
+  `desktop-group`, `desktop-all-reports`, `desktop-free`). The Free bar sits across the top of the
+  desktop main area. The account-menu link to certanvil.com/admin stays for the users table and cert
+  packs.
 - **iOS specifics:** requests can be cut off when the app goes to the background, so every admin action
   shows its result only after the server answers, and the report queue covers sending. Touch targets at
   least 44pt, safe-area insets, no hover.

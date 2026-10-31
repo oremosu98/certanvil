@@ -15,7 +15,7 @@
 - Gated lane: branch `feat/admin-in-app` from `origin/main`, PR, preview, migration tested in PGlite with its ROLLBACK, squash-merge on the founder's "ship it".
 - Migration file `supabase/migrations/20261031_bug_reports_loop.sql`, idempotent, with a tested `-- ROLLBACK:` block and rows in `scripts/sql/migration-audit.sql`.
 - `app.js` net 0 lines (ratchet cap 8334, current 8333). New logic goes in `features/*.js`.
-- Report a problem is one form on every platform (sheet ≤899px, centred dialog on desktop); the old desktop drawer UI is retired. Admin and Preview as Free are phone surfaces only (iOS app + mobile web ≤899px); desktop keeps the web dashboard link.
+- Report a problem is one form on every platform (sheet ≤899px, centred dialog on desktop); the old desktop drawer UI is retired. Admin and Preview as Free exist on every platform too: one module, phone layout ≤899px (from My certs) and desktop layout (sidebar item, two columns, dialogs) per the drawing's `?v=desktop*` views. Nothing ships phone-only.
 - Motion: BRAND §6 (`cubic-bezier(0.16,1,0.3,1)`, transform + opacity only, reduced motion = fade). Sheets use the drawer curve already in `lift-ios.css`. Reveal motion on first paint only.
 - Touch targets ≥ 44pt; no hover without `@media (hover:hover) and (pointer:fine)`; safe-area insets.
 - Copy is exactly the drawing's. No em dashes. The app never names the founder; the user's own first name only via the hub greeting rule.
@@ -158,20 +158,21 @@
 - Test: `tests/e2e/admin-preview.spec.js`, `tests/uat/536-admin-preview.js`
 
 **Interfaces:**
+- The switch lives in the Admin screen on both layouts.
 - Produces: `window._adminPreview = { on() → boolean, set(on: boolean) → void, wrap(state) → state }`. Flag in `localStorage` key `nplus_admin_free_preview` = `'1'`, device only (never cloud-flushed). `on()` is true only while `window._certanvilIsAdmin === true` and the flag is set. `wrap(state)` returns `{tier:'free', daily_limit:15, used_today: <questions answered today on this device from history, minus those before a Keep going tap>}` while on, else `state` unchanged. `set()` re-runs `_refreshQuotaChip()` and redraws the bar.
 - The bar: under the status bar on every phone screen while on, copy "Previewing as Free" + "Back to Pro" (neutral chrome, 44pt, fade out 150ms), `role="status"` announced once on turning on.
 - Sign-out clears the flag.
 
-- [ ] **Step 1: Failing tests**: `on() is false for a non-admin even with the flag`; `wrap gives tier free, limit 15, used from today's history`; `Back to Pro restores the Pro view without reload`; `sign-out clears the flag`; `hub shows the Free view and Unlock row while previewing`; `at 15 the Free block shows Keep going (admin preview), which starts a new 15 and lets the quiz start`.
+- [ ] **Step 1: Failing tests** (phone and desktop): `desktop: the Free bar shows across the main area and the sidebar Pro locks appear (body loses is-pro-tier)`; `on() is false for a non-admin even with the flag`; `wrap gives tier free, limit 15, used from today's history`; `Back to Pro restores the Pro view without reload`; `sign-out clears the flag`; `hub shows the Free view and Unlock row while previewing`; `at 15 the Free block shows Keep going (admin preview), which starts a new 15 and lets the quiz start`.
 - [ ] **Step 2–4: Run → FAIL, implement, run → PASS**; `node tests/tech-debt.js` → app.js ≤ 8334.
 - [ ] **Step 5: Commit** `feat(admin): Preview as Free`.
 
 ### Task 8: The Admin screen (main view, See all lists, report and group sheets)
 
 **Files:**
-- Create: `features/ios-admin.js` (IIFE, `window.openAdmin`)
-- Modify: `features/ios-hub.js` (More: `link('admin', SHIELD, 'Admin', 'Requests, bug reports, errors')` with the "N open" pill, only when `window._certanvilIsAdmin === true`; `openCount()` fetched when the hub opens; `act === 'admin'` → `openAdmin()`), `index.html`, `lift-ios.css`
-- Test: `tests/e2e/ios-admin.spec.js` (stubbed Supabase + fetch), `tests/uat/537-ios-admin.js`
+- Create: `features/admin-screen.js` (IIFE, `window.openAdmin`; one module, phone and desktop layouts)
+- Modify: `features/ios-hub.js` (More: `link('admin', SHIELD, 'Admin', 'Requests, bug reports, errors')` with the "N open" pill, only when `window._certanvilIsAdmin === true`; `openCount()` fetched when the hub opens; `act === 'admin'` → `openAdmin()`), `index.html` (a desktop host `#page-admin`), the desktop sidebar (an "Admin" item with the open count for admins only; if the sidebar is built in `app.js`, add it from `admin-screen.js` after the sidebar renders so `app.js` stays net 0), `lift-ios.css` (phone), `dg-system.css` (desktop; hand-bump `dg-system.css?v=`)
+- Test: `tests/e2e/admin-screen.spec.js` (stubbed Supabase + fetch), `tests/uat/537-admin-screen.js`
 
 **Interfaces:**
 - Consumes: `window.adminData` (Task 6), `window._adminPreview` (Task 7), `window.openSuggestCert` (unchanged), the landing `notify-cert-live` endpoint for "Send N emails" (same loop as `landing/lib/admin.js`).
@@ -179,7 +180,7 @@
 - All user-written text (titles, descriptions, steps, labels, error messages) goes through `_esc` before `innerHTML`.
 - Each section is a `<section aria-labelledby>` region (spec Cross-platform, accessibility).
 
-- [ ] **Step 1: Failing tests**: `admin row shows only for the admin, with "N open"`; `Admin shows at most 3 reports and 5 requests with See all counts`; `See all reports: chip and search change the query; Show 20 more appends the next page`; `a group of 12 with 9 reachable: Fixed, tell all 9 asks once, then calls act('fixed', 12 ids) and closes`; `a report from a signed-out person only offers Close, no email`; `a title '<img src=x onerror=alert(1)>' renders as text`; `bug reports failing shows Retry while Today and Requests still render`; `offline shows "You're offline"`; `Escape closes the sheet first, then Admin`.
+- [ ] **Step 1: Failing tests** (phone unless stated): `desktop: the Admin sidebar item shows only for the admin, with the count, and opens two columns with Today across the top`; `desktop: a report opens as a centred dialog; Escape closes it`; `desktop: See all reports replaces the main view with a back arrow`; `admin row shows only for the admin, with "N open"`; `Admin shows at most 3 reports and 5 requests with See all counts`; `See all reports: chip and search change the query; Show 20 more appends the next page`; `a group of 12 with 9 reachable: Fixed, tell all 9 asks once, then calls act('fixed', 12 ids) and closes`; `a report from a signed-out person only offers Close, no email`; `a title '<img src=x onerror=alert(1)>' renders as text`; `bug reports failing shows Retry while Today and Requests still render`; `offline shows "You're offline"`; `Escape closes the sheet first, then Admin`.
 - [ ] **Step 2–4: Run → FAIL, implement, run → PASS** on chromium, webkit, mobile-safari.
 - [ ] **Step 5: Commit** `feat(admin): the Admin screen`.
 
@@ -199,7 +200,7 @@
 
 - [ ] `node tests/uat.js`, `node tests/tech-debt.js`, `npx playwright test` (full). All green.
 - [ ] `node scripts/stamp-css-versions.js`; `bump-version.js` minor with CHANGELOG row; `stamp-facts`.
-- [ ] PR from `feat/admin-in-app`; smoke the preview at phone width signed in as admin (share link via the Vercel tool).
+- [ ] PR from `feat/admin-in-app`; smoke the preview at phone width AND desktop width signed in as admin (share link via the Vercel tool).
 - [ ] Founder: paste `20261031_bug_reports_loop.sql`, run the audit (all ok). Squash-merge.
 - [ ] Live checks: Report a problem from the phone and from desktop → each appears in Admin with its number; Fixed, tell them on a test report from a test account → email arrives; Preview as Free on and off; See all lists; the old overwrite probe now fails on prod (read-only check of policies via the audit, no writes).
 - [ ] Mindmatrix: tick A3–A7 only where each done-test is true.
