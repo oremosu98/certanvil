@@ -1,11 +1,11 @@
-// features/reports.js — v5.6.x bug-report drawer + retry queue
-// Lazy-loaded via _loadFeature('reports') from the topbar bug iconbtn
-// and from DOMContentLoaded (queue drain). Self-contained: zero deps
-// on other feature modules.
+// features/reports.js — bug-report sending + retry queue
+// Lazy-loaded via _loadFeature('reports') from the topbar bug iconbtn,
+// the report form (features/report-sheet.js) and DOMContentLoaded (queue drain).
 //
 // No `enter` / `leave` lifecycle (the standard feature-module pattern)
-// because this is a drawer + queue feature, not a page. Entry points are
-// `openDrawer()` (UI from topbar) and `drainQueue()` (DOMContentLoaded).
+// because this is a queue feature, not a page. Entry points are
+// `openDrawer()` (the topbar: opens the one Report a problem form),
+// `submitReportNow()` (the form's Send) and `drainQueue()` (DOMContentLoaded).
 
 (function () {
   'use strict';
@@ -139,61 +139,6 @@
     return s;
   }
 
-  // ───────────────────────────────────────────────────────────
-  // DRAWER UI (TASK 2.x)
-  // ───────────────────────────────────────────────────────────
-
-  function _drawerHtml(ctx) {
-    // ctx is still consumed by the GitHub issue body (see buildIssueBody / the
-    // POST path); the in-drawer "Auto-attached" panel was removed in v7.13.3 —
-    // end users don't need to see the diagnostic line, but it still travels in
-    // the filed issue.
-    return (
-      '<div class="br-backdrop" id="br-backdrop"></div>' +
-      '<div class="br-drawer" id="bug-report-drawer" role="dialog" aria-modal="true" aria-labelledby="br-title">' +
-        '<div class="br-head">' +
-          '<div>' +
-            '<div class="br-eyebrow">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h12l-2 3 2 3H5"/></svg>' +
-              'Report' +
-            '</div>' +
-            '<h3 class="br-title" id="br-title">Report an issue</h3>' +
-            '<p class="br-sub">Tell us what went wrong and we&rsquo;ll take a look.</p>' +
-          '</div>' +
-          '<button type="button" class="br-close" id="br-close" aria-label="Close">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
-          '</button>' +
-        '</div>' +
-        '<div class="br-body">' +
-          '<div class="br-field">' +
-            '<label class="br-label" for="br-input-title">Title <span class="br-req">*</span></label>' +
-            '<input class="br-input" id="br-input-title" type="text" maxlength="200" placeholder="What happened, in one line?">' +
-            '<div class="br-caption br-caption-err" id="br-title-err" hidden>Title is required</div>' +
-          '</div>' +
-          '<div class="br-field">' +
-            '<label class="br-label" for="br-input-desc">Description <span class="br-req">*</span><span class="br-counter" id="br-desc-counter" hidden></span></label>' +
-            '<textarea class="br-textarea" id="br-input-desc" maxlength="5000" placeholder="What you did &middot; what happened &middot; what you expected."></textarea>' +
-            '<div class="br-caption br-caption-err" id="br-desc-err" hidden>Description is required</div>' +
-          '</div>' +
-          '<button type="button" class="br-steps-link" id="br-steps-toggle">' +
-            '<span class="br-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>Add steps to reproduce</span>' +
-          '</button>' +
-        '</div>' +
-        '<div class="br-foot">' +
-          '<button type="button" class="br-cancel" id="br-cancel">Cancel</button>' +
-          '<button type="button" class="br-send" id="br-send">Send report' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>'
-    );
-  }
-
-  var _drawerHost = null;
-  var _drawerOpenedAt = 0;
-  var _prevFocus = null;
-  var _escListener = null;
-
   function _getCtx() {
     function safeRead(fn) { try { return fn(); } catch (e) { return null; } }
     var theme = safeRead(function(){ return document.documentElement.getAttribute('data-theme') || 'dark'; });
@@ -230,55 +175,9 @@
     };
   }
 
-  function openDrawer() {
-    if (_drawerHost) return; // idempotent
-    _prevFocus = document.activeElement;
-
-    var ctx = _getCtx();
-    var host = document.createElement('div');
-    host.id = 'br-portal';
-    host.innerHTML = _drawerHtml(ctx);
-    document.body.appendChild(host);
-    _drawerHost = host;
-    _drawerOpenedAt = Date.now();
-
-    // Wire ESC + backdrop click + close × + cancel
-    _escListener = function (e) { if (e.key === 'Escape') closeDrawer(); };
-    document.addEventListener('keydown', _escListener);
-    host.querySelector('#br-backdrop').addEventListener('click', closeDrawer);
-    host.querySelector('#br-close').addEventListener('click', closeDrawer);
-    host.querySelector('#br-cancel').addEventListener('click', closeDrawer);
-
-    // Reveal with motion next frame (so transform transitions instead of snapping)
-    requestAnimationFrame(function(){
-      host.querySelector('#br-backdrop').classList.add('open');
-      host.querySelector('#bug-report-drawer').classList.add('open');
-      setTimeout(function(){
-        var titleInput = host.querySelector('#br-input-title');
-        if (titleInput) titleInput.focus();
-      }, 220);
-    });
-
-    _wireForm(host); // TASK 3.x
-    _wireSubmit(host); // TASK 5.x
-  }
-
-  function closeDrawer() {
-    if (!_drawerHost) return;
-    var host = _drawerHost;
-    host.querySelector('#br-backdrop').classList.remove('open');
-    var drawer = host.querySelector('#bug-report-drawer');
-    drawer.classList.remove('open');
-    document.removeEventListener('keydown', _escListener);
-    _escListener = null;
-
-    // Wait for transition before removing from DOM
-    setTimeout(function(){
-      if (host.parentNode) host.parentNode.removeChild(host);
-      _drawerHost = null;
-      if (_prevFocus && _prevFocus.focus) _prevFocus.focus();
-      _prevFocus = null;
-    }, 240);
+  // Admin in the app Task 3: the old desktop drawer is gone; every entry opens the one form (features/report-sheet.js).
+  function openDrawer(opts) {
+    if (typeof window.openReportSheet === 'function') window.openReportSheet(opts);
   }
 
   // ───────────────────────────────────────────────────────────
@@ -321,83 +220,6 @@
     if (!btn) return;
     var q = _loadQueue();
     btn.classList.toggle('has-queue', q.length > 0);
-  }
-
-  // Stubs that later tasks will implement; provide empty bodies so openDrawer doesn't error
-  function _wireForm(host) {
-    var titleEl = host.querySelector('#br-input-title');
-    var descEl = host.querySelector('#br-input-desc');
-    var sendEl = host.querySelector('#br-send');
-    var stepsToggle = host.querySelector('#br-steps-toggle');
-    var counter = host.querySelector('#br-desc-counter');
-    var titleErr = host.querySelector('#br-title-err');
-    var descErr = host.querySelector('#br-desc-err');
-
-    function updateSend() {
-      var t = titleEl.value.trim();
-      var d = descEl.value.trim();
-      var ok = t.length > 0 && d.length > 0;
-      sendEl.disabled = !ok;
-    }
-
-    function updateCounter() {
-      var len = descEl.value.length;
-      if (len >= 4000) {
-        counter.hidden = false;
-        counter.textContent = len.toLocaleString() + ' / 5,000';
-        counter.classList.toggle('warn', len >= 4000);
-      } else {
-        counter.hidden = true;
-      }
-    }
-
-    titleEl.addEventListener('input', function(){
-      titleEl.classList.remove('err'); titleErr.hidden = true; updateSend();
-    });
-    descEl.addEventListener('input', function(){
-      descEl.classList.remove('err'); descErr.hidden = true;
-      updateCounter(); updateSend();
-    });
-
-    // Steps-to-reproduce expander
-    var stepsInserted = false;
-    stepsToggle.addEventListener('click', function(){
-      if (stepsInserted) return;
-      stepsInserted = true;
-      var field = document.createElement('div');
-      field.className = 'br-field';
-      field.innerHTML =
-        '<label class="br-label" for="br-input-steps">Steps to reproduce <span style="color:var(--text-dim);font-weight:400;font-size:9.5px">(optional)</span></label>' +
-        '<textarea class="br-textarea" id="br-input-steps" maxlength="2000" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>';
-      stepsToggle.parentNode.insertBefore(field, stepsToggle);
-      stepsToggle.hidden = true;
-      var stepsEl = host.querySelector('#br-input-steps');
-      stepsEl.focus();
-    });
-
-    updateSend();
-  }
-  function _wireSubmit(host) {
-    host.querySelector('#br-send').addEventListener('click', async function(){
-      var sendBtn = host.querySelector('#br-send');
-      sendBtn.disabled = true;
-      var form = {
-        title: host.querySelector('#br-input-title').value,
-        desc: host.querySelector('#br-input-desc').value,
-        steps: (host.querySelector('#br-input-steps') || {}).value || null,
-      };
-      var out = await submitReportNow(form);
-      var result = out.result;
-
-      if (out.ok) {
-        _showToast({ tone: 'ok', title: 'Report filed',
-          sub: (out.reportNo != null ? 'Report #' + out.reportNo + ' · ' : '') + 'Thanks — we’ll take a look.' });
-        closeDrawer();
-        return;
-      }
-      _showToast({ tone: result.toast.tone, title: result.toast.title });
-      sendBtn.disabled = false;
-    });
   }
 
   // ───────────────────────────────────────────────────────────
@@ -449,7 +271,7 @@
     } catch (e) {}
     return null;
   }
-  // Build, send and (on failure) queue one report. Shared by the drawer and the phone sheet.
+  // Build, send and (on failure) queue one report. The report form's Send.
   async function submitReportNow(form) {
     var ctx = _getCtx();
     ctx.user_id = await _currentUserId();
@@ -594,7 +416,6 @@
     enqueueReport: enqueueReport,
     // UI
     openDrawer: openDrawer,
-    closeDrawer: closeDrawer,
     // Pipeline
     submitReport: submitReport,
     submitReportNow: submitReportNow,

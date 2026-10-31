@@ -11,7 +11,7 @@ const { _fnBody, test, vm } = require('./_context');
   const src = fs.readFileSync(path.join(ROOT, 'features', 'ios-hub.js'), 'utf8');
   const ctx = vm.createContext({ Math, Date, Object, Array, String, Number, isFinite, JSON, Infinity });
   const consts = "var HUB_DAY = 86400000; var HUB_STALE_DAYS = 14; var HUB_SCALE_1000 = { az900: 1, ai900: 1, sc900: 1, clfc02: 1 };";
-  vm.runInContext(consts + ['_hubShort', '_hubDays', '_hubAgeDays', '_hubExamLine', '_iosHubModel'].map((n) => _fnBody(src, n)).join('\n'), ctx);
+  vm.runInContext(consts + ['_hubFirstName', '_hubShort', '_hubDays', '_hubAgeDays', '_hubExamLine', '_iosHubModel'].map((n) => _fnBody(src, n)).join('\n'), ctx);
   const model = (o) => { ctx.__o = o; return vm.runInContext('_iosHubModel(__o)', ctx); };
 
   const NOW = new Date(2026, 9, 31, 12, 0, 0);

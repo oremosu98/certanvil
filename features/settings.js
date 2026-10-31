@@ -672,12 +672,19 @@
           reportsSection = document.createElement('section');
           reportsSection.className = 'card settings-section';
           reportsSection.id = 'settings-reports-section';
+          // Admin in the app Task 3: the Report a problem row sits above the queued-reports panel
+          reportsSection.innerHTML = '<button type="button" class="ss-row" id="settings-report-btn"><span class="ss-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 4L16 12H5"/></svg></span>'
+            + '<span class="ss-t"><b>Report a problem</b><span>Bugs, wrong answers, anything off</span></span><span class="ss-g" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>'
+            + '<div id="settings-reports-panel"></div>';
+          var reportBtn = reportsSection.querySelector('#settings-report-btn');
+          reportBtn.addEventListener('click', function () { try { reportBtn.focus({ preventScroll: true }); } catch (_) {} if (typeof window.openReportSheet === 'function') window.openReportSheet(); });
           settingsLayout.appendChild(reportsSection);
         }
+        var reportsPanel = reportsSection.querySelector('#settings-reports-panel') || reportsSection;
         if (typeof _loadFeature === 'function') {
           _loadFeature('reports').then(function(m){
             if (m && typeof m.renderSettingsReportsPanel === 'function') {
-              m.renderSettingsReportsPanel(reportsSection);
+              m.renderSettingsReportsPanel(reportsPanel);
             }
           }).catch(function(){});
         }

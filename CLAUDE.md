@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8334 | 446 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2393 | 158 KB |
-| dg-system.css | 6104 | 585 KB |
-| tests/uat.js + tests/uat/ (91 modules) | 34878 | — |
-UAT checks: 6165 · E2E `test(` count: 748 · APP_VERSION: 8.204.0 · stamped-at: worktree
+| index.html | 2394 | 158 KB |
+| dg-system.css | 6026 | 588 KB |
+| tests/uat.js + tests/uat/ (92 modules) | 34935 | — |
+UAT checks: 6182 · E2E `test(` count: 758 · APP_VERSION: 8.204.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -37,7 +37,7 @@ UAT checks: 6165 · E2E `test(` count: 748 · APP_VERSION: 8.204.0 · stamped-at
 | `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, topology-builder-v3, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
 | `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **see FACTS block above** |
 | `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | see FACTS block above |
-| `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report drawer block (incl. scoped `[hidden]{display:none!important}` since component `display:flex` rules otherwise override the attribute) | growing |
+| `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report toast + queued-reports panel, `.irp-*` Report a problem dialog (the phone sheet is in `lift-ios.css`) | growing |
 | `sw.js` | Service worker — stale-while-revalidate, shell-asset precache, 60-entry LRU cap, Supabase API pass-through, auto-update broadcast | ~120 lines |
 | **`lib/supabase.js`** | **Phase C′** — Supabase client init with cookie-backed storage adapter (cross-subdomain session sharing) | ~150 lines |
 | **`lib/supabase-umd.min.js`** | **v4.89.1** — vendored Supabase UMD bundle (was cdn.jsdelivr; vendored after intermittent 503 broke auth) | 197 KB |
