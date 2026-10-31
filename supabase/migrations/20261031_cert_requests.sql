@@ -35,17 +35,32 @@ CREATE TABLE IF NOT EXISTS cert_requests (
   exam_key    text        NOT NULL CHECK (length(exam_key) BETWEEN 1 AND 80),
   label       text        NOT NULL CHECK (length(label) BETWEEN 1 AND 120),
   typed       boolean     NOT NULL DEFAULT false,
-  created_at  timestamptz DEFAULT now(),
+  created_at  timestamptz NOT NULL DEFAULT now(),
   notified_at timestamptz,
   UNIQUE (user_id, exam_key)
 );
 
+-- exam_key must already be normalised (lowercase, trimmed): Task 14's client
+-- normaliser produces such keys. Guarded so a re-paste does not fail.
+DO $chk$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'cert_requests'::regclass AND conname = 'cert_requests_exam_key_normalised'
+  ) THEN
+    ALTER TABLE cert_requests
+      ADD CONSTRAINT cert_requests_exam_key_normalised CHECK (exam_key = lower(btrim(exam_key)));
+  END IF;
+END$chk$;
+
 ALTER TABLE cert_requests ENABLE ROW LEVEL SECURITY;
 
+-- Insert is column-scoped too: owners cannot set id, created_at or notified_at.
 -- Column-level lock: nobody but the service role can change anything except
 -- notified_at, and only admins pass the policy below.
 REVOKE ALL ON cert_requests FROM anon, authenticated;
-GRANT SELECT, INSERT ON cert_requests TO authenticated;
+GRANT SELECT ON cert_requests TO authenticated;
+GRANT INSERT (user_id, exam_key, label, typed) ON cert_requests TO authenticated;
 GRANT UPDATE (notified_at) ON cert_requests TO authenticated;
 
 DO $policy_insert$

@@ -843,6 +843,13 @@ console.log('\n\x1b[1m── cert_requests (Suggest a cert) migration ──\x1b
   test('cert_request_tally view is security_invoker (RLS applies to the caller)',
     /CREATE OR REPLACE VIEW cert_request_tally\s+WITH \(security_invoker = true\)/i.test(sql)
     && /bool_or\(typed\)/i.test(sql) && /mode\(\) WITHIN GROUP/i.test(sql));
+  test('cert_requests: no table-wide ALL/UPDATE/DELETE grant; INSERT is column-scoped; view closed to anon',
+    !/GRANT\s+(ALL|UPDATE|DELETE)\s+ON\s+cert_requests/i.test(sql)
+    && /GRANT INSERT \(user_id, exam_key, label, typed\) ON cert_requests TO authenticated/i.test(sql)
+    && /REVOKE ALL ON cert_request_tally FROM anon/i.test(sql));
+  test('cert_requests: created_at NOT NULL and exam_key normalised CHECK (guarded)',
+    /created_at\s+timestamptz NOT NULL DEFAULT now\(\)/i.test(sql)
+    && /cert_requests_exam_key_normalised[\s\S]{0,200}CHECK \(exam_key = lower\(btrim\(exam_key\)\)\)/i.test(sql));
   test('migration-audit.sql checks the cert_requests migration',
     /20261031_cert_requests/.test(audit));
 })();
