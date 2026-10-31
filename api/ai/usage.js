@@ -4,10 +4,6 @@
 // same token (RLS), so no service key is needed. The counter row is admin-readable by RLS.
 const { globalDailyLimit } = require('../_lib/ai-limits');
 
-function startOfTodayUtc(now) {
-  return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'method_not_allowed' });
@@ -36,12 +32,14 @@ module.exports = async function handler(req, res) {
     const rows = await rr.json();
     const row = Array.isArray(rows) ? rows[0] : null;
 
-    const now = new Date();
-    const dayStart = startOfTodayUtc(now);
+    // Mirror ai_rl_check_and_increment: the window is rolling, expired only when now - window_start > 1 day.
+    const DAY = 86400000;
     const ws = row ? Date.parse(row.window_start) : NaN;
-    const used = row && !Number.isNaN(ws) && ws >= dayStart ? Number(row.call_count) || 0 : 0;
+    const live = !Number.isNaN(ws) && Date.now() - ws <= DAY;
+    const used = live ? Number(row.call_count) || 0 : 0;
+    const resetsAt = live ? new Date(ws + DAY).toISOString() : null;
 
-    return res.status(200).json({ used, limit: globalDailyLimit(), resetsAt: new Date(dayStart + 86400000).toISOString() });
+    return res.status(200).json({ used, limit: globalDailyLimit(), resetsAt });
   } catch (e) {
     return res.status(502).json({ error: 'upstream' });
   }

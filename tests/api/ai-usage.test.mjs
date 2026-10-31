@@ -29,7 +29,7 @@ function call(method = 'GET', auth = 'Bearer tok') {
   return handler(req, res).then(() => res);
 }
 const today = () => new Date().toISOString();
-const yesterday = () => new Date(Date.now() - 36 * 3600e3).toISOString();
+const hoursAgo = (h) => new Date(Date.now() - h * 3600e3).toISOString();
 
 await t('403 for a non-admin', async () => {
   stub({ role: 'user', row: { call_count: 5, window_start: today() } });
@@ -46,11 +46,17 @@ await t('returns used and the env override limit (AI_GLOBAL_DAILY_LIMIT=300 -> 3
   assert.ok(!Number.isNaN(Date.parse(r.body.resetsAt)));
 });
 await t('default limit is 614', async () => { stub({ row: { call_count: 1, window_start: today() } }); const r = await call(); assert.equal(r.body.limit, 614); });
-await t('a window from yesterday reads 0', async () => {
-  stub({ row: { call_count: 99, window_start: yesterday() } });
-  const r = await call(); assert.equal(r.code, 200); assert.equal(r.body.used, 0);
+await t('a window that started 23h ago still counts, and resets 24h after it started', async () => {
+  const ws = hoursAgo(23);
+  stub({ row: { call_count: 99, window_start: ws } });
+  const r = await call(); assert.equal(r.code, 200); assert.equal(r.body.used, 99);
+  assert.equal(r.body.resetsAt, new Date(Date.parse(ws) + 86400000).toISOString());
 });
-await t('no row reads 0', async () => { stub({ row: null }); const r = await call(); assert.equal(r.body.used, 0); });
+await t('a window that started 25h ago reads 0 with resetsAt null', async () => {
+  stub({ row: { call_count: 99, window_start: hoursAgo(25) } });
+  const r = await call(); assert.equal(r.code, 200); assert.equal(r.body.used, 0); assert.equal(r.body.resetsAt, null);
+});
+await t('no row reads 0', async () => { stub({ row: null }); const r = await call(); assert.equal(r.body.used, 0); assert.equal(r.body.resetsAt, null); });
 await t('reads the caller token, not a service key', async () => {
   stub({ row: { call_count: 1, window_start: today() } }); await call();
   for (const c of calls) assert.equal(c.init.headers.Authorization, 'Bearer tok');
