@@ -2950,9 +2950,9 @@ function getStudyStats() {
   return { totalQ, sessions, avgPct, bestExam };
 }
 function getTodayQuestionCount() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = _localDay();   // the phone's day, not UTC (persona bundle T3)
   return loadHistory()
-    .filter(e => !isHistorySplitRow(e) && new Date(e.date).toISOString().slice(0, 10) === today)
+    .filter(e => !isHistorySplitRow(e) && _localDay(new Date(e.date)) === today)
     .reduce((a, e) => a + (e.total || 0), 0);
 }
 
@@ -3173,18 +3173,51 @@ function _progressRowHtml(row) {
 // ══════════════════════════════════════════
 // STREAK
 // ══════════════════════════════════════════
-function getStreak() {
-  try { return JSON.parse(localStorage.getItem(STORAGE.STREAK) || '{"current":0,"best":0,"last":null}'); }
+// Local calendar date (mirrors features/ios-reminders.js localDay). Never toISOString: a UTC day
+// drifts from the person's own day (UK summer after midnight, US evenings).
+function _localDay(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+if (typeof window !== 'undefined') window._localDay = _localDay;
+// Raw stored streak, no interpretation.
+function _readStreakRaw() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.STREAK) || '{"current":0,"best":0,"last":null}') || { current: 0, best: 0, last: null }; }
   catch(e) { return { current: 0, best: 0, last: null }; }
 }
+// A stored `last` written before the local-day switch is a UTC date. It counts as today/yesterday
+// if it matches either the local or the UTC reading, so nobody loses a streak to the change itself.
+function _streakDayKeys() {
+  const now = new Date();
+  const localToday = _localDay(now);
+  const localYest = _localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+  const utcToday = now.toISOString().slice(0, 10);
+  // UTC counts as today only when it is AHEAD of local (US evening). When UTC is behind (UK summer
+  // after midnight) the UTC date is just local yesterday, and must still increment.
+  return {
+    today: utcToday > localToday ? [localToday, utcToday] : [localToday],
+    yesterday: [localYest, new Date(now.getTime() - 86400000).toISOString().slice(0, 10)]
+  };
+}
+// Honest when read: a streak whose last day is before yesterday shows as ended. Does not write.
+function getStreak() {
+  const s = _readStreakRaw();
+  s.current = s.current || 0; s.best = s.best || 0; s.last = s.last || null;
+  s.ended = false; s.endedFrom = 0;
+  if (s.last && s.current > 0) {
+    const k = _streakDayKeys();
+    const alive = k.today.indexOf(s.last) !== -1 || k.yesterday.indexOf(s.last) !== -1 || s.last > k.today[0];
+    if (!alive) { s.endedFrom = s.current; s.current = 0; s.ended = true; }
+  }
+  return s;
+}
 function updateStreak() {
-  const today = new Date().toISOString().slice(0, 10);
-  const s = getStreak();
-  if (s.last === today) return s;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  s.current = (s.last === yesterday) ? s.current + 1 : 1;
+  const s = _readStreakRaw();
+  const k = _streakDayKeys();
+  if (k.today.indexOf(s.last) !== -1) return s;
+  s.current = (k.yesterday.indexOf(s.last) !== -1) ? (s.current || 0) + 1 : 1;
   s.best = Math.max(s.best || 0, s.current);
-  s.last = today;
+  s.last = k.today[0];
   localStorage.setItem(STORAGE.STREAK, JSON.stringify(s));
   _cloudFlush(STORAGE.STREAK);
   return s;

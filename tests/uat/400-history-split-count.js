@@ -32,7 +32,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       { date: new Date(Date.now() - 2 * 86400000).toISOString(), topic: MIXED, score: 5, total: 5, mode: 'quiz' },
     ];
     const ctx = vm.createContext({ EXAM_TOPIC: EXAM, MIXED_TOPIC: MIXED, loadHistory: () => rows });
-    vm.runInContext((_fnBody(js, 'isHistorySplitRow') || '') + '\n' + (_fnBody(js, 'getTodayQuestionCount') || ''), ctx);
+    vm.runInContext((_fnBody(js, '_localDay') || '') + '\n' + (_fnBody(js, 'isHistorySplitRow') || '') + '\n' + (_fnBody(js, 'getTodayQuestionCount') || ''), ctx);
     const count = vm.runInContext('getTodayQuestionCount()', ctx);
     test('Today count: a Mixed quiz and an exam count once each (15 + 10 + 5 + 90 = 120, not 225)', count === 120);
     test('Split rows: mixed-split, exam-split and legacy exam splits are split rows; summaries, single-topic and Multi rows are not',

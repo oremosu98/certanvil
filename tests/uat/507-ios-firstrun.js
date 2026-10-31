@@ -111,7 +111,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
     const dg = fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8');
     test('the check stays off the daily 15: the batch fetch reads _metered from the Lift C flag, app.js within its ratchet',
-      /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8302);
+      /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8334);  // 8302 + 32 for persona-bundle T3 streak helpers
     test('diagnostic.js has no 720 pass-mark fallback; the phone check hooks in through onReady and _diagApi',
       !/:\s*720\b/.test(dg) && /opts\.onReady/.test(dg) && /window\._diagApi\s*=/.test(dg));
     const R = require(path.join(ROOT, 'lib', 'router.js'));

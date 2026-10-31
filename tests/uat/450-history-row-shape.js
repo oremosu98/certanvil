@@ -34,7 +34,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       h.length === 3 && !h.some(e => e.topic === 'D' || e.topic === 'E') && h[0].topic === 'A' && h[0].pct === 80 && h[0].date === iso);
 
     // The original crash: getTodayQuestionCount over these rows must not throw.
-    vm.runInContext("var isHistorySplitRow = function () { return false; };\n" + (_fnBody(js, 'getTodayQuestionCount') || ''), ctx);
+    vm.runInContext((_fnBody(js, '_localDay') || '') + "\nvar isHistorySplitRow = function () { return false; };\n" + (_fnBody(js, 'getTodayQuestionCount') || ''), ctx);
     let threw = false, n = -1;
     try { n = vm.runInContext('getTodayQuestionCount()', ctx); } catch (_) { threw = true; }
     test('getTodayQuestionCount no longer throws on ts-keyed history (the goSetup crash)', !threw && n === 15);
