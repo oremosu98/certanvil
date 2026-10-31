@@ -86,6 +86,24 @@ problem is fixed.
 - Each section loads on its own. A failed section says "Couldn't load this. Retry." and the others
   still show. Offline: "You're offline. Admin needs a connection." with Retry.
 
+### 2b. Long lists stay manageable (founder, 31 Oct)
+With 100 reports or requests, Admin must not become one long scroll.
+- **Admin shows the top few only:** the 3 newest open reports and the top 5 requests by votes, each with
+  "See all N". Errors stay at the top 5. Admin always fits in about two thumb-scrolls.
+- **See all** opens a list screen for that section, with Back to Admin:
+  - **Bug reports:** a search box (title and what happened), filter chips (Open, on by default; Can hear
+    back; This week; one per cert), 20 at a time with "Show 20 more", newest first.
+  - **Cert requests:** search, chips (Not told yet, on by default; Written in; This week), 20 at a time,
+    most votes first.
+- **Grouped reports:** reports from the same screen, cert and app version show as one row with a count
+  ("12 · Quiz · Security+ · v8.203.2", newest title shown). Free-text titles rarely match, so wording is
+  not used to group. Opening a group lists what people said and offers **Fixed, tell all N** (each
+  signed-in reporter gets the email with their own report's title; confirmed once) and **Close all N, no
+  email**. The endpoint takes a list of report ids and works through them 20 per call, like
+  `notify-cert-live`.
+- Paging, search and filters run on the server (`range`, `ilike`, `eq`), so the phone never loads
+  everything.
+
 ### 3. Telling people it's fixed
 - **The email** (from CertAnvil, Resend, one recipient per send):
   Subject: "Fixed: {title}" (the report's title, cut to about 50 characters)
@@ -116,7 +134,8 @@ problem is fixed.
     `scripts/sql/migration-audit.sql`. Tested in PGlite like the deletion and cert-request migrations,
     including that anon can no longer overwrite a report.
 - A new endpoint on the landing project, `api/admin/bug-report` (POST, Edge, admin checked on the
-  server like `notify-cert-live`), with `action` `fixed` or `close`:
+  server like `notify-cert-live`), with `action` `fixed` or `close` and a list of report ids (one, or a
+  group; at most 20 per call, with an `after` cursor for the rest):
   - `close` sets `status = 'closed'`.
   - `fixed` gets the reporter's email from the auth admin API by `user_id`, sends the email, and sets
     `status = 'closed'` and `fixed_notified_at`.
