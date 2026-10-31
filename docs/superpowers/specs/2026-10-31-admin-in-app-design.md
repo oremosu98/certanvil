@@ -1,7 +1,7 @@
 ---
 up: "[[Mobile MOC]]"
 type: spec
-status: draft
+status: approved
 cert: all
 updated: 2026-10-31
 tags: [spec, mobile]
@@ -9,7 +9,7 @@ tags: [spec, mobile]
 # Admin in the app, and a full bug-report loop
 
 The founder studies in the app like any user and is also the only admin. Today admin lives only on
-certanvil.com/admin, a desktop page. The founder agreed this design on 31 Oct. It has three parts:
+certanvil.com/admin, a desktop page. The founder agreed this design and approved the spec on 31 Oct. It has three parts:
 reporting a problem from a phone, an Admin screen in the app, and telling the person when their
 problem is fixed.
 
