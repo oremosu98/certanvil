@@ -1,7 +1,7 @@
 ---
 up: "[[Mobile MOC]]"
 type: spec
-status: draft
+status: approved
 cert: all
 updated: 2026-10-31
 tags: [spec, design]
@@ -66,6 +66,13 @@ it is only true there.
 Every item above is the desktop half of something phones already have; mobile web and the iOS app are
 unchanged except where a shared module is touched, and those changes must keep the phone behaviour and
 tests identical.
+
+## Founder approval (31 Oct)
+Drawings approved (`desktop-catchup.html`, HUD "Desktop ›", after the five-stage pass). Copy approved:
+desktop Suggest says "Pick any you'd study."; a past exam date's forecast line says "Set a new exam date
+to see where you'll be on the day."; the Daily Challenge line when the streak has ended says "Starts a
+new streak." (phone too); the PBQ weight claims become "Performance-based questions are part of the real
+exam. Practise them in Sim Lab."; My certs sits in the sidebar under Account, above Settings.
 
 ## Process
 Draw each desktop surface into the June E2E (desktop views next to the phone ones), run the five-stage
