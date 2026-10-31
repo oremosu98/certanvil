@@ -5696,3 +5696,95 @@ html[data-theme="light"] #desk-resume{--dr-acc:oklch(0.42 0.150 52);}  /* the dr
   #desk-resume .dr-card,#desk-resume .rc-go,#desk-resume .dr-fresh{transition:none;}
 }
 @keyframes drFade{from{opacity:0;}to{opacity:1;}}
+
+/* v8.204.0 Desktop catch-up Task 3: "How did your exam go?" on the desktop Home (features/home.js _deskOcSlot), drawings
+   home-exam-ask / home-exam-passed, and the log-result screen as a 460px dialog (features/ios-log-result.js via caDialogFrame),
+   drawing log-result. lift-ios.css only loads below 900px, so the dialog's inner layout lives here. Motion per BRAND §6. */
+#desk-oc{display:none;--oc-acc:var(--accent-light);}
+html[data-theme="light"] #desk-oc,html[data-theme="light"] #ios-log-result{--oc-acc:oklch(0.42 0.150 52);}  /* the drawing's accent-deep: AA on light */
+.badge-pass{display:inline-block;font:800 9px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--pass);border:1px solid currentColor;border-radius:999px;padding:3px 6px;vertical-align:middle;}
+#cb-cert .badge-pass{margin-left:8px;vertical-align:3px;}
+.sb-brand-version .badge-pass{margin-left:6px;vertical-align:1px;}
+@media (min-width:900px){
+  #page-setup .cell-recommend.has-oc #primaryLaunch,#page-setup .cell-recommend.has-oc #sr-forecast-home{display:none!important;}
+  #desk-oc:not([hidden]){display:flex;flex-direction:column;justify-content:center;flex:1 1 auto;padding:16px 18px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--border));border-radius:16px;background:color-mix(in oklab,var(--accent) 6%,var(--surface));animation:drRise .52s cubic-bezier(0.16,1,0.3,1) backwards;}
+  #desk-oc .oc-kick{display:block;font:800 10px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--oc-acc);}
+  #desk-oc .oc-title{display:block;font:700 17px/1.25 Inter,sans-serif;color:var(--text);margin:7px 0 4px;}
+  #desk-oc .oc-sub{display:block;font:500 12.5px/1.45 Inter,sans-serif;color:var(--text-dim);margin:0 0 12px;}
+  #desk-oc .oc-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  #desk-oc .oc-btn{min-height:44px;padding:0 18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:700 13.5px/1 Inter,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .16s cubic-bezier(0.16,1,0.3,1),background-color .16s cubic-bezier(0.16,1,0.3,1);}
+  #desk-oc .oc-btn.oc-pri{background:var(--accent);border-color:var(--accent);color:var(--bg);}
+  #desk-oc .oc-btn:active{transform:scale(.97);}
+  #desk-oc .oc-link{min-height:44px;padding:0 10px;border:0;background:none;color:var(--text-dim);font:600 12.5px/1 Inter,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1);}
+  #desk-oc .oc-link:active{transform:scale(.97);}
+  #desk-oc :is(.oc-btn,.oc-link):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* the log-result dialog: header, scrolling body, footer; the frame's X sits top right */
+  #ios-log-result.is-dialog{padding:0;--oc-acc:var(--accent-light);}
+  #ios-log-result.is-dialog *,#ios-log-result.is-dialog *::before,#ios-log-result.is-dialog *::after{box-sizing:border-box;}
+  #ios-log-result.is-dialog :is(button,input){font-family:inherit;}
+  #ios-log-result.is-dialog .ca-dlg-x{z-index:3;}
+  #ios-log-result.is-dialog .il-hdr{display:flex;align-items:center;padding:20px 60px 6px 22px;}
+  #ios-log-result.is-dialog :is(.il-back,.il-theme){display:none;}
+  #ios-log-result.is-dialog .il-h1{margin:0;font:600 21px/1.2 Fraunces,Georgia,serif;letter-spacing:-0.01em;color:var(--text);outline:none;}
+  #ios-log-result.is-dialog .il-body{padding:6px 22px 12px;}
+  #ios-log-result.is-dialog .il-cert{display:flex;align-items:center;gap:11px;padding:11px 12px;border:1px solid var(--border);border-radius:13px;background:var(--surface2);}
+  #ios-log-result.is-dialog .il-gl{flex:0 0 auto;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font:800 12px/1 Inter,sans-serif;color:var(--oc-acc);background:color-mix(in oklab,var(--accent) 13%,var(--surface2));}
+  #ios-log-result.is-dialog .il-cert b{display:block;font:700 14px/1.2 Inter,sans-serif;color:var(--text);}
+  #ios-log-result.is-dialog .il-cert span:not(.il-gl){display:block;font:500 11.5px/1.3 Inter,sans-serif;color:var(--text-dim);margin-top:2px;}
+  #ios-log-result.is-dialog .il-lede{font:500 13px/1.5 Inter,sans-serif;color:var(--text-mid);margin:12px 0 14px;}
+  #ios-log-result.is-dialog .il-field{margin:0 0 14px;}
+  #ios-log-result.is-dialog .il-field>label{display:block;font:800 10px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin:0 0 8px;}
+  #ios-log-result.is-dialog .il-seg{display:flex;padding:3px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);}
+  #ios-log-result.is-dialog .il-seg button{flex:1 1 0;min-height:40px;border:0;border-radius:9px;background:transparent;color:var(--text-mid);font:700 13px/1 Inter,sans-serif;cursor:pointer;transition:background-color .16s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1);}
+  #ios-log-result.is-dialog .il-seg button:active{transform:scale(.97);}
+  #ios-log-result.is-dialog .il-seg button.il-on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px color-mix(in oklab,var(--text) 14%,transparent);}
+  #ios-log-result.is-dialog .il-score-wrap{display:flex;align-items:center;gap:14px;}
+  #ios-log-result.is-dialog .il-score-box{display:flex;align-items:center;padding:0 12px;min-height:48px;border:1px solid var(--border);border-radius:12px;background:var(--surface);transition:border-color .16s cubic-bezier(0.16,1,0.3,1);}
+  #ios-log-result.is-dialog .il-score-box:focus-within{border-color:var(--accent);}
+  #ios-log-result.is-dialog .il-score-box input{width:70px;border:0;background:transparent;color:var(--text);font:600 22px/1 Fraunces,Georgia,serif;font-variant-numeric:lining-nums tabular-nums;outline:none;}
+  #ios-log-result.is-dialog .il-of{font:600 13px/1 Inter,sans-serif;color:var(--text-dim);white-space:nowrap;}
+  #ios-log-result.is-dialog .il-passline{font:600 11px/1.3 Inter,sans-serif;color:var(--text-dim);}
+  #ios-log-result.is-dialog .il-passline b{display:block;font:600 17px/1 Fraunces,Georgia,serif;color:var(--text);margin-top:3px;}
+  #ios-log-result.is-dialog .il-help{font:500 11.5px/1.4 Inter,sans-serif;color:var(--text-dim);margin:7px 0 0;}
+  #ios-log-result.is-dialog .il-err{font:600 12.5px/1.4 Inter,sans-serif;color:var(--red);margin:6px 0 0;}
+  #ios-log-result.is-dialog .il-err[hidden]{display:none;}
+  #ios-log-result.is-dialog .il-inp{width:100%;min-height:46px;padding:0 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font:500 14px/1 Inter,sans-serif;outline:none;}
+  #ios-log-result.is-dialog .il-inp:focus{border-color:var(--accent);}
+  #ios-log-result.is-dialog .il-footer{padding:12px 22px 18px;border-top:1px solid color-mix(in oklab,var(--border) 70%,transparent);}
+  #ios-log-result.is-dialog .il-cta{width:100%;min-height:44px;border:1px solid var(--accent);border-radius:12px;background:var(--accent);color:var(--bg);font:700 13.5px/1 Inter,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .16s cubic-bezier(0.16,1,0.3,1);}
+  #ios-log-result.is-dialog .il-cta:active{transform:scale(.97);}
+  #ios-log-result.is-dialog .il-foot-note{font:500 11.5px/1.4 Inter,sans-serif;color:var(--text-dim);text-align:center;margin:9px 0 0;}
+  #ios-log-result.is-dialog .il-done{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 26px 22px;background:var(--surface);border-radius:inherit;opacity:0;visibility:hidden;transition:opacity .2s cubic-bezier(0.16,1,0.3,1),visibility 0s linear .2s;}
+  #ios-log-result.is-dialog .il-done.il-show{opacity:1;visibility:visible;transition:opacity .34s cubic-bezier(0.16,1,0.3,1);}
+  #ios-log-result.is-dialog .il-seal{width:64px;height:64px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;color:var(--pass);background:color-mix(in oklab,var(--pass) 14%,var(--surface2));}
+  #ios-log-result.is-dialog .il-seal[hidden]{display:none;}
+  #ios-log-result.is-dialog .il-done.il-show .il-seal{animation:ocPop .52s cubic-bezier(0.16,1,0.3,1) backwards;}
+  #ios-log-result.is-dialog .il-seal svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
+  #ios-log-result.is-dialog .il-done h2{font:600 22px/1.2 Fraunces,Georgia,serif;color:var(--text);margin:0 0 6px;}
+  #ios-log-result.is-dialog .il-done p{font:500 13.5px/1.5 Inter,sans-serif;color:var(--text-mid);margin:0 auto;max-width:34ch;}
+  #ios-log-result.is-dialog .il-done .il-big{font:600 18px/1.3 Fraunces,Georgia,serif;color:var(--text);margin:12px 0 18px;font-variant-numeric:lining-nums tabular-nums;}
+  #ios-log-result.is-dialog .il-done .il-big[hidden]{display:none;}
+  #ios-log-result.is-dialog .il-restart{min-height:44px;margin-top:4px;padding:0 10px;border:0;background:none;color:var(--text-dim);font:600 12.5px/1 Inter,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1);}
+  #ios-log-result.is-dialog .il-restart:active{transform:scale(.97);}
+  #ios-log-result.is-dialog :is(.il-seg button,.il-cta,.il-restart):focus-visible,#ios-log-result.is-dialog .il-inp:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* the one-time "You passed" toast, top centre above the dialog (the frame leaves it un-inert) */
+  .il-toast{position:fixed;z-index:9600;top:20px;left:50%;display:flex;align-items:center;gap:12px;max-width:min(420px,calc(100vw - 32px));padding:12px 16px;border-radius:14px;background:var(--surface);color:var(--text);border:1px solid color-mix(in oklab,var(--pass) 45%,var(--border));box-shadow:0 20px 50px -24px rgba(0,0,0,.5);font:600 13.5px/1.35 Inter,sans-serif;opacity:0;transform:translate(-50%,-10px);transition:transform .52s cubic-bezier(0.16,1,0.3,1),opacity .3s cubic-bezier(0.16,1,0.3,1);pointer-events:none;}
+  .il-toast.il-in{opacity:1;transform:translate(-50%,0);}
+  .il-toast .il-toast-i{flex:0 0 auto;width:28px;height:28px;border-radius:999px;display:grid;place-items:center;background:color-mix(in oklab,var(--pass) 16%,var(--surface));}
+  .il-toast svg{width:15px;height:15px;fill:none;stroke:var(--pass);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;}
+}
+@keyframes ocPop{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:none;}}
+@media (min-width:900px) and (hover:hover) and (pointer:fine){
+  #desk-oc .oc-btn.oc-pri:hover,#ios-log-result.is-dialog .il-cta:hover{filter:brightness(1.05);}
+  #desk-oc .oc-btn:not(.oc-pri):hover{background:var(--surface2);}
+  #desk-oc .oc-link:hover,#ios-log-result.is-dialog .il-restart:hover{color:var(--text);}
+  #ios-log-result.is-dialog .il-seg button:not(.il-on):hover{color:var(--text);}
+}
+@media (min-width:900px) and (prefers-reduced-motion:reduce){
+  #desk-oc:not([hidden]){animation:drFade .3s ease backwards;}
+  #desk-oc :is(.oc-btn,.oc-link),#ios-log-result.is-dialog :is(.il-seg button,.il-cta,.il-restart){transition:none;}
+  #ios-log-result.is-dialog .il-done.il-show .il-seal{animation:drFade .3s ease backwards;}
+  .il-toast,.il-toast.il-in{transform:translate(-50%,0);transition:opacity .3s ease;}
+}

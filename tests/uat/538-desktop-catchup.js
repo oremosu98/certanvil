@@ -18,5 +18,13 @@ const { test } = require('./_context');
   test('resume card: drawing copy, and the card renders on every Home render', /Pick up where you left off/.test(home) && /Finish your quiz \\u00B7 /.test(home) && /Start fresh/.test(home) && /renderDeskResume\(\); \} catch/.test(home));
   test('resume card: desktop only, phone Home untouched', /@media \(min-width:900px\)\{\s*#desk-resume:not\(\[hidden\]\)/.test(css) && /caIsDesk\(\)/.test(home));
   test('resume card: no em dash in its markup or styles', !new RegExp(dash).test(home.slice(home.indexOf('function renderDeskResume'), home.indexOf('// RECOMMENDED-NEXT tile'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 2'))));
-  test('dg-system.css version bumped for the resume card', /dg-system\.css\?v=8\.204\.0-d2/.test(html));
+  test('dg-system.css version bumped for the resume card', /dg-system\.css\?v=8\.204\.0-d[2-9]/.test(html));
+
+  // Task 3: How did your exam go, on desktop
+  const lr = fs.readFileSync(path.join(ROOT, 'features', 'ios-log-result.js'), 'utf8');
+  test('outcome card: fills the Recommended next slot after exam, quiz and reviews (the phone order)', /_renderHomeForecast\(false\);[^\n]*\n\s*if \(_deskOcSlot\(_deskOutcomeRec\(\)\)\) return;/.test(home) && /quizResumeState\(\)\) return null/.test(home));
+  test('outcome card: phone copy verbatim', /How did your ' \+ name \+ ' exam go\?/.test(home) && /Tell us and we'll update your plan\./.test(home) && /I haven\\'t sat it yet/.test(home) && /Pick your next cert/.test(home) && /Your streak carries on with your next cert\./.test(home));
+  test('log result: opens on desktop through caDialogFrame (size sm); the frame owns Escape there', /caDialogFrame\(root, \{ size: 'sm'/.test(lr) && /root\.onkeydown = desk \? null/.test(lr) && !/if \(!isPhone\(\)\) return false;/.test(lr));
+  test('log result: inner desktop styles live in dg-system.css (lift-ios.css is phone-only)', /#ios-log-result\.is-dialog \.il-seg/.test(css) && /#desk-oc:not\(\[hidden\]\)/.test(css));
+  test('dg-system.css version bumped for the exam outcome', /dg-system\.css\?v=8\.204\.0-d3/.test(html));
 })();

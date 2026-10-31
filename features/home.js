@@ -1081,6 +1081,7 @@
         ${APP_SIDEBAR_SETTINGS.map(renderItem).join('')}
       </div>
       <div class="sb-foot">${streakHtml}</div>`;
+    _deskPassBadges();   // desktop catch-up Task 3: Passed beside the version line
     // Initial active-state sync
     const active = document.querySelector('.page.active');
     if (active) {
@@ -1758,6 +1759,7 @@
         // (avoids a redundant late DOM write on top of the correct static text).
         const html = `${escHtml(String(name).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''))} <b>${escHtml(code)}</b>`;
         if (certEl.innerHTML !== html) certEl.innerHTML = html;
+        _deskPassBadges();   // Task 3: the Passed badge rides after the code
       }
       const daysEl = document.getElementById('cb-days');
       if (daysEl) {
@@ -1829,12 +1831,80 @@
   }
   if (window.matchMedia) {
     const _drMq = window.matchMedia('(min-width: 900px)');
-    const _drChange = function () { try { renderDeskResume(); } catch (_) {} };
+    const _drChange = function () { try { renderDeskResume(); } catch (_) {} try { renderDeskOutcome(); } catch (_) {} };
     if (_drMq.addEventListener) _drMq.addEventListener('change', _drChange); else if (_drMq.addListener) _drMq.addListener(_drChange);
     // renderHeroV2 can run while home.js is still parsing, before quiz-resume.js: draw once the page is ready (as ios-home.js does).
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _drChange); else _drChange();
     window.addEventListener('load', _drChange);
   }
+
+  // Desktop catch-up Task 3: "How did your exam go?" in the Recommended next slot (drawings home-exam-ask and
+  // home-exam-passed). Same store and copy as the phone card (ios-home.js); the opener is features/ios-log-result.js.
+  // The phone's order holds: an exam or quiz to resume and due reviews come first, then the ask, then "Pick your next cert".
+  function _deskOcCert() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus'; }
+  function _deskOcSaved() {
+    try { const m = JSON.parse(localStorage.getItem('nplus_exam_outcomes') || 'null'); return (m && m[_deskOcCert()]) || null; } catch (_) { return null; }
+  }
+  function _deskOutcomeRec() {
+    if (!(typeof window.caIsDesk === 'function' && window.caIsDesk())) return null;
+    try { if (typeof quizResumeState === 'function' && quizResumeState()) return null; } catch (_) {}
+    const certId = _deskOcCert();
+    const name = String((typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'Network+').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, '');
+    let due = false;
+    try { due = typeof outcomeDue === 'function' && !!outcomeDue(certId); } catch (_) { due = false; }
+    if (due) {
+      let ago = null;
+      try {
+        const xp = String((typeof getExamDate === 'function' && getExamDate(certId)) || '').split('-');
+        if (xp.length === 3) { const n = new Date(); ago = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - new Date(+xp[0], +xp[1] - 1, +xp[2])) / 86400000); }
+      } catch (_) { ago = null; }
+      return { kind: 'outcome', kick: ago === 1 ? 'Your exam was yesterday' : (ago > 1 ? 'Your exam was ' + ago + ' days ago' : 'Your exam date has passed'),
+        title: 'How did your ' + name + ' exam go?', sub: "Tell us and we'll update your plan." };
+    }
+    const rec = _deskOcSaved();
+    if (rec && rec.outcome === 'passed') {
+      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score : ''), title: 'Pick your next cert',
+        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+    }
+    return null;
+  }
+  // Fills #desk-oc (first child of the Recommended next cell) and hides #primaryLaunch while it shows. Returns true when shown.
+  function _deskOcSlot(rc) {
+    const cell = document.querySelector('#page-setup .cell-recommend');
+    if (!cell) return false;
+    let host = document.getElementById('desk-oc');
+    if (!host) { host = document.createElement('div'); host.id = 'desk-oc'; host.className = 'desk-oc'; host.hidden = true; cell.insertBefore(host, cell.firstChild); }
+    cell.classList.toggle('has-oc', !!rc);
+    if (!rc) { host.hidden = true; host.innerHTML = ''; return false; }
+    const row = rc.kind === 'outcome'
+      ? '<button class="oc-btn oc-pri" type="button" data-act="oc-passed">Passed</button><button class="oc-btn" type="button" data-act="oc-failed">Didn\'t pass</button><button class="oc-link" type="button" data-act="oc-notyet">I haven\'t sat it yet</button>'
+      : '<button class="oc-btn oc-pri" type="button" data-act="choose">Choose a cert</button>';
+    host.innerHTML = '<span class="oc-kick">' + escHtml(rc.kick) + '</span><span class="oc-title">' + escHtml(rc.title) + '</span><span class="oc-sub">' + escHtml(rc.sub) + '</span><div class="oc-row">' + row + '</div>';
+    host.setAttribute('data-kind', rc.kind);
+    host.hidden = false;
+    host.onclick = function (ev) {
+      const b = ev.target.closest && ev.target.closest('[data-act]');
+      if (!b) return;
+      const act = b.getAttribute('data-act'), lr = window.iosLogResult || {};
+      if (act === 'oc-passed' || act === 'oc-failed') { if (typeof openLogResult === 'function') openLogResult({ preselect: act === 'oc-passed' ? 'passed' : 'failed', from: b }); }
+      else if (act === 'oc-notyet') { if (typeof lr.examDate === 'function') lr.examDate(); }
+      else if (act === 'choose') { if (typeof lr.toHub === 'function') lr.toHub(); }   // openHub(), else Settings until Task 4's My certs
+    };
+    return true;
+  }
+  // The Passed badge on the console bar's cert and beside the sidebar's version line (drawing home-exam-passed).
+  function _deskPassBadges() {
+    const rec = _deskOcSaved(), on = !!(rec && rec.outcome === 'passed');
+    ['#cb-cert', '#app-sidebar .sb-brand-version'].forEach(function (sel) {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      let b = el.querySelector('.badge-pass');
+      if (on && !b) { b = document.createElement('span'); b.className = 'badge-pass'; b.textContent = 'Passed'; el.appendChild(b); }
+      else if (!on && b) b.remove();
+    });
+  }
+  // After a save (features/ios-log-result.js): repaint the slot and the badges in place.
+  function renderDeskOutcome() { _deskPassBadges(); renderBentoRecommended(); }
 
   // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
   // baked into markup). Meta nods to the weakest topic when readiness has one.
@@ -1843,6 +1913,7 @@
     const titleEl = document.getElementById('pl-title');
     const metaEl = document.getElementById('pl-meta');
     const launchEl = document.getElementById('primaryLaunch');
+    _deskOcSlot(null);   // Task 3: the outcome card takes this slot only after exam, quiz and reviews (the phone's order)
 
     // v8.162.0: an unfinished full exam outranks everything: resume it. Read
     // straight from storage (exam.js is lazy-loaded); the key is exam.js's
@@ -1907,6 +1978,7 @@
     }
 
     _renderHomeForecast(false);    // #6 — no reviews due, hide the strip
+    if (_deskOcSlot(_deskOutcomeRec())) return;
 
     // v7.x: new user has no weak-spot data — show a friendly first-quiz CTA instead.
     // v7.89.0 (Lighthouse-90 TASK 2): index.html's static #pl-* defaults now
@@ -2638,6 +2710,7 @@
   window.renderBentoTopbar           = renderBentoTopbar;
   window.renderBentoRecommended      = renderBentoRecommended;
   window.renderDeskResume            = renderDeskResume;
+  window.renderDeskOutcome           = renderDeskOutcome;
   window.renderBentoMomentum         = renderBentoMomentum;
   window.renderBentoQuickStart       = renderBentoQuickStart;
   window.renderBentoDomains          = renderBentoDomains;
