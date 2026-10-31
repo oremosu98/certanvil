@@ -19,9 +19,13 @@ const { _fnBody, test, vm } = require('./_context');
   const chk = (raw, a, b) => { Object.assign(ctx, { __r: raw, __a: a, __b: b }); return vm.runInContext('_examScoreCheck(__r, __a, __b)', ctx); };
   const pred = (s, c, l) => { Object.assign(ctx, { __s: s, __c: c, __l: l }); return vm.runInContext('_examPredicted(__s, __c, __l)', ctx); };
 
-  test('Outcome due: false on the exam day, true the day after', due('2026-10-30', false, '2026-10-30') === false && due('2026-10-30', false, '2026-10-31') === true);
-  test('Outcome due: false before the exam, with no date, or once an outcome is saved',
-    due('2026-11-02', false, '2026-10-31') === false && due(null, false, '2026-10-31') === false && due('2026-10-01', true, '2026-10-31') === false);
+  const F = (date) => ({ outcome: 'failed', date }), P = (date) => ({ outcome: 'passed', date });
+  test('Outcome due: false on the exam day, true the day after', due('2026-10-30', null, '2026-10-30') === false && due('2026-10-30', null, '2026-10-31') === true);
+  test('Outcome due: false before the exam or with no date', due('2026-11-02', null, '2026-10-31') === false && due(null, null, '2026-10-31') === false);
+  test('Outcome due: a failed result for the same exam date is not asked again', due('2026-10-01', F('2026-10-01'), '2026-10-31') === false);
+  test('Outcome due: failed, then a later exam date has passed, asks again (re-sit)', due('2026-10-20', F('2026-10-01'), '2026-10-31') === true);
+  test('Outcome due: failed, new date still ahead, does not ask yet', due('2026-11-20', F('2026-10-01'), '2026-10-31') === false);
+  test('Outcome due: a passed result never asks again, even with a later date', due('2026-10-01', P('2026-10-01'), '2026-10-31') === false && due('2026-10-20', P('2026-10-01'), '2026-10-31') === false);
   test('Score: blank is fine either way (null)', chk('', 100, 900).ok === true && chk('', 100, 900).score === null && chk(null, 100, 900).score === null);
   test('Score: in range passes as a number, bounds inclusive', chk('812', 100, 900).score === 812 && chk('100', 100, 900).ok && chk('900', 100, 900).ok);
   test('Score: out of range, fractional or non-numeric is rejected with the cert scale in the message',
@@ -50,7 +54,7 @@ const { _fnBody, test, vm } = require('./_context');
   const saved = JSON.parse(store.nplus_exam_outcomes).netplus;
   test('Save passed: writes {outcome, score, date, predicted, at} for the current cert', r1.ok && saved.outcome === 'passed' && saved.score === 812 && saved.date === '2026-10-30' && saved.predicted === 553 && typeof saved.at === 'string');
   test('Save: flushes the outcomes key and repaints Home', flushed.includes('nplus_exam_outcomes') && homeRepaints === 1);
-  test('Save: outcomeDue() is false afterwards', vm.runInContext('outcomeDue()', sctx) === false);
+  test('Save: outcomeDue() is false afterwards (same exam date)', vm.runInContext('outcomeDue()', sctx) === false);
   test('Save passed: the celebration shows once, not again on an edit', toasts === 1 && (save({ outcome: 'passed', score: '815', date: '2026-10-30' }), toasts === 1));
   test('Save: a score is optional (null stored)', (save({ outcome: 'passed', score: '', date: '2026-10-30' }), JSON.parse(store.nplus_exam_outcomes).netplus.score === null));
   const before = store.nplus_exam_outcomes;
@@ -60,6 +64,9 @@ const { _fnBody, test, vm } = require('./_context');
   delete store.nplus_exam_outcomes; toasts = 0;
   const r2 = save({ outcome: 'failed', score: '640', date: '2026-10-30' });
   test('Save failed: stored as failed, no celebration', r2.ok && JSON.parse(store.nplus_exam_outcomes).netplus.outcome === 'failed' && toasts === 0 && r2.first === false);
+
+  test('Overlay: background content goes inert while open, the form goes inert under the done screen',
+    /_inertBehind\(true\)/.test(src) && /_inertBehind\(false\)/.test(src) && /_inertForm\(root, true\)/.test(src) && /_inertForm\(root, false\)/.test(src));
 
   // ── Copy and wiring ──
   test('Screen copy is verbatim from the drawing and spec',

@@ -10,10 +10,12 @@
   function isPhone() { return !!(MQ && MQ.matches); }
 
   // ── Pure models (UAT vm-testable; no DOM, no storage) ──
-  // Due from the day AFTER the exam date (local day), while nothing is saved for the cert.
-  function _examOutcomeDue(examDate, hasOutcome, today) {
-    if (hasOutcome || !examDate || !today) return false;
-    return String(examDate) < String(today);   // YYYY-MM-DD strings compare as dates
+  // Due from the day AFTER the exam date (local day). Nothing saved: due. A 'failed' record asks again once a LATER
+  // exam date has passed (a re-sit); a 'passed' record never asks again.
+  function _examOutcomeDue(examDate, rec, today) {
+    if (!examDate || !today || !(String(examDate) < String(today))) return false;
+    if (!rec) return true;
+    return rec.outcome === 'failed' && String(examDate) > String(rec.date || '');   // YYYY-MM-DD strings compare as dates
   }
   // Score is optional either way; when given it must be a whole number on the cert's own scale.
   function _examScoreCheck(raw, min, max) {
@@ -49,7 +51,7 @@
     var cert = certId || _certId();
     var examDate = null;
     try { examDate = typeof getExamDate === 'function' ? getExamDate(cert) : null; } catch (_) { examDate = null; }
-    return _examOutcomeDue(examDate, !!_readOutcomes()[cert], _today());
+    return _examOutcomeDue(examDate, _readOutcomes()[cert] || null, _today());
   }
 
   // Validates and writes EXAM_OUTCOMES[CURRENT_CERT]. Returns {ok:true, rec, first} or {ok:false, error}.
@@ -140,7 +142,18 @@
     note.textContent = v === 'passed' ? 'This updates your hub. You can edit it later in the cert menu.' : 'Your progress is all still here.';
   }
 
-  var _prevFocus = null, _host = null;
+  var _prevFocus = null, _host = null, _inerted = [];
+  function _inertBehind(on) {
+    if (on) {
+      [].forEach.call(document.body.children, function (el) {
+        if (el === _host || (el.classList && el.classList.contains('il-toast')) || el.inert) return;
+        el.inert = true; _inerted.push(el);
+      });
+    } else { _inerted.forEach(function (el) { el.inert = false; }); _inerted = []; }
+  }
+  function _inertForm(root, on) {
+    [].forEach.call(root.querySelectorAll('.il-hdr, .il-body, .il-footer'), function (el) { el.inert = on; });
+  }
   function _ensureHost() {
     if (_host && document.body.contains(_host)) return _host;
     _host = document.getElementById('ios-log-result');
@@ -150,7 +163,7 @@
   }
   function _close() {
     var root = document.getElementById('ios-log-result'); if (!root) return;
-    root.hidden = true; root.innerHTML = '';
+    root.hidden = true; root.innerHTML = ''; _inertBehind(false);
     if (_prevFocus && _prevFocus.focus) { try { _prevFocus.focus(); } catch (_) {} }
     _prevFocus = null;
   }
@@ -178,6 +191,7 @@
       root.setAttribute('data-end', 'failed');
     }
     root.querySelector('#il-done').classList.add('il-show');
+    _inertForm(root, true);
     go.focus();
   }
 
@@ -197,6 +211,7 @@
     _prevFocus = document.activeElement;
     root.innerHTML = _html(m);
     root.hidden = false;
+    _inertBehind(true);
     _setOutcome(opts.preselect === 'failed' ? 'failed' : opts.preselect === 'passed' ? 'passed' : (prev && prev.outcome) || 'passed');
     root.onclick = function (ev) {
       var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b) return;
@@ -216,7 +231,7 @@
         if (failed) _toSettingsExamSheet(); else if (typeof openHub === 'function') openHub();
       } else if (act === 'done-alt') {
         if (root.getAttribute('data-end') === 'failed') _close();
-        else { root.querySelector('#il-done').classList.remove('il-show'); }
+        else { root.querySelector('#il-done').classList.remove('il-show'); _inertForm(root, false); root.querySelector('.il-h1').focus(); }
       }
     };
     root.oninput = function (ev) { if (ev.target && ev.target.id === 'il-score') { var e = root.querySelector('#il-err'); e.hidden = true; ev.target.removeAttribute('aria-invalid'); } };

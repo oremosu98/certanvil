@@ -51,6 +51,7 @@ test.describe('How did your exam go', () => {
     await screen.locator('#il-score').fill('812');
     await screen.locator('#il-save').click();
     await expect(screen.locator('#il-done-t')).toHaveText('Network+ is passed');
+    expect(await page.evaluate(() => ({ body: document.querySelector('#ios-home').closest('body > *').inert, form: document.querySelector('#ios-log-result .il-body').inert, done: document.querySelector('#ios-log-result #il-done').inert }))).toEqual({ body: true, form: true, done: false });
     await expect(screen.locator('#il-done-b')).toContainText('812 / 900');
     await expect(page.locator('.il-toast')).toContainText('You passed Network+. Well done.');
     const rec = await saved(page);
@@ -58,6 +59,7 @@ test.describe('How did your exam go', () => {
 
     await screen.locator('#il-done-go').click();   // See it in your hub (closes the screen until the hub lands)
     await expect(screen).toBeHidden();
+    expect(await page.evaluate(() => document.querySelector('#ios-home').closest('body > *').inert)).toBe(false);
     await expect(page.locator('#ios-home .ih-tb-passed')).toHaveText('Passed');
     const next = page.locator('#ios-home .ih-oc');
     await expect(next).toContainText('Pick your next cert');
