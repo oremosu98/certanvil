@@ -61,9 +61,8 @@ const t = async (name, fn) => {
 
 await t('anon can no longer overwrite reports', async () => {
   await submit('anon', null, 'rpt_1', 'original', null);
-  let changed = 0;
-  try { changed = (await as('anon', null, "update public.user_bug_reports set title = 'x'")).affectedRows; } catch { changed = 0; }
-  assert.equal(changed, 0);
+  await rejects(as('anon', null, "update public.user_bug_reports set title = 'x'"));
+  await rejects(as('authenticated', A, "update public.user_bug_reports set title = 'x'"));
   assert.equal((await rows())[0].title, 'original');
 });
 await t('submit returns the id and a retry returns the same id', async () => {
@@ -98,6 +97,20 @@ await t('a direct client insert still works for older clients', async () => {
   await as('anon', null, "insert into public.user_bug_reports (report_id, title) values ('rpt_old', 'old client')");
   assert.equal((await rows()).length, 1);
 });
+const direct = (role, uid, rid, cols = '', vals = '') => as(role, uid,
+  `insert into public.user_bug_reports (report_id, title${cols}) values ('${rid}', 't'${vals})`);
+await t('direct insert: own user_id works, someone else\'s fails, anon with a user_id fails, anon with none works', async () => {
+  await direct('authenticated', A, 'd1', ', user_id', `, '${A}'`);
+  await rejects(direct('authenticated', A, 'd2', ', user_id', `, '${B}'`));
+  await rejects(direct('anon', null, 'd3', ', user_id', `, '${A}'`));
+  await direct('anon', null, 'd4');
+  assert.deepEqual((await rows()).map((r) => r.report_id), ['d1', 'd4']);
+});
+await t('direct insert: a pre-set stamp or a non-open status fails', async () => {
+  await rejects(direct('anon', null, 'd5', ', fixed_notified_at', ', now()'));
+  await rejects(direct('anon', null, 'd6', ', status', ", 'closed'"));
+  assert.equal((await rows()).length, 0);
+});
 await t('a re-paste of the whole file is safe and keeps the rows', async () => {
   await submit('anon', null, 'rpt_1', 't', null);
   await db.exec(read(FILE));
@@ -110,6 +123,12 @@ await t('the ROLLBACK line restores the old policy and drops the function and co
   assert.equal((await db.query("select count(*)::int c from pg_proc where proname='submit_bug_report'")).rows[0].c, 0);
   assert.equal((await db.query("select count(*)::int c from information_schema.columns where table_name='user_bug_reports' and column_name='fixed_notified_at'")).rows[0].c, 0);
   assert.equal((await db.query("select has_table_privilege('anon','public.user_bug_reports','UPDATE') p")).rows[0].p, true);
+  const pol = (await db.query("select qual, with_check from pg_policies where tablename='user_bug_reports' and policyname='user_bug_reports_update_own_open'")).rows[0];
+  assert.match(pol.qual, /status = 'open'/);
+  assert.match(pol.with_check, /status = 'open'/);
+  const ins = (await db.query("select with_check from pg_policies where tablename='user_bug_reports' and policyname='user_bug_reports_insert'")).rows[0];
+  assert.equal(ins.with_check, 'true');
+  await direct('anon', null, 'forged', ', user_id', `, '${A}'`);
   await db.exec(read(FILE));
   assert.equal((await submit('anon', null, 'rpt_9', 't', null)).rows.length, 1);
   assert.equal((await db.query("select has_table_privilege('anon','public.user_bug_reports','UPDATE') p")).rows[0].p, false);

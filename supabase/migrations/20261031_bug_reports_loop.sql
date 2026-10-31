@@ -15,11 +15,15 @@
 -- else. The table's own length CHECKs still apply.
 --
 -- Direct client INSERT stays allowed: older clients in the wild still upsert.
+-- But the insert policy is tightened: a client may only insert an open,
+-- unstamped report, with user_id empty or equal to its own id. So nobody can
+-- file as someone else or pre-set the "told them" stamp.
 -- With UPDATE gone, their retry of an existing row errors, which their queue
 -- already treats as a retryable failure. Acceptable until they update.
 --
 -- fixed_notified_at: stamped by the server when the reporter has been told
--- the fix shipped. Not writable from any client.
+-- the fix shipped. Clients cannot set it: UPDATE is revoked and the insert
+-- policy requires it to be empty.
 --
 -- Apply: Supabase Dashboard → SQL Editor. Run once (safe to re-run).
 -- ══════════════════════════════════════════════════════════════════════════
@@ -38,6 +42,11 @@ ALTER TABLE public.user_bug_reports ADD COLUMN IF NOT EXISTS fixed_notified_at t
 
 DROP POLICY IF EXISTS user_bug_reports_update_own_open ON public.user_bug_reports;
 REVOKE UPDATE ON public.user_bug_reports FROM anon, authenticated;
+
+DROP POLICY IF EXISTS user_bug_reports_insert ON public.user_bug_reports;
+CREATE POLICY user_bug_reports_insert ON public.user_bug_reports
+  FOR INSERT TO anon, authenticated
+  WITH CHECK ((user_id IS NULL OR user_id = auth.uid()) AND fixed_notified_at IS NULL AND status = 'open');
 
 CREATE OR REPLACE FUNCTION public.submit_bug_report(
   p_report_id   text,
@@ -73,4 +82,4 @@ $fn$;
 REVOKE ALL ON FUNCTION public.submit_bug_report(text, text, text, text, text, jsonb, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.submit_bug_report(text, text, text, text, text, jsonb, uuid) TO anon, authenticated;
 
--- ROLLBACK: DROP FUNCTION IF EXISTS public.submit_bug_report(text, text, text, text, text, jsonb, uuid); ALTER TABLE public.user_bug_reports DROP COLUMN IF EXISTS fixed_notified_at; GRANT UPDATE ON public.user_bug_reports TO anon, authenticated; DROP POLICY IF EXISTS user_bug_reports_update_own_open ON public.user_bug_reports; CREATE POLICY user_bug_reports_update_own_open ON public.user_bug_reports FOR UPDATE TO anon, authenticated USING (status = 'open') WITH CHECK (status = 'open');
+-- ROLLBACK: DROP POLICY IF EXISTS user_bug_reports_insert ON public.user_bug_reports; CREATE POLICY user_bug_reports_insert ON public.user_bug_reports FOR INSERT TO anon, authenticated WITH CHECK (true); DROP FUNCTION IF EXISTS public.submit_bug_report(text, text, text, text, text, jsonb, uuid); ALTER TABLE public.user_bug_reports DROP COLUMN IF EXISTS fixed_notified_at; GRANT UPDATE ON public.user_bug_reports TO anon, authenticated; DROP POLICY IF EXISTS user_bug_reports_update_own_open ON public.user_bug_reports; CREATE POLICY user_bug_reports_update_own_open ON public.user_bug_reports FOR UPDATE TO anon, authenticated USING (status = 'open') WITH CHECK (status = 'open');

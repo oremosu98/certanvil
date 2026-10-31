@@ -41,7 +41,8 @@ checks(migration, item, ok) as (values
   ('20261031_cert_requests',            'authenticated cannot update label', not has_column_privilege('authenticated','public.cert_requests','label','UPDATE')),
   ('20261031_bug_reports_loop',         'submit_bug_report()',           exists (select 1 from pg_proc where proname='submit_bug_report')),
   ('20261031_bug_reports_loop',         'column fixed_notified_at',      exists (select 1 from information_schema.columns where table_name='user_bug_reports' and column_name='fixed_notified_at')),
-  ('20261031_bug_reports_loop',         'open-report update policy gone', not exists (select 1 from pg_policies where tablename='user_bug_reports' and policyname='user_bug_reports_update_own_open'))
+  ('20261031_bug_reports_loop',         'open-report update policy gone', not exists (select 1 from pg_policies where tablename='user_bug_reports' and policyname='user_bug_reports_update_own_open')),
+  ('20261031_bug_reports_loop',         'insert policy tightened',       exists (select 1 from pg_policies where tablename='user_bug_reports' and policyname='user_bug_reports_insert' and with_check like '%fixed_notified_at IS NULL%'))
 )
 select migration, item, case when ok then 'ok' else 'MISSING' end as status
 from checks
