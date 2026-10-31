@@ -76,7 +76,7 @@
         var qTotal = qs.total || 0, qDone = qs.answered || 0, qLeft = (typeof qs.left === 'number') ? qs.left : Math.max(0, qTotal - qDone);
         var qTopic = qs.topicLabel || '';
         rec = (qs.ready || qLeft === 0)   // every question answered, results never opened: Resume lands on the last one
-          ? { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'See your results',
+          ? { kind: 'quiz', kick: 'Pick up where you left off', badge: null, unit: null, icon: 'tick', title: 'See your results',
             sub: (qTopic ? qTopic + ' · ' : '') + 'all ' + qTotal + ' answered' }
           : { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
             sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
@@ -215,7 +215,8 @@
       clock: '<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5M9 2h6"></path>',
       chart: '<path d="M3 3v18h18"></path><path d="M7 14l3-4 3 3 5-7"></path>',
       sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path>',
-      arrow: '<path d="M5 12h14M13 6l6 6-6 6"></path>'
+      arrow: '<path d="M5 12h14M13 6l6 6-6 6"></path>',
+      tick: '<path d="M20 6L9 17l-5-5"></path>'   // the results screen's tick (ios-quiz.js CHECK)
     };
     var svg = function (k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>'; };
     var light = (typeof document !== 'undefined' && document.documentElement && document.documentElement.getAttribute('data-theme') === 'light');
@@ -265,7 +266,7 @@
       h += '<div class="ih-oc ih-reveal"><span class="ih-oc-kick">' + e(rc.kick) + '</span><span class="ih-oc-title">' + e(rc.title) + '</span><span class="ih-oc-sub">' + e(rc.sub) + '</span>'
         + '<div class="ih-oc-row"><button class="ih-oc-btn ih-pri" type="button" data-act="rec">Choose a cert</button></div></div>';
     } else {
-      var rbtn = '<button class="ih-rec ih-reveal" type="button" data-act="rec" data-kind="' + e(rc.kind) + '"><span class="ih-rc-badge">' + e(rc.badge != null ? rc.badge : rc.min) + '<small>' + e(rc.unit || 'MIN') + '</small></span>'
+      var rbtn = '<button class="ih-rec ih-reveal" type="button" data-act="rec" data-kind="' + e(rc.kind) + '"><span class="ih-rc-badge' + (rc.icon ? ' ih-rc-badge-ico' : '') + '">' + (rc.icon ? svg(rc.icon) : e(rc.badge != null ? rc.badge : rc.min) + '<small>' + e(rc.unit || 'MIN') + '</small>') + '</span>'
         + '<span class="ih-rc-txt"><span class="ih-rc-kick">' + e(rc.kick || 'Recommended next') + '</span><span class="ih-rc-title">' + e(rc.title) + '</span><span class="ih-rc-sub">' + e(rc.sub) + '</span></span>'
         + '<span class="ih-rc-go">' + svg('chev') + '</span></button>';
       h += rc.kind === 'quiz' ? '<div class="ih-rec-wrap ih-reveal">' + rbtn + '<button class="ih-rec-fresh" type="button" data-act="fresh">Start fresh</button></div>' : rbtn;

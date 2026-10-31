@@ -55,6 +55,7 @@ test.describe('Quiz resume after the app closes', () => {
     const card = page.locator('#ios-home [data-act="rec"][data-kind="quiz"]');
     await expect(card).toBeVisible({ timeout: 8000 });
     await expect(card).toContainText('Finish your quiz · 3 left');
+    await expect(card.locator('.ih-rc-badge')).toHaveText(/^\s*3\s*LEFT\s*$/i);
     await expect(card).toContainText('Mixed topics · 7 of 10 answered');
     await expect(page.locator('#ios-home [data-act="fresh"]')).toHaveText('Start fresh');
 
@@ -144,7 +145,9 @@ test.describe('Quiz resume after the app closes', () => {
     await expect(card).toBeVisible({ timeout: 8000 });
     await expect(card).toContainText('See your results');
     await expect(card).toContainText('Mixed topics · all 10 answered');
-    await expect(card).not.toContainText('0 left');
+    const badge = card.locator('.ih-rc-badge');
+    await expect(badge.locator('svg')).toHaveCount(1);   // the tick
+    expect(await badge.innerText()).not.toMatch(/\d|LEFT/i);
     expect((await saved(page)).log.length).toBe(10);   // Home never finishes it
   });
 

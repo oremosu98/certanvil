@@ -124,6 +124,9 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     const qr = mk({ history: hist, readiness: rd, quiz: { topicLabel: 'Ports & Protocols', answered: 10, total: 10, left: 0, savedAt: 1, ready: true } });
     test('A saved quiz with every question answered reads "See your results", "Ports & Protocols · all 10 answered" (never "0 left")',
       qr.rec.kind === 'quiz' && qr.rec.title === 'See your results' && qr.rec.sub === 'Ports & Protocols · all 10 answered' && !/0 left/.test(qr.rec.title));
+    test('Ready quiz badge is a tick: no numeric badge, no LEFT unit, icon "tick"',
+      qr.rec.badge == null && qr.rec.unit == null && qr.rec.icon === 'tick' && !/\d|LEFT/i.test(String(qr.rec.badge || '') + String(qr.rec.unit || '')));
+    test('A mid-quiz card keeps its number badge and LEFT unit, no icon', q.rec.badge === '3' && q.rec.unit === 'LEFT' && !q.rec.icon);
     test('Home never finishes the quiz itself (no finish() call in the Home model or its actions)', !/\bfinish\(\)/.test(_fnBody(js, '_iosHomeModel')));
     test('A paused exam still beats a saved quiz', mk({ history: hist, readiness: rd, quiz, store: { nplus_exam_state: paused } }).rec.kind === 'exam');
     const oc = mk({ history: hist, readiness: rd, outcome: { date: '2026-10-19' } });

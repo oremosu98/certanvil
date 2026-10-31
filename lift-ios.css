@@ -100,6 +100,7 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home .ih-rec .ih-rc-badge { flex: 0 0 auto; width: 48px; height: 48px; border-radius: 13px; display: grid; place-items: center; text-align: center;
     background: color-mix(in oklab, var(--accent) 16%, var(--surface3)); color: var(--accent-deep);
     font: 800 13px/0.95 'Roboto Mono', monospace; letter-spacing: -0.02em; }
+#ios-home .ih-rec .ih-rc-badge-ico svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 #ios-home .ih-rec .ih-rc-badge small { display: block; font: 800 7.5px/1 Inter, sans-serif; letter-spacing: 0.1em; margin-top: 2px; }
 #ios-home .ih-rec .ih-rc-txt { flex: 1 1 auto; min-width: 0; }
 #ios-home .ih-rec .ih-rc-kick { display: block; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-deep); }
