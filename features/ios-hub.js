@@ -117,6 +117,17 @@
   }
 
   // ── Reads (never writes) ──
+  // The current cert's readiness comes from the live engine, as on Home. Snapshots are written only when a quiz or exam
+  // finishes, so a cert studied before snapshots existed showed "No readiness yet" here while Home showed a score.
+  // Returns a copy; never writes user state.
+  function _hubLiveSnaps(snaps, current, live, nowIso) {
+    var out = {};
+    for (var k in snaps) if (Object.prototype.hasOwnProperty.call(snaps, k)) out[k] = snaps[k];
+    if (current && live && typeof live.predicted === 'number' && isFinite(live.predicted)) {
+      out[current] = Object.assign({}, out[current] || {}, { score: live.predicted, computed_at: nowIso });
+    }
+    return out;
+  }
   function _readMap(key) {
     try { var m = JSON.parse(localStorage.getItem(key) || '{}'); return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {}; }
     catch (_) { return {}; }
@@ -153,9 +164,11 @@
     try { var plan = typeof getSrTodayPlan === 'function' ? getSrTodayPlan() : null; due = plan && typeof plan.todo === 'number' ? plan.todo : 0; } catch (_) { due = 0; }
     var certs = [];
     try { certs = typeof getAvailableCerts === 'function' ? getAvailableCerts() : []; } catch (_) { certs = []; }
+    var current = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', now = new Date(), live = null;
+    try { live = typeof getReadinessScore === 'function' ? getReadinessScore() : null; } catch (_) { live = null; }
     return {
-      certs: certs, snaps: _readMap(STORAGE.READINESS_SNAPSHOTS), dates: dates, outcomes: _readMap(STORAGE.EXAM_OUTCOMES),
-      current: (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', pro: _isPro(), now: new Date(), streak: streak, scale: scale,
+      certs: certs, snaps: _hubLiveSnaps(_readMap(STORAGE.READINESS_SNAPSHOTS), current, live, now.toISOString()), dates: dates, outcomes: _readMap(STORAGE.EXAM_OUTCOMES),
+      current: current, pro: _isPro(), now: now, streak: streak, scale: scale,
       name: name, due: due, email: _email
     };
   }

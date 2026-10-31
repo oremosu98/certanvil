@@ -86,4 +86,14 @@ const { _fnBody, test, vm } = require('./_context');
     && /openHub\(\)\) return; tab\('settings'\)/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-home.js'), 'utf8'))
     && /features\/ios-hub\.js/.test(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')));
   test('Hub copy: no em dashes in the view source', !/—|&mdash;/.test(src));
+  // Live fix 31 Oct: Home showed 193 while the hub said "No readiness yet" (no snapshot had ever been written for the cert).
+  vm.runInContext(_fnBody(src, '_hubLiveSnaps'), ctx);
+  const live = (snaps, cur, r) => { ctx.__a = [snaps, cur, r]; return vm.runInContext('_hubLiveSnaps(__a[0], __a[1], __a[2], "2026-10-31T12:00:00.000Z")', ctx); };
+  const noSnap = live({ secplus: { score: 856, computed_at: ago(14) } }, 'netplus', { predicted: 193 });
+  test('Hub readiness: the current cert uses the live score when it has no snapshot, other certs keep theirs',
+    noSnap.netplus.score === 193 && noSnap.secplus.score === 856
+    && model(base({ snaps: noSnap, current: 'netplus' })).stats.readiness === 193);
+  test('Hub readiness: the live score replaces an older snapshot for the current cert', live({ netplus: { score: 400, computed_at: ago(30) } }, 'netplus', { predicted: 193 }).netplus.score === 193);
+  test('Hub readiness: no live score (new user, or the engine fails) keeps the snapshot as it was, and the input is not changed',
+    (() => { const s0 = { netplus: { score: 400, computed_at: ago(3) } }; const r = live(s0, 'netplus', null); return r.netplus.score === 400 && r !== s0 && live({}, 'netplus', { predicted: NaN }).netplus === undefined; })());
 })();
