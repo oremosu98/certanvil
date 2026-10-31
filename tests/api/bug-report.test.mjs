@@ -121,6 +121,22 @@ await t('a 429 pauses without stamping the rest', async () => {
   assert.equal(j.paused, true); assert.equal(j.sent, 1); assert.equal(j.remaining, 2); assert.equal(j.next, 1);
   assert.deepEqual(db.map((r) => r.fixed_notified_at != null), [true, false, false]);
 });
+await t('a 429 whose un-stamp fails counts failed and steps past that report', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }, { id: 2, user_id: 'u2' }], emails: { u1: 'a@x.com', u2: 'b@x.com' }, rate: ['a@x.com'], failRelease: true });
+  const err = console.error; const logged = []; console.error = (m) => logged.push(m);
+  const j = await (await handler(post({ action: 'fixed', ids: [1, 2] }))).json();
+  console.error = err;
+  assert.deepEqual([j.paused, j.sent, j.failed, j.next, j.remaining], [true, 0, 1, 1, 1]);
+  assert.ok(logged.some((m) => /report 1/.test(m)));
+});
+await t('a failed send whose un-stamp fails counts failed once and is logged', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' }, failSend: true, failRelease: true });
+  const err = console.error; const logged = []; console.error = (m) => logged.push(m);
+  const j = await (await handler(post({ action: 'fixed', ids: [1] }))).json();
+  console.error = err;
+  assert.deepEqual([j.sent, j.failed, j.closed], [0, 1, 0]);
+  assert.ok(logged.some((m) => /report 1/.test(m)));
+});
 await t('buildFixedEmail escapes the title and cuts to 50 plus an ellipsis', async () => {
   const e = mod.buildFixedEmail('<b>"x"</b>');
   assert.ok(e.html.includes('&lt;b&gt;&quot;x&quot;&lt;/b&gt;') && !e.html.includes('<b>'));

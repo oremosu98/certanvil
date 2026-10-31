@@ -94,7 +94,13 @@ export default async function handler(req) {
       const claim = await patch('id=eq.' + row.id + '&fixed_notified_at=is.null&status=in.(open,triaged)', { fixed_notified_at: new Date().toISOString() });
       const got = claim && claim.ok ? await claim.json().catch(function () { return null; }) : null;
       if (!Array.isArray(got) || !got.length) { skipped++; processed++; next = row.id; continue; }
-      const release = async () => { const r = await patch('id=eq.' + row.id, { fixed_notified_at: null }, 'return=minimal'); return !!(r && r.ok); };
+      // A failed release leaves the report stamped as told when it was not: it counts as failed and is logged for follow-up.
+      const release = async () => {
+        const r = await patch('id=eq.' + row.id, { fixed_notified_at: null }, 'return=minimal');
+        const ok = !!(r && r.ok);
+        if (!ok) console.error('bug-report: could not clear fixed_notified_at on report ' + row.id);
+        return ok;
+      };
 
       const ur = await fetch(supabaseUrl() + '/auth/v1/admin/users/' + encodeURIComponent(row.user_id), { headers: svcHeaders() }).catch(function () { return null; });
       const u = ur && ur.status === 200 ? await ur.json().catch(function () { return null; }) : null;
@@ -105,9 +111,14 @@ export default async function handler(req) {
       const mail = buildFixedEmail(row.title);
       const res = await sendMail({ to: [email], subject: mail.subject, html: mail.html, text: mail.text, idempotencyKey: 'bug-fixed:' + row.id });
       lastSend = Date.now();
-      if (res.status === 429) { await release(); paused = true; break; }
+      if (res.status === 429) {
+        // Released: the row stays in remaining and the next call retries it. Not released: it is stuck stamped, so it is
+        // counted failed and stepped past (a retry would only skip it as already told).
+        if (!(await release())) { failed++; processed++; next = row.id; }
+        paused = true; break;
+      }
       processed++; next = row.id;
-      if (!res.ok) { await release(); failed++; continue; }
+      if (!res.ok) { await release(); failed++; continue; }   // failed either way; a failed release is logged by release()
       // The email is out, so it counts as sent; if the close does not stick the report counts failed (not closed) for the admin to retry.
       const cl = await patch('id=eq.' + row.id, { status: 'closed' }, 'return=minimal');
       sent++;
