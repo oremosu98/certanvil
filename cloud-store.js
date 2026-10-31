@@ -406,7 +406,7 @@
     if (!legacy) return;
     try { map = JSON.parse(localStorage.getItem(KEY_PREFIX + 'exam_dates') || '{}'); } catch (e) { map = {}; }
     if (!_isMap(map)) map = {};
-    if (Object.prototype.hasOwnProperty.call(map, cert)) return;
+    if (Object.keys(map).length) return;   // any entry = the map is live; the legacy date may be a sibling cert's (A+ Core 1/2 share an origin)
     map[cert] = legacy;
     try { localStorage.setItem(KEY_PREFIX + 'exam_dates', JSON.stringify(map)); } catch (e) {}
   }

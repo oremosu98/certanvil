@@ -562,7 +562,9 @@
     const cert = certId || _certKey();
     const map = _readExamDates();
     if (Object.prototype.hasOwnProperty.call(map, cert)) return map[cert] || null;
-    if (cert !== _certKey()) return null;
+    // Only a device with no map at all adopts the legacy date: A+ Core 1 and Core 2 share one origin, so once
+    // any cert has an entry the legacy date may be a sibling's (Core 2 must not take Core 1's date).
+    if (cert !== _certKey() || Object.keys(map).length) return null;
     const legacy = localStorage.getItem(STORAGE.EXAM_DATE);
     if (!legacy) return null;
     map[cert] = legacy;   // adopt the legacy date into the map once

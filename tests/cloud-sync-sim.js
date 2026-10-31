@@ -472,6 +472,28 @@ async function main() {
       const got = vm.runInContext('getExamDate()', ctx);
       const map = JSON.parse(ls.getItem('nplus_exam_dates') || '{}');
       out.s9d = { adopted: got === '2026-11-17' && map.netplus === '2026-11-17' && flushed.indexOf('nplus_exam_dates') !== -1 };
+      // 9h. A+ Core 1 and Core 2 share one origin: Core 1's date is in the map and mirrored in the legacy key.
+      // Core 2 (no entry) must not adopt it, neither on read nor on hydrate.
+      const ls2 = makeLocal({ nplus_exam_date: '2026-11-17', nplus_exam_dates: JSON.stringify({ 'aplus-core1': '2026-11-17' }) });
+      const ctx2 = { window: { CURRENT_CERT: 'aplus-core2' }, localStorage: ls2, JSON, Object, Array,
+        STORAGE: { EXAM_DATE: 'nplus_exam_date', EXAM_DATES: 'nplus_exam_dates' }, _cloudFlush: () => {} };
+      vm.createContext(ctx2);
+      vm.runInContext(['_certKey', '_readExamDates', 'getExamDate'].map(fn).join('\n'), ctx2);
+      const got2 = vm.runInContext('getExamDate()', ctx2);
+      const map2 = JSON.parse(ls2.getItem('nplus_exam_dates'));
+      const readNoLeak = got2 === null && !Object.prototype.hasOwnProperty.call(map2, 'aplus-core2');
+      const db = { profile: { metadata: {}, exam_date: '2026-11-17' }, history: [] };
+      const b = boot({ nplus_exam_date: '2026-11-17', nplus_exam_dates: JSON.stringify({ 'aplus-core1': '2026-11-17' }) }, db, 'aplus-core2');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const hm = JSON.parse(b.ls.getItem('nplus_exam_dates'));
+      const hydrateNoLeak = !Object.prototype.hasOwnProperty.call(hm, 'aplus-core2') && hm['aplus-core1'] === '2026-11-17';
+      const db2 = { profile: { metadata: {}, exam_date: null }, history: [] };   // empty map: the legacy date is adopted on hydrate
+      const b2 = boot({ nplus_exam_date: '2026-11-17' }, db2, 'aplus-core2');
+      b2.cs.setSession(b2.session);
+      await b2.cs.hydrate();
+      const hydrateAdopts = JSON.parse(b2.ls.getItem('nplus_exam_dates') || '{}')['aplus-core2'] === '2026-11-17';
+      out.s9h = { readNoLeak, hydrateNoLeak, hydrateAdopts };
     }
   }
 
