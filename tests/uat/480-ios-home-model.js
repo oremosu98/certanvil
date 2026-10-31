@@ -29,7 +29,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
         getSrTodayPlan: () => o.sr || { todo: 0, later: 0, counts: [0, 0, 0, 0, 0, 0, 0] },
         _srSpreadPhrase: () => '',
         getStreak: () => o.streak || { current: 0, best: 0 },
-        ...(o.quiz ? { quizResumeState: () => o.quiz } : {}), ...(o.outcome ? { outcomeDue: () => o.outcome } : {}),
+        ...(o.quiz ? { quizResumeState: () => o.quiz } : {}), ...(o.outcome ? { outcomeDue: () => true, getExamDate: () => o.outcome.date } : {}),
         getTodayQuestionCount: () => o.done || 0,
         getDailyGoal: () => o.goal || 20,
         buildSessionPlan: () => o.plan || [],
@@ -116,17 +116,19 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Cert header: mark N+, name Network+ (vendor prefix dropped), code N10-009',
       ret.cert.mark === 'N+' && ret.cert.name === 'Network+' && ret.cert.code === 'N10-009' && ret.streak === 1);
     // One next step (30 Oct): exam > quiz > reviews > outcome > first > warmup > weak
-    const quiz = { topic: 'Ports & Protocols', answered: 7, total: 10 };
+    const quiz = { topicLabel: 'Ports & Protocols', answered: 7, total: 10, left: 3, savedAt: 1 };
     const q = mk({ history: hist, readiness: rd, quiz, sr: { todo: 7, later: 0, counts: [7, 0, 0, 0, 0, 0, 0] } });
     test('A saved quiz beats reviews: "Finish your quiz · 3 left", 3 LEFT, "Ports & Protocols · 7 of 10 answered"',
       q.rec.kind === 'quiz' && q.rec.title === 'Finish your quiz · 3 left' && q.rec.badge === '3' && q.rec.unit === 'LEFT'
       && q.rec.kick === 'Pick up where you left off' && q.rec.sub === 'Ports & Protocols · 7 of 10 answered');
     test('A paused exam still beats a saved quiz', mk({ history: hist, readiness: rd, quiz, store: { nplus_exam_state: paused } }).rec.kind === 'exam');
-    const oc = mk({ history: hist, readiness: rd, outcome: { daysAgo: 1 } });
+    const oc = mk({ history: hist, readiness: rd, outcome: { date: '2026-10-19' } });
     test('Outcome due: "How did your Network+ exam go?" with the kicker and sub, beats first/warmup/weak',
       oc.rec.kind === 'outcome' && oc.rec.kick === 'Your exam was yesterday' && oc.rec.title === 'How did your Network+ exam go?' && oc.rec.sub === "Tell us and we'll update your plan.");
-    test('Reviews due beat the outcome card', mk({ history: hist, readiness: rd, outcome: { daysAgo: 1 }, sr: { todo: 2, later: 0, counts: [2, 0, 0, 0, 0, 0, 0] } }).rec.kind === 'review');
-    test('Outcome due beats the first quiz', mk({ outcome: { daysAgo: 2 } }).rec.kind === 'outcome');
+    test('Reviews due beat the outcome card', mk({ history: hist, readiness: rd, outcome: { date: '2026-10-19' }, sr: { todo: 2, later: 0, counts: [2, 0, 0, 0, 0, 0, 0] } }).rec.kind === 'review');
+    test('Outcome kicker counts days from the exam date: 2 days -> "Your exam was 2 days ago"; no date -> "Your exam date has passed"',
+      mk({ outcome: { date: '2026-10-18' } }).rec.kick === 'Your exam was 2 days ago' && mk({ outcome: { date: null } }).rec.kick === 'Your exam date has passed');
+    test('Outcome due beats the first quiz', mk({ outcome: { date: '2026-10-18' } }).rec.kind === 'outcome');
     test('Missing producers: no quiz or outcome card appears, rec falls through', ret.rec.kind === 'weak' && nu.rec.kind === 'first');
     const away3 = [Object.assign(row('Ethernet Basics', 8, 10), { date: new Date(TUE_9AM.getTime() - 3 * 86400000).toISOString() })];
     const aw = mk({ history: away3, readiness: rd });
@@ -140,6 +142,8 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Passed: passed flag, rec nextcert "Pick your next cert", kicker "Network+ passed · scored 812", prediction + streak sub',
       ps.passed === true && ps.rec.kind === 'nextcert' && ps.rec.title === 'Pick your next cert' && ps.rec.kick === 'Network+ passed · scored 812'
       && ps.rec.sub === 'We predicted 553 on exam day. Your streak carries on with your next cert.' && ret.passed === false);
+    test('Passed with reviews due: reviews still lead (kind review)', mk({ history: hist, readiness: rd, store: outc({ outcome: 'passed' }), sr: { todo: 2, later: 0, counts: [2, 0, 0, 0, 0, 0, 0] } }).rec.kind === 'review');
+    test('Passed with an outcome due: outcome card leads', mk({ history: hist, readiness: rd, store: outc({ outcome: 'passed' }), outcome: { date: '2026-10-19' } }).rec.kind === 'outcome');
     test('Didn\'t pass is not "passed"', mk({ history: hist, readiness: rd, store: outc({ outcome: 'failed' }) }).passed === false);
     // Stage 5b (28 Oct): the iOS app can be used signed out, so its Home shows Sign in too (no native override)
     test('Signed out: signedIn false on the web and in the iOS app; signed in: true',

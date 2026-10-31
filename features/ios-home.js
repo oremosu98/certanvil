@@ -50,7 +50,7 @@
       }
     }
 
-    // ── one next step: exam > quiz > reviews > outcome > first quiz > warmup > weak spots (nextcert once passed) ──
+    // ── one next step: exam > quiz > reviews > outcome > nextcert (once passed) > first quiz > warmup > weak spots ──
     // The producers of quizResumeState / outcomeDue (and the openers) land in later tasks; a missing one
     // simply means that card never appears and the rec falls through.
     var rec = null;
@@ -74,7 +74,7 @@
       try { qs = quizResumeState(); } catch (_) { qs = null; }
       if (qs) {
         var qTotal = qs.total || 0, qDone = qs.answered || 0, qLeft = (typeof qs.left === 'number') ? qs.left : Math.max(0, qTotal - qDone);
-        var qTopic = qs.topic || qs.label || '';
+        var qTopic = qs.topicLabel || '';
         rec = { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
           sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
       }
@@ -86,10 +86,6 @@
     var outcomeRec = null;
     try { var om = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('nplus_exam_outcomes')) || 'null'); outcomeRec = om && om[certId] || null; } catch (_) { outcomeRec = null; }
     var passedCert = !!(outcomeRec && outcomeRec.outcome === 'passed');
-    if (!rec && passedCert) {
-      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score : ''), title: 'Pick your next cert',
-        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
-    }
     if (!rec && due > 0) {
       var spread = '';
       try { spread = (plan.later > 0 && typeof _srSpreadPhrase === 'function') ? (_srSpreadPhrase(plan.later, plan.spillDays, plan.carryLeft, 'rest') || '') : ''; } catch (_) { spread = ''; }
@@ -97,13 +93,21 @@
         sub: spread ? 'Spaced repetition. ' + spread.charAt(0).toUpperCase() + spread.slice(1) + '.' : 'Spaced repetition. Re-encounter what you forgot.' };
     }
     if (!rec && has(typeof outcomeDue === 'function' ? outcomeDue : null)) {
-      var od = null;
-      try { od = outcomeDue(); } catch (_) { od = null; }
+      var od = false;
+      try { od = !!outcomeDue(certId); } catch (_) { od = false; }
       if (od) {
-        var ago = (od && typeof od === 'object' && typeof od.daysAgo === 'number') ? od.daysAgo : null;
+        var ago = null;
+        try {
+          var xd = (typeof getExamDate === 'function') ? getExamDate(certId) : null, xp = xd && String(xd).split('-');
+          if (xp && xp.length === 3) { var nw = new Date(t); ago = Math.round((new Date(nw.getFullYear(), nw.getMonth(), nw.getDate()) - new Date(+xp[0], +xp[1] - 1, +xp[2])) / 86400000); }
+        } catch (_) { ago = null; }
         rec = { kind: 'outcome', kick: ago === 1 ? 'Your exam was yesterday' : (ago > 1 ? 'Your exam was ' + ago + ' days ago' : 'Your exam date has passed'),
           title: 'How did your ' + cert.name + ' exam go?', sub: "Tell us and we'll update your plan." };
       }
+    }
+    if (!rec && passedCert) {
+      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score : ''), title: 'Pick your next cert',
+        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
     }
     if (!rec && isNew) rec = { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' };
     // days since the last study day (local midnights, so DST and time of day never matter)
@@ -325,15 +329,18 @@
       rec: function () {
         var k = m.rec.kind;
         if (k === 'quiz' && typeof resumeQuiz === 'function') { resumeQuiz(); return; }
-        if (k === 'outcome' && typeof openLogResult === 'function') { openLogResult(); return; }
+        if (k === 'outcome' && typeof openLogResult === 'function') { openLogResult({ preselect: null }); return; }
         if (k === 'warmup') { applyPreset('warmup'); return; }
         if (k === 'nextcert' && typeof openHub === 'function') { openHub(); return; }
         var t = document.getElementById('primaryLaunch'); if (t) t.click();
       },
       fresh: function () { if (typeof quizResumeClear === 'function') quizResumeClear(); renderIosHome(); },
-      'oc-passed': function () { if (typeof openLogResult === 'function') openLogResult('passed'); },
-      'oc-failed': function () { if (typeof openLogResult === 'function') openLogResult('failed'); },
-      'oc-notyet': function () { tab('settings'); },
+      'oc-passed': function () { if (typeof openLogResult === 'function') openLogResult({ preselect: 'passed' }); },
+      'oc-failed': function () { if (typeof openLogResult === 'function') openLogResult({ preselect: 'failed' }); },
+      'oc-notyet': function () {
+        var on = window.iosSettings && window.iosSettings._on;
+        if (on && typeof on.exam === 'function') { tab('settings'); on.exam(); } else tab('settings');   // the exam-date sheet; Settings tab if it is not there
+      },
       warmup: function () { applyPreset('warmup'); },
       daily: function () { startDailyChallenge(); },
       mistakes: function () { startWrongDrill(); },
