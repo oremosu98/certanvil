@@ -29,7 +29,7 @@
 | index.html | 2394 | 158 KB |
 | dg-system.css | 6120 | 587 KB |
 | tests/uat.js + tests/uat/ (90 modules) | 34873 | — |
-UAT checks: 6176 · E2E `test(` count: 755 · APP_VERSION: 8.204.0 · stamped-at: worktree
+UAT checks: 6176 · E2E `test(` count: 755 · APP_VERSION: 8.204.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.204.1 | Readiness says Pass level and what to do before booking, then Exam ready at 4 of 4 |
 | v8.204.0 | Desktop catch-up: resume, exam outcome, My certs, Suggest, Why this score, streak lines, goodbye on the web app |
 | v8.203.2 | My certs hub redraws when the plan loads, so Pro never sees the Free view |
-| v8.203.1 | My certs hub shows the current cert's live readiness, as Home does |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
