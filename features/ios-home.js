@@ -50,7 +50,9 @@
       }
     }
 
-    // ── recommended next: unfinished exam > reviews > first quiz > weak spots ──
+    // ── one next step: exam > quiz > reviews > outcome > first quiz > warmup > weak spots (nextcert once passed) ──
+    // The producers of quizResumeState / outcomeDue (and the openers) land in later tasks; a missing one
+    // simply means that card never appears and the rec falls through.
     var rec = null;
     var ex = null;
     try { ex = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('nplus_exam_state')) || 'null'); } catch (_) { ex = null; }
@@ -66,19 +68,71 @@
         sub: ex.paused ? of + 'Paused with ' + left + (left === 1 ? ' minute' : ' minutes') + ' left.'
           : (left > 0 ? of + 'The clock is still running.' : of + 'See your result.') };
     }
+    // a practice quiz the app closed in the middle of
+    if (!rec && has(typeof quizResumeState === 'function' ? quizResumeState : null)) {
+      var qs = null;
+      try { qs = quizResumeState(); } catch (_) { qs = null; }
+      if (qs) {
+        var qTotal = qs.total || 0, qDone = qs.answered || 0, qLeft = (typeof qs.left === 'number') ? qs.left : Math.max(0, qTotal - qDone);
+        var qTopic = qs.topic || qs.label || '';
+        rec = { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
+          sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
+      }
+    }
     var plan = null;
     try { plan = (typeof getSrTodayPlan === 'function') ? getSrTodayPlan() : null; } catch (_) { plan = null; }
     var due = plan && typeof plan.todo === 'number' ? plan.todo : 0;
+    // passed: read the saved outcome for this cert straight from the synced map
+    var outcomeRec = null;
+    try { var om = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('nplus_exam_outcomes')) || 'null'); outcomeRec = om && om[certId] || null; } catch (_) { outcomeRec = null; }
+    var passedCert = !!(outcomeRec && outcomeRec.outcome === 'passed');
+    if (!rec && passedCert) {
+      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score : ''), title: 'Pick your next cert',
+        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+    }
     if (!rec && due > 0) {
       var spread = '';
       try { spread = (plan.later > 0 && typeof _srSpreadPhrase === 'function') ? (_srSpreadPhrase(plan.later, plan.spillDays, plan.carryLeft, 'rest') || '') : ''; } catch (_) { spread = ''; }
       rec = { kind: 'review', min: Math.max(2, Math.round(due * 0.5)), title: due === 1 ? 'Review 1 card' : 'Review ' + due + ' cards',
         sub: spread ? 'Spaced repetition. ' + spread.charAt(0).toUpperCase() + spread.slice(1) + '.' : 'Spaced repetition. Re-encounter what you forgot.' };
     }
+    if (!rec && has(typeof outcomeDue === 'function' ? outcomeDue : null)) {
+      var od = null;
+      try { od = outcomeDue(); } catch (_) { od = null; }
+      if (od) {
+        var ago = (od && typeof od === 'object' && typeof od.daysAgo === 'number') ? od.daysAgo : null;
+        rec = { kind: 'outcome', kick: ago === 1 ? 'Your exam was yesterday' : (ago > 1 ? 'Your exam was ' + ago + ' days ago' : 'Your exam date has passed'),
+          title: 'How did your ' + cert.name + ' exam go?', sub: "Tell us and we'll update your plan." };
+      }
+    }
     if (!rec && isNew) rec = { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' };
+    // days since the last study day (local midnights, so DST and time of day never matter)
+    var away = 0;
+    if (!isNew) {
+      var newest = 0;
+      rows.forEach(function (e) { var d = new Date(e.date).getTime(); if (d > newest) newest = d; });
+      if (newest) {
+        var nd = new Date(newest), nn = new Date(t);
+        away = Math.round((new Date(nn.getFullYear(), nn.getMonth(), nn.getDate()) - new Date(nd.getFullYear(), nd.getMonth(), nd.getDate())) / 86400000);
+      }
+    }
+    if (!rec && away >= 2 && due === 0) rec = { kind: 'warmup', min: 5, title: '5-min Warmup', sub: 'Ease back in. 5 questions, foundational.' };
+    // the weakest topic to pick up, from the session plan (names the weak-spot card)
+    var pick = null;
+    if (!isNew) {
+      try {
+        var p = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
+        if (p && p[0] && p[0].topic) {
+          var meta = String(p[0].meta || p[0].reason || '');
+          var m = meta.match(/~?(\d+)% accuracy/), st = meta.match(/(\d+)d stale/);
+          pick = { topic: p[0].topic, pct: m ? +m[1] : null, detail: m ? 'around ' + m[1] + '% accuracy' : (st ? 'last seen ' + st[1] + ' days ago' : (/never/.test(meta) ? 'not studied yet' : '')) };
+        }
+      } catch (_) { pick = null; }
+    }
     if (!rec) {
-      var weakTopic = r && Array.isArray(r.whatIf) && r.whatIf[0] && r.whatIf[0].topic;
-      rec = { kind: 'weak', min: 15, title: '15-min Weak Spots', sub: weakTopic ? '10 questions, exam level, on ' + weakTopic + '.' : '10 questions, exam level, your weakest topic.' };
+      var weakTopic = (pick && pick.topic) || (r && Array.isArray(r.whatIf) && r.whatIf[0] && r.whatIf[0].topic);
+      var weakPct = pick && pick.topic && pick.pct != null ? ' (around ' + pick.pct + '%)' : '';
+      rec = { kind: 'weak', min: 15, title: '15-min Weak Spots', sub: weakTopic ? '10 questions, exam level, on ' + weakTopic + weakPct + '.' : '10 questions, exam level, your weakest topic.' };
     }
 
     // ── coming up: 7-day review plan (returning only) ──
@@ -98,19 +152,12 @@
     var done = 0, goal = 20;
     try { done = (typeof getTodayQuestionCount === 'function') ? getTodayQuestionCount() : 0; } catch (_) {}
     try { goal = (typeof getDailyGoal === 'function') ? getDailyGoal() : 20; } catch (_) {}
-    var pick = null;
-    if (!isNew) {
-      try {
-        var p = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
-        if (p && p[0] && p[0].topic) {
-          var meta = String(p[0].meta || p[0].reason || '');
-          var m = meta.match(/~?(\d+)% accuracy/), st = meta.match(/(\d+)d stale/);
-          pick = { topic: p[0].topic, detail: m ? 'around ' + m[1] + '% accuracy' : (st ? 'last seen ' + st[1] + ' days ago' : (/never/.test(meta) ? 'not studied yet' : '')) };
-        }
-      } catch (_) { pick = null; }
-    }
-    var momentum = { done: done, goal: goal, pick: pick,
-      streakLine: cur > 0 ? cur + ' day streak, best is ' + best + '. One short session adds another.' : '0 day streak. Finish today to start one.' };
+    var ymd = function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+    var studiedToday = done > 0 || (!!streak.last && (streak.last === ymd(now) || streak.last === now.toISOString().slice(0, 10)));
+    var streakLine = streak.ended ? 'Your ' + (streak.endedFrom || best) + '-day streak ended. Your best is ' + best + '. A quick set starts a new one.'
+      : (cur > 0 ? cur + '-day streak. ' + (studiedToday ? "Today's done." : 'Study today to keep it.')
+        : 'No streak yet. Finish a set today to start one.');
+    var momentum = { done: done, goal: goal, streakLine: streakLine };
 
     // ── mistakes + domains ──
     var mistakes = 0;
@@ -135,7 +182,7 @@
       mins: Math.round(((typeof EXAM_TIME_SECONDS === 'number') ? EXAM_TIME_SECONDS : 5400) / 60),
       min: (typeof EXAM_MIN_SCORE === 'number') ? EXAM_MIN_SCORE : 100, max: max };
 
-    return { state: isNew ? 'new' : 'returning', signedIn: signedIn, cert: cert, streak: cur, greeting: greeting, exam: exam,
+    return { state: isNew ? 'new' : 'returning', signedIn: signedIn, cert: cert, passed: passedCert, streak: cur, greeting: greeting, exam: exam,
       readiness: readiness, rec: rec, week: week, momentum: momentum, mistakes: mistakes, domains: domains };
   }
 
@@ -179,7 +226,7 @@
     var h = '';
     // top bar
     h += '<div class="ih-topbar"><span class="ih-tb-mark">' + e(m.cert.mark) + '</span>'
-      + '<button class="ih-tb-name" type="button" data-act="cert"><b>' + e(m.cert.name) + '</b><span>' + e(m.cert.code) + '</span></button>'
+      + '<button class="ih-tb-name" type="button" data-act="cert"><b>' + e(m.cert.name) + (m.passed ? '<span class="ih-tb-passed">Passed</span>' : '') + '</b><span>' + e(m.cert.code) + '</span></button>'
       + (m.signedIn ? '<span class="ih-tb-streak' + (m.streak ? '' : ' ih-zero') + '">' + svg('flame') + e(m.streak) + '</span>'
         : '<button class="ih-tb-signin" data-act="signin" type="button">Sign in</button>')
       + '<button class="ih-tb-set" type="button" data-act="settings" aria-label="Settings">' + svg('gear') + '</button>'
@@ -201,10 +248,21 @@
         + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
         + (r.meta ? '<p class="ih-rd-meta">' + e(r.meta) + '</p>' : '') + '</div>';
     }
-    // recommended next
-    h += '<button class="ih-rec ih-reveal" type="button" data-act="rec"><span class="ih-rc-badge">' + e(m.rec.min) + '<small>MIN</small></span>'
-      + '<span class="ih-rc-txt"><span class="ih-rc-kick">Recommended next</span><span class="ih-rc-title">' + e(m.rec.title) + '</span><span class="ih-rc-sub">' + e(m.rec.sub) + '</span></span>'
-      + '<span class="ih-rc-go">' + svg('chev') + '</span></button>';
+    // one next step: a button for most kinds, the "How did it go?" card for outcome and nextcert
+    var rc = m.rec;
+    if (rc.kind === 'outcome') {
+      h += '<div class="ih-oc ih-reveal"><span class="ih-oc-kick">' + e(rc.kick) + '</span><span class="ih-oc-title">' + e(rc.title) + '</span><span class="ih-oc-sub">' + e(rc.sub) + '</span>'
+        + '<div class="ih-oc-row"><button class="ih-oc-btn ih-pri" type="button" data-act="oc-passed">Passed</button><button class="ih-oc-btn" type="button" data-act="oc-failed">Didn\'t pass</button></div>'
+        + '<button class="ih-oc-later" type="button" data-act="oc-notyet">I haven\'t sat it yet</button></div>';
+    } else if (rc.kind === 'nextcert') {
+      h += '<div class="ih-oc ih-reveal"><span class="ih-oc-kick">' + e(rc.kick) + '</span><span class="ih-oc-title">' + e(rc.title) + '</span><span class="ih-oc-sub">' + e(rc.sub) + '</span>'
+        + '<div class="ih-oc-row"><button class="ih-oc-btn ih-pri" type="button" data-act="rec">Choose a cert</button></div></div>';
+    } else {
+      var rbtn = '<button class="ih-rec ih-reveal" type="button" data-act="rec" data-kind="' + e(rc.kind) + '"><span class="ih-rc-badge">' + e(rc.badge != null ? rc.badge : rc.min) + '<small>' + e(rc.unit || 'MIN') + '</small></span>'
+        + '<span class="ih-rc-txt"><span class="ih-rc-kick">' + e(rc.kick || 'Recommended next') + '</span><span class="ih-rc-title">' + e(rc.title) + '</span><span class="ih-rc-sub">' + e(rc.sub) + '</span></span>'
+        + '<span class="ih-rc-go">' + svg('chev') + '</span></button>';
+      h += rc.kind === 'quiz' ? '<div class="ih-rec-wrap ih-reveal">' + rbtn + '<button class="ih-rec-fresh" type="button" data-act="fresh">Start fresh</button></div>' : rbtn;
+    }
     // coming up
     if (m.week && m.week.length) {
       var mx = m.week.reduce(function (a, d) { return Math.max(a, d.count); }, 0);
@@ -221,9 +279,7 @@
       + '<circle class="ih-fill-c" cx="33" cy="33" r="27" fill="none" stroke-width="6" stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * (1 - frac)).toFixed(1) + '"></circle></svg>'
       + '<div class="ih-rg-num"><b>' + e(mo.done) + '</b><span>of ' + e(mo.goal) + '</span></div></div><div class="ih-mo-txt">'
       + '<span class="ih-mo-goal">' + e(mo.done) + ' / ' + e(mo.goal) + ' questions today</span><span class="ih-mo-streak">' + e(mo.streakLine) + '</span>'
-      + (mo.pick ? '<span class="ih-mo-pick">Pick up: <b>' + e(mo.pick.topic) + '</b>' + (mo.pick.detail ? ', ' + e(mo.pick.detail) : '') + '</span>'
-          + '<button class="ih-mo-go" type="button" data-act="practise">Practise it · 10 questions' + svg('arrow') + '</button>'
-        : '<span class="ih-mo-pick">First quiz finds your weak spots.</span>')
+      + (m.state === 'new' ? '<span class="ih-mo-pick">First quiz finds your weak spots.</span>' : '')
       + '</div></div>';
     // quick start
     h += '<div class="ih-sect ih-reveal">Quick start</div><p class="ih-sect-sub ih-reveal">A daily habit that keeps your streak. 3 to 5 minutes.</p>'
@@ -265,7 +321,19 @@
     var ACT = {
       // Recommended next: the desktop tile's onclick already holds the right action
       // (resume exam / start reviews / first quiz / weak spots), set by renderBentoRecommended.
-      rec: function () { var t = document.getElementById('primaryLaunch'); if (t) t.click(); },
+      // Each kind routes to its own opener; a missing one (later task) falls back to the desktop tile.
+      rec: function () {
+        var k = m.rec.kind;
+        if (k === 'quiz' && typeof resumeQuiz === 'function') { resumeQuiz(); return; }
+        if (k === 'outcome' && typeof openLogResult === 'function') { openLogResult(); return; }
+        if (k === 'warmup') { applyPreset('warmup'); return; }
+        if (k === 'nextcert' && typeof openHub === 'function') { openHub(); return; }
+        var t = document.getElementById('primaryLaunch'); if (t) t.click();
+      },
+      fresh: function () { if (typeof quizResumeClear === 'function') quizResumeClear(); renderIosHome(); },
+      'oc-passed': function () { if (typeof openLogResult === 'function') openLogResult('passed'); },
+      'oc-failed': function () { if (typeof openLogResult === 'function') openLogResult('failed'); },
+      'oc-notyet': function () { tab('settings'); },
       warmup: function () { applyPreset('warmup'); },
       daily: function () { startDailyChallenge(); },
       mistakes: function () { startWrongDrill(); },
@@ -275,7 +343,6 @@
       bulk60: function () { applyPreset('bulk60'); },
       exam: function () { startExam(); },
       custom: function () { _jumpToCustomQuiz(); },
-      practise: function () { if (m.momentum.pick && typeof window._startPickUpQuiz === 'function') window._startPickUpQuiz(m.momentum.pick.topic); },
       settings: function () { tab('settings'); },
       cert: function () { tab('settings'); },
       theme: function () { if (typeof toggleTheme === 'function') toggleTheme(); renderIosHome(); },

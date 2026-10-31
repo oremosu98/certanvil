@@ -68,6 +68,15 @@ test.describe('Lift A Home', () => {
     expect(await page.evaluate(() => window.__calls)).toEqual(['applyPreset:warmup', 'startDailyChallenge:', '_jumpToCustomQuiz:']);
   });
 
+  test('phone Home: one next-step card, no Practise it button', async ({ page }) => {
+    await openApp(page, PHONE);
+    await expect(page.locator('#ios-home [data-act="rec"]')).toHaveCount(1);
+    await expect(page.locator('#ios-home .ih-mo-go')).toHaveCount(0);
+    await expect(page.locator('#ios-home [data-act="practise"]')).toHaveCount(0);
+    await expect(page.locator('#ios-home')).not.toContainText('Practise it');
+    await expect(page.locator('#ios-home .ih-mo-streak')).toBeVisible();
+  });
+
   test('phone: Practice accordion opens and shows its three options', async ({ page }) => {
     await openApp(page, PHONE);
     const acc = page.locator('#ios-home [data-acc]').first();

@@ -29,6 +29,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
         getSrTodayPlan: () => o.sr || { todo: 0, later: 0, counts: [0, 0, 0, 0, 0, 0, 0] },
         _srSpreadPhrase: () => '',
         getStreak: () => o.streak || { current: 0, best: 0 },
+        ...(o.quiz ? { quizResumeState: () => o.quiz } : {}), ...(o.outcome ? { outcomeDue: () => o.outcome } : {}),
         getTodayQuestionCount: () => o.done || 0,
         getDailyGoal: () => o.goal || 20,
         buildSessionPlan: () => o.plan || [],
@@ -91,12 +92,18 @@ const { _fnBody, js, results, test, vm } = require('./_context');
       && mk({ history: hist, readiness: rd, days: 2, sr: { todo: 7, later: 0, counts: [7, 2, 0, 0, 0, 0, 0] } }).week[2].isExam === true);
     test('Coming up is hidden when no reviews are scheduled in the next 7 days', ret.week === null);
     test('No reviews, returning: "15-min Weak Spots" on the weakest topic',
-      ret.rec.kind === 'weak' && ret.rec.title === '15-min Weak Spots' && ret.rec.min === 15 && ret.rec.sub === '10 questions, exam level, on VLANs.');
+      ret.rec.kind === 'weak' && ret.rec.title === '15-min Weak Spots' && ret.rec.min === 15 && ret.rec.sub === '10 questions, exam level, on Ethernet Basics (around 46%).');
+    test('The weak sub falls back to the readiness topic when the plan is empty',
+      mk({ history: hist, readiness: rd, plan: [] }).rec.sub === '10 questions, exam level, on VLANs.');
 
-    test('Momentum: done/goal, "1 day streak, best is 4. One short session adds another.", pick Ethernet Basics around 46%',
-      ret.momentum.done === 0 && ret.momentum.goal === 20 && ret.momentum.streakLine === '1 day streak, best is 4. One short session adds another.'
-      && ret.momentum.pick && ret.momentum.pick.topic === 'Ethernet Basics' && ret.momentum.pick.detail === 'around 46% accuracy');
-    test('Momentum with no streak: "0 day streak. Finish today to start one."', nu.momentum.streakLine === '0 day streak. Finish today to start one.');
+    test('Momentum: done/goal, alive streak not yet studied today, no Pick up line',
+      ret.momentum.done === 0 && ret.momentum.goal === 20 && ret.momentum.streakLine === '1-day streak. Study today to keep it.' && !('pick' in ret.momentum));
+    test('Streak line: studied today -> "5-day streak. Today\'s done."',
+      mk({ history: hist, readiness: rd, streak: { current: 5, best: 5 }, done: 3 }).momentum.streakLine === "5-day streak. Today's done."
+      && mk({ history: hist, readiness: rd, streak: { current: 5, best: 5, last: '2026-10-20' } }).momentum.streakLine === "5-day streak. Today's done.");
+    test('Streak line: ended -> "Your 5-day streak ended. Your best is 5. A quick set starts a new one."',
+      mk({ history: hist, readiness: rd, streak: { current: 0, best: 5, ended: true, endedFrom: 5 } }).momentum.streakLine === 'Your 5-day streak ended. Your best is 5. A quick set starts a new one.');
+    test('Streak line: none -> "No streak yet. Finish a set today to start one."', nu.momentum.streakLine === 'No streak yet. Finish a set today to start one.');
     test('Mistakes = wrong-bank size', ret.mistakes === 3 && nu.mistakes === 0);
     test('Domains: exam weight %, mastery from non-split history, untouched flag',
       ret.domains.length === 2 && ret.domains[0].name === 'Networking Concepts' && ret.domains[0].weightPct === 23
@@ -108,6 +115,32 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     })());
     test('Cert header: mark N+, name Network+ (vendor prefix dropped), code N10-009',
       ret.cert.mark === 'N+' && ret.cert.name === 'Network+' && ret.cert.code === 'N10-009' && ret.streak === 1);
+    // One next step (30 Oct): exam > quiz > reviews > outcome > first > warmup > weak
+    const quiz = { topic: 'Ports & Protocols', answered: 7, total: 10 };
+    const q = mk({ history: hist, readiness: rd, quiz, sr: { todo: 7, later: 0, counts: [7, 0, 0, 0, 0, 0, 0] } });
+    test('A saved quiz beats reviews: "Finish your quiz · 3 left", 3 LEFT, "Ports & Protocols · 7 of 10 answered"',
+      q.rec.kind === 'quiz' && q.rec.title === 'Finish your quiz · 3 left' && q.rec.badge === '3' && q.rec.unit === 'LEFT'
+      && q.rec.kick === 'Pick up where you left off' && q.rec.sub === 'Ports & Protocols · 7 of 10 answered');
+    test('A paused exam still beats a saved quiz', mk({ history: hist, readiness: rd, quiz, store: { nplus_exam_state: paused } }).rec.kind === 'exam');
+    const oc = mk({ history: hist, readiness: rd, outcome: { daysAgo: 1 } });
+    test('Outcome due: "How did your Network+ exam go?" with the kicker and sub, beats first/warmup/weak',
+      oc.rec.kind === 'outcome' && oc.rec.kick === 'Your exam was yesterday' && oc.rec.title === 'How did your Network+ exam go?' && oc.rec.sub === "Tell us and we'll update your plan.");
+    test('Reviews due beat the outcome card', mk({ history: hist, readiness: rd, outcome: { daysAgo: 1 }, sr: { todo: 2, later: 0, counts: [2, 0, 0, 0, 0, 0, 0] } }).rec.kind === 'review');
+    test('Outcome due beats the first quiz', mk({ outcome: { daysAgo: 2 } }).rec.kind === 'outcome');
+    test('Missing producers: no quiz or outcome card appears, rec falls through', ret.rec.kind === 'weak' && nu.rec.kind === 'first');
+    const away3 = [Object.assign(row('Ethernet Basics', 8, 10), { date: new Date(TUE_9AM.getTime() - 3 * 86400000).toISOString() })];
+    const aw = mk({ history: away3, readiness: rd });
+    test('Away 3 days, no reviews: kind warmup, "5-min Warmup", "Ease back in. 5 questions, foundational."',
+      aw.rec.kind === 'warmup' && aw.rec.title === '5-min Warmup' && aw.rec.min === 5 && aw.rec.sub === 'Ease back in. 5 questions, foundational.');
+    test('Away 3 days WITH reviews due: reviews win; away only 1 day: weak spots',
+      mk({ history: away3, readiness: rd, sr: { todo: 3, later: 0, counts: [3, 0, 0, 0, 0, 0, 0] } }).rec.kind === 'review' && ret.rec.kind === 'weak');
+    test('Away 3 days with a saved quiz: the quiz wins', mk({ history: away3, readiness: rd, quiz }).rec.kind === 'quiz');
+    const outc = (o) => ({ nplus_exam_outcomes: JSON.stringify({ netplus: o }) });
+    const ps = mk({ history: hist, readiness: rd, store: outc({ outcome: 'passed', score: 812, predicted: 553, date: '2026-10-19' }) });
+    test('Passed: passed flag, rec nextcert "Pick your next cert", kicker "Network+ passed · scored 812", prediction + streak sub',
+      ps.passed === true && ps.rec.kind === 'nextcert' && ps.rec.title === 'Pick your next cert' && ps.rec.kick === 'Network+ passed · scored 812'
+      && ps.rec.sub === 'We predicted 553 on exam day. Your streak carries on with your next cert.' && ret.passed === false);
+    test('Didn\'t pass is not "passed"', mk({ history: hist, readiness: rd, store: outc({ outcome: 'failed' }) }).passed === false);
     // Stage 5b (28 Oct): the iOS app can be used signed out, so its Home shows Sign in too (no native override)
     test('Signed out: signedIn false on the web and in the iOS app; signed in: true',
       mk({ signedIn: false }).signedIn === false && mk({ signedIn: false, native: true }).signedIn === false && mk({ signedIn: true, native: true }).signedIn === true);
