@@ -23,10 +23,15 @@
 
     function trim(s) { return (s == null ? '' : String(s)).trim(); }
 
+    var desc = trim(form && form.desc);
+    var title = trim(form && form.title);
+    if (!title) title = trim(desc.split('\n')[0]).slice(0, 80);
+
     return {
       id: id,
-      title: trim(form && form.title),
-      description: trim(form && form.desc),
+      title: title,
+      description: desc,
+      user_id: (ctx && ctx.user_id) || null,
       steps: form && form.steps ? trim(form.steps) : null,
       context: {
         version: (ctx && ctx.version) || 'unknown',
@@ -381,34 +386,17 @@
         desc: host.querySelector('#br-input-desc').value,
         steps: (host.querySelector('#br-input-steps') || {}).value || null,
       };
-      var payload = buildPayload(form, _getCtx());
-      var result = await submitReport(payload);
+      var out = await submitReportNow(form);
+      var result = out.result;
 
-      if (result.type === 'success') {
+      if (out.ok) {
         _showToast({ tone: 'ok', title: 'Report filed',
-          sub: 'Thanks — we’ll take a look.' });
-        // Clear from queue if this was a retry
-        var q = _loadQueue();
-        _saveQueue(q.filter(function(r){ return r.id !== payload.id; }));
+          sub: (out.reportNo != null ? 'Report #' + out.reportNo + ' · ' : '') + 'Thanks — we’ll take a look.' });
         closeDrawer();
-        _updateTopbarDot();
         return;
-      }
-
-      // Failure paths
-      if (result.queueAction === 'enqueue' || result.queueAction === 'requeue') {
-        var q2 = _loadQueue();
-        var record = {
-          id: payload.id, payload: payload,
-          attempts: 1, last_try: payload.submitted_at,
-          next_try: result.next_try || null,
-          terminal: !!result.terminal,
-        };
-        _saveQueue(enqueueReport(record, q2));
       }
       _showToast({ tone: result.toast.tone, title: result.toast.title });
       sendBtn.disabled = false;
-      _updateTopbarDot();
     });
   }
 
@@ -427,29 +415,60 @@
     if (!sb) return classifyError({ status: 0, network: true });
 
     var body = renderIssueBody(payload);
-    var uid = null;
     try {
-      if (sb.auth && sb.auth.getUser) {
-        var u = await sb.auth.getUser();
-        uid = (u && u.data && u.data.user && u.data.user.id) || null;
+      // p_user_id is the writer captured when the report was written, never the
+      // current session: a queued report sent after someone else signs in must
+      // not pick up the new person's id. Old queue entries have no user_id.
+      var res = await sb.rpc('submit_bug_report', {
+        p_report_id: payload.id,
+        p_title: payload.title,
+        p_description: payload.description,
+        p_steps: payload.steps,
+        p_body: body,
+        p_context: payload.context,
+        p_user_id: payload.user_id || null,
+      });
+      if (!res.error) {
+        var out = classifyError({ status: 201 });
+        var n = Number(res.data);
+        out.reportNo = (res.data != null && isFinite(n)) ? n : null;
+        return out;
       }
-    } catch (e) {}
-
-    try {
-      var res = await sb.from('user_bug_reports').upsert({
-        report_id: payload.id,
-        title: payload.title,
-        description: payload.description,
-        steps: payload.steps,
-        body: body,
-        context: payload.context,
-        user_id: uid,
-      }, { onConflict: 'report_id' });
-      if (!res.error) return classifyError({ status: 201 });
       return classifyError({ status: 500 });
     } catch (e) {
       return classifyError({ status: 0, network: true });
     }
+  }
+  async function _currentUserId() {
+    var sb = window.certanvilSupabase;
+    try {
+      if (sb && sb.auth && sb.auth.getUser) {
+        var u = await sb.auth.getUser();
+        return (u && u.data && u.data.user && u.data.user.id) || null;
+      }
+    } catch (e) {}
+    return null;
+  }
+  // Build, send and (on failure) queue one report. Shared by the drawer and the phone sheet.
+  async function submitReportNow(form) {
+    var ctx = _getCtx();
+    ctx.user_id = await _currentUserId();
+    var payload = buildPayload(form, ctx);
+    var result = await submitReport(payload);
+    var queued = false;
+    if (result.type === 'success') {
+      _saveQueue(_loadQueue().filter(function(r){ return r.id !== payload.id; }));
+    } else if (result.queueAction === 'enqueue' || result.queueAction === 'requeue') {
+      _saveQueue(enqueueReport({
+        id: payload.id, payload: payload,
+        attempts: 1, last_try: payload.submitted_at,
+        next_try: result.next_try || null,
+        terminal: !!result.terminal,
+      }, _loadQueue()));
+      queued = true;
+    }
+    _updateTopbarDot();
+    return { ok: result.type === 'success', queued: queued, reportNo: result.reportNo == null ? null : result.reportNo, result: result };
   }
   async function drainQueue() {
     var q = _loadQueue();
@@ -578,6 +597,7 @@
     closeDrawer: closeDrawer,
     // Pipeline
     submitReport: submitReport,
+    submitReportNow: submitReportNow,
     drainQueue: drainQueue,
     // Settings
     renderSettingsReportsPanel: renderSettingsReportsPanel,

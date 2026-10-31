@@ -1751,8 +1751,8 @@ test.describe('bug-report drawer', () => {
     // v7.79.2: submitReport() now upserts to Supabase (PostgREST) instead
     // of calling the GitHub REST API. Intercept the real endpoint so
     // drainQueue()'s retry actually "lands" and clears the seeded entry.
-    await page.route('**/rest/v1/user_bug_reports*', route =>
-      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' }));
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '7' }));
     await page.goto('/');
     await page.waitForTimeout(3500); // 2s delay + buffer
     // After a successful drain, the queue should be empty.
@@ -1814,9 +1814,9 @@ test.describe('bug-report drawer', () => {
       try { localStorage.setItem('nplus_dev_cert', 'secplus'); } catch (e) {}
     });
     let postData = null;
-    await page.route('**/rest/v1/user_bug_reports*', route => {
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route => {
       if (route.request().method() === 'POST') postData = route.request().postData();
-      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+      route.fulfill({ status: 200, contentType: 'application/json', body: '7' });
     });
     await page.goto('/');
     await page.click('#topbar-bug-report');
