@@ -6023,3 +6023,30 @@ html[data-theme="light"] #ios-report,html[data-theme="light"] .irp-toast,html[da
   #ios-report.is-dialog :is(.irp-close,.irp-cancel,.irp-send,.irp-ta,.irp-steps-link){transition:none;}
   #ios-report.is-dialog :is(.irp-close,.irp-cancel,.irp-send):active{transform:none;}
 }
+
+/* Admin in the app Task 7: the Preview as Free bar across the top of the main area at 900px and up (features/admin-preview.js;
+   drawing cert-ios-admin.html?v=desktop-free). Sits under the top bar in the page flow; the sidebar Pro locks come from
+   body losing is-pro-tier. The phone bar is in lift-ios.css. Motion per BRAND §6: 150ms fade out, reduced motion fades only. */
+@media (min-width:900px){
+  .ap-freebar{display:flex;align-items:center;gap:9px;margin:12px 24px 0;padding:0 4px 0 12px;min-height:44px;box-sizing:border-box;border-radius:999px;background:var(--surface3);border:1px solid var(--border);color:var(--text);font-family:Inter,sans-serif;}
+  .ap-freebar[hidden]{display:none!important;}
+  .ap-freebar svg{flex:0 0 auto;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--text-dim);}
+  .ap-freebar-tx{flex:1 1 auto;font:650 12px/1 Inter,sans-serif;color:var(--text);}
+  .ap-freebar-back{flex:0 0 auto;min-height:44px;border:0;background:none;cursor:pointer;padding:0 12px;border-radius:999px;font:700 12px/1 Inter,sans-serif;color:var(--accent-light);transition:transform .15s cubic-bezier(0.16,1,0.3,1);}
+  html[data-theme="light"] .ap-freebar-back{color:oklch(0.42 0.150 52);}
+  .ap-freebar-back:active{transform:scale(.97);}
+  .ap-freebar-back:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;}
+  .ap-freebar.leaving{opacity:0;transition:opacity .15s cubic-bezier(0.16,1,0.3,1);}
+}
+@media (min-width:900px) and (prefers-reduced-motion:no-preference){
+  .ap-freebar.enter{animation:ap-bar-in .34s cubic-bezier(0.16,1,0.3,1) backwards;}
+  @keyframes ap-bar-in{from{opacity:0;transform:translateY(-6px);}}
+}
+@media (min-width:900px) and (prefers-reduced-motion:reduce){
+  .ap-freebar.enter{animation:ap-bar-fade .2s ease backwards;}
+  @keyframes ap-bar-fade{from{opacity:0;}}
+  .ap-freebar-back{transition:none;} .ap-freebar-back:active{transform:none;}
+}
+@media (min-width:900px) and (hover:hover) and (pointer:fine){
+  .ap-freebar-back:hover{background:color-mix(in oklab,var(--text) 6%,transparent);}
+}

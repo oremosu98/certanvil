@@ -568,7 +568,7 @@ async function _refreshQuotaChip() {
     if (!session || !session.user) return;
     var resp = await window.certanvilSupabase.rpc('get_daily_quota_usage', { uid: session.user.id });
     if (resp && resp.data && resp.data.length) {
-      _quotaState = resp.data[0];
+      _quotaState = (window._adminPreview ? window._adminPreview.wrap(resp.data[0]) : resp.data[0]);
       _renderQuotaChip(); try { window.dispatchEvent(new Event('ca:quota-ready')); } catch (_) {}   // the hub redraws a Free/Pro view drawn before this landed
     }
   } catch (_) { /* intentionally silent: cosmetic — chip stays at last-known state */ }

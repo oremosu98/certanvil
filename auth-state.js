@@ -273,7 +273,7 @@
     // optimistic-allow path.
     var qs = (typeof window !== 'undefined' && window._quotaState) || null;
     var isPro = (qs && qs.tier === 'pro')
-      || ((role || '').toLowerCase() === 'admin')
+      || ((role || '').toLowerCase() === 'admin' && !(window._adminPreview && window._adminPreview.on()))
       || !qs; // skip badge during hydration to prevent flash for Pro users
     // Note: setting isPro=true while not-yet-hydrated means we DON'T show
     // the badge. Free users will see it once hydration completes + the
@@ -314,6 +314,7 @@
     var atIdx = email.indexOf('@');
     var displayShort = atIdx > 0 ? email.slice(0, atIdx) + '@…' : email;
     var role = (profile && profile.role) || 'user';
+    try { window._certanvilIsAdmin = role === 'admin'; } catch (_) {}   // Preview as Free (features/admin-preview.js) is admin-only
     var activeCertId = getActiveCertId();
     var activeCert = getAvailableCerts(role).filter(function (c) { return c.id === activeCertId; })[0]
       || { name: 'Network+', code: 'N10-009' };
@@ -581,6 +582,7 @@
   function handleSignedOut() {
     // v4.99.34 — clear the signed-in flag (paired with handleSignedIn above).
     try { window._certanvilSignedIn = false; } catch (_) {}
+    try { window._certanvilIsAdmin = false; if (window._adminPreview) window._adminPreview.clear(); } catch (_) {}   // sign-out ends any Preview as Free
     var cs = getCloudStore();
     _clearLocalIfSafe(cs);
     renderAnonymous();
@@ -667,6 +669,7 @@
   window.certanvilAuthState = {
     renderAnonymous: renderAnonymous,
     renderSignedIn: renderSignedIn,
+    handleSignedOut: handleSignedOut,
     updateSyncStatusUI: updateSyncStatusUI,
   };
 })();
