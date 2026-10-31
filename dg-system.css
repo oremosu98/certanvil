@@ -6016,6 +6016,7 @@ html[data-theme="light"] #ios-report,html[data-theme="light"] .irp-toast,html[da
   #ios-report.is-dialog .irp-send{flex:1 1 auto;min-height:46px;padding:14px;border:1px solid var(--accent);border-radius:13px;background:var(--accent);color:var(--bg);font:700 14.5px/1 Inter,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 22px -12px color-mix(in oklab,var(--accent) 70%,transparent);transition:transform .15s cubic-bezier(0.16,1,0.3,1),opacity .18s cubic-bezier(0.16,1,0.3,1),filter .16s cubic-bezier(0.16,1,0.3,1);}
   #ios-report.is-dialog .irp-send svg{width:15px;height:15px;stroke-width:2.2;}
   #ios-report.is-dialog .irp-send:disabled{opacity:.45;cursor:not-allowed;box-shadow:none;}
+  #ios-report.is-dialog .irp-send[aria-busy="true"]{opacity:.7;}   /* Sending…: words only, no motion */
   #ios-report.is-dialog :is(.irp-cancel,.irp-send:not(:disabled)):active{transform:scale(.97);}
   #ios-report.is-dialog :is(button,.irp-ta):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   .irp-toast{position:fixed;z-index:9600;right:24px;bottom:24px;width:340px;display:flex;align-items:center;gap:12px;padding:14px 15px;border-radius:16px;background:var(--surface);color:var(--text);border:1px solid color-mix(in oklab,var(--pass) 50%,var(--border));box-shadow:0 20px 50px -24px rgba(0,0,0,.5);pointer-events:none;opacity:0;transform:translateY(140%);transition:transform .22s cubic-bezier(0.32,0.72,0,1),opacity .2s cubic-bezier(0.16,1,0.3,1);}
@@ -6167,7 +6168,7 @@ html[data-theme="light"] #page-admin,html[data-theme="light"] #adm-sheet,html[da
   #desk-admin .adm-sw[aria-checked="true"]::after{transform:translateX(18px);}
   #desk-admin :is(.adm-back,.adm-row,.adm-seeall,.adm-chip,.adm-more,.adm-sw,.adm-state button,.adm-btn-pri,.adm-btn-sec):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   /* the dialog (caDialogFrame owns scrim, inert, Escape and focus; .is-dialog places it) */
-  #adm-sheet.is-dialog{padding:0;display:flex;flex-direction:column;overflow:hidden;max-height:min(580px,calc(100dvh - 48px))!important;}
+  #adm-sheet.is-dialog{padding:0;display:flex;flex-direction:column;overflow:hidden;width:min(520px,calc(100vw - 32px))!important;max-height:min(580px,calc(100dvh - 48px))!important;}   /* the drawing's 520 */
   #adm-sheet .adm-grab{display:none;}
   #adm-sheet .adm-sh-x{position:absolute;top:10px;right:10px;z-index:1;width:44px;height:44px;border-radius:12px;border:0;background:transparent;color:var(--text-dim);display:grid;place-items:center;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),background-color .16s cubic-bezier(0.16,1,0.3,1);}
   #adm-sheet .adm-sh-x:active{transform:scale(.94);}
@@ -6219,6 +6220,7 @@ html[data-theme="light"] #page-admin,html[data-theme="light"] #adm-sheet,html[da
 }
 @media (min-width:900px) and (prefers-reduced-motion:reduce){
   #desk-admin .adm-first .adm-sec:not([data-still]) .adm-rv{animation:adm-fade .3s linear backwards;}
+  #desk-admin .adm-sw::after{transition:none;}
   .adm-toast,.adm-toast.open{transform:none;transition:opacity .18s ease;}
   #desk-admin :is(.adm-row,.adm-back,.adm-seeall,.adm-chip,.adm-more,.adm-state button,.adm-btn-pri,.adm-btn-sec):active,#adm-sheet :is(.adm-sh-x,.adm-btn-pri,.adm-btn-sec):active{transform:none;}
 }

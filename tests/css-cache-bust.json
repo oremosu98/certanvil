@@ -9,7 +9,7 @@
   },
   "dg-system.css": {
     "version": "8.204.0",
-    "sha256": "ece28ffe8c0d569d"
+    "sha256": "fe2760179747d3cd"
   },
   "dg-depurple.css": {
     "version": "7.81.0",
@@ -28,7 +28,7 @@
     "sha256": "fcf0b9faaca9d6ff"
   },
   "lift-ios.css": {
-    "version": "8.204.1.1",
-    "sha256": "8b754156038c1c93"
+    "version": "8.204.1.2",
+    "sha256": "baa94e6a93503d1f"
   }
 }

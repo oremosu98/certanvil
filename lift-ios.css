@@ -3563,6 +3563,7 @@ html[data-theme] body .dm-ghost:focus-visible { outline: 2px solid var(--accent)
   box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease), opacity .18s var(--ios-ease); }
 .irp-send svg { width: 15px; height: 15px; stroke-width: 2.2; }
 .irp-send:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.irp-send[aria-busy="true"] { opacity: .7; }   /* Sending…: the words only, held a little brighter than plain disabled; no motion */
 .irp-cancel:active, .irp-send:active:not(:disabled) { transform: scale(.97); }
 .irp-sheet :is(button, .irp-ta):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .irp-toast { position: fixed; z-index: 2100; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; padding: 14px 15px; border-radius: 16px;
@@ -3576,7 +3577,7 @@ html[data-theme] body .dm-ghost:focus-visible { outline: 2px solid var(--accent)
 .irp-toast-n { font-family: 'Roboto Mono', monospace; font-weight: 600; }
 .irp-toast.queued { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); }
 .irp-toast.queued .irp-toast-i { color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 14%, transparent); }
-#ios-custom .ic-err-tell { display: flex; align-items: center; min-height: 44px; margin: 2px 0 -10px; padding: 0; border: 0; background: none; font: 650 13px/1 Inter, -apple-system, sans-serif; color: var(--accent-deep); cursor: pointer; }
+#ios-custom .ic-err-tell { display: flex; align-items: center; min-height: 44px; margin: 2px 0 -10px; padding: 0; border: 0; background: none; font: 650 13px/1 Inter, -apple-system, sans-serif; color: var(--accent-deep); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 @media (hover: hover) and (pointer: fine) { .irp-close:hover { background: color-mix(in oklab, var(--text) 6%, transparent); color: var(--text); } .irp-steps-link:hover { color: var(--accent-deep); } }
 @media (prefers-reduced-motion: reduce) {
   .irp-sheet, .irp-sheet.open { transform: none; opacity: 0; transition: opacity .2s ease; } .irp-sheet.open { opacity: 1; }
@@ -3770,6 +3771,7 @@ html.ap-free #ios-admin .adm-hdr { padding-top: 12px; }   /* the host already st
 }
 @media (prefers-reduced-motion: reduce) {
   #ios-admin .adm-first .adm-sec:not([data-still]) .adm-rv { animation: adm-fade .3s linear backwards; }
+  #ios-admin .adm-sw::after { transition: none; }   /* the switch knob jumps; the track colour still says on or off */
   .adm-sheet, .adm-sheet.open { transform: none; opacity: 0; transition: opacity .15s ease; } .adm-sheet.open { opacity: 1; }
   .adm-toast, .adm-toast.open { transform: none; transition: opacity .18s ease; }
   #ios-admin :is(.adm-row, .adm-back, .adm-seeall, .adm-chip, .adm-more, .adm-state button, .adm-btn-pri, .adm-btn-sec):active, .adm-sheet :is(.adm-sh-x, .adm-btn-pri, .adm-btn-sec):active { transform: none; }
