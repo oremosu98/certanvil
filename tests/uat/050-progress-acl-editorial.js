@@ -791,8 +791,8 @@ test('v4.54.3 HTML: regression \u2014 legacy .results-stats/.results-actions rem
   })());
 
 // JS
-test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',
-  /function finish\([\s\S]{0,2000}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
+test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',   // window 2000→2200: Task 6 quiz-resume clear
+  /function finish\([\s\S]{0,2200}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
 test('v4.54.3 JS: finish() writes scaled score via animateCount to #r-v2-score',
   /function finish\([\s\S]{0,4800}animateCount\('r-v2-score'/.test(js));
 test('v4.54.3 JS: scaled score on the cert scale (v8.128.0: scaledExamScore, was 100 + (pct/100) * 800)',

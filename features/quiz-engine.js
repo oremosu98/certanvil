@@ -207,6 +207,7 @@
     }
     current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
     quizFlags = new Array(questions.length).fill(false);
+    if (window.quizResumeClear) quizResumeClear();   // Task 6
     // v4.54.8: mark session start for the elapsed-time row on Results
     _sessionStartTs = Date.now();
     // v4.82.1: snap progress bar to 100% then hide before the quiz renders.
@@ -689,7 +690,8 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   function render() {
     const q     = questions[current];
     const total = questions.length;
-    if (current === 0 && answered === 0) _iosConfirm = !!(window.matchMedia && matchMedia('(max-width: 899px)').matches);
+    if ((current === 0 && answered === 0) || window._quizResumeRestored) _iosConfirm = !!(window.matchMedia && matchMedia('(max-width: 899px)').matches);   // Task 6: a resumed quiz keeps pick-then-confirm
+    window._quizResumeRestored = false;
     _iosSel = null;
     const pct   = Math.round((current / total) * 100);
     const qType = getQType(q);
@@ -1084,6 +1086,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
     if (!isRight) addToWrongBank(q._bankOrig || q, chosen.join(','));  // v7.47.0: a missed variant re-triggers SR for its ORIGINAL (bank dedup no-ops)
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1242,6 +1245,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
     if (!isRight) addToWrongBank(q._bankOrig || q, orderSequence.join(','));  // v7.47.0: original identity preserved
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1305,6 +1309,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6: resume after the app closes
     if (!isRight) addToWrongBank(q._bankOrig || q, chosen);  // v7.47.0: original identity preserved
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1728,6 +1733,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     flagBtn.className = 'flag-btn' + (quizFlags[current] ? ' flagged' : '');
     flagBtn.textContent = quizFlags[current] ? 'Flagged' : 'Flag';
     flagBtn.setAttribute('aria-pressed', quizFlags[current] ? 'true' : 'false');   // v8.183.0: was never updated on toggle
+    if (typeof quizResumeSave === 'function' && log.length) quizResumeSave();   // Task 6: flags are kept on resume
   }
   
 
@@ -1788,6 +1794,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // v7.50.0: a Why-Not round's question finishing hands off to phase two
     // (the reason picker) instead of the results page.
     if (whyNotMode && _wnSession && typeof _wnFinishQuestion === 'function') { _wnFinishQuestion(); return; }
+    if (window.quizResumeClear) quizResumeClear();   // Task 6
     // v4.42.0: snapshot streak BEFORE updateStreak so we can detect an
     // increment and flag a pulse animation for the next goSetup() render.
     const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();
