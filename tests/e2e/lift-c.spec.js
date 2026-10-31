@@ -149,15 +149,15 @@ for (const vp of PHONES) {
       await expect(chk).toContainText('Pass 700');
       await expect(chk).not.toContainText('See how readiness works');
     });
-    test('Start practising lands on placed Home and reload keeps it', async ({ page }) => {
+    test('Start practising starts a quiz (not just Home) and records no skip', async ({ page }) => {
       await openCheck(page, vp);
       await answerAll(page, 5);
+      // The mock harness has no AI, so a real startQuiz would bounce back to Home; stub it and prove it is called.
+      await page.evaluate(() => { window.__started = null; window.startQuiz = function () { window.__started = { n: qCount }; }; });
       await page.locator('#ios-check [data-act="practise"]').click();
       await expect(page.locator('#ios-check')).toBeHidden();
-      await expect(page.locator('html')).not.toHaveClass(/ifr-day0|ifr-check/);
-      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
-      await page.reload(); await page.waitForTimeout(700);
-      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
+      expect(await page.evaluate(() => !!window.__started)).toBe(true);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_onb_skips'))).toBeNull();
     });
     test("Skip the check lands on today's new-user Home", async ({ page }) => {
       await openCheck(page, vp);

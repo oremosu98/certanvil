@@ -106,7 +106,7 @@
         if (n) {
           h += '<div class="ip-hero ip-reveal"><span class="ip-hero-kick">' + ICON.bolt + 'Drill this next</span><h2 class="ip-hero-topic">' + e(n.label) + '</h2>'
             + '<span class="ip-hero-obj">' + e(n.domain) + (n.obj ? ' · Objective ' + e(n.obj) : '') + '</span>'
-            + '<p class="ip-hero-line">Your weakest studied topic. Drilling here moves your readiness fastest per minute.</p>'
+            + '<p class="ip-hero-line">Your weakest studied topic. A good place to drill next.</p>'
             + '<div class="ip-hero-foot"><span class="ip-hero-mast"><b>' + n.pct + '%</b><span>Mastery</span></span>'
             + '<button class="ip-hero-btn" type="button" data-act="start" data-t="' + e(n.t) + '">Start drill' + ICON.go + '</button></div></div>';
         }

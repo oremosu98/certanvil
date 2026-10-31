@@ -76,7 +76,7 @@
         '<div class="ifr-hb-quota"><div class="ifr-hb-row"><span class="ifr-hb-rn">Daily Review</span><span class="ifr-hb-rv">' + e(due) + ' cards due</span></div>' +
         '<div class="ifr-hb-row"><span class="ifr-hb-rn">New practice</span><span class="ifr-hb-reset"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>15 of 15 · resets in ' + e(h) + 'h</span></div></div></div>' +
       '<div class="ifr-greet ifr-greet-c ifr-rv"><div class="ifr-hi ifr-hi-ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Done for today</div><h1>That\'s today\'s 15 done.</h1>' +
-        '<p class="ifr-lede">Your streak is safe. Daily Review still moves your readiness, and 15 fresh questions unlock in about ' + e(h) + ' hours.</p></div>' +
+        '<p class="ifr-lede">Your streak is safe. Daily Review keeps what you\'ve learned sharp, and 15 new questions unlock in about ' + e(h) + ' hours.</p></div>' +
       (due > 0 ? '<div class="ifr-rev ifr-rv"><div class="ifr-start-head"><div class="ifr-start-ring">' + e(due) + '</div>' +
         '<div><div class="ifr-start-t">Daily Review</div><div class="ifr-start-s">' + e(due) + ' cards from what you\'ve missed, about ' + e(mins) + ' minutes. Still free today.</div></div></div>' +
         '<button type="button" class="ifr-btn" data-act="review">Start review</button></div>' : '') +
@@ -276,10 +276,10 @@
   };
   function goPro() { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); }
   // Free "Start today's 15": a Mixed set of what is left today (the daily-limit screen's start-smaller logic).
-  function startToday() {
+  function startToday(opts) {
     var keyErr = (typeof validateApiKey === 'function') ? validateApiKey(typeof getApiKey === 'function' ? getApiKey() : '') : null;
     if (keyErr) { if (typeof startQuiz === 'function') startQuiz(); return; }   // today's sign-in prompt; day-0 stays
-    IFR.recordSkip();
+    if (!(opts && opts.fromCheck)) IFR.recordSkip();
     if (isPro()) { var t = document.getElementById('primaryLaunch'); if (t) t.click(); return; }
     var r = remaining();
     if (r <= 0) { if (typeof _showQuotaExceededUI === 'function') _showQuotaExceededUI({}); return; }
@@ -375,7 +375,7 @@
     else if (a === 'next' && chk.picked) { var l = chk.picked; chk.picked = null; window._diagApi.answer(l); if (!chk.done) drawCheck(); }
     else if (a === 'back') { if (window._diagApi) window._diagApi.quit(); leaveCheck(); }
     else if (a === 'skip') { if (window._diagApi) window._diagApi.quit(); IFR.recordSkip(); leaveCheck(); }
-    else if (a === 'practise') leaveCheck();
+    else if (a === 'practise') { leaveCheck(); startToday({ fromCheck: true }); }
   }
   IFR.startCheck = function () {
     var h = checkHost(); if (!h) return Promise.resolve();

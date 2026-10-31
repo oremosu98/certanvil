@@ -301,7 +301,7 @@
       + opt('bulk30', 'lines3', '30 Questions', 'Marathon, mixed. Around 25 minutes.', '30 Q')
       + opt('bulk45', 'lines4', '45 Questions', 'Marathon, mixed. Around 38 minutes.', '45 Q'));
     h += acc('check', 'Exam simulation', 'Pressure-test readiness, scored ' + ex.min + ' to ' + ex.max + '.',
-      opt('bulk60', 'check', '60-Question SIM', 'Closest to the real thing. No timer.', '60 Q', ' ih-exam-lead')
+      opt('bulk60', 'check', '60-Question SIM', 'A long set at exam level. No timer.', '60 Q', ' ih-exam-lead')
       + opt('exam', 'clock', 'Full Exam Simulator', ex.qs + ' questions, ' + ex.mins + '-min timer, scored ' + ex.min + ' to ' + ex.max + '.', ex.qs + ' Q'));
     h += acc('chart', 'Drill by domain', m.domains.length + ' domains by exam weighting, 10 questions each.',
       m.domains.map(function (d) {
