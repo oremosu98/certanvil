@@ -32,6 +32,11 @@ test.describe('My certs hub', () => {
     const hub = page.locator('#ios-hub');
     await expect(hub).toBeVisible();
     await expect(hub.locator('.ihb-h1')).toHaveText('My certs');
+    await expect(hub.locator('.ihb-stat span')).toHaveText(['Readiness', 'Due today', 'Day streak']);
+    await expect(hub.locator('.ihb-stat b').first()).toHaveText('553');
+    await expect(hub.locator('.ihb-greet')).toContainText(/^(Morning|Afternoon|Evening)/);
+    await expect(hub.locator('.ihb-sect b')).toHaveText(['Your cert', 'Other certs', 'More']);
+    await expect(hub.locator('.ihb-link')).toHaveText([/Settings/, /Account/]);
     await expect(hub.locator('.ihb-row')).toHaveCount(1);
     await expect(hub.locator('.ihb-locked')).toContainText('Unlock every cert with Pro');
     await expect(hub.locator('.ihb-ua-list')).toContainText(/ and more$/);

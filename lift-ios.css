@@ -3392,3 +3392,5 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
 #ios-hub :is(.ihb-back, .ihb-theme, .ihb-row, .ihb-primary, .ihb-logresult, .ihb-suggest, .ihb-link):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { #ios-hub .ihb-rv { animation: ihb-fade .3s linear backwards; } #ios-hub :is(.ihb-row, .ihb-primary, .ihb-back, .ihb-theme):active { transform: none; } }
 html[data-theme] body #pro-only-modal { z-index: 400 !important; }   /* the Pro sheet opened from the hub must sit above it */
+#ios-hub .ihb-greet { font: 600 13.5px/1.45 Inter, sans-serif; color: var(--text-mid); margin: 4px 2px 12px; }
+#ios-hub .ihb-greet b { color: var(--text); font-weight: 700; }

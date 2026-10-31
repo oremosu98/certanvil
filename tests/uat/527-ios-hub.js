@@ -60,6 +60,19 @@ const { _fnBody, test, vm } = require('./_context');
   test('Free: still three names with 20 certs, no count', model(base({ certs: many, pro: false })).freeRow.list === 'Network+, Azure Fundamentals, Azure AI Fundamentals and more' && many.length === 20);
   test('Free row skips the current cert', model(base({ current: 'netplus', pro: false })).freeRow.list.indexOf('Network+') === -1);
 
+  const at = (h) => new Date(2026, 9, 31, h, 0, 0);
+  const sn = { secplus: { score: 612, computed_at: ago(1) } };
+  const gr = (o) => model(base(Object.assign({ snaps: sn }, o))).greeting;
+  test('Greeting: time of day from the local hour, first name capitalised, cards clause when due',
+    gr({ now: at(9), name: 'simi oremosu', due: 3 }).lead === 'Morning, Simi.' && gr({ now: at(9), name: 'simi', due: 3 }).bold === '3 cards'
+    && gr({ now: at(9), name: 'simi', due: 3 }).rest === ' are due on Security+.' && gr({ now: at(14), name: 'Simi' }).lead === 'Afternoon, Simi.' && gr({ now: at(19), name: 'Simi' }).lead === 'Evening, Simi.');
+  test('Greeting: one card is singular', gr({ name: 'Simi', due: 1 }).bold === '1 card' && gr({ name: 'Simi', due: 1 }).rest === ' is due on Security+.');
+  test('Greeting fallbacks: no name drops it, a tester or email value drops it, nothing due drops the cards clause',
+    gr({ now: at(9), name: '', due: 2 }).lead === 'Morning.' && gr({ now: at(9), name: 'tester' }).lead === 'Morning.' && gr({ now: at(9), name: 'a@b.com' }).lead === 'Morning.'
+    && gr({ now: at(9), name: 'Simi', due: 0 }).bold === '' && gr({ now: at(9), name: 'Simi', due: 0 }).rest === '' && gr({ now: at(9), due: undefined }).bold === '');
+  const fs1 = model(base({ pro: false, snaps: sn, due: 5 }));
+  test('Free strip data: readiness is the current cert score, due is the cards due today',
+    fs1.stats.readiness === 612 && fs1.stats.due === 5 && model(base({ pro: false })).stats.readiness === null && model(base({ pro: false })).stats.due === 0);
   test('Hub wiring: window export, Home cert act opens it, Free row uses the existing Pro sheet, suggest link is guarded',
     /window\.openHub\s*=/.test(src) && /window\._iosHubModel\s*=/.test(src) && /_showProOnlyUI/.test(src) && /typeof openSuggestCert === 'function'/.test(src)
     && /openHub\(\)\) return; tab\('settings'\)/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-home.js'), 'utf8'))

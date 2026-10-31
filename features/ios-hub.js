@@ -97,8 +97,17 @@
       var names = certs.filter(function (c) { return c.id !== cur; }).slice(0, 3).map(function (c) { return _hubShort(c.name); });
       freeRow = { title: 'Unlock every cert with Pro', list: names.join(', ') + ' and more' };
     }
+    // greeting: time of day from the local hour; the name only when we have one; the cards clause only when something is due
+    var hr = now.getHours(), part = hr < 12 ? 'Morning' : (hr < 17 ? 'Afternoon' : 'Evening');
+    var first = String(o.name || '').trim().split(/[\s._]+/)[0];
+    if (!first || first.toLowerCase() === 'tester' || first.indexOf('@') !== -1) first = '';
+    else first = first.charAt(0).toUpperCase() + first.slice(1);
+    var due = typeof o.due === 'number' && o.due > 0 ? Math.floor(o.due) : 0;
+    var greeting = { lead: part + (first ? ', ' + first : '') + '.', bold: '', rest: '' };
+    if (due && active) { greeting.bold = due + (due === 1 ? ' card' : ' cards'); greeting.rest = (due === 1 ? ' is' : ' are') + ' due on ' + active.name + '.'; }
     return {
-      stats: { nextExamDays: nextExam, passed: passedCount, streak: o.streak || 0 },
+      stats: { nextExamDays: nextExam, passed: passedCount, streak: o.streak || 0, readiness: active && active.hasScore ? active.score : null, due: due },
+      greeting: greeting,
       active: active, studying: studying, passed: passed, notStarted: notStarted, freeRow: freeRow, pro: !!o.pro
     };
   }
@@ -122,11 +131,15 @@
       max: typeof EXAM_MAX_SCORE === 'number' ? EXAM_MAX_SCORE : undefined,
       pass: typeof EXAM_PASS_SCORE === 'number' ? EXAM_PASS_SCORE : undefined
     };
+    var name = '', due = 0;
+    try { name = window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || ''; } catch (_) { name = ''; }
+    try { var plan = typeof getSrTodayPlan === 'function' ? getSrTodayPlan() : null; due = plan && typeof plan.todo === 'number' ? plan.todo : 0; } catch (_) { due = 0; }
     var certs = [];
     try { certs = typeof getAvailableCerts === 'function' ? getAvailableCerts() : []; } catch (_) { certs = []; }
     return {
       certs: certs, snaps: _readMap(STORAGE.READINESS_SNAPSHOTS), dates: dates, outcomes: _readMap(STORAGE.EXAM_OUTCOMES),
-      current: (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', pro: _isPro(), now: new Date(), streak: streak, scale: scale
+      current: (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', pro: _isPro(), now: new Date(), streak: streak, scale: scale,
+      name: name, due: due
     };
   }
 
@@ -161,10 +174,18 @@
       + '<button class="ihb-theme" type="button" data-act="theme" aria-label="Switch between light and dark">' + SUN + '</button></div>'
       + '<div class="ihb-body">';
 
-    h += '<div class="ihb-stats' + rv() + '>'
-      + '<div class="ihb-stat"><b>' + (s.nextExamDays === null ? '<small>None set</small>' : _esc(s.nextExamDays) + '<small> ' + (s.nextExamDays === 1 ? 'day' : 'days') + '</small>') + '</b><span>Next exam</span></div>'
-      + '<div class="ihb-stat ihb-pass"><b>' + _esc(s.passed) + '</b><span>Passed</span></div>'
-      + '<div class="ihb-stat"><b class="ihb-flame">' + FLAME + _esc(s.streak) + '</b><span>Day streak</span></div></div>';
+    var g = m.greeting;
+    h += '<p class="ihb-greet' + rv() + '>' + _esc(g.lead) + (g.bold ? ' <b>' + _esc(g.bold) + '</b>' + _esc(g.rest) : '') + '</p>';
+    var flame = '<div class="ihb-stat"><b class="ihb-flame">' + FLAME + _esc(s.streak) + '</b><span>Day streak</span></div>';
+    if (m.pro) {
+      h += '<div class="ihb-stats' + rv() + '>'
+        + '<div class="ihb-stat"><b>' + (s.nextExamDays === null ? '<small>None set</small>' : _esc(s.nextExamDays) + '<small> ' + (s.nextExamDays === 1 ? 'day' : 'days') + '</small>') + '</b><span>Next exam</span></div>'
+        + '<div class="ihb-stat ihb-pass"><b>' + _esc(s.passed) + '</b><span>Passed</span></div>' + flame + '</div>';
+    } else {
+      h += '<div class="ihb-stats' + rv() + '>'
+        + '<div class="ihb-stat"><b>' + (s.readiness === null ? '<small>None yet</small>' : _esc(s.readiness)) + '</b><span>Readiness</span></div>'
+        + '<div class="ihb-stat"><b>' + _esc(s.due) + '</b><span>Due today</span></div>' + flame + '</div>';
+    }
 
     h += sect(m.pro ? 'My certs' : 'Your cert', m.pro ? 'all certs' : 'Free plan');
     if (a) {
@@ -179,7 +200,7 @@
         h += '<div class="ihb-ac-score"><span class="ihb-num">' + _esc(a.score) + '</span><span class="ihb-of">/ ' + _esc(a.max) + ' readiness</span></div>'
           + '<div class="ihb-bar"><span style="width:' + pct + '%"></span><span class="ihb-tick" style="left:' + tick + '%"></span></div>'
           + '<div class="ihb-legend"><span>' + _esc(a.min) + '</span><span class="ihb-p">Pass ' + _esc(a.pass) + '</span><span>' + _esc(a.max) + '</span></div>'
-          + '<p class="ihb-ac-line">' + _esc(a.sub) + '</p>';
+          + (m.pro ? '<p class="ihb-ac-line">' + _esc(a.sub) + '</p>' : '');
       } else h += '<p class="ihb-ac-line">No readiness yet. Your first quiz sets the baseline.</p>';
       h += '<button class="ihb-primary" type="button" data-act="continue">' + (a.passed ? 'Review ' : 'Continue ') + _esc(a.name) + '</button>'
         + (a.passed ? '' : '<button class="ihb-logresult" type="button" data-act="log">Took your exam? Log your result</button>')
@@ -198,9 +219,11 @@
       if (suggest) h += '<button class="ihb-suggest' + rv() + ' type="button" data-act="suggest">Don\'t see yours? Suggest a cert</button>';   // Task 14 hook: openSuggestCert
     }
 
-    h += sect('More', '');
-    h += '<div class="ihb-links' + rv() + '><button class="ihb-link" type="button" data-act="settings"><span class="ihb-li">' + GEAR + '</span>'
-      + '<span class="ihb-lt"><b>Settings</b><span>Theme, notifications, daily review size</span></span><span class="ihb-lg">' + CHEV + '</span></button></div>';
+    var links = !!document.querySelector('.lift-tab[data-page="settings"]') || typeof showPage === 'function';
+    if (links) h += sect('More', '');
+    var ACC = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>';
+    function link(act, icon, t, sub) { return '<button class="ihb-link" type="button" data-act="' + act + '"><span class="ihb-li">' + icon + '</span><span class="ihb-lt"><b>' + t + '</b><span>' + sub + '</span></span><span class="ihb-lg">' + CHEV + '</span></button>'; }
+    if (links) h += '<div class="ihb-links' + rv() + '>' + link('settings', GEAR, 'Settings', 'Theme, notifications, daily review size') + link('account', ACC, 'Account', 'Sign-in, subscription, plan') + '</div>';
     return h + '</div>';
   }
 
@@ -256,7 +279,7 @@
       if (act === 'back' || act === 'continue') _close();
       else if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
       else if (act === 'log') { if (typeof openLogResult === 'function') openLogResult({ preselect: null }); }
-      else if (act === 'settings') { _close(); _tab('settings'); }
+      else if (act === 'settings' || act === 'account') { _close(); _tab('settings'); }
       else if (act === 'suggest') { if (typeof openSuggestCert === 'function') openSuggestCert(); }
       else if (act === 'unlock') {
         if (typeof _showProOnlyUI === 'function') _showProOnlyUI({ feature: 'Every cert', title: 'Every cert comes with Pro',
