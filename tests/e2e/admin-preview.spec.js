@@ -168,7 +168,9 @@ test.describe('Preview as Free', () => {
     expect(await page.evaluate(() => _gateActivityForQuota('practice quizzes'))).toBe(true);
     await expect(modal).toHaveCount(0);
     // not offered to a real Free user, nor once the preview is off
-    await page.evaluate(() => { window._adminPreview.set(false); window._quotaState = { tier: 'free', daily_limit: 15, used_today: 15 }; _gateActivityForQuota('practice quizzes'); });
+    await page.evaluate(() => window._adminPreview.set(false));
+    await page.waitForFunction(() => !window._adminPreview.on());   // the bar fades out for 150ms first
+    await page.evaluate(() => { window._quotaState = { tier: 'free', daily_limit: 15, used_today: 15 }; _gateActivityForQuota('practice quizzes'); });
     await expect(page.locator('#quota-exceeded-modal')).toBeVisible();
     await expect(page.locator('#quota-exceeded-modal .ap-keep')).toHaveCount(0);
   });
@@ -182,6 +184,31 @@ test.describe('Preview as Free', () => {
     await expect(page.locator('#quota-exceeded-modal')).toHaveCount(0);
     const r = await page.evaluate(() => ({ used: window._quotaState.used_today, started: window.__started, pass: _gateActivityForQuota('exam simulator') }));
     expect(r).toEqual({ used: 0, started: 0, pass: true });
+  });
+
+  test('switching to another account without signing out never hands it the admin\'s Pro quota', async ({ page }) => {
+    await boot(page, PHONE);
+    await asAdmin(page);
+    await page.evaluate(() => window._adminPreview.set(true));
+    expect(await page.evaluate(() => window._quotaState.tier)).toBe('free');
+    // what auth-state does when a different user id signs in: the admin flag drops until that account's profile lands
+    await page.evaluate(() => { window.certanvilSupabase = null; window._certanvilIsAdmin = false; });
+    await expect(page.locator('#ap-freebar')).toBeHidden();
+    const r = await page.evaluate(() => ({ q: window._quotaState, pro: document.body.classList.contains('is-pro-tier') }));
+    expect(r.q).toBe(null);   // not the admin's { tier: 'pro', daily_limit: -1 }: the new account's own answer is fetched
+    expect(r.pro).toBe(false);
+  });
+
+  test('turning the preview off while the bar shows fades it out over 150ms, like Back to Pro', async ({ page }) => {
+    await boot(page, PHONE);
+    await asAdmin(page);
+    await page.evaluate(() => window._adminPreview.set(true));
+    const bar = page.locator('#ap-freebar');
+    await expect(bar).toBeVisible();
+    const mid = await page.evaluate(() => { window._adminPreview.set(false); return { leaving: document.getElementById('ap-freebar').classList.contains('leaving'), on: window._adminPreview.on() }; });
+    expect(mid).toEqual({ leaving: true, on: true });
+    await expect(bar).toBeHidden();
+    expect(await page.evaluate(() => ({ on: window._adminPreview.on(), tier: window._quotaState.tier }))).toEqual({ on: false, tier: 'pro' });
   });
 
   test('a token refresh (renderSignedIn with role user, same account) keeps the preview and the Free state', async ({ page }) => {
@@ -233,6 +260,7 @@ test.describe('Preview as Free', () => {
     }
     // off: the screens go back to the top
     await page.evaluate(() => window._adminPreview.set(false));
+    await page.waitForFunction(() => !window._adminPreview.on());   // the bar fades out for 150ms first
     const off = await page.evaluate(() => { const d = document.createElement('div'); d.className = 'dm-screen'; document.body.appendChild(d); const t = d.getBoundingClientRect().top; d.remove(); return t; });
     expect(off).toBe(0);
   });

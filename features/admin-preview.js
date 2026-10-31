@@ -86,16 +86,21 @@
       tx.textContent = 'Previewing as Free';
     }
   }
+  // Turning off while the bar shows (Back to Pro, or the Admin screen's switch): the bar fades out in 150ms, then off.
   function _backToPro() {
     var b = _bar();
     if (leaving) return;
     b.classList.add('leaving');
-    leaving = setTimeout(function () { leaving = null; b.classList.remove('leaving'); set(false); }, 150);
+    leaving = setTimeout(function () { leaving = null; b.classList.remove('leaving'); _commit(false); }, 150);
   }
 
   function set(v) {
     var want = !!v;
     if (want && window._certanvilIsAdmin !== true) return;   // only the admin account can preview
+    if (!want && on() && bar && bar.isConnected && !bar.hidden) { _backToPro(); return; }
+    _commit(want);
+  }
+  function _commit(want) {
     var was = on();
     _put(KEY, want ? '1' : null);
     if (!want) _put(KG_KEY, null);
@@ -120,6 +125,12 @@
       set: function (v) {
         var was = on(), wasAdmin = _isAdmin;
         _isAdmin = v === true;
+        // The flag only drops when the account changes (auth-state) or on sign-out: the remembered real quota belongs to
+        // the admin, so it must never be handed to whoever is signed in now. Drop it; the refresh fetches theirs.
+        if (wasAdmin && !_isAdmin) {
+          if (fake && window._quotaState === fake) window._quotaState = null;
+          real = null; fake = null;
+        }
         if (was !== on()) { _draw(false); _apply(); }
         if (wasAdmin !== _isAdmin) { try { window.dispatchEvent(new Event('ca:admin')); } catch (_) {} }   // Task 8: the sidebar Admin item follows the flag
       }

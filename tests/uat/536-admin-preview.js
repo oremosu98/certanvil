@@ -33,7 +33,7 @@ const { test } = require('./_context');
   test('copy verbatim: Previewing as Free, Back to Pro, Keep going (admin preview)',
     /'Previewing as Free'/.test(ap) && />Back to Pro<\/button>/.test(ap) && /'Keep going \(admin preview\)'/.test(ap));
   test('the bar is a status region, announced once on turning on', /setAttribute\('role', 'status'\)/.test(ap) && /_draw\(want && !was\)/.test(ap));
-  test('Back to Pro fades out in 150ms before switching off', /leaving = setTimeout\(function \(\) \{[^}]*set\(false\); \}, 150\);/.test(ap)
+  test('Back to Pro, and the Admin switch while the bar shows, fade out in 150ms before switching off', /leaving = setTimeout\(function \(\) \{[^}]*_commit\(false\); \}, 150\);/.test(ap) && /if \(!want && on\(\) && bar && bar\.isConnected && !bar\.hidden\) \{ _backToPro\(\); return; \}/.test(ap)
     && /\.ap-freebar\.leaving \{ opacity: 0; transition: opacity \.15s var\(--ios-ease\); \}/.test(lift)
     && /\.ap-freebar\.leaving\{opacity:0;transition:opacity \.15s cubic-bezier\(0\.16,1,0\.3,1\);\}/.test(dg));
   test('CSS: 44pt bar and button on both layouts, reduced motion fades only, desktop hover gated',
