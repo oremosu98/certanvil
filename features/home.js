@@ -1429,11 +1429,13 @@
     el.addEventListener('click', onClick);
     if (onEsc) {
       var key = function (ev) {
-        if (!document.body.contains(el)) { document.removeEventListener('keydown', key); return; }
+        if (!document.body.contains(el)) { document.removeEventListener('keydown', key, true); return; }
         if (ev.key !== 'Escape' || ev.defaultPrevented) return;   // a layer above already took this Escape
         ev.preventDefault(); onEsc();
       };
-      document.addEventListener('keydown', key);
+      // Capture phase: this screen opens over others (the hub) whose document keydown was added first, so a
+      // bubble listener would run after theirs and one Escape would close both layers (final review M4).
+      document.addEventListener('keydown', key, true);
     }
     requestAnimationFrame(function () { el.classList.add('dm-open'); var h = el.querySelector('h2'); if (h) h.focus(); });
     return el;
@@ -1497,7 +1499,7 @@
       }, 480 + i * 60);
     });
   }
-  window._dmDate = _dmDate; window._dmScheduled = _dmScheduled; window._dmTiles = _dmTiles;
+  window._dmDate = _dmDate; window._dmScheduled = _dmScheduled; window._dmTiles = _dmTiles; window._dmWelcome = _dmWelcome;
 
   function _confirmDeleteAccount(modal, userId) {
     var sb = window.certanvilSupabase;

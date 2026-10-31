@@ -85,6 +85,21 @@ test.describe('My certs hub', () => {
     await expect(hub).toBeHidden();
   });
 
+  test('Welcome back over the hub: one Escape closes only the welcome back, the next closes the hub', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { document.querySelector('#ios-home [data-act="cert"]').click(); });
+    const hub = page.locator('#ios-hub'), wb = page.locator('#ios-welcomeback');
+    await expect(hub).toBeVisible();
+    await page.evaluate(() => window._dmWelcome(false));   // the cancelled-deletion moment lands while the hub is open
+    await expect(wb).toBeVisible();
+    await expect(wb.locator('h2')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(wb).toHaveCount(0);
+    await expect(hub).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(hub).toBeHidden();
+  });
+
   test('A late session email fixes the greeting in place: rows keep identity and focus stays', async ({ page }) => {
     await boot(page);
     await page.evaluate(() => {
