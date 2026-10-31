@@ -1,5 +1,5 @@
 // tests/uat/530-ai-budget.js
-// Scope: persona bundle Task 16. The app-wide AI limit sized to a $100 a month budget, the 80% founder email, the scope on every
+// Scope: persona bundle Task 16. The app-wide AI limit sized to a $200 a month budget (was $100 until 31 Oct), the 80% founder email, the scope on every
 // rate-limit 429 and the kinder busy message. Endpoint behaviour is in tests/api/generate-limits.test.mjs (fetch stubbed, run here
 // as a child process); the client branch runs the real _claudeFetch in tests/uat/_ai-budget-async.js.
 // Spec: 2026-10-30-ai-budget-fast-start-suggest-design.md section 1
@@ -24,7 +24,7 @@ const { test } = require('./_context');
   out.forEach(([n, ok]) => test(n, ok));
 
   test('proxy: env override read per call, default is a positive number with the arithmetic beside it',
-    gen.includes('process.env.AI_GLOBAL_DAILY_LIMIT') && /GLOBAL_DAILY_LIMIT_DEFAULT = \d+/.test(gen) && gen.includes('PROVISIONAL') && gen.includes('100 / 30'));
+    gen.includes('process.env.AI_GLOBAL_DAILY_LIMIT') && /GLOBAL_DAILY_LIMIT_DEFAULT = \d+/.test(gen) && gen.includes('PROVISIONAL') && gen.includes('200 / 30'));
   test('proxy: user and IP ceilings unchanged (500/day, 200/hour)', gen.includes('USER_DAILY_LIMIT   = 500') && gen.includes('IP_HOURLY_LIMIT    = 200'));
   test('proxy: 80% alert is deduped by alert:global80, awaited (a serverless function can freeze un-awaited work) and time-capped',
     gen.includes("'alert:global80:'") && /await maybeAlertFounder\(token/.test(gen) && /ALERT_TIMEOUT_MS = 3000/.test(gen) && gen.includes('signal: ctrl.signal'));

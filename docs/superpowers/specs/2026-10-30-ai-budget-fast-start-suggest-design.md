@@ -10,14 +10,14 @@ tags: [spec, mobile]
 
 The founder approved all three on 30 Oct. They ship in the bundle, on the gated lane.
 
-## 1. The app-wide AI limit, sized to a $100 a month budget
+## 1. The app-wide AI limit, sized to a $200 a month budget
 - Today `GLOBAL_DAILY_LIMIT` is 500 calls a day, matched to the testing-phase $20 a month Anthropic cap.
 - **Measure first.** Read the real cost per quiz from Anthropic usage (generation plus checker calls),
-  then set the daily limit so a month at that limit stays within **$100**. The numbers go in the plan.
+  then set the daily limit so a month at that limit stays within **$200** (raised from $100 by the founder on 31 Oct). The numbers go in the plan.
 - **Warn the founder.** Send one email when a day passes 80% of the limit (Resend, as `/api/notify` does).
 - **A kinder message when the limit is hit:** "We're very busy right now. Your questions will be back
   shortly." This replaces "Too many requests". The Free 15 a day and Pro access are unchanged.
-- **Founder action:** raise the Anthropic workspace cap from $20 to $100 a month. That is his account.
+- **Founder action:** raise the Anthropic workspace cap from $20 to $200 a month. That is his account.
 
 ## 2. A faster first question
 - **Measure.** Each quiz logs the seconds from Start to question 1, in the existing quiz-fill telemetry.

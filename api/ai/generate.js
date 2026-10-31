@@ -71,10 +71,11 @@ const IP_HOURLY_LIMIT    = 200;
 //   = $0.0757 over 7.3 calls ($0.0104 a call).
 // SIM: 8 x 0.0058 + 16 x 0.0154 = $0.2924 over 24 calls ($0.0122 a call).
 // Mix of 9 short quizzes to 1 SIM: $0.9736 over 89.7 calls = $0.01085 a call.
-// 100 / 30 = $3.333 a day / $0.01085 = 307.1 -> 307 calls a day.
-// That is ≈ 42 short quizzes a day app-wide at the default (307 / 7.3), or about 31 short
-// quizzes plus 3 SIMs on the 9:1 mix. All short quizzes ≈ $95/month; all SIMs ≈ $112/month.
-const GLOBAL_DAILY_LIMIT_DEFAULT = 307;
+// Budget $200 a month (founder, 31 Oct; was $100):
+// 200 / 30 = $6.667 a day / $0.01085 = 614.4 -> 614 calls a day.
+// That is ≈ 84 short quizzes a day app-wide at the default (614 / 7.3), or about 61 short
+// quizzes plus 7 SIMs on the 9:1 mix. All short quizzes ≈ $192/month; all SIMs ≈ $225/month.
+const GLOBAL_DAILY_LIMIT_DEFAULT = 614;
 function globalDailyLimit() {
   const n = Number(process.env.AI_GLOBAL_DAILY_LIMIT);
   return Number.isInteger(n) && n > 0 && n <= 100000 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;

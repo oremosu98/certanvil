@@ -55,17 +55,17 @@ const rlLimit = (prefix) => { const c = calls.find((x) => x.url.includes('ai_rl_
 const emails = () => calls.filter((c) => c.url === 'https://api.resend.com/emails');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 
-await t('default limit is 307 (budget-sized from the fast-start call structure), and env unset uses it', async () => {
-  assert.equal(GLOBAL_DAILY_LIMIT_DEFAULT, 307);
+await t('default limit is 614 (budget-sized from the fast-start call structure), and env unset uses it', async () => {
+  assert.equal(GLOBAL_DAILY_LIMIT_DEFAULT, 614);
   setEnv({}); stub(); await call();
-  assert.equal(rlLimit('global'), 307);
+  assert.equal(rlLimit('global'), 614);
 });
 await t('env AI_GLOBAL_DAILY_LIMIT is honoured', async () => {
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '321' }); stub(); await call();
   assert.equal(rlLimit('global'), 321);
 });
 await t('invalid, zero or negative env falls back to the default', async () => {
-  for (const v of ['abc', '0', '-5', '']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 307, v); }
+  for (const v of ['abc', '0', '-5', '']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 614, v); }
 });
 await t('user and ip limits are untouched', async () => {
   setEnv({}); stub(); await call();
@@ -122,7 +122,7 @@ await t('Resend throwing, a non-ok Resend, or the gate RPC failing never touches
   } finally { console.error = oe; }
 });
 await t('env limit must be a positive integer up to 100000', async () => {
-  for (const v of ['1.5', '100001', '1e3x', ' ', 'Infinity']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 307, v); }
+  for (const v of ['1.5', '100001', '1e3x', ' ', 'Infinity']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 614, v); }
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '100000' }); stub(); await call(); assert.equal(rlLimit('global'), 100000);
 });
 await t('no email below the threshold', async () => {
