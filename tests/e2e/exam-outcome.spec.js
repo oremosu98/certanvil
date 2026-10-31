@@ -57,8 +57,11 @@ test.describe('How did your exam go', () => {
     const rec = await saved(page);
     expect(rec.netplus).toMatchObject({ outcome: 'passed', score: 812, date: dayOffset(-1), predicted: 553 });
 
-    await screen.locator('#il-done-go').click();   // See it in your hub (closes the screen until the hub lands)
+    await screen.locator('#il-done-go').click();   // See it in your hub
     await expect(screen).toBeHidden();
+    await expect(page.locator('#ios-hub')).toBeVisible();
+    await page.locator('#ios-hub [data-act="back"]').click();   // back to Home
+    await expect(page.locator('#ios-hub')).toBeHidden();
     expect(await page.evaluate(() => document.querySelector('#ios-home').closest('body > *').inert)).toBe(false);
     await expect(page.locator('#ios-home .ih-tb-passed')).toHaveText('Passed');
     const next = page.locator('#ios-home .ih-oc');

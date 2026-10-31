@@ -429,7 +429,7 @@
       exam: function () { startExam(); },
       custom: function () { _jumpToCustomQuiz(); },
       settings: function () { tab('settings'); },
-      cert: function () { tab('settings'); },
+      cert: function () { if (typeof openHub === 'function' && openHub()) return; tab('settings'); },
       theme: function () { if (typeof toggleTheme === 'function') toggleTheme(); renderIosHome(); },
       check: function () { if (window.iosFirstRun && iosFirstRun.startCheck) iosFirstRun.startCheck(); },
       signin: function () { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('home'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; }
