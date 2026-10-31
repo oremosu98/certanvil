@@ -35,7 +35,7 @@ problem is fixed.
   attaches the version, screen, cert, theme and device, as the desktop form already does.
 - **Who hears back:** signed in, the form says "We'll email you when it's fixed." Signed out, it says
   "Sign in if you'd like to hear back."
-- **After sending:** "Thanks, got it. Report #142." The number is the report's row number, returned by
+- **After sending:** "Thanks, Alex, got it. Report #142." The name is the person's display name, left out when it is email-derived or missing (the hub greeting's rule). The app speaks as CertAnvil and never names the founder (founder, 31 Oct). The number is the report's row number, returned by
   the new `submit_bug_report` RPC (below).
 - **Offline:** it is queued and sent later (the existing retry queue), with "Saved. We'll send it when
   you're back online." A report that lands later from the queue shows no number; nothing is on screen
