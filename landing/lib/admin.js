@@ -130,33 +130,20 @@
     });
   }
 
-  // Cert requests (Suggest a cert). Read with the admin's own JWT: RLS lets is_admin() see every row and the tally view.
-  // Postgres does not promise a view's ORDER BY survives, so the order is asked for explicitly. `raw` is the per-person
-  // rows, used for the un-notified count behind each "Mark live" button, the people count and the "Also written" variants.
+  // Cert requests (Suggest a cert). Read with the admin's own JWT: RLS lets is_admin() see the tally view. Postgres does
+  // not promise a view's ORDER BY survives, so the order is asked for explicitly. The view carries pending (people not yet
+  // told) and labels (every way the exam was written), so no per-person rows are read here.
   function fetchCertRequests() {
-    var tally = supabase.from('cert_request_tally').select('exam_key, label, votes, new_7d, last_at, typed')
+    return supabase.from('cert_request_tally').select('exam_key, label, votes, new_7d, last_at, typed, pending, labels')
       .order('votes', { ascending: false }).order('last_at', { ascending: false }).then(function (r) {
         if (r.error) { console.error('[certanvil-admin] cert tally fetch failed', r.error); return null; }
         return r.data || [];
       });
-    var raw = supabase.from('cert_requests').select('user_id, exam_key, label, notified_at').range(0, 4999).then(function (r) {
-      if (r.error) { console.error('[certanvil-admin] cert requests fetch failed', r.error); return []; }
-      return r.data || [];
-    });
-    return Promise.all([tally, raw]).then(function (x) { return { tally: x[0], raw: x[1] }; });
   }
 
   // Pure view model for the section: strip numbers + one row per exam. Exposed for tests.
-  function buildCertRequestsModel(tally, raw, now) {
-    tally = tally || []; raw = raw || [];
-    var people = {}, pending = {}, written = {};
-    raw.forEach(function (q) {
-      people[q.user_id] = 1;
-      if (!q.notified_at) pending[q.exam_key] = (pending[q.exam_key] || 0) + 1;
-      var w = written[q.exam_key] = written[q.exam_key] || {};
-      var l = String(q.label || '').trim();
-      if (l) w[l] = 1;
-    });
+  function buildCertRequestsModel(tally, now) {
+    tally = tally || [];
     var max = 0, total = 0, week = 0, typedCount = 0;
     tally.forEach(function (t) {
       var v = Number(t.votes) || 0;
@@ -167,14 +154,14 @@
     var rows = tally.map(function (t) {
       var votes = Number(t.votes) || 0;
       var label = String(t.label || t.exam_key || '');
-      var others = Object.keys(written[t.exam_key] || {}).filter(function (l) { return l !== label; });
+      var others = (Array.isArray(t.labels) ? t.labels : []).map(String).filter(function (l) { return l && l !== label; });
       return {
         examKey: String(t.exam_key || ''), label: label, votes: votes, new7: Number(t.new_7d) || 0,
-        lastAt: t.last_at, typed: !!t.typed, pending: pending[t.exam_key] || 0,
+        lastAt: t.last_at, typed: !!t.typed, pending: Number(t.pending) || 0,
         pct: max ? Math.max(4, Math.round(votes / max * 100)) : 0, others: others
       };
     });
-    return { rows: rows, total: total, people: Object.keys(people).length, week: week, exams: tally.length, typedCount: typedCount, next: nextMonday(now || new Date()) };
+    return { rows: rows, total: total, week: week, exams: tally.length, typedCount: typedCount, next: nextMonday(now || new Date()) };
   }
 
   // The Monday digest goes at 08:00 UTC on Mondays (vercel.json cron). Label: "Mon 2 Nov".
@@ -282,16 +269,15 @@
     }).join(''));
   }
 
-  function renderCertRequests(data) {
+  function renderCertRequests(tally) {
     if (!elRequestsTbody) return;
-    var m = buildCertRequestsModel(data && data.tally, data && data.raw);
+    var m = buildCertRequestsModel(tally);
     function put(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
-    if (!data || data.tally == null) {
+    if (tally == null) {
       elRequestsTbody.innerHTML = '<tr><td colspan="5" class="admin-table-empty">Could not load cert requests.</td></tr>';
       return;
     }
     put('cr-total', String(m.total));
-    put('cr-people', 'from ' + m.people + (m.people === 1 ? ' person' : ' people'));
     put('cr-week', '+' + m.week);
     put('cr-exams', String(m.exams));
     put('cr-typed', m.typedCount + ' typed in');
@@ -339,52 +325,95 @@
     box.hidden = false;
   }
 
-  // "Mark live & tell them": confirm, then POST with the admin's access token. The server re-checks admin and does the sending.
+  // "Mark live & tell them": an inline Send / Cancel in the row (no browser dialog), then POSTs with the admin's access
+  // token, one batch per call, until the server says nothing remains. The server re-checks admin and does the sending.
+  function people(n) { return n + (n === 1 ? ' person' : ' people'); }
+
   function onRequestsClick(e) {
-    var btn = e.target && e.target.closest ? e.target.closest('.cr-act') : null;
-    if (!btn || btn.disabled) return;
-    var key = btn.getAttribute('data-key') || '';
-    var label = btn.getAttribute('data-label') || key;
-    var n = parseInt(btn.getAttribute('data-pending'), 10) || 0;
-    if (!window.confirm('Email ' + n + (n === 1 ? ' person' : ' people') + ' that ' + label + ' is live?')) return;
+    var t = e.target;
+    var act = t && t.closest ? t.closest('.cr-act') : null;
+    if (act && !act.disabled) { askConfirm(act); return; }
+    var no = t && t.closest ? t.closest('.cr-confirm .no') : null;
+    if (no) { cancelConfirm(no.closest('.cr-cell')); return; }
+    var yes = t && t.closest ? t.closest('.cr-confirm .yes') : null;
+    if (yes && !yes.disabled) startSend(yes.closest('.cr-cell'));
+  }
+
+  function askConfirm(btn) {
     var cell = btn.parentNode;
-    btn.disabled = true;
-    var prev = btn.textContent;
-    btn.textContent = 'Sending…';
-    function fail(msg) {
-      btn.disabled = false; btn.textContent = prev;
-      var err = cell.querySelector('.cr-err');
-      if (!err) { err = document.createElement('div'); err.className = 'cr-err'; err.setAttribute('role', 'alert'); cell.appendChild(err); }
-      err.textContent = msg;
+    var n = parseInt(btn.getAttribute('data-pending'), 10) || 0;
+    cell._btn = btn;
+    var box = document.createElement('div');
+    box.className = 'cr-confirm';
+    box.setAttribute('role', 'group');
+    var msg = document.createElement('span');
+    msg.textContent = 'Email ' + people(n) + ' that ' + (btn.getAttribute('data-label') || '') + ' is live?';
+    var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'yes'; yes.textContent = 'Send';
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'no'; no.textContent = 'Cancel';
+    box.appendChild(msg); box.appendChild(yes); box.appendChild(no);
+    cell.innerHTML = '';
+    cell.appendChild(box);
+    yes.focus();
+  }
+
+  function cancelConfirm(cell) {
+    if (!cell || !cell._btn) return;
+    cell.innerHTML = '';
+    cell.appendChild(cell._btn);
+    cell._btn.focus();
+  }
+
+  function startSend(cell) {
+    var btn = cell._btn;
+    var key = btn.getAttribute('data-key') || '', label = btn.getAttribute('data-label') || '';
+    var tot = { sent: 0, failed: 0, skipped: 0 };
+    var box = cell.querySelector('.cr-confirm');
+    var yes = box.querySelector('.yes'), no = box.querySelector('.no');
+    yes.disabled = true; no.disabled = true; yes.textContent = 'Sending…';
+    var msg = box.querySelector('span');
+    function progress() { msg.textContent = 'Sent to ' + people(tot.sent) + '…'; msg.setAttribute('role', 'status'); }
+    function stop(text, retry) {
+      cell.innerHTML = '';
+      var d = document.createElement('div');
+      d.className = retry ? 'cr-err' : 'cr-sent'; d.setAttribute('role', retry ? 'alert' : 'status'); d.textContent = text;
+      if (retry) {
+        btn.setAttribute('data-pending', String(Math.max(1, tot.failed + tot.skipped)));
+        cell.appendChild(btn); cell.appendChild(d);
+      } else cell.appendChild(d);
     }
-    supabase.auth.getSession().then(function (r) {
-      var token = r && r.data && r.data.session ? r.data.session.access_token : '';
-      if (!token) { fail('Sign in again, then retry.'); return null; }
-      return fetch('/api/admin/notify-cert-live', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ exam_key: key })
+    function summary() {
+      var lost = tot.failed + tot.skipped;
+      return 'Sent to ' + people(tot.sent) + '.' + (lost ? ' ' + lost + ' couldn\'t' + ' be reached.' : '');
+    }
+    function step(after) {
+      return supabase.auth.getSession().then(function (r) {
+        var token = r && r.data && r.data.session ? r.data.session.access_token : '';
+        if (!token) throw new Error('auth');
+        return fetch('/api/admin/notify-cert-live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ exam_key: key, label: label, after: after || undefined })
+        });
       }).then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (j) { return { ok: res.ok, status: res.status, body: j }; });
+      }).then(function (out) {
+        if (!out.ok) { var err = new Error('http'); err.status = out.status; err.code = out.body && out.body.error; throw err; }
+        var b = out.body;
+        tot.sent += Number(b.sent) || 0; tot.failed += Number(b.failed) || 0; tot.skipped += Number(b.skipped) || 0;
+        progress();
+        if (b.paused) { stop(summary() + ' Email is busy, try again in a minute.', true); return; }
+        if ((Number(b.remaining) || 0) > 0 && b.next && b.next !== after) return step(b.next);
+        if (tot.failed + tot.skipped > 0) { stop(summary(), true); return; }
+        stop(summary(), false);
       });
-    }).then(function (out) {
-      if (!out) return;
-      if (!out.ok) { fail(out.status === 503 ? 'Email is not set up yet.' : 'Could not send. Try again.'); return; }
-      var sent = Number(out.body.sent) || 0, failed = Number(out.body.failed) || 0;
-      var oldErr = cell.querySelector('.cr-err'); if (oldErr) oldErr.remove();
-      if (failed > 0) {
-        btn.disabled = false; btn.textContent = prev;
-        btn.setAttribute('data-pending', String(failed));
-        var er = document.createElement('div'); er.className = 'cr-err'; er.setAttribute('role', 'alert');
-        er.textContent = 'Sent to ' + sent + (sent === 1 ? ' person' : ' people') + '. ' + failed + ' failed, try again.';
-        cell.appendChild(er);
-        return;
-      }
-      var done = document.createElement('span');
-      done.className = 'cr-sent'; done.setAttribute('role', 'status');
-      done.textContent = 'Sent to ' + sent + (sent === 1 ? ' person' : ' people');
-      cell.replaceChild(done, btn);
-    }).catch(function () { fail('Could not send. Try again.'); });
+    }
+    step('').catch(function (err) {
+      var why = err && err.message === 'auth' ? 'Sign in again, then retry.'
+        : err && err.status === 503 ? 'Email is not set up yet.'
+        : err && err.status === 409 ? 'That exam changed. Reload the page.'
+        : 'Could not finish. Try again.';
+      stop('Sent to ' + people(tot.sent) + ' so far. ' + why, true);
+    });
   }
   if (elRequestsTbody) elRequestsTbody.addEventListener('click', onRequestsClick);
 

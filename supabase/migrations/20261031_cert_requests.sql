@@ -115,7 +115,8 @@ END$policy_update_admin$;
 -- Tally for the admin page and the Monday digest. security_invoker makes the
 -- view obey the caller's RLS: a non-admin sees only their own rows (so only
 -- their own one-vote tally), an admin sees everything.
--- label = most common label per exam_key; typed = any row was typed.
+-- label = most common label per exam_key; typed = any row was typed;
+-- pending = people not yet told it is live; labels = every way it was written.
 CREATE OR REPLACE VIEW cert_request_tally
 WITH (security_invoker = true) AS
 SELECT
@@ -124,7 +125,9 @@ SELECT
   count(*)                                                            AS votes,
   count(*) FILTER (WHERE created_at >= now() - interval '7 days')     AS new_7d,
   max(created_at)                                                     AS last_at,
-  bool_or(typed)                                                      AS typed
+  bool_or(typed)                                                      AS typed,
+  count(*) FILTER (WHERE notified_at IS NULL)                         AS pending,
+  array_agg(DISTINCT label)                                           AS labels
 FROM cert_requests
 GROUP BY exam_key
 ORDER BY votes DESC, last_at DESC;

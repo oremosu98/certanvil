@@ -48,7 +48,7 @@ export function buildDigest(rows) {
 export default async function handler(req) {
   if (req.method !== 'GET') return jsonResponse({ error: 'Method not allowed' }, 405, { Allow: 'GET' });
   const missing = missingEnv(['CRON_SECRET', 'FOUNDER_EMAIL', 'RESEND_API_KEY', 'SUPABASE_SERVICE_ROLE_KEY']);
-  if (missing.length) return unconfigured(missing);
+  if (missing.length) return unconfigured(missing, 'cert-requests-digest');
 
   const token = bearer(req);
   if (!token || !(await safeEqual(token, process.env.CRON_SECRET))) return jsonResponse({ error: 'unauthorized' }, 401);
@@ -64,8 +64,8 @@ export default async function handler(req) {
   if (!Array.isArray(rows)) return jsonResponse({ error: 'tally-read-failed' }, 502);
 
   const d = buildDigest(rows);
-  const ok = await sendMail({ to: [process.env.FOUNDER_EMAIL], subject: d.subject, html: d.html, text: d.text });
-  if (!ok) {
+  const sent = await sendMail({ to: [process.env.FOUNDER_EMAIL], subject: d.subject, html: d.html, text: d.text });
+  if (!sent.ok) {
     await logServerError({ endpoint: 'cert-requests-digest', status: 502, message: 'cert-requests-digest: send failed' });
     return jsonResponse({ error: 'send-failed' }, 502);
   }

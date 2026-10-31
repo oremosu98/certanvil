@@ -18,8 +18,10 @@ export function jsonResponse(payload, status, extraHeaders) {
     headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, extraHeaders || {})
   });
 }
-export function unconfigured(missing) {
-  return jsonResponse({ error: 'not-configured', missing }, 503);
+// The 503 never names the missing vars (the answer is public-facing); they go to the server log instead.
+export function unconfigured(missing, endpoint, extraHeaders) {
+  try { console.error('[' + (endpoint || 'admin') + '] not configured, missing env: ' + missing.join(', ')); } catch (_) {}
+  return jsonResponse({ error: 'not-configured' }, 503, extraHeaders);
 }
 
 export function esc(s) {
@@ -70,7 +72,7 @@ export async function requireAdmin(req) {
   return { ok: true, user };
 }
 
-// One Resend send, to exactly the addresses in `to`. Returns true on a 2xx.
+// One Resend send, to exactly the addresses in `to`. Returns { ok, status } (status 0 when the call threw).
 export async function sendMail({ to, subject, html, text, idempotencyKey }) {
   const headers = { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' };
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
@@ -79,6 +81,13 @@ export async function sendMail({ to, subject, html, text, idempotencyKey }) {
       method: 'POST', headers,
       body: JSON.stringify({ from: fromAddress(), to: Array.isArray(to) ? to : [to], subject, html, text })
     });
-    return r.ok;
-  } catch (_) { return false; }
+    return { ok: r.ok, status: r.status };
+  } catch (_) { return { ok: false, status: 0 }; }
+}
+
+// A label that goes into an email: control characters (CR/LF included) and line separators become spaces, whitespace
+// collapses, and it is capped at 120 code points. Used for the subject and the body.
+export function cleanLabel(raw) {
+  const s = String(raw == null ? '' : raw).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
+  return Array.from(s).slice(0, 120).join('');
 }
