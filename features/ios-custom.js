@@ -187,7 +187,7 @@
     if (m.capNote) h += '<p class="ic-cap-note ic-reveal">Free covers <b>15 questions a day</b>. 20 needs Pro.</p>';
     if (m.err) h += '<div class="ic-err" role="alert">' + e(m.err)
       + (m.signIn ? '<button class="ic-err-signin" type="button" data-act="signin">Sign in</button>' : '')
-      + '<button class="ic-err-tell" type="button" data-act="report">Something wrong? Tell us</button></div>';
+      + (typeof window !== 'undefined' && window.iosReport && typeof window.iosReport.isFailure === 'function' && window.iosReport.isFailure(m.err) ? '<button class="ic-err-tell" type="button" data-act="report">Something wrong? Tell us</button>' : '') + '</div>';
     h += '</div>';
 
     h += '<div class="ic-foot"><button class="ic-btn-primary" type="button" data-act="start">' + svg('play')

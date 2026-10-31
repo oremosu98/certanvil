@@ -51,6 +51,20 @@ const { test } = require('./_context');
   test('no em dash in the form, its styles or its tests', !sheet.includes(dash) && !lift.slice(lift.indexOf('Admin in the app Task 3')).includes(dash) && !dg.slice(dg.indexOf('Admin in the app Task 3: Report a problem')).includes(dash));
   test('dg-system.css and lift-ios.css versions bumped for the report form', /dg-system\.css\?v=8\.204\.0-d(1\d|[2-9]\d)/.test(html) && /lift-ios\.css\?v=8\.204\.[1-9]\d*"/.test(html));
 
+  // the link only under real failures: run isFailure against every #setup-err message family
+  const g0 = sheet.indexOf('  var GUIDANCE = ['), g1 = sheet.indexOf('  function _wireSetupErr');
+  const gctx = vm.createContext({});
+  vm.runInContext(sheet.slice(g0, g1), gctx);
+  const fail = (t) => vm.runInContext('isFailure(' + JSON.stringify(t) + ')', gctx);
+  test('Tell us link: none for sign-in, API-key setup and daily-limit guidance',
+    !fail('Sign in to study free: 15 questions a day, no API key needed. Tap "Sign in" at the top right.') && !fail('\u26a0\ufe0f Sign in to study · 15 free questions/day at certanvil.com.')
+    && !fail('Invalid API key format. Anthropic keys start with "sk-ant-".') && !fail('API key looks too short. Please check and try again.')
+    && !fail('You’ve used your 15 free questions today. Upgrade to Pro for unlimited study.') && !fail(''));
+  test('Tell us link: shown for generation, validation, network and timeout failures',
+    fail('\u26a0\ufe0f All generated questions failed validation. Try again.') && fail('Couldn’t make new questions this time. Try again.') && fail('No questions could be generated. Try again.')
+    && fail('\u26a0\ufe0f AI returned malformed data. Please try again.') && fail('Timed out after 30000ms: batch') && fail('The AI service returned an error. Try again.') && fail('\u26a0\ufe0f Failed. Check your API key.'));
+  test('custom quiz screen follows the same rule', /window\.iosReport\.isFailure\(m\.err\)/.test(read('features/ios-custom.js')));
+
   // the name rule, run: a real profile name, an email-derived one, none
   const ctx = vm.createContext({});
   const start = hub.indexOf('function _hubFirstName'), end = hub.indexOf('function _hubShort');

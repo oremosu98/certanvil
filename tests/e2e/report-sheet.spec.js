@@ -41,9 +41,11 @@ async function phoneSettings(page) {
   await page.locator('#ios-settings [data-act="report"]').click();
   await expect(sheet(page)).toBeVisible();
 }
-async function failStart(page) {
-  await page.evaluate(() => { const b = document.getElementById('setup-err'); b.textContent = 'Couldn’t start the quiz. Check your connection and try again.'; b.classList.remove('is-hidden'); });
+// Fill #setup-err the way the quiz/exam catches do (a generation failure) or the start gates do (guidance).
+async function showErr(page, text) {
+  await page.evaluate((t) => { const b = document.getElementById('setup-err'); b.textContent = t; b.classList.remove('is-hidden'); }, text);
 }
+const failStart = (page) => showErr(page, '\u26a0\ufe0f All generated questions failed validation. Try again.');
 
 test.describe('Report a problem: phone', () => {
   test('Settings → Report a problem opens the sheet with Send disabled until text', async ({ page }) => {
@@ -179,6 +181,31 @@ test.describe('Report a problem: phone', () => {
     await tell.click();
     await expect(sheet(page)).toBeVisible();
     await expect(sheet(page).locator('.irp-context')).toHaveText('From Security+ · Home');
+  });
+
+  test('guidance gets no link: the sign-in prompt, API-key setup and the daily limit; a generation failure does', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'ok', signedIn: false });
+    const box = page.locator('#setup-err'), tell = box.locator('[data-irp-tell]');
+    for (const msg of [
+      'Sign in to study free: 15 questions a day, no API key needed. Tap "Sign in" at the top right.',
+      '\u26a0\ufe0f Sign in to study · 15 free questions/day at certanvil.com.',
+      'Invalid API key format. Anthropic keys start with "sk-ant-".',
+      'API key looks too short. Please check and try again.',
+      'You’ve used your 15 free questions today. Upgrade to Pro for unlimited study.',
+    ]) {
+      await showErr(page, msg);
+      await expect(box).toContainText(msg.slice(3, 30));
+      await page.waitForTimeout(50);   // the observer runs on a microtask; give it a beat before asserting absence
+      await expect(tell).toHaveCount(0);
+    }
+    await showErr(page, '\u26a0\ufe0f Couldn’t make new questions this time. Try again.');
+    await expect(tell).toHaveText('Something wrong? Tell us');
+    await showErr(page, 'Timed out after 30000ms: batch 1');
+    await expect(tell).toBeVisible();
+    // guidance after a failure: the link goes with the old message
+    await showErr(page, 'Sign in to study free: 15 questions a day, no API key needed. Tap "Sign in" at the top right.');
+    await page.waitForTimeout(50);
+    await expect(tell).toHaveCount(0);
   });
 
   test('Escape closes; Tab stays in the sheet', async ({ page }) => {

@@ -206,13 +206,31 @@
 
   // ── "Something wrong? Tell us" under a failed start: whoever fills #setup-err, the link follows the message ──
   var TELL = 'Something wrong? Tell us';
+  // Only under a real failure. Messages that tell you what to do get no link. Every #setup-err fill site, classified:
+  //   validateApiKey (home.js, exam.js, quiz-engine.js): "Sign in to study free…", "Invalid API key format…",
+  //     "API key looks too short…" → guidance. _claudeFetch's no-session throw "Sign in to study · 15 free…" → guidance.
+  //   Daily limit / quota (the quota modal's copy, a 429 that reaches a catch) → guidance.
+  //   Generation catches (quiz-engine.js, home.js marathon + session, exam.js): "All generated questions failed
+  //     validation", "Couldn't make new questions", "No questions could be generated", "AI returned malformed data",
+  //     timeouts, network/server errors, the empty-message fallback → failures, so the link shows.
+  var GUIDANCE = [
+    /^\W*sign in to study/i,              // signed out: the sign-in prompt
+    /invalid api key format/i, /api key looks too short/i,   // the old bring-your-own-key setup prompts
+    /free questions today|daily limit|daily cap|quota|upgrade to pro|\b429\b/i   // the daily limit / quota block
+  ];
+  function isFailure(text) {
+    text = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!text) return false;
+    for (var i = 0; i < GUIDANCE.length; i++) if (GUIDANCE[i].test(text)) return false;
+    return true;
+  }
   function _wireSetupErr() {
     var box = document.getElementById('setup-err'); if (!box || box.__irp) return;
     box.__irp = true;
     function sync() {
       var link = box.querySelector('[data-irp-tell]');
       var text = [].map.call(box.childNodes, function (n) { return n === link ? '' : n.textContent; }).join('').trim();
-      if (link || !text || box.classList.contains('is-hidden')) return;
+      if (link || !isFailure(text) || box.classList.contains('is-hidden')) return;
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'irp-tell'; b.setAttribute('data-irp-tell', ''); b.textContent = TELL;
       b.addEventListener('click', function () { open(); });
@@ -224,5 +242,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _wireSetupErr); else _wireSetupErr();
 
   window.openReportSheet = open;
-  window.iosReport = { open: open, close: close, isOpen: function () { return !!_cur; } };
+  window.iosReport = { open: open, close: close, isOpen: function () { return !!_cur; }, isFailure: isFailure };
 })();
