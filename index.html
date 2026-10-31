@@ -108,8 +108,8 @@
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=8.204.0-d9" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d9"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=8.204.0-d10" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d10"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -142,7 +142,7 @@
 <link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="print" onload="this.media='(max-width: 899px)'">
 <noscript><link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="(max-width: 899px)"></noscript>
 <!-- v8.183.0 Lift A: E2E tokens + phone-only containers (iOS June design). Phone width only. -->
-<link rel="stylesheet" href="lift-ios.css?v=8.203.0" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-ios.css?v=8.204.0.1" media="(max-width: 899px)">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -499,6 +499,7 @@
           <div class="readiness-prob" id="rc-v2-prediction"></div>
           <div class="readiness-bar-track"><span class="readiness-bar-fill" id="rc-v2-bar-fill" style="width:0%"></span><span class="rc-v2-bar-fill-green" id="rc-v2-bar-fill-green" style="width:0%"></span><div class="readiness-bar-mark" id="rc-v2-bar-mark" data-pass="720" aria-hidden="true" style="left:66.7%"></div></div>
           <div class="readiness-range"><span id="rc-v2-delta">&mdash;</span><span>pass mark <b id="rc-v2-passmark">720</b></span></div>
+          <button type="button" class="rc-v2-book" id="rc-v2-book" hidden></button>
           <div class="readiness-traj" id="rc-v2-trajectory"></div>
           <div class="rc-v2-stamp" aria-hidden="true"><span class="txt">Exam ready</span><svg width="120" height="12" viewBox="0 0 120 12" preserveAspectRatio="none"><path d="M3,7 Q18,2 33,7 Q48,12 63,6 Q78,1 93,7 Q108,12 117,6" fill="none" stroke-width="3" stroke-linecap="round"></path></svg></div>
           <div class="rc-v2-confetti" aria-hidden="true"></div>

@@ -208,7 +208,7 @@
     const mixTopic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
     // 1. range
     const low = typeof r.lowerBound === 'number' ? r.lowerBound : null;
-    const range = { key: 'range', label: 'Score clears ' + pass + ', even at the low end', met: low !== null && low >= pass,
+    const range = { key: 'range', label: 'Score clears ' + pass + ', even at the low end', met: low !== null && low >= pass, pass: pass,
       detail: low === null ? 'No score yet' : 'Low end is ' + low + ' today' };
     // 2. volume: exam-level or harder answers (E + H), same rows the score reads
     let vol = 0;
@@ -218,7 +218,7 @@
       if (!e.byDiff || typeof e.byDiff !== 'object') return;
       ['E', 'H'].forEach(b => { const v = e.byDiff[b]; if (Array.isArray(v)) vol += (v[1] || 0); });
     });
-    const volume = { key: 'volume', label: '300 exam-level or harder answers', met: vol >= 300, detail: vol + ' so far' };
+    const volume = { key: 'volume', label: '300 exam-level or harder answers', met: vol >= 300, detail: vol + ' so far', count: vol };
     // 3. areas
     const pa = typeof r.passAccuracy === 'number' ? r.passAccuracy : 75;
     const da = r.domainAccuracy || {};
@@ -227,7 +227,7 @@
     keys.forEach(k => { if (weakKey === null || da[k] < da[weakKey]) weakKey = k; });
     const areasMet = keys.length > 0 && keys.every(k => da[k] >= pa);
     const weakName = weakKey ? (labels[weakKey] || weakKey) : null;
-    const areas = { key: 'areas', label: 'Every exam area at ' + pa + '% or better', met: areasMet,
+    const areas = { key: 'areas', label: 'Every exam area at ' + pa + '% or better', met: areasMet, weakName: weakName, passAccuracy: pa,
       detail: areasMet ? 'Every area is there' : (weakKey ? weakName + ' is at ' + Math.round(da[weakKey]) + '%' : 'No areas scored yet') };
     // 4. mocks: full timed exams at a pass inside the last 14 days
     const scoreOf = e => (typeof scaledExamScore === 'function') ? scaledExamScore(e.score || 0, e.total || 0) : 0;
@@ -238,7 +238,7 @@
     });
     const passes = inWin.filter(e => scoreOf(e) >= pass);
     const lastPass = passes.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-    const mocks = { key: 'mocks', label: 'Two full timed exams at a pass in the last 14 days', met: passes.length >= 2,
+    const mocks = { key: 'mocks', label: 'Two full timed exams at a pass in the last 14 days', met: passes.length >= 2, passes: passes.length,
       detail: passes.length ? passes.length + ' so far, scored ' + scoreOf(lastPass) : 'None yet' };
     const items = [range, volume, areas, mocks];
     const met = items.filter(i => i.met).length;
@@ -252,6 +252,49 @@
     return { items, met, total: 4, ready: met === 4 };
   }
   window.getBookItChecklist = getBookItChecklist;
+
+  // The "Before you book" line: the first unmet book-it item in checklist order (range, volume, areas, mocks),
+  // as one plain step. Shared by the desktop readiness card and the phone Home card. null when all four are met.
+  function getBookItNextStep(checklist) {
+    const items = (checklist && Array.isArray(checklist.items)) ? checklist.items : [];
+    const i = items.find(x => x && !x.met);
+    if (!i) return null;
+    if (i.key === 'mocks') return (i.passes || 0) >= 1 ? 'Do 1 more full exam and pass it' : 'Do 2 full exams and pass them';
+    if (i.key === 'areas') return 'Get ' + (i.weakName || 'every exam area') + ' to ' + (typeof i.passAccuracy === 'number' ? i.passAccuracy : 75) + '%';
+    if (i.key === 'volume') return 'Answer ' + Math.max(1, 300 - (i.count || 0)) + ' more exam-level questions';
+    if (i.key === 'range') return 'Lift your low end above ' + (i.pass || ((typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720));
+    return null;
+  }
+  window.getBookItNextStep = getBookItNextStep;
+
+  // Inner markup of the desktop "Before you book" row (Home readiness card and the Analytics readiness tile):
+  // one dot per book-it item (met = pass colour), the next step, then "{met} of 4 >".
+  function getBookItRowHtml(bi, step) {
+    const esc = (typeof escHtml === 'function') ? escHtml : (s => String(s));
+    return '<span class="rc-v2-book-l"><span class="rc-v2-book-dots" aria-hidden="true">'
+      + bi.items.map(i => '<i' + (i.met ? ' class="on"' : '') + '></i>').join('')
+      + '</span><span>Before you book: <strong>' + esc(step) + '</strong></span></span>'
+      + '<span class="rc-v2-book-k">' + bi.met + ' of 4 <span aria-hidden="true">\u203a</span></span>';
+  }
+  window.getBookItRowHtml = getBookItRowHtml;
+
+  // Desktop readiness card: at or above the pass mark but not 4 of 4, a row under the footer names the next
+  // step and opens "Why this score?". Hidden below the pass mark and at 4 of 4.
+  function renderBookItRow(r, hist) {
+    const row = document.getElementById('rc-v2-book');
+    if (!row) return;
+    try { _renderBookItRow(row, r, hist); } catch (_) { row.hidden = true; }
+  }
+  function _renderBookItRow(row, r, hist) {
+    const pass = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+    const bi = (r && typeof r.predicted === 'number' && r.predicted >= pass) ? getBookItChecklist(r, hist) : null;
+    const step = bi && !bi.ready ? getBookItNextStep(bi) : null;
+    if (!step) { row.hidden = true; return; }
+    row.innerHTML = getBookItRowHtml(bi, step);
+    row.setAttribute('aria-label', 'Before you book: ' + step + '. ' + bi.met + ' of 4. Why this score?');
+    row.onclick = function (ev) { ev.stopPropagation(); if (typeof window.openWhyScore === 'function') window.openWhyScore(); };
+    row.hidden = false;
+  }
 
   function getReadinessScore() {
     // v8.128.0: topic universe from the cert pack. The #topic-group chips are
@@ -1499,6 +1542,7 @@
         const pct = readinessBarPct(r.predicted);
         barEl.style.width = pct + '%';
         queueReadinessAnimation(r.predicted, pct, r.examReady);
+        renderBookItRow(r, history);
         const pm = document.getElementById('rc-v2-passmark'); if (pm) pm.textContent = EXAM_PASS_SCORE;
 
         // v4.73.0: prediction line \u2014 pass probability + CI inside the dark card

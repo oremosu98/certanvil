@@ -76,7 +76,6 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
     background: color-mix(in oklab, var(--green) 15%, var(--surface)); border: 1px solid color-mix(in oklab, var(--green) 40%, transparent); border-radius: 999px; padding: 6px 9px; }
 #ios-home .ih-rd-stamp svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 #ios-home .ih-rd.ih-passed .ih-rd-stamp { display: inline-flex; }
-#ios-home .ih-rd.ih-passed .ih-rd-tier { display: none; }
 @media (prefers-reduced-motion: no-preference) {
 #ios-home .ih-rd.ih-passed .ih-rd-stamp { animation: ih-stampin .4s var(--ios-ease) both; }
 @keyframes ih-stampin { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: none; } }
@@ -88,6 +87,10 @@ html[data-theme] body #page-setup:has(#ios-home:not(:empty)) { padding: 0 !impor
 #ios-home .ih-rd-legend { display: flex; justify-content: space-between; font: 600 10.5px/1 Inter, sans-serif; color: var(--text-dim); }
 #ios-home .ih-rd-legend .ih-p { color: var(--accent-deep); }
 #ios-home .ih-rd-insight { font-size: 12.5px; line-height: 1.45; color: var(--text-mid); margin: 11px 0 0; }
+/* Pass level (score at or above the pass mark, book-it not 4 of 4): the next step before booking, in place of the insight */
+#ios-home .ih-rd-book { margin: 13px 0 0; }
+#ios-home .ih-rd-book-k { display: block; font: 700 10px/1 Inter, sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+#ios-home .ih-rd-book-s { font-size: 13px; line-height: 1.45; color: var(--text-mid); margin: 0; }
 #ios-home .ih-rd-insight b { color: var(--text); font-weight: 650; }
 #ios-home .ih-rec { display: flex; align-items: center; gap: 13px; width: 100%; text-align: left; cursor: pointer; margin-top: 13px;
     border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); border-radius: 16px;

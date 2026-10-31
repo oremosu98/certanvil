@@ -67,8 +67,9 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Insight below the pass mark: "About 167 points to a pass."', ret.readiness.insight === 'About 167 points to a pass.');
     test('Insight at or above the pass mark: "Above the pass mark. Keep it there."',
       mk({ history: hist, readiness: Object.assign({}, rd, { predicted: 760 }) }).readiness.insight === 'Above the pass mark. Keep it there.');
-    test('Tier: Pass ready / On track / Close / Behind',
-      mk({ history: hist, readiness: Object.assign({}, rd, { examReady: true }) }).readiness.tier === 'Pass ready'
+    test('Tier: Exam ready / Pass level / On track / Close / Behind',
+      mk({ history: hist, readiness: Object.assign({}, rd, { examReady: true }) }).readiness.tier === 'Exam ready'
+      && mk({ history: hist, readiness: Object.assign({}, rd, { predicted: 760 }) }).readiness.tier === 'Pass level'
       && ret.readiness.tier === 'On track'
       && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 0.25 }) }).readiness.tier === 'Close'
       && mk({ history: hist, readiness: Object.assign({}, rd, { passProbability: 0.05 }) }).readiness.tier === 'Behind');

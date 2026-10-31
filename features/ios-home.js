@@ -41,8 +41,14 @@
     if (r && typeof r.predicted === 'number') {
       readiness.score = r.predicted;
       readiness.fillPct = Math.round(Math.min(1, Math.max(0, r.predicted / max)) * 1000) / 10;
-      readiness.tier = r.examReady ? 'Pass ready' : (r.passProbability >= 0.5 ? 'On track' : (r.passProbability >= 0.2 ? 'Close' : 'Behind'));
+      // Ready = the book-it checklist at 4 of 4. At or above the pass mark without it: "Pass level" plus the next step.
+      var bi = null;
+      try { bi = (typeof getBookItChecklist === 'function') ? getBookItChecklist(r, (typeof loadHistory === 'function') ? loadHistory() : []) : null; } catch (_) { bi = null; }
+      var ready = bi ? bi.ready : !!r.examReady;
+      readiness.tier = ready ? 'Exam ready' : (r.predicted >= pass ? 'Pass level' : (r.passProbability >= 0.5 ? 'On track' : (r.passProbability >= 0.2 ? 'Close' : 'Behind')));
       readiness.insight = r.predicted >= pass ? 'Above the pass mark. Keep it there.' : ('About ' + (pass - r.predicted) + ' points to a pass.');
+      var step = (!ready && r.predicted >= pass && bi && typeof getBookItNextStep === 'function') ? getBookItNextStep(bi) : null;
+      if (step) readiness.book = { label: 'Before you book · ' + bi.met + ' of 4', step: step + '.' };
       if (typeof r.recentAccuracy === 'number') {
         var n = Math.min(200, r.recentAnswers || 200);
         readiness.meta = 'Last ' + n + ' answers: ' + r.recentAccuracy + '% right'
@@ -248,12 +254,13 @@
         + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
         + (m.signedIn ? '<button class="ih-rd-check" type="button" data-act="check">Or take the 30-second check' + svg('chev') + '</button>' : '') + '</div>';   // 30 Oct: the check after Skip
     } else {
-      h += '<div class="ih-rd ih-reveal' + (r.tier === 'Pass ready' ? ' ih-passed' : '') + '" data-act="readiness" role="button" tabindex="0">'
+      h += '<div class="ih-rd ih-reveal' + (r.tier === 'Exam ready' ? ' ih-passed' : '') + '" data-act="readiness" role="button" tabindex="0">'
         + '<div class="ih-rd-top"><span class="ih-rd-eyebrow">Readiness</span><span class="ih-rd-tier' + (r.tier === 'Close' ? ' ih-close' : (r.tier === 'Behind' ? ' ih-behind' : '')) + '">' + e(r.tier) + '</span></div>'
         + '<div class="ih-rd-score"><span class="ih-rd-num">' + e(r.score) + '</span><span class="ih-rd-of">/ ' + e(r.max) + '</span></div>'
         + '<div class="ih-bar"><span style="width:' + r.fillPct + '%"></span><span class="ih-tick" style="left:' + r.passPct + '%"></span></div>'
         + '<div class="ih-rd-legend"><span>Now</span><span class="ih-p">Pass ' + e(r.pass) + '</span></div>'
-        + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
+        + (r.book ? '<div class="ih-rd-book"><span class="ih-rd-book-k">' + e(r.book.label) + '</span><p class="ih-rd-book-s">' + e(r.book.step) + '</p></div>'
+          : '<p class="ih-rd-insight">' + e(r.insight) + '</p>')
         + (r.meta ? '<p class="ih-rd-meta">' + e(r.meta) + '</p>' : '') + '</div>';
     }
     // one next step: a button for most kinds, the "How did it go?" card for outcome and nextcert

@@ -1814,6 +1814,7 @@
     const daysToExam = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
     let tier;
     if (predicted >= PASS && !(r && r.examReady === false)) tier = 'Exam Ready';
+    else if (predicted >= PASS) tier = 'Pass level';   // above the pass mark, book-it not 4 of 4 (was "Getting Close")
     else if (predicted >= READINESS_CLOSE)  tier = 'Getting Close';
     else if (predicted >= READINESS_BUILDING)  tier = 'Building';
     else                        tier = 'Not Ready';
@@ -1837,8 +1838,16 @@
     const _series = (typeof _weeklyStatSeries === 'function') ? _weeklyStatSeries(hs, 12)
       : { sessions: [], questions: [], accuracy: [], studyDays: [] };
 
+    // Pass level: the "Before you book" row (first unmet book-it item), shared with the Home readiness card.
+    let book = null;
+    try {
+      if (tier === 'Pass level' && typeof getBookItChecklist === 'function' && typeof getBookItNextStep === 'function') {
+        const bi = getBookItChecklist(r, h), step = getBookItNextStep(bi);
+        if (step && !bi.ready) book = { bi, step };
+      }
+    } catch (_) { book = null; }
     const readiness = {
-      predicted, passScore: PASS, forecast, pace, pbqNote, daysToExam, examDate, tier, pointsToPass,
+      predicted, passScore: PASS, forecast, pace, pbqNote, daysToExam, examDate, tier, pointsToPass, book,
       barPct, passTickPct,
       stats: { sessions: hs.length, questions: totalQ, accuracy: accuracyPct, studyDays },
       spark: {
@@ -2186,11 +2195,14 @@
       : (pn.hasExams ? 'PBQ results show from your next full exam.' : '<b>Take a full exam</b> to practise PBQs too.')}</p>` : '';
     const why = (typeof window.openWhyScore === 'function')
       ? '<button type="button" class="read-why" onclick="openWhyScore()">Why this score?<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>' : '';
+    const book = (r.book && typeof getBookItRowHtml === 'function')
+      ? `<button type="button" class="rc-v2-book read-book" onclick="openWhyScore()" aria-label="${esc('Before you book: ' + r.book.step + '. ' + r.book.bi.met + ' of 4. Why this score?')}">${getBookItRowHtml(r.book.bi, r.book.step)}</button>` : '';
+    const passCls = (r.tier === 'Pass level' || r.tier === 'Exam Ready') ? ' is-pass' : '';
     return `<div class="tile s-read">
         <div>
           <div class="read-top">
             <div class="tile-eyebrow" style="margin:0">Readiness</div>
-            <span class="read-tier">${esc(r.tier)}</span>
+            <span class="read-tier${passCls}">${esc(r.tier)}</span>
           </div>
           <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ ${EXAM_MAX_SCORE}</span></div>
           <p class="read-cap">${fc.line}</p>
@@ -2204,7 +2216,7 @@
             <span>${fc.label} <span class="fv${fc.dim ? '' : ' fg'}">${fc.value}</span>${fc.range ? ' <span>' + fc.range + '</span>' : ''}</span>
             <span>${days}</span>
           </div>
-          ${pbq}${why}
+          ${book}${pbq}${why}
         </div>
         <div class="read-stats">
           <div class="rstat"><span class="n mono" data-cnt="${s.sessions}">0</span><span class="l">Sessions</span>${sparkSvg('sessions')}</div>

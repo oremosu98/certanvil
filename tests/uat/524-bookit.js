@@ -1,5 +1,5 @@
 // tests/uat/524-bookit.js
-// Scope: persona bundle Task 9. The book-it checklist decides "Pass ready"/"Exam ready"; the "Why this score?" sheet shows it.
+// Scope: persona bundle Task 9. The book-it checklist decides "Exam ready"; the "Why this score?" sheet shows it.
 // Spec: docs/superpowers/specs/2026-10-30-why-score-bookit-repeats-design.md §1-2
 const fs = require('fs');
 const path = require('path');
@@ -60,11 +60,13 @@ const { _fnBody, test, vm } = require('./_context');
     /const examReady = getBookItChecklist\(\{ lowerBound, domainAccuracy, passAccuracy \}, loadHistory\(\)\)\.ready/.test(rd));
   test('Readiness: the score still comes from the same prediction line (#139 untouched)',
     /const predicted = Math\.round\(EXAM_MIN_SCORE \+ expectedAcc \* _range\)/.test(rd));
-  test('Home: tier "Pass ready" only when examReady', /r\.examReady \? 'Pass ready'/.test(ih));
+  test('Home: tier "Exam ready" only at 4 of 4, "Pass level" above the pass mark otherwise',
+    /var ready = bi \? bi\.ready : !!r\.examReady;/.test(ih) && /ready \? 'Exam ready' : \(r\.predicted >= pass \? 'Pass level'/.test(ih));
 
   test('Why sheet: the exam-level set uses the ungated focused preset', /applyPreset\('focused'\)/.test(ih) && !/applyPreset\('grind'\)/.test(_fnBody(ih, '_openWhy')));
   const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
-  test('Desktop stamp: scored above the line but not book-ready reads "Not book-ready yet"', appSrc.includes("'Not book-ready yet'") && !appSrc.includes('Recent accuracy below pass'));
+  test('Desktop stamp: scored above the line but not book-ready reads "Pass level" (no more "Not book-ready yet")',
+    appSrc.includes("'Pass level'") && !appSrc.includes('Not book-ready yet') && !appSrc.includes('Recent accuracy below pass'));
 
   // the sheet
   const r = { predicted: 553, lowerBound: 505, upperBound: 600, passProbability: 0.08, totalQs: 1240, studiedCount: 41, totalTopics: 50,
