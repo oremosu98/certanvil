@@ -30,6 +30,11 @@ const { test } = require('./_context');
     /caDialogFrame\(S\.host, \{ size: 'sm'/.test(sheet) && /_inertBehind\(S\)/.test(sheet) && /ev\.key === 'Escape'/.test(sheet) && /ev\.key !== 'Tab'/.test(sheet));
   test('"Something wrong? Tell us" follows whatever fills #setup-err', /getElementById\('setup-err'\)/.test(sheet) && /MutationObserver\(sync\)/.test(sheet) && /Something wrong\? Tell us/.test(sheet));
   test('the typed text survives Sign in (sessionStorage draft, never localStorage)', /sessionStorage\.setItem\(DRAFT/.test(sheet) && !/localStorage\.setItem/.test(sheet));
+  test('the draft expires after 30 minutes and is dropped once a report is sent', /var DRAFT_TTL = 30 \* 60 \* 1000;/.test(sheet) && /Date\.now\(\) - d\.at > DRAFT_TTL/.test(sheet) && /_dropDraft\(\);   \/\/ sent/.test(sheet));
+  test('sheet and toast move on the drawer curve, fade on the brand curve',
+    /\.irp-sheet\.open \{ transform: none; transition: transform \.36s var\(--ease-drawer, cubic-bezier\(0\.32,0\.72,0,1\)\); \}/.test(lift)
+    && /\.irp-toast\.open \{ opacity: 1; transform: none; transition: transform \.34s var\(--ease-drawer, cubic-bezier\(0\.32,0\.72,0,1\)\), opacity \.25s var\(--ios-ease\); \}/.test(lift)
+    && /\.irp-toast\.open\{opacity:1;transform:none;transition:transform \.34s cubic-bezier\(0\.32,0\.72,0,1\),opacity \.25s cubic-bezier\(0\.16,1,0\.3,1\);\}/.test(dg));
   test('reports.js: the old drawer UI is gone, openDrawer opens the one form',
     !/_drawerHtml|_wireForm|_wireSubmit|bug-report-drawer|closeDrawer/.test(reports) && /function openDrawer\(opts\) \{\s*\n\s*if \(typeof window\.openReportSheet === 'function'\) window\.openReportSheet\(opts\);/.test(reports)
     && /openDrawer: openDrawer/.test(reports));
@@ -44,7 +49,7 @@ const { test } = require('./_context');
   test('CSS: reduced motion fades only, hover gated', /prefers-reduced-motion: reduce\) \{\s*\n\s*\.irp-sheet, \.irp-sheet\.open \{ transform: none; opacity: 0;/.test(lift)
     && /\(hover:hover\) and \(pointer:fine\)\{\s*\n\s*#ios-report\.is-dialog \.irp-close:hover/.test(dg));
   test('no em dash in the form, its styles or its tests', !sheet.includes(dash) && !lift.slice(lift.indexOf('Admin in the app Task 3')).includes(dash) && !dg.slice(dg.indexOf('Admin in the app Task 3: Report a problem')).includes(dash));
-  test('dg-system.css and lift-ios.css versions bumped for the report form', /dg-system\.css\?v=8\.204\.0-d(1\d|[2-9]\d)/.test(html) && /lift-ios\.css\?v=8\.204\.0"/.test(html));
+  test('dg-system.css and lift-ios.css versions bumped for the report form', /dg-system\.css\?v=8\.204\.0-d(1\d|[2-9]\d)/.test(html) && /lift-ios\.css\?v=8\.204\.[1-9]\d*"/.test(html));
 
   // the name rule, run: a real profile name, an email-derived one, none
   const ctx = vm.createContext({});

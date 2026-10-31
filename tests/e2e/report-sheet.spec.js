@@ -140,6 +140,35 @@ test.describe('Report a problem: phone', () => {
     await expect(toast(page).locator('.irp-toast-l')).toHaveText('We read every report.');
   });
 
+  test('Settings at 390px shows exactly one "Report a problem" row (the desktop one stays hidden)', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'ok' });
+    await page.locator('#lift-tabbar .lift-tab[data-page="settings"]').click();
+    await expect(page.locator('#page-settings')).toHaveClass(/active/);
+    await expect(page.locator('#ios-settings [data-act="report"]')).toBeVisible();
+    await expect(page.locator('#settings-report-btn')).toBeHidden();
+    const rows = page.locator('#page-settings :is(button, a)').filter({ hasText: 'Report a problem' });
+    expect(await rows.evaluateAll((els) => els.filter((el) => el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden').length)).toBe(1);
+  });
+
+  test('a draft older than 30 minutes is dropped; a sent report leaves no draft behind', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'ok' });
+    await page.evaluate(() => sessionStorage.setItem('ca_report_draft', JSON.stringify({ desc: 'old words', steps: '', from: '', at: Date.now() - 31 * 60 * 1000 })));
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('');
+    expect(await page.evaluate(() => sessionStorage.getItem('ca_report_draft'))).toBeNull();
+    await sheet(page).locator('[data-act="cancel"]').click();
+    await expect(sheet(page)).toHaveCount(0);
+    // a fresh draft restores; once that report is sent, the next form starts empty
+    await page.evaluate(() => sessionStorage.setItem('ca_report_draft', JSON.stringify({ desc: 'fresh words', steps: '', from: '', at: Date.now() - 60 * 1000 })));
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('fresh words');
+    await sheet(page).locator('[data-act="send"]').click();
+    await expect(toast(page)).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.getItem('ca_report_draft'))).toBeNull();
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('');
+  });
+
   test('a failed quiz start shows "Something wrong? Tell us" under #setup-err and it opens the sheet with From {cert} · Home', async ({ page }) => {
     await boot(page, PHONE); await stub(page, { mode: 'ok' });
     await failStart(page);
@@ -206,6 +235,26 @@ test.describe('Report a problem: desktop', () => {
     await page.keyboard.press('Escape');
     await expect(sheet(page)).toHaveCount(0);
     await expect(row).toBeFocused();
+  });
+
+  test('desktop: markup in a description stays text in the queue and in the Settings queued-reports panel', async ({ page }) => {
+    const evil = '<img src=x onerror=alert(1)>"\'';
+    await boot(page, DESKTOP); await stub(page, { mode: 'offline' });
+    let dialogs = 0; page.on('dialog', (d) => { dialogs++; d.dismiss(); });
+    await page.click('#topbar-bug-report');
+    await sheet(page).locator('#irp-desc').fill(evil);
+    await sheet(page).locator('[data-act="send"]').click();
+    await expect(toast(page).locator('.irp-toast-t')).toHaveText('Saved');
+    const q = await page.evaluate(() => JSON.parse(localStorage.getItem('nplus_bug_reports') || '[]'));
+    expect(q).toHaveLength(1);
+    expect(q[0].payload.description).toBe(evil);
+    expect(q[0].payload.title).toBe(evil);
+    await page.locator('.sb-item[data-sb-page="settings"]').click();
+    const panel = page.locator('#settings-reports-panel');
+    await expect(panel.locator('.br-sp-title')).toHaveText(evil);
+    expect(await panel.locator('img').count()).toBe(0);
+    expect(await page.locator('#settings-reports-section img').count()).toBe(0);
+    expect(dialogs).toBe(0);
   });
 
   test('desktop: a failed quiz start shows Something wrong? Tell us', async ({ page }) => {

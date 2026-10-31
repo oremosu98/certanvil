@@ -31,11 +31,16 @@
     return id ? id.charAt(0).toUpperCase() + id.slice(1) : 'Home';
   }
   function _fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-  function _readDraft() {
-    try { var d = JSON.parse(sessionStorage.getItem(DRAFT) || 'null'); sessionStorage.removeItem(DRAFT); return d && typeof d === 'object' ? d : null; }
-    catch (_) { return null; }
+  var DRAFT_TTL = 30 * 60 * 1000;   // a draft older than this belongs to some other moment: drop it
+  function _dropDraft() { try { sessionStorage.removeItem(DRAFT); } catch (_) {} }
+  function _readDraft() {   // read once: opening the form always consumes it
+    var d = null;
+    try { d = JSON.parse(sessionStorage.getItem(DRAFT) || 'null'); } catch (_) { d = null; }
+    _dropDraft();
+    if (!d || typeof d !== 'object' || typeof d.at !== 'number' || Date.now() - d.at > DRAFT_TTL || Date.now() < d.at) return null;
+    return d;
   }
-  function _saveDraft(d) { try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch (_) {} }
+  function _saveDraft(d) { d.at = Date.now(); try { sessionStorage.setItem(DRAFT, JSON.stringify(d)); } catch (_) {} }
 
   function _html(S) {
     var hear = S.signedIn ? 'We’ll email you when it’s fixed.'
@@ -108,6 +113,7 @@
     Promise.all([_reports().then(function (m) { return m.submitReportNow(form); }), _first(S)]).then(function (r) {
       var out = r[0] || {};
       if (!out.ok && !out.queued) throw new Error('not sent');
+      _dropDraft();   // sent (or safely queued): nothing typed earlier may come back
       if (_cur === S) close();
       setTimeout(function () { _thanks(S, out, r[1]); }, 220);
     }).catch(function () {
