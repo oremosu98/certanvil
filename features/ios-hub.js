@@ -386,7 +386,7 @@
       var act = b.getAttribute('data-act');
       if (act === 'continue') { if (typeof goSetup === 'function') goSetup(); else if (typeof showPage === 'function') showPage('setup'); }
       else if (act === 'log') { if (typeof openLogResult === 'function') openLogResult({ preselect: null, from: b }); }
-      else if (act === 'suggest') { if (typeof openSuggestCert === 'function') openSuggestCert(); }
+      else if (act === 'suggest') { try { b.focus({ preventScroll: true }); } catch (_) {} if (typeof openSuggestCert === 'function') openSuggestCert(); }   // Safari does not focus a clicked button: Escape must land back here
       else if (act === 'unlock') {
         if (typeof _showProOnlyUI === 'function') _showProOnlyUI({ feature: 'Every cert', title: 'Every cert comes with Pro',
           body: 'You’re studying <b>' + _esc(m.active ? m.active.name : 'your cert') + '</b>. Pro adds every other exam, and your progress here stays exactly where it is.' });

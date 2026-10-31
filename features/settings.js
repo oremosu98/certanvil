@@ -646,6 +646,7 @@
     if (typeof renderSrSettings === 'function') renderSrSettings();
     // v7.45.0 GAP-6: show the Delete-my-account row for signed-in users
     if (typeof _syncDeleteAccountRow === 'function') _syncDeleteAccountRow();
+    _syncSuggestRow();
     // v4.81.2: refresh the auto-backup list every time Settings opens so the
     // user sees what's available + can restore/download from any snapshot.
     if (typeof renderAutoBackupList === 'function') renderAutoBackupList();
@@ -867,6 +868,17 @@
       if (!tog._srBound) { tog._srBound = true; tog.addEventListener('click', toggleSrTopUp); }
       tog.classList.toggle('is-on', !!prefs.topUp);
       tog.setAttribute('aria-checked', prefs.topUp ? 'true' : 'false');
+    }
+  }
+
+  // Desktop catch-up Task 5: the Suggest a cert row (signed in only; CSS hides it below 900px)
+  function _syncSuggestRow() {
+    var sec = document.getElementById('settings-suggest-row'); if (!sec) return;
+    if (window._certanvilSignedIn === true) sec.removeAttribute('hidden'); else sec.setAttribute('hidden', '');
+    var btn = document.getElementById('settings-suggest-btn');
+    if (btn && !btn._ssBound) {
+      btn._ssBound = true;
+      btn.addEventListener('click', function () { try { btn.focus({ preventScroll: true }); } catch (_) {} if (typeof window.openSuggestCert === 'function') window.openSuggestCert(); });
     }
   }
 
