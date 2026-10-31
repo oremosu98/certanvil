@@ -534,7 +534,7 @@ async function _claudeFetch(init) {
       try {
         var detail = await r.clone().json();
         if (detail && detail.error !== 'rate_limited' && typeof _showQuotaExceededUI === 'function') _showQuotaExceededUI(detail);
-        else if (detail && detail.error === 'rate_limited') showToast("We're very busy right now. Your questions will be back shortly.", 'error');
+        else if (detail && detail.error === 'rate_limited' && !(Date.now() - (window._busyToastAt || 0) < 10000)) { window._busyToastAt = Date.now(); showToast("We're very busy right now. Your questions will be back shortly.", 'error'); }   // parallel fast-start 429s: one toast per ~10s
         // rate_limited is the app-wide cap: toast only, never the quota modal
       } catch (_) { /* intentionally silent: cosmetic */ }
     } else if (wasMetered && r.ok) {
