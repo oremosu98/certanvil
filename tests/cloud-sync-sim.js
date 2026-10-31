@@ -109,7 +109,7 @@ function boot(localInit, db, cert, hostname) {
   vm.createContext(ctx);
   vm.runInContext(SRC, ctx);
   const cs = win.cloudStore;
-  return { cs, ls, db, calls: sb.calls, session: { user: { id: userId } }, timers };
+  return { cs, ls, db, win, calls: sb.calls, session: { user: { id: userId } }, timers };
 }
 
 const H = (date, topic, score, total) => ({ date, topic, difficulty: 'Exam Level', score, total, pct: Math.round(100 * score / total), mode: 'quiz' });
@@ -495,6 +495,15 @@ async function main() {
       const hydrateAdopts = JSON.parse(b2.ls.getItem('nplus_exam_dates') || '{}')['aplus-core2'] === '2026-11-17';
       out.s9h = { readNoLeak, hydrateNoLeak, hydrateAdopts };
     }
+  }
+
+  // 10. Final review M2: sign-out clears the local-only quiz-resume save through quiz-resume.js's own clear.
+  {
+    const b = boot({ nplus_quiz_resume: '{"v":1}', nplus_history: '[]' }, { profile: { metadata: {} }, history: [] }, 'netplus');
+    const opts = [];
+    b.win.quizResumeClear = (o) => { opts.push(o); b.ls.removeItem('nplus_quiz_resume'); };
+    b.cs.clearLocalCache();
+    out.s10 = { resumeCleared: b.ls.getItem('nplus_quiz_resume') === null, notRecorded: opts.length === 1 && !!opts[0] && opts[0].record === false };
   }
 
   return out;

@@ -317,6 +317,9 @@
       USER_DATA_KEYS.forEach(function (key) {
         try { localStorage.removeItem(key); } catch (e) {}
       });
+      // Final review M2: the quiz-resume save is local-only (never synced, so not a user-data key) but it is
+      // this account's quiz: the next account on the device must not see "Finish your quiz". Not recorded as seen.
+      try { if (typeof window.quizResumeClear === 'function') window.quizResumeClear({ record: false }); } catch (e) {}
       _writeDirty({});
       lastSyncAt = null;
       setStatus('idle');

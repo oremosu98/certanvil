@@ -79,6 +79,8 @@ const { authStateJs, test, vm, path } = require('./_context');
     s9c.noLeak === true);
   test('persona sync: a legacy single exam date is adopted into exam_dates for the current cert',
     s9d.adopted === true);
+  test('final review M2: sign-out (clearLocalCache) clears the quiz-resume save, not recorded as seen',
+    (r.s10 || {}).resumeCleared === true && (r.s10 || {}).notRecorded === true);
   const s9h = r.s9h || {};
   test('persona sync: A+ Core 2 never adopts Core 1\'s legacy exam date (read or hydrate); an empty map still adopts it',
     s9h.readNoLeak === true && s9h.hydrateNoLeak === true && s9h.hydrateAdopts === true);
@@ -112,4 +114,5 @@ const { authStateJs, test, vm, path } = require('./_context');
         && !/if \(cs\) cs\.clearLocalCache\(\);/.test(authStateJs);
     } catch (e) { return false; }
   })());
+
 })();
