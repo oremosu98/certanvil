@@ -15,7 +15,7 @@
 - Gated lane: branch `feat/admin-in-app` from `origin/main`, PR, preview, migration tested in PGlite with its ROLLBACK, squash-merge on the founder's "ship it".
 - Migration file `supabase/migrations/20261031_bug_reports_loop.sql`, idempotent, with a tested `-- ROLLBACK:` block and rows in `scripts/sql/migration-audit.sql`.
 - `app.js` net 0 lines (ratchet cap 8334, current 8333). New logic goes in `features/*.js`.
-- Phone surfaces only (iOS app + mobile web ≤899px); desktop keeps its drawer and the web dashboard link.
+- Report a problem is one form on every platform (sheet ≤899px, centred dialog on desktop); the old desktop drawer UI is retired. Admin and Preview as Free are phone surfaces only (iOS app + mobile web ≤899px); desktop keeps the web dashboard link.
 - Motion: BRAND §6 (`cubic-bezier(0.16,1,0.3,1)`, transform + opacity only, reduced motion = fade). Sheets use the drawer curve already in `lift-ios.css`. Reveal motion on first paint only.
 - Touch targets ≥ 44pt; no hover without `@media (hover:hover) and (pointer:fine)`; safe-area insets.
 - Copy is exactly the drawing's. No em dashes. The app never names the founder; the user's own first name only via the hub greeting rule.
@@ -71,7 +71,7 @@
 - Produces: `buildPayload(form, ctx)` now also sets `payload.user_id` (the signed-in id at write time, or null). `form.title` is optional: when empty, the title is the first line of `form.desc`, trimmed, cut to 80 characters.
 - Produces: `submitReport(payload) → Promise<{type, queueAction, ..., reportNo: number|null}>`, calling `sb.rpc('submit_bug_report', {...})` with `p_user_id: payload.user_id`; `reportNo` is the returned id on success.
 - Produces: exported `submitReportNow(form) → Promise<{ok: boolean, queued: boolean, reportNo: number|null}>` used by the phone sheet (builds the payload, submits, enqueues on a retryable failure exactly as `_wireSubmit` does).
-- Desktop drawer success toast becomes title `Thanks, got it. Report #N` (sub unchanged) when `reportNo` is known.
+- The old drawer UI (`openDrawer` markup, `_drawerHtml`, `_wireForm`, `_wireSubmit`) is replaced in Task 3; `openDrawer()` stays exported and calls `window.openReportSheet()` so existing callers keep working.
 
 - [ ] **Step 1: Failing tests**: `title falls back to the first line of the description (80 max)`; `payload carries the writer's id`; `submit calls the RPC with p_user_id from the payload, not from the current session` (stub getUser returns B, payload.user_id A → rpc args A); `success returns reportNo from the RPC`; `an RPC network error enqueues with the payload's user_id intact`; `submitReportNow offline → {ok:false, queued:true, reportNo:null}`.
 - [ ] **Step 2: Run** `node tests/uat.js` → the new checks FAIL.
@@ -79,12 +79,12 @@
 - [ ] **Step 4: Run** UAT → PASS; `npx playwright test tests/e2e --grep "report"` → existing drawer tests PASS (update any that assert the old toast title).
 - [ ] **Step 5: Commit** `feat(reports): submit via RPC, keep the writer, show the report number`.
 
-### Task 3: Phone "Report a problem" sheet + entry points
+### Task 3: "Report a problem": one form for phone, mobile web and desktop
 
 **Files:**
-- Create: `features/ios-report.js` (IIFE, `window.openReportSheet`)
-- Modify: `features/ios-settings.js` (Help section row `report`), `features/ios-hub.js` (export `window._hubFirstName(rawName, email)`, the existing greeting rule, unchanged behaviour), `features/ios-home.js` or wherever `#setup-err` is filled on phones (append the "Something wrong? Tell us" link), `index.html` (script tag after `features/ios-suggest.js`), `lift-ios.css`
-- Test: `tests/e2e/ios-report.spec.js`, `tests/uat/534-ios-report.js`
+- Create: `features/report-sheet.js` (IIFE, `window.openReportSheet`; sheet ≤899px, centred dialog above)
+- Modify: `features/reports.js` (`openDrawer` → `openReportSheet`; delete the old drawer UI), `features/settings.js` (desktop Settings: a "Report a problem" row in the section that holds `renderSettingsReportsPanel`), `features/ios-settings.js` (Help section row `report`), `features/ios-hub.js` (export `window._hubFirstName(rawName, email)`, the existing greeting rule, unchanged behaviour), wherever `#setup-err` is filled (append the "Something wrong? Tell us" link; phone and desktop), `index.html` (script tag after `features/ios-suggest.js`), `lift-ios.css`
+- Test: `tests/e2e/report-sheet.spec.js`, `tests/uat/534-report-sheet.js`
 
 **Interfaces:**
 - Consumes: `_certanvilFeatures.reports.submitReportNow` (Task 2, lazy-loaded via `_loadFeature('reports')`), `window._hubFirstName`.
@@ -93,11 +93,11 @@
 - Settings row: `row('report', 'flag', 'Report a problem', 'Bugs, wrong answers, anything off', null)` in a new "Help" section before the danger zone.
 - Focus trap and inert behind, Escape closes (same pattern as `features/ios-suggest.js`); sheet closes before the toast enters.
 
-- [ ] **Step 1: Failing e2e** (phone viewport, stubbed RPC): `Settings → Report a problem opens the sheet with Send disabled until text`; `send shows "Thanks, Alex, got it. Report #142" when the profile name is Alex`; `an email-derived name shows "Thanks, got it."`; `offline send shows Saved and queues`; `signed out shows the sign-in line and keeps the typed text after tapping Sign in`; `a failed quiz start shows "Something wrong? Tell us" under #setup-err and it opens the sheet with From {cert} · Home`; `Escape closes; Tab stays in the sheet`.
+- [ ] **Step 1: Failing e2e** (phone viewport unless stated, stubbed RPC): `desktop: the top-bar report button opens the same form as a centred dialog, no title field`; `desktop: Settings → Report a problem opens it`; `desktop: a failed quiz start shows Something wrong? Tell us`; `Settings → Report a problem opens the sheet with Send disabled until text`; `send shows "Thanks, Alex, got it. Report #142" when the profile name is Alex`; `an email-derived name shows "Thanks, got it."`; `offline send shows Saved and queues`; `signed out shows the sign-in line and keeps the typed text after tapping Sign in`; `a failed quiz start shows "Something wrong? Tell us" under #setup-err and it opens the sheet with From {cert} · Home`; `Escape closes; Tab stays in the sheet`.
 - [ ] **Step 2: Run** → FAIL.
-- [ ] **Step 3: Implement**, lifting markup and CSS from the drawing into `lift-ios.css` (scoped `.irp-*`), then `node scripts/stamp-css-versions.js`.
+- [ ] **Step 3: Implement**, lifting markup and CSS from the drawing (phone and `?v=desktop`) into `lift-ios.css` for phones and `dg-system.css` for the desktop dialog (scoped `.irp-*`), then `node scripts/stamp-css-versions.js` and hand-bump `dg-system.css?v=` in `index.html`.
 - [ ] **Step 4: Run** the spec (chromium + webkit + mobile-safari) and UAT → PASS.
-- [ ] **Step 5: Commit** `feat(ios): Report a problem on phones`.
+- [ ] **Step 5: Commit** `feat(report): one Report a problem form on every platform`.
 
 ### Task 4: Landing endpoint `api/admin/bug-report` (close, fix and tell)
 
@@ -201,5 +201,5 @@
 - [ ] `node scripts/stamp-css-versions.js`; `bump-version.js` minor with CHANGELOG row; `stamp-facts`.
 - [ ] PR from `feat/admin-in-app`; smoke the preview at phone width signed in as admin (share link via the Vercel tool).
 - [ ] Founder: paste `20261031_bug_reports_loop.sql`, run the audit (all ok). Squash-merge.
-- [ ] Live checks: Report a problem from the phone → appears in Admin with its number; Fixed, tell them on a test report from a test account → email arrives; Preview as Free on and off; See all lists; the old overwrite probe now fails on prod (read-only check of policies via the audit, no writes).
+- [ ] Live checks: Report a problem from the phone and from desktop → each appears in Admin with its number; Fixed, tell them on a test report from a test account → email arrives; Preview as Free on and off; See all lists; the old overwrite probe now fails on prod (read-only check of policies via the audit, no writes).
 - [ ] Mindmatrix: tick A3–A7 only where each done-test is true.

@@ -28,9 +28,14 @@ problem is fixed.
 
 ## The design
 
-### 1. Report a problem (phones)
-- **Entry points:** a "Report a problem" row in Settings, and a "Something wrong? Tell us" link on
-  screens that show a failure (a quiz that can't load, a failed sync, the busy message).
+### 1. Report a problem (every platform, one form)
+- **One form everywhere** (founder, 31 Oct): the iOS app, mobile web and the desktop web app use the
+  same form, copy, confirmation and pipeline. On phones it is a bottom sheet; on desktop the same form
+  is a centred dialog (drawing `cert-ios-report.html?v=desktop`). The old desktop drawer (title +
+  description + steps) is retired; the top-bar report button now opens the shared form.
+- **Entry points:** a "Report a problem" row in Settings (phone Settings and desktop Settings), the
+  desktop top-bar report button, and a "Something wrong? Tell us" link on screens that show a failure
+  (a quiz that can't start, on phone and desktop).
 - **The form:** "What happened?" (required) and "Steps, if you remember them" (optional). The app
   attaches the version, screen, cert, theme and device, as the desktop form already does.
 - **Who hears back:** signed in, the form says "We'll email you when it's fixed." Signed out, it says
@@ -40,9 +45,9 @@ problem is fixed.
 - **Offline:** it is queued and sent later (the existing retry queue), with "Saved. We'll send it when
   you're back online." A report that lands later from the queue shows no number; nothing is on screen
   for it by then.
-- **One form, one queue:** the phone form reuses `features/reports.js` (its payload builder, submit and
-  retry queue); only the sheet is new. Desktop keeps its top-bar button and drawer and gains the same
-  "Thanks, got it. Report #N" line.
+- **One form, one queue:** one shared form module on top of `features/reports.js` (its payload builder,
+  submit and retry queue). Desktop keeps the top-bar button as an entry point; its old drawer screen
+  goes.
 - **Who wrote it:** the queued payload keeps the signed-in user id from when the report was written.
   If a different person (or nobody) is signed in when it finally sends, the report is saved without a
   user id, so it can never email the wrong person.
@@ -146,9 +151,11 @@ With 100 reports or requests, Admin must not become one long scroll.
   `client_errors`, `cert_request_tally`.
 
 ## Cross-platform
-- **iOS app and mobile web:** the phone report form, the Admin screen and Preview as Free.
-- **Desktop:** keeps its top-bar report button (plus the new "Report #N" line) and the account-menu link
-  to the web dashboard. No desktop Admin screen; the web dashboard is the desktop one.
+- **Report a problem:** the same form on the iOS app, mobile web and desktop (sheet on phones, centred
+  dialog on desktop).
+- **iOS app and mobile web:** the Admin screen and Preview as Free.
+- **Desktop:** keeps the account-menu link to the web dashboard. No desktop Admin screen; the web
+  dashboard is the desktop one.
 - **iOS specifics:** requests can be cut off when the app goes to the background, so every admin action
   shows its result only after the server answers, and the report queue covers sending. Touch targets at
   least 44pt, safe-area insets, no hover.
