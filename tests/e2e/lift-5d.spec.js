@@ -47,7 +47,8 @@ function stubScript() {
             checkPermissions: () => Promise.resolve({ display: st().perm }),
             requestPermissions: () => { const s = st(); s.perm = s.requestAnswer || 'granted'; localStorage.setItem('__notif', JSON.stringify(s)); rec({ op: 'request' }); return Promise.resolve({ display: s.perm }); },
             schedule: (o) => { rec({ op: 'schedule', notifications: o.notifications }); return Promise.resolve({ notifications: o.notifications.map((n) => ({ id: n.id })) }); },
-            cancel: (o) => { rec({ op: 'cancel', ids: o.notifications.map((n) => n.id) }); return Promise.resolve(); }
+            cancel: (o) => { rec({ op: 'cancel', ids: o.notifications.map((n) => n.id) }); return Promise.resolve(); },
+            addListener: (ev, cb) => { if (ev === 'localNotificationActionPerformed') window.__fireNotifTap = (extra) => cb({ actionId: 'tap', notification: { id: 5001, extra } }); return Promise.resolve({ remove: () => {} }); }
           };
         })(),
         AppLauncher: { openUrl: (o) => { const c = JSON.parse(localStorage.getItem('__notifCalls') || '[]'); c.push({ op: 'openUrl', url: o.url }); localStorage.setItem('__notifCalls', JSON.stringify(c)); return Promise.resolve({ completed: true }); } },
@@ -109,10 +110,10 @@ test.describe('Stage 5d: caNative.reminders', () => {
     expect(new Date(s.notifications[0].schedule.at).getTime()).toBeGreaterThan(Date.now());
   });
 
-  test('cancelAll() cancels exactly ids 5001 to 5007', async ({ page }) => {
+  test('cancelAll() cancels exactly ids 5001 to 5010', async ({ page }) => {
     await boot(page);
     await page.evaluate(() => window.caNative.reminders.cancelAll());
-    expect((await notifCalls(page)).find((c) => c.op === 'cancel').ids).toEqual([5001, 5002, 5003, 5004, 5005, 5006, 5007]);
+    expect((await notifCalls(page)).find((c) => c.op === 'cancel').ids).toEqual([5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010]);
   });
 
   test('openAppSettings() opens app-settings:', async ({ page }) => {
@@ -133,8 +134,25 @@ test.describe('Stage 5d: caNative.reminders', () => {
 const ON_PREFS = (extra) => Object.assign({ chosenCert: 'netplus', lockedCert: 'netplus', lastCertHost: 'networkplus.certanvil.com',
   reminders: JSON.stringify(Object.assign({ on: true, time: '19:00', asked: 'done', quizzes: 1, laterAtQuiz: null, lastStudiedDay: null }, extra || {})) });
 const GRANTED = { __notif: JSON.stringify({ perm: 'granted', requestAnswer: 'granted' }) };
-const lastSchedule = async (page) => { const c = (await notifCalls(page)).filter((x) => x.op === 'schedule'); return c.length ? c[c.length - 1].notifications : null; };
+const lastSchedule = async (page) => { const c = (await notifCalls(page)).filter((x) => x.op === 'schedule'); return c.length ? c[c.length - 1].notifications.filter((x) => x.id <= 5007) : null; };   // the daily 7; 5008-5010 (last call, drift) are tested in the planner suite
 const localDay = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+test.describe('Persona T5: tapping a reminder', () => {
+  test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
+  test('tapping a streak reminder opens the Daily Challenge', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: GRANTED });
+    await page.waitForFunction(() => typeof window.__fireNotifTap === 'function', null, { timeout: 6000 });
+    await page.evaluate(() => { window.__dc = 0; window.startDailyChallenge = () => { window.__dc++; }; window.__fireNotifTap({ kind: 'streak' }); });
+    await expect.poll(() => page.evaluate(() => window.__dc), { timeout: 4000 }).toBe(1);
+  });
+  test('tapping a daily or drift reminder does not start it', async ({ page }) => {
+    await boot(page, { prefs: ON_PREFS(), seed: GRANTED });
+    await page.waitForFunction(() => typeof window.__fireNotifTap === 'function', null, { timeout: 6000 });
+    await page.evaluate(() => { window.__dc = 0; window.startDailyChallenge = () => { window.__dc++; }; window.__fireNotifTap({ kind: 'daily' }); window.__fireNotifTap({ kind: 'drift' }); });
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => window.__dc)).toBe(0);
+  });
+});
 
 test.describe('Stage 5d: rescheduling', () => {
   test.use({ userAgent: NATIVE_UA, storageState: { cookies: [], origins: [] } });
@@ -143,7 +161,7 @@ test.describe('Stage 5d: rescheduling', () => {
     await boot(page, { prefs: ON_PREFS({ time: '23:59' }), seed: GRANTED });
     await expect.poll(async () => (await lastSchedule(page) || []).length, { timeout: 6000 }).toBeGreaterThanOrEqual(6);
     const n = await lastSchedule(page);
-    expect(n.map((x) => x.id).every((id) => id >= 5001 && id <= 5007)).toBe(true);
+    expect(n.map((x) => x.id).every((id) => id >= 5001 && id <= 5010)).toBe(true);
     expect(n[0].title).toBe('CertAnvil');
   });
 

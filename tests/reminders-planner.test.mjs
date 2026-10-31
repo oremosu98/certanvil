@@ -91,4 +91,80 @@ t('a 07:30 time lands at 07:30', () => {
   assert.deepEqual([r[0].at.getHours(), r[0].at.getMinutes()], [7, 30]);
 });
 
-console.log('reminders-planner: ' + n + '/17 passed');
+// ── Persona bundle T5: streak warnings, last call, drift ──
+const NOW = at(2026, 10, 29, 10, 0);   // 29 Oct 2026, local day 2026-10-29
+const noExam = { daysToExam: null, counts: [0, 0, 0, 0, 0, 0, 0] };
+const alive = (extra) => Object.assign({ streak: { current: 5, lastDay: '2026-10-28' } }, noExam, extra || {});
+t('streak alive, not studied: k=0 is the streak line, kind streak', () => {
+  const r = plan(NOW, alive());
+  assert.equal(r[0].body, 'Your 5-day streak ends tonight. One question keeps it.');
+  assert.equal(r[0].extra.kind, 'streak');
+  assert.equal(r[1].extra.kind, 'daily');
+  assert.ok(r.slice(1).filter((x) => x.id < 5008).every((x) => !/streak/.test(x.body)));
+});
+t('studied today: k=1 carries the streak line, k>=2 does not', () => {
+  const r = plan(NOW, alive({ studiedToday: true, streak: { current: 5, lastDay: '2026-10-29' } }));
+  assert.equal(r[0].id, 5002);
+  assert.equal(r[0].body, 'Your 5-day streak ends tonight. One question keeps it.');
+  assert.ok(r.slice(1).filter((x) => x.id < 5008).every((x) => !/streak/.test(x.body)));
+});
+t('an ended streak (lastDay before yesterday) gets no streak line or last call', () => {
+  const r = plan(NOW, alive({ streak: { current: 5, lastDay: '2026-10-26' } }));
+  assert.ok(r.every((x) => !/streak/.test(x.body)));
+  assert.ok(!r.some((x) => x.id === 5008));
+});
+t('last call: 21:00 tonight, id 5008, only when time < 21:00, now < 21:00 and not studied', () => {
+  const r = plan(NOW, alive());
+  const lc = r.find((x) => x.id === 5008);
+  assert.equal(lc.body, 'Last call: your 5-day streak ends at midnight. One question keeps it.');
+  assert.deepEqual(local(lc.at), [2026, 10, 29, 21, 0]);
+  assert.equal(lc.extra.kind, 'streak');
+  assert.ok(!plan(NOW, alive({ studiedToday: true })).some((x) => x.id === 5008));
+  assert.ok(!plan(at(2026, 10, 29, 21, 0, 0), alive()).some((x) => x.id === 5008));
+  assert.ok(!plan(NOW, alive(), { on: true, time: '21:30' }).some((x) => x.id === 5008));
+  assert.ok(!plan(NOW, noExam).some((x) => x.id === 5008));
+});
+t('never more than 2 on one day', () => {
+  const r = plan(NOW, alive({ lastStudyDay: '2026-10-28' }));
+  const by = {}; r.forEach((x) => { const k = local(x.at).slice(0, 3).join('-'); by[k] = (by[k] || 0) + 1; });
+  assert.ok(Object.values(by).every((c) => c <= 2));
+  assert.equal(by['2026-10-29'], 2);
+});
+t('exam tomorrow wins over the streak line', () => {
+  const r = plan(NOW, alive({ daysToExam: 1 }));
+  assert.equal(r[0].body, 'Your Security+ exam is tomorrow. One last warm-up?');
+});
+t('drift: 3+ days since study, the daily line is "It\'s been N days"', () => {
+  const r = plan(NOW, Object.assign({ lastStudyDay: '2026-10-26' }, noExam));   // 3 days ago
+  assert.equal(r[0].body, 'It\'s been 3 days. A 5-minute warm-up gets you going again.');
+  assert.equal(r[0].extra.kind, 'drift');
+  assert.equal(r[1].body, 'It\'s been 4 days. A 5-minute warm-up gets you going again.');
+});
+t('under 3 days since study keeps the normal line', () => {
+  const r = plan(NOW, Object.assign({ lastStudyDay: '2026-10-27' }, noExam));   // 2 days ago
+  assert.equal(r[0].body, 'Your 15 questions for today are waiting.');
+  assert.equal(r[1].body, 'It\'s been 3 days. A 5-minute warm-up gets you going again.');
+});
+t('drift nudges: ids 5009 and 5010 on day 10 and day 21 after the last study, at the chosen time', () => {
+  const r = plan(NOW, Object.assign({ lastStudyDay: '2026-10-29', studiedToday: true }, noExam));
+  const a = r.find((x) => x.id === 5009), b = r.find((x) => x.id === 5010);
+  assert.equal(a.body, 'One question, about a minute. Your Security+ progress is still here.');
+  assert.deepEqual(local(a.at), [2026, 11, 8, 19, 0]);   // 29 Oct + 10
+  assert.deepEqual(local(b.at), [2026, 11, 19, 19, 0]);  // 29 Oct + 21
+  assert.equal(a.extra.kind, 'drift');
+});
+t('no drift nudges without a last study day; none inside the 7-day window', () => {
+  assert.ok(!plan(NOW, noExam).some((x) => x.id >= 5009));
+  const r = plan(NOW, Object.assign({ lastStudyDay: '2026-10-22' }, noExam));   // day 10 = 1 Nov, 3 days away
+  assert.ok(!r.some((x) => x.id === 5009));
+  assert.ok(r.some((x) => x.id === 5010));
+});
+t('a review day counts as studied (studiedToday drops today\'s nag)', () => {
+  const r = plan(NOW, Object.assign({ studiedToday: true }, noExam));
+  assert.equal(r[0].id, 5002);
+});
+t('daily items always carry extra.kind', () => {
+  plan(NOW).forEach((x) => assert.ok(['streak', 'daily', 'drift'].includes(x.extra.kind)));
+});
+
+console.log('reminders-planner: ' + n + '/' + n + ' passed');
