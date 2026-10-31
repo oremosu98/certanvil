@@ -26,6 +26,17 @@ async function boot(page) {
 }
 
 test.describe('My certs hub', () => {
+  test('a plan that lands after the hub is drawn redraws it in place (Pro never stuck on the Free view)', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { _quotaState = null; document.querySelector('#ios-home [data-act="cert"]').click(); });
+    const hub = page.locator('#ios-hub');
+    await expect(hub.locator('.ihb-sect b')).toHaveText(['Your cert', 'Other certs', 'More']);
+    await page.evaluate(() => { _quotaState = { tier: 'pro', daily_limit: -1 }; window.dispatchEvent(new Event('ca:quota-ready')); });
+    await expect(hub).toBeVisible();
+    await expect(hub.locator('.ihb-sect b').first()).toHaveText('My certs');
+    await expect(hub.locator('.ihb-locked')).toHaveCount(0);
+  });
+
   test('Free: Home cert name opens the hub with one folded Pro row that opens the Pro sheet', async ({ page }) => {
     await boot(page);
     await page.evaluate(() => { _quotaState = { tier: 'free', daily_limit: 15 }; document.querySelector('#ios-home [data-act="cert"]').click(); });   // same tick: a late sign-out event resets the quota state

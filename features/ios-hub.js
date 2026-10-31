@@ -331,5 +331,7 @@
 
   window._iosHubModel = _iosHubModel;
   window.openHub = openHub;
+  // The plan (Free/Pro) can land after the hub is drawn, right after launch: redraw in place so a Pro user never sees the Free view.
+  window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); });
   window.iosHub = { close: _close };
 })();
