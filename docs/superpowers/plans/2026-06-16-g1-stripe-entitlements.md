@@ -31,6 +31,14 @@ tags: [plan, saas-gated]
 
 **Decision 5 — Pricing from the built mockup:** Pro Annual **$89/yr**, Pro Monthly **$9.99/mo**. The `pass_guarantee_extended_at` column + pass-guarantee logic is **out of scope for G1** (deferred — see §Out of scope).
 
+**Decision 6 — Deleting the account cancels a website subscription (founder, 31 Oct 2026).** The deletion flows must line up: nobody who deletes their account keeps being charged by Stripe. Account deletion is a 7-day grace window (`request_account_deletion()`, see [[2026-10-29-account-deletion-design]]), and signing back in cancels it. So:
+- On delete (app or `/account`), call a new `landing/api/stripe/cancel-on-delete` endpoint (Bearer token, Node runtime, graceful 503) that sets `cancel_at_period_end = true` on the person's active Stripe subscription. Run it before `request_account_deletion`, like the Apple revoke step.
+- If the deletion is cancelled by signing back in, the welcome-back path sets `cancel_at_period_end = false` again, so their plan carries on as before.
+- The purge must never strand a live subscription: before `auth.users` is deleted, any Stripe subscription still active for that person is cancelled outright (a server job, since pg_cron can't call Stripe).
+- Goodbye screen for a website-paying Pro: "Your Pro plan is cancelled. You won't be charged again." The Apple line stays for App Store subscriptions, which only the person can cancel.
+- Put the privacy policy's §06 line back ("cancels your subscription with Stripe"), which was removed because it wasn't true yet.
+- Tests: delete → subscription set to cancel; sign back in → restored; purge → no active Stripe subscription left.
+
 ---
 
 ## ⛔ PREREQUISITE GATE — founder-only manual setup (cannot be coded)

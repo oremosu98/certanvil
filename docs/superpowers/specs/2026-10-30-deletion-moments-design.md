@@ -18,6 +18,11 @@ After the delete is confirmed: "Scheduling your deletion…", then a full screen
 - A tinted box: "Changed your mind? Sign back in before 6 Nov and everything's kept: your progress,
   streak and readiness."
 - If Pro: "It's billed by Apple. Cancel it in iPhone Settings so you're not charged again."
+- Website payments (founder, 31 Oct): once Stripe is built, deleting the account cancels a website
+  subscription by itself, and someone paying on the website sees "Your Pro plan is cancelled. You
+  won't be charged again." instead. Apple doesn't let us cancel for them, so the Apple line stays.
+  There is no website billing yet, so this ships with Stripe, not this bundle. Recorded as
+  Decision 6 in [[2026-06-16-g1-stripe-entitlements]].
 - **Done** returns to the start. **Sign back in** opens sign-in.
 
 The date is the scheduled deletion date, 7 days after confirming. This replaces the June drawing's

@@ -98,7 +98,8 @@
     if (pn) pbqLine = '<p class="in-rd-pbq">Readiness counts multiple-choice only. ' + (pn.n > 0
       ? '<b>PBQs: ' + pn.right + ' of ' + pn.count + ' fully right</b> in your last ' + (pn.n === 1 ? 'full exam' : pn.n + ' full exams') + '.'
       : (pn.hasExams ? 'PBQ results show from your next full exam.' : '<b>Take a full exam</b> to practise PBQs too.')) + '</p>';
-    var dte = hasDate ? (r.daysToExam <= 0 ? 'Today' : r.daysToExam + (r.daysToExam === 1 ? ' day' : ' days')) : 'Not set';
+    var past = typeof r.daysToExam === 'number' && r.daysToExam < 0, ago = past ? -r.daysToExam : 0;   // founder 31 Oct: a past date reads "N days ago", as on desktop
+    var dte = hasDate ? (r.daysToExam <= 0 ? 'Today' : r.daysToExam + (r.daysToExam === 1 ? ' day' : ' days')) : past ? ago + (ago === 1 ? ' day ago' : ' days ago') : 'Not set';
     h += page(0, 'Readiness', '<div class="in-rd in-reveal"><div class="in-rd-top"><span class="in-rd-eyebrow">Readiness</span><span class="in-rd-tier">' + e(r.tier) + '</span></div>'
       + '<div class="in-rd-score"><span class="in-rd-num" data-to="' + r.predicted + '">' + r.predicted + '</span><span class="in-rd-of">/ ' + (r.maxScore || 900) + '</span></div>'
       + '<div class="in-bar"><span data-w="' + (r.barPct || 0).toFixed(1) + '" style="width:0%"></span><span class="in-tick" style="left:' + (r.passTickPct || 0).toFixed(1) + '%"></span></div>'

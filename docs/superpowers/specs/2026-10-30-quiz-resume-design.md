@@ -3,7 +3,7 @@ up: "[[Mobile MOC]]"
 type: spec
 status: approved
 cert: all
-updated: 2026-10-30
+updated: 2026-10-31
 tags: [spec, mobile]
 ---
 # Resume a quiz after the app closes
@@ -36,8 +36,9 @@ is lost. That includes the person swiping the app away and iOS closing it in the
    question or a different cert), it is discarded rather than half-restored.
 
 ## Cross-platform
-The same behaviour on the iOS app, mobile web and desktop. It matters most in the iOS app, where
-iOS closes background apps. On desktop and web, closing the tab counts the same.
+Phone only for now (founder, 31 Oct). The "Finish your quiz" card is on the phone Home, in the iOS
+app and on mobile web, where iOS closing background apps causes the problem. Desktop Home doesn't
+change, as the Home spec says. Adding a desktop card later is its own decision.
 
 ## Process
 Draw the Home card into the June E2E, run the visual pass with the bundle, get founder approval,
