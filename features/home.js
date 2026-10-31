@@ -1713,6 +1713,7 @@
     // real ids to real data; the real onclick actions are baked into the markup.
     try { renderBentoTopbar(); } catch (_) {}
     try { renderBentoRecommended(); } catch (_) {}
+    try { renderDeskResume(); } catch (_) {}
     try { renderBentoMomentum(); } catch (_) {}
     try { renderBentoQuickStart(); } catch (_) {}
     try { renderBentoDomains(); } catch (_) {}
@@ -1789,6 +1790,51 @@
 
   // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
   // baked into markup). Meta nods to the weakest topic when readiness has one.
+  // Desktop catch-up Task 2: the "Finish your quiz" card above the readiness hero, drawing home-resume.
+  // Same save and same copy as the phone card (ios-home.js): the summary comes from _quizResumeSummary via
+  // quizResumeState(), nothing is re-derived. It sits above the bento so it outranks Recommended next, as on the phone.
+  function renderDeskResume() {
+    let host = document.getElementById('desk-resume');
+    if (!host) {   // made on first use, between the console bar and the bento
+      const bento = document.querySelector('#page-setup .board > .bento');
+      if (!bento) return;
+      host = document.createElement('div'); host.className = 'desk-resume'; host.id = 'desk-resume'; host.hidden = true;
+      bento.parentNode.insertBefore(host, bento);
+    }
+    host.hidden = true; host.innerHTML = '';
+    if (!(typeof window.caIsDesk === 'function' && window.caIsDesk())) return;
+    let qs = null;
+    try { qs = (typeof quizResumeState === 'function') ? quizResumeState() : null; } catch (_) { qs = null; }
+    if (!qs) return;
+    const total = qs.total || 0, done = qs.answered || 0;
+    const left = (typeof qs.left === 'number') ? qs.left : Math.max(0, total - done);
+    const topicLabel = qs.topicLabel ? escHtml(qs.topicLabel) + ' \u00B7 ' : '';
+    const ready = !!(qs.ready || left === 0);   // every question answered, results never opened
+    const badge = ready ? '<span class="rc-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>'
+      : '<span class="rc-badge"><b>' + left + '</b><small>LEFT</small></span>';
+    const title = ready ? 'See your results' : 'Finish your quiz \u00B7 ' + left + ' left';
+    const sub = ready ? topicLabel + 'all ' + total + ' answered' : topicLabel + done + ' of ' + total + ' answered';
+    host.innerHTML = '<button class="dr-card" type="button" data-act="resume" aria-label="Resume your quiz">' + badge
+      + '<span class="rc-txt"><span class="rc-kick">Pick up where you left off</span><span class="rc-title">' + title + '</span><span class="rc-sub">' + sub + '</span></span>'
+      + '<span class="rc-go" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>'
+      + '<button class="dr-fresh" type="button" data-act="fresh">Start fresh</button>';
+    host.hidden = false;
+    host.onclick = function (ev) {
+      const b = ev.target.closest && ev.target.closest('[data-act]');
+      if (!b) return;
+      if (b.getAttribute('data-act') === 'fresh') { if (typeof quizResumeClear === 'function') quizResumeClear(); renderDeskResume(); return; }
+      if (typeof resumeQuiz === 'function') resumeQuiz();
+    };
+  }
+  if (window.matchMedia) {
+    const _drMq = window.matchMedia('(min-width: 900px)');
+    const _drChange = function () { try { renderDeskResume(); } catch (_) {} };
+    if (_drMq.addEventListener) _drMq.addEventListener('change', _drChange); else if (_drMq.addListener) _drMq.addListener(_drChange);
+    // renderHeroV2 can run while home.js is still parsing, before quiz-resume.js: draw once the page is ready (as ios-home.js does).
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _drChange); else _drChange();
+    window.addEventListener('load', _drChange);
+  }
+
   function renderBentoRecommended() {
     const minEl = document.getElementById('pl-min');
     const titleEl = document.getElementById('pl-title');
@@ -2588,6 +2634,7 @@
   window.renderHeroV2                = renderHeroV2;
   window.renderBentoTopbar           = renderBentoTopbar;
   window.renderBentoRecommended      = renderBentoRecommended;
+  window.renderDeskResume            = renderDeskResume;
   window.renderBentoMomentum         = renderBentoMomentum;
   window.renderBentoQuickStart       = renderBentoQuickStart;
   window.renderBentoDomains          = renderBentoDomains;
