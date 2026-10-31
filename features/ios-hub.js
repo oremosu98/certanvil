@@ -132,8 +132,10 @@
     window.certanvilSupabase.auth.getSession().then(function (r) {
       var u = r && r.data && r.data.session && r.data.session.user;
       _email = (u && u.email) || '';
-      var root = document.getElementById('ios-hub');
-      if (_email && root && !root.hidden) openHub();   // re-draw in place once
+      var root = document.getElementById('ios-hub'), g = root && !root.hidden && root.querySelector('.ihb-greet');
+      if (!g || !_email) return;
+      var html = _greetHtml(_iosHubModel(_input()).greeting);
+      if (g.innerHTML !== html) g.innerHTML = html;   // text only: no rebuild, so rows, focus and the log screen's return target stay put
     }).catch(function () { _emailAsked = false; });
   }
   function _input() {
@@ -167,6 +169,8 @@
   var GEAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"></path></svg>';
   var SUN = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
 
+  function _greetHtml(g) { return _esc(g.lead) + (g.bold ? ' <b>' + _esc(g.bold) + '</b>' + _esc(g.rest) : ''); }
+
   function _html(m, suggest) {
     var n = 0;
     function rv() { var d = Math.min(n++, 9); return ' ihb-rv" style="--d:' + d + '"'; }
@@ -190,7 +194,7 @@
       + '<div class="ihb-body">';
 
     var g = m.greeting;
-    h += '<p class="ihb-greet' + rv() + '>' + _esc(g.lead) + (g.bold ? ' <b>' + _esc(g.bold) + '</b>' + _esc(g.rest) : '') + '</p>';
+    h += '<p class="ihb-greet' + rv() + '>' + _greetHtml(g) + '</p>';
     var flame = '<div class="ihb-stat"><b class="ihb-flame">' + FLAME + _esc(s.streak) + '</b><span>Day streak</span></div>';
     if (m.pro) {
       h += '<div class="ihb-stats' + rv() + '>'

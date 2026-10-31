@@ -84,4 +84,26 @@ test.describe('My certs hub', () => {
     await page.keyboard.press('Escape');
     await expect(hub).toBeHidden();
   });
+
+  test('A late session email fixes the greeting in place: rows keep identity and focus stays', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => {
+      window._certanvilDisplayName = 'jsmith';
+      let release; const gate = new Promise((r) => { release = r; });
+      window.__release = release;
+      window.certanvilSupabase = { auth: { getSession: () => gate.then(() => ({ data: { session: { user: { email: 'jsmith@x.com' } } } })) } };
+      _quotaState = { tier: 'pro', daily_limit: -1 };
+      document.querySelector('#ios-home [data-act="cert"]').click();
+    });
+    const hub = page.locator('#ios-hub');
+    await expect(hub.locator('.ihb-greet')).toContainText(/, Jsmith\.$/);
+    await hub.locator('.ihb-logresult').click();   // the log screen is open over the hub
+    await expect(page.locator('#ios-log-result')).toBeVisible();
+    await page.evaluate(() => { window.__row = document.querySelector('#ios-hub .ihb-row'); window.__focus = document.activeElement; window.__release(); });
+    await expect(hub.locator('.ihb-greet')).toHaveText(/^(Morning|Afternoon|Evening)\.( |$)/);
+    const same = await page.evaluate(() => ({ row: window.__row === document.querySelector('#ios-hub .ihb-row'), focus: window.__focus === document.activeElement }));
+    expect(same).toEqual({ row: true, focus: true });
+    await page.locator('#ios-log-result [data-act="back"]').click();
+    await expect(hub).toBeVisible();
+  });
 });
