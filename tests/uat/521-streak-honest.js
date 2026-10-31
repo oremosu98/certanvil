@@ -55,9 +55,10 @@ const { _fnBody, js, test, vm } = require('./_context');
   test('UTC-stored last (UTC ahead of local) still counts as today: alive, no increment, no write',
     r5.g.current === 3 && r5.g.ended === false && r5.u.current === 3 && r5.writes === 0);
   const r6 = run('America/Los_Angeles', '2026-07-11T03:00:00Z', S({ current: 3, best: 3, last: '2026-07-10' }), null, (c) => ev('updateStreak()', c));
-  test('Last two days back restarts at 1; last from 2026-07-09... see next',
-    run('America/Los_Angeles', '2026-07-11T03:00:00Z', S({ current: 3, best: 3, last: '2026-07-09' }), null, (c) => ev('updateStreak()', c)).current === 4
-    && r6.current === 3);
+  test('last = local today with UTC ahead: updateStreak leaves current at 3',
+    r6.current === 3);
+  test('last = local yesterday with UTC ahead: updateStreak increments 3 to 4',
+    run('America/Los_Angeles', '2026-07-11T03:00:00Z', S({ current: 3, best: 3, last: '2026-07-09' }), null, (c) => ev('updateStreak()', c)).current === 4);
 
   const hist = [
     { date: '2026-07-10T22:30:00Z', total: 4 },   // 23:30 BST Jul 10: not today (Jul 11)
@@ -65,6 +66,18 @@ const { _fnBody, js, test, vm } = require('./_context');
     { date: '2026-07-11T08:00:00Z', total: 5 }    // 09:00 BST Jul 11: today
   ];
   test('getTodayQuestionCount counts by local day', run('Europe/London', '2026-07-11T12:00:00Z', null, hist, (c) => ev('getTodayQuestionCount()', c)) === 11);
-  test('Source: no toISOString left in the streak and today-count functions',
-    !/toISOString/.test(_fnBody(js, 'getStreak(') + _fnBody(js, 'updateStreak') + _fnBody(js, 'getTodayQuestionCount')) || /toISOString\(\)\.slice\(0, 10\)/.test(_fnBody(js, '_streakDayKeys')));
+  test('Source: getStreak/updateStreak/getTodayQuestionCount never compare a raw toISOString day (only _streakDayKeys reads UTC)',
+    !/toISOString/.test(_fnBody(js, 'getStreak(') + _fnBody(js, 'updateStreak') + _fnBody(js, 'getTodayQuestionCount')));
+  // Results card + Streak Defender wiring (review fix round 1)
+  const iosQuiz = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'ios-quiz.js'), 'utf8');
+  const homeJs = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'home.js'), 'utf8');
+  test('Results card passes the local day as streak.today (not UTC)',
+    /today: \(window\._localDay/.test(iosQuiz) && !/today: new Date\(\)\.toISOString/.test(iosQuiz));
+  test('Streak Defender compares against _localDay()', /function renderStreakDefender[\s\S]{0,300}_localDay\(\)/.test(homeJs));
+  const rc = (() => { const ctx = vm.createContext({}); vm.runInContext(_fnBody(iosQuiz, '_iosReadinessChangeModel'), ctx);
+    return (o) => vm.runInContext('_iosReadinessChangeModel(__o)', Object.assign(ctx, { __o: o })); })();
+  const card = (lastBefore, today) => rc({ before: 600, after: 610, practice: false, cert: 'Network+', streak: { current: 2, lastBefore, today } }).streak;
+  test('Boundary: first set of a new local day (lastBefore = local yesterday) reads "Streak kept", not "already counted"',
+    card('2026-07-10', '2026-07-11') === 'Streak kept · day 2');
+  test('Boundary: second set the same local day reads "already counted"', card('2026-07-11', '2026-07-11') === 'Day 2 · today already counted');
 })();

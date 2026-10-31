@@ -224,7 +224,7 @@
     const card = document.getElementById('streak-defender');
     if (!card) return;
     const s = getStreak();
-    const today = new Date().toISOString().slice(0, 10);
+    const today = _localDay();   // the phone's day: s.last is a local date now
     // Active threat: current streak ≥ 3 AND no activity today yet
     if (s.current >= 3 && s.last !== today) {
       card.innerHTML = `
