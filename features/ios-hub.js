@@ -50,7 +50,7 @@
     certs.forEach(function (c) {
       var id = c.id, snap = snaps[id] || null, oc = outcomes[id] || null;
       var isPassed = !!(oc && oc.outcome === 'passed');
-      var hasSnap = !!(snap && typeof snap.score === 'number');
+      var hasSnap = !!(snap && typeof snap.score === 'number' && isFinite(snap.score));
       var days = _hubDays(dates[id], now);
       var max = HUB_SCALE_1000[id] ? 1000 : 900;
       if (id === cur && typeof scale.max === 'number') max = scale.max;
@@ -63,15 +63,15 @@
         row.hasScore = hasSnap;
         row.pass = typeof scale.pass === 'number' ? scale.pass : (max === 1000 ? 700 : 720);
         row.min = typeof scale.min === 'number' ? scale.min : 100;
-        row.sub = isPassed ? (oc && typeof oc.score === 'number' ? 'Scored ' + oc.score : 'No score logged') : _hubExamLine(days);
+        row.sub = isPassed ? (oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score : 'No score logged') : _hubExamLine(days);
         active = row;
         return;
       }
       if (!o.pro) return;   // Free sees one folded row instead of the library
 
       if (isPassed) {
-        row.sub = oc && typeof oc.score === 'number' ? 'Scored ' + oc.score : 'No score logged';
-        row.scored = oc && typeof oc.score === 'number' ? oc.score : null;
+        row.sub = oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score : 'No score logged';
+        row.scored = oc && typeof oc.score === 'number' && isFinite(oc.score) ? oc.score : null;
         passed.push(row);
       } else if (hasSnap) {
         var age = _hubAgeDays(snap.computed_at, now);
@@ -95,12 +95,16 @@
     var freeRow = null;
     if (!o.pro) {
       var names = certs.filter(function (c) { return c.id !== cur; }).slice(0, 3).map(function (c) { return _hubShort(c.name); });
-      freeRow = { title: 'Unlock every cert with Pro', list: names.join(', ') + ' and more' };
+      var others = certs.filter(function (c) { return c.id !== cur; });
+      freeRow = { title: 'Unlock every cert with Pro', list: names.join(', ') + (others.length > 3 ? ' and more' : '') };
     }
     // greeting: time of day from the local hour; the name only when we have one; the cards clause only when something is due
     var hr = now.getHours(), part = hr < 12 ? 'Morning' : (hr < 17 ? 'Afternoon' : 'Evening');
-    var first = String(o.name || '').trim().split(/[\s._]+/)[0];
-    if (!first || first.toLowerCase() === 'tester' || first.indexOf('@') !== -1) first = '';
+    // only a real profile name: auth falls back to the email's local part, so drop anything that matches it or carries a digit
+    var rawName = String(o.name || '').trim(), nl = rawName.toLowerCase();
+    var loc = String(o.email || '').split('@')[0].toLowerCase(), locFirst = loc.split(/[._+\-]+/)[0];
+    var first = rawName.split(/[\s._]+/)[0];
+    if (!first || nl === 'tester' || rawName.indexOf('@') !== -1 || /\d/.test(rawName) || (loc && (nl === loc || nl === locFirst))) first = '';
     else first = first.charAt(0).toUpperCase() + first.slice(1);
     var due = typeof o.due === 'number' && o.due > 0 ? Math.floor(o.due) : 0;
     var greeting = { lead: part + (first ? ', ' + first : '') + '.', bold: '', rest: '' };
@@ -121,6 +125,17 @@
     try { return typeof _quotaState !== 'undefined' && !!_quotaState && (_quotaState.tier === 'pro' || (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0)); }
     catch (_) { return false; }
   }
+  var _email = '', _emailAsked = false;
+  function _askEmail() {   // the session email, so the greeting can tell a real name from the email fallback
+    if (_emailAsked || !window.certanvilSupabase || !window.certanvilSupabase.auth) return;
+    _emailAsked = true;
+    window.certanvilSupabase.auth.getSession().then(function (r) {
+      var u = r && r.data && r.data.session && r.data.session.user;
+      _email = (u && u.email) || '';
+      var root = document.getElementById('ios-hub');
+      if (_email && root && !root.hidden) openHub();   // re-draw in place once
+    }).catch(function () { _emailAsked = false; });
+  }
   function _input() {
     var dates = {};
     try { dates = typeof window.getExamDates === 'function' ? (window.getExamDates() || {}) : {}; } catch (_) { dates = {}; }
@@ -139,7 +154,7 @@
     return {
       certs: certs, snaps: _readMap(STORAGE.READINESS_SNAPSHOTS), dates: dates, outcomes: _readMap(STORAGE.EXAM_OUTCOMES),
       current: (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', pro: _isPro(), now: new Date(), streak: streak, scale: scale,
-      name: name, due: due
+      name: name, due: due, email: _email
     };
   }
 
@@ -245,7 +260,7 @@
     return _host;
   }
   function _onKey(ev) {
-    if (ev.key !== 'Escape' || document.getElementById('pro-only-modal')) return;
+    if (ev.key !== 'Escape' || ev.defaultPrevented || document.getElementById('pro-only-modal')) return;   // a layer above already took this Escape
     var lr = document.getElementById('ios-log-result');
     if (lr && !lr.hidden) return;   // the log screen sits on top and closes itself
     _close();
@@ -267,6 +282,7 @@
   function openHub() {
     if (!isPhone()) return false;
     var root = _ensureHost(), wasOpen = !root.hidden;
+    _askEmail();
     var m = _iosHubModel(_input());
     if (!wasOpen) _prevFocus = document.activeElement;   // an in-place refresh keeps the original return target
     var suggest = typeof openSuggestCert === 'function';
@@ -278,7 +294,7 @@
       var act = b.getAttribute('data-act');
       if (act === 'back' || act === 'continue') _close();
       else if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
-      else if (act === 'log') { if (typeof openLogResult === 'function') openLogResult({ preselect: null }); }
+      else if (act === 'log') { b.focus(); if (typeof openLogResult === 'function') openLogResult({ preselect: null }); }
       else if (act === 'settings' || act === 'account') { _close(); _tab('settings'); }
       else if (act === 'suggest') { if (typeof openSuggestCert === 'function') openSuggestCert(); }
       else if (act === 'unlock') {
@@ -287,7 +303,8 @@
       }
       else if (act === 'open-cert') {
         var id = b.getAttribute('data-id');
-        if (typeof window.tadSwitchCert === 'function') window.tadSwitchCert(id);
+        var ok = typeof window.tadSwitchCert === 'function' ? window.tadSwitchCert(id) : false;
+        if (ok !== false) _close();   // false = gated or invalid (the Pro sheet is already up); anything else is a switch under way
       }
     };
     if (!wasOpen) document.addEventListener('keydown', _onKey);   // on document: focus can sit on body after a sheet closes

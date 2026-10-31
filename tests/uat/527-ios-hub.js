@@ -70,6 +70,14 @@ const { _fnBody, test, vm } = require('./_context');
   test('Greeting fallbacks: no name drops it, a tester or email value drops it, nothing due drops the cards clause',
     gr({ now: at(9), name: '', due: 2 }).lead === 'Morning.' && gr({ now: at(9), name: 'tester' }).lead === 'Morning.' && gr({ now: at(9), name: 'a@b.com' }).lead === 'Morning.'
     && gr({ now: at(9), name: 'Simi', due: 0 }).bold === '' && gr({ now: at(9), name: 'Simi', due: 0 }).rest === '' && gr({ now: at(9), due: undefined }).bold === '');
+  test('Greeting drops the email fallback: local part, its first token, or anything with a digit',
+    gr({ now: at(9), name: 'jsmith', email: 'jsmith@x.com' }).lead === 'Morning.' && gr({ now: at(9), name: 'john.smith', email: 'john.smith@x.com' }).lead === 'Morning.'
+    && gr({ now: at(9), name: 'john', email: 'john.smith@x.com' }).lead === 'Morning.' && gr({ now: at(9), name: 'jsmith92' }).lead === 'Morning.'
+    && gr({ now: at(9), name: 'Simi', email: 'jsmith@x.com' }).lead === 'Morning, Simi.');
+  const short = model(base({ certs: CERTS.slice(0, 4), pro: false })).freeRow.list;
+  test('Free row short list: three others read plain, eight read "and more"', short === 'Network+, Azure Fundamentals, Azure AI Fundamentals' && model(base({ certs: CERTS.slice(0, 3), pro: false })).freeRow.list === 'Network+, Azure Fundamentals' && !/\s$/.test(short) && model(base({ certs: CERTS, pro: false })).freeRow.list.endsWith(' and more'));
+  test('A NaN score never renders: the cert falls to Not started',
+    model(base({ snaps: { sc900: { score: NaN, computed_at: ago(1) } } })).notStarted.some((r) => r.id === 'sc900') && model(base({ outcomes: { sc900: { outcome: 'passed', score: NaN } } })).passed[0].sub === 'No score logged');
   const fs1 = model(base({ pro: false, snaps: sn, due: 5 }));
   test('Free strip data: readiness is the current cert score, due is the cards due today',
     fs1.stats.readiness === 612 && fs1.stats.due === 5 && model(base({ pro: false })).stats.readiness === null && model(base({ pro: false })).stats.due === 0);

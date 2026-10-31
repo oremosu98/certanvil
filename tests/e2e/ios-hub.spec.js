@@ -59,13 +59,29 @@ test.describe('My certs hub', () => {
     await expect(hub.locator('.ihb-passed')).toContainText('Scored 767');
     await expect(hub.locator('.ihb-stat').first()).toContainText('18');   // next exam: the soonest date
     await expect(hub.locator('.ihb-logresult')).toHaveText('Took your exam? Log your result');
-    await hub.locator('.ihb-fresh').first().click();
-    expect(await page.evaluate(() => window.__sw.length)).toBe(1);
     // the log-result link opens over the hub and returns to it
     await hub.locator('.ihb-logresult').click();
     await expect(page.locator('#ios-log-result')).toBeVisible();
     await page.locator('#ios-log-result [data-act="back"]').click();
     await expect(hub).toBeVisible();
     expect(await hub.evaluate((e) => e.inert)).toBe(false);
+    // a switch that goes through closes the hub
+    await hub.locator('.ihb-fresh').first().click();
+    expect(await page.evaluate(() => window.__sw.length)).toBe(1);
+    await expect(hub).toBeHidden();
+  });
+
+  test('Escape closes only the top layer: the log screen first, then the hub', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { _quotaState = { tier: 'pro', daily_limit: -1 }; document.querySelector('#ios-home [data-act="cert"]').click(); });
+    const hub = page.locator('#ios-hub'), log = page.locator('#ios-log-result');
+    await hub.locator('.ihb-logresult').click();
+    await expect(log).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(log).toBeHidden();
+    await expect(hub).toBeVisible();
+    expect(await page.evaluate(() => !!document.activeElement.closest('#ios-hub'))).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(hub).toBeHidden();
   });
 });

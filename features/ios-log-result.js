@@ -235,7 +235,7 @@
       }
     };
     root.oninput = function (ev) { if (ev.target && ev.target.id === 'il-score') { var e = root.querySelector('#il-err'); e.hidden = true; ev.target.removeAttribute('aria-invalid'); } };
-    root.onkeydown = function (ev) { if (ev.key === 'Escape') _close(); };
+    root.onkeydown = function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); _close(); } };   // one Escape closes only the top layer
     var h = root.querySelector('.il-h1'); if (h) h.focus();
     return true;
   }
