@@ -314,7 +314,7 @@
     var atIdx = email.indexOf('@');
     var displayShort = atIdx > 0 ? email.slice(0, atIdx) + '@…' : email;
     var role = (profile && profile.role) || 'user';
-    try { window._certanvilIsAdmin = role === 'admin'; } catch (_) {}   // Preview as Free (features/admin-preview.js) is admin-only
+    if (role === 'admin') { try { window._certanvilIsAdmin = true; } catch (_) {} }   // Preview as Free is admin-only; the {role:'user'} first paint never turns it off
     var activeCertId = getActiveCertId();
     var activeCert = getAvailableCerts(role).filter(function (c) { return c.id === activeCertId; })[0]
       || { name: 'Network+', code: 'N10-009' };
@@ -523,6 +523,7 @@
   }
 
   // ── Auth state machine ─────────────────────────────────────────────────
+  var _adminUid = null;   // the account _certanvilIsAdmin describes: a different account starts not-admin until its profile lands
   function handleSignedIn(session) {
     if (!session || !session.user) return;
     var userId = session.user.id;
@@ -536,6 +537,7 @@
     // sync "is the user signed in?" checks elsewhere in the app (async access
     // to Supabase session is too slow + clunky for UI gates).
     try { window._certanvilSignedIn = true; } catch (_) {}
+    if (_adminUid !== userId) { _adminUid = userId; try { window._certanvilIsAdmin = false; } catch (_) {} }
     // v8.151.0: hand the session to cloud-store. It used to read a supabase-js v1
     // field that v2 doesn't have, so it never saw a signed-in user and nothing
     // ever synced.
@@ -582,7 +584,7 @@
   function handleSignedOut() {
     // v4.99.34 — clear the signed-in flag (paired with handleSignedIn above).
     try { window._certanvilSignedIn = false; } catch (_) {}
-    try { window._certanvilIsAdmin = false; if (window._adminPreview) window._adminPreview.clear(); } catch (_) {}   // sign-out ends any Preview as Free
+    _adminUid = null; try { window._certanvilIsAdmin = false; if (window._adminPreview) window._adminPreview.clear(); } catch (_) {}   // sign-out ends any Preview as Free
     var cs = getCloudStore();
     _clearLocalIfSafe(cs);
     renderAnonymous();
@@ -669,7 +671,6 @@
   window.certanvilAuthState = {
     renderAnonymous: renderAnonymous,
     renderSignedIn: renderSignedIn,
-    handleSignedOut: handleSignedOut,
     updateSyncStatusUI: updateSyncStatusUI,
   };
 })();

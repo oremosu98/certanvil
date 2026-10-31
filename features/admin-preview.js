@@ -62,7 +62,8 @@
     bar.hidden = true;
     bar.innerHTML = EYE + '<span class="ap-freebar-tx"></span><button type="button" class="ap-freebar-back">Back to Pro</button>';
     bar.querySelector('.ap-freebar-back').addEventListener('click', _backToPro);
-    // Back to Pro stays reachable over every screen: phone overlays (hub, sheets) inert the page behind them.
+    // Deliberate: the bar is kept out of `inert`. Phone overlays (hub, sheets) inert everything behind them, but this is the
+    // admin's only escape hatch out of the preview, so Back to Pro stays tappable over every screen. Admin-only chrome.
     try { new MutationObserver(function () { if (bar.inert) bar.inert = false; }).observe(bar, { attributes: true, attributeFilter: ['inert'] }); } catch (_) {}
     var top = document.getElementById('app-topbar');
     if (top && top.parentNode) top.parentNode.insertBefore(bar, top.nextSibling); else document.body.insertBefore(bar, document.body.firstChild);
@@ -125,12 +126,12 @@
   } catch (_) {}
 
   // ── At 15: the Free "today's 15 are done" popup gets one extra link, only while previewing ──
+  // It starts a new 15 and closes the popup; the admin stays where they were and taps the entry again.
   function _keepGoing() {
     _put(KG_KEY, JSON.stringify({ day: _day(), count: _answered() }));
     var m = document.getElementById('quota-exceeded-modal');
     if (m) m.remove();
     _apply();
-    if (typeof window.startQuiz === 'function') window.startQuiz();
   }
   function _decorateLimit() {
     if (!on()) return;

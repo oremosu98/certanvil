@@ -3592,9 +3592,15 @@ html[data-theme] body .dm-ghost:focus-visible { outline: 2px solid var(--accent)
 .ap-freebar-back:active { transform: scale(.97); }
 .ap-freebar-back:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 999px; }
 .ap-freebar.leaving { opacity: 0; transition: opacity .15s var(--ios-ease); }
-html.ap-free body { padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
-html.ap-free :is(#ios-hub, #ios-check, #page-progress.active #ios-progress:not(:empty), #page-analytics.active #ios-analytics:not(:empty), #page-exam-results.active #ios-exam-results:not(:empty)) { top: 56px; }
-html.ap-free body #page-exam.active { top: 56px !important; }
+html.ap-free body { padding-top: calc(var(--ap-free-top) + env(safe-area-inset-top, 0px)); }   /* replaces body's own safe-area padding, never adds to it */
+/* --ap-free-top is the room the bar needs. Every full-screen phone host starts at it (0 when the preview is off);
+   a new full-screen screen opts in by joining this list. */
+html.ap-free { --ap-free-top: 56px; }
+html[data-theme] body :is(#ios-hub, #ios-check, #ios-log-result, .dm-screen, .isi-host, #onb-firstrun.ifr-on, #page-progress.active #ios-progress:not(:empty),
+  #page-analytics.active #ios-analytics:not(:empty), #page-exam-results.active #ios-exam-results:not(:empty), #page-exam.active, .lift-sheet-scrim, .quota-exceeded-modal) { top: var(--ap-free-top, 0px) !important; }
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar { top: var(--ap-free-top, 0px); }
+html.ap-free body .app-topbar { top: var(--ap-free-top) !important; }   /* sticky: sticks under the bar, not behind it */
+:is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip { top: calc(56px + var(--ap-free-top, 0px)); }
 @media (prefers-reduced-motion: no-preference) {
   .ap-freebar.enter { animation: ap-bar-in .34s var(--ios-ease) backwards; }
   @keyframes ap-bar-in { from { opacity: 0; transform: translateY(-6px); } }

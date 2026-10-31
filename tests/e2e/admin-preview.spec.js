@@ -121,7 +121,7 @@ test.describe('Preview as Free', () => {
     await asAdmin(page);
     await page.evaluate(() => window._adminPreview.set(true));
     await expect(page.locator('#ap-freebar')).toBeVisible();
-    await page.evaluate(() => window.certanvilAuthState.handleSignedOut());
+    await page.evaluate(() => window.certanvilSupabase.auth.signOut());   // the real path: Supabase fires SIGNED_OUT, auth-state handles it
     await expect(page.locator('#ap-freebar')).toBeHidden();
     const r = await page.evaluate((k) => ({ flag: localStorage.getItem(k), admin: window._certanvilIsAdmin, on: window._adminPreview.on() }), FLAG);
     expect(r).toEqual({ flag: null, admin: false, on: false });
@@ -152,22 +152,88 @@ test.describe('Preview as Free', () => {
   test('at 15 the Free block shows Keep going (admin preview), which starts a new 15 and lets the quiz start', async ({ page }) => {
     await boot(page, PHONE, { nplus_history: JSON.stringify(rows([10, 5], 3)) });
     await asAdmin(page);
-    await page.evaluate(() => window._adminPreview.set(true));
+    await page.evaluate(() => { window._adminPreview.set(true); window.__started = 0; window.startQuiz = () => { window.__started++; }; });
     expect(await page.evaluate(() => window._quotaState.used_today)).toBe(15);
     expect(await page.evaluate(() => _gateActivityForQuota('practice quizzes'))).toBe(false);
     const modal = page.locator('#quota-exceeded-modal');
     await expect(modal).toBeVisible();
     const keep = modal.locator('.ap-keep');
     await expect(keep).toHaveText('Keep going (admin preview)');
-    await page.evaluate(() => { window.__started = []; window.startQuiz = () => { window.__started.push(_gateActivityForQuota('practice quizzes')); }; });
+    const before = await page.evaluate(() => (document.querySelector('.page.active') || {}).id);
     await keep.click();
     await expect(modal).toHaveCount(0);
-    const r = await page.evaluate(() => ({ started: window.__started, q: window._quotaState }));
-    expect(r.started).toEqual([true]);
-    expect(r.q).toEqual({ tier: 'free', daily_limit: 15, used_today: 0 });
+    // a new 15, and the admin stays where they were: nothing starts until they tap the entry again
+    const r = await page.evaluate(() => ({ q: window._quotaState, started: window.__started, page: (document.querySelector('.page.active') || {}).id }));
+    expect(r).toEqual({ q: { tier: 'free', daily_limit: 15, used_today: 0 }, started: 0, page: before });
+    expect(await page.evaluate(() => _gateActivityForQuota('practice quizzes'))).toBe(true);
+    await expect(modal).toHaveCount(0);
     // not offered to a real Free user, nor once the preview is off
     await page.evaluate(() => { window._adminPreview.set(false); window._quotaState = { tier: 'free', daily_limit: 15, used_today: 15 }; _gateActivityForQuota('practice quizzes'); });
     await expect(page.locator('#quota-exceeded-modal')).toBeVisible();
     await expect(page.locator('#quota-exceeded-modal .ap-keep')).toHaveCount(0);
+  });
+
+  test('Keep going from the exam simulator entry: the wall goes, the count restarts, nothing starts by itself', async ({ page }) => {
+    await boot(page, PHONE, { nplus_history: JSON.stringify(rows([15], 0)) });
+    await asAdmin(page);
+    await page.evaluate(() => { window._adminPreview.set(true); window.__started = 0; window.startQuiz = window.startExam = () => { window.__started++; }; });
+    expect(await page.evaluate(() => _gateActivityForQuota('exam simulator'))).toBe(false);
+    await page.locator('#quota-exceeded-modal .ap-keep').click();
+    await expect(page.locator('#quota-exceeded-modal')).toHaveCount(0);
+    const r = await page.evaluate(() => ({ used: window._quotaState.used_today, started: window.__started, pass: _gateActivityForQuota('exam simulator') }));
+    expect(r).toEqual({ used: 0, started: 0, pass: true });
+  });
+
+  test('a token refresh (renderSignedIn with role user, same account) keeps the preview and the Free state', async ({ page }) => {
+    await boot(page, PHONE);
+    await asAdmin(page);
+    await page.evaluate(() => window._adminPreview.set(true));
+    await expect(page.locator('#ap-freebar')).toBeVisible();
+    await page.evaluate(() => { window.__flips = 0; new MutationObserver(() => { window.__flips++; }).observe(document.getElementById('ap-freebar'), { attributes: true, attributeFilter: ['hidden'] });
+      window.certanvilAuthState.renderSignedIn({ id: 'u1', email: 'admin@example.com' }, { role: 'user' }); });
+    await page.waitForTimeout(200);
+    const r = await page.evaluate(() => ({ on: window._adminPreview.on(), admin: window._certanvilIsAdmin, tier: window._quotaState.tier, flips: window.__flips, pro: document.body.classList.contains('is-pro-tier') }));
+    expect(r).toEqual({ on: true, admin: true, tier: 'free', flips: 0, pro: false });
+    await expect(page.locator('#ap-freebar')).toBeVisible();
+  });
+
+  test('390px: every sampled phone screen starts below the Free bar', async ({ page }) => {
+    await boot(page, PHONE);
+    await page.waitForFunction(() => typeof window.openHub === 'function' && !!document.querySelector('#ios-home [data-act="cert"]'));
+    await asAdmin(page);
+    await page.evaluate(() => window._adminPreview.set(true));
+    await expect(page.locator('#ap-freebar')).toBeVisible();
+    const barBottom = () => page.evaluate(() => document.getElementById('ap-freebar').getBoundingClientRect().bottom);
+    const topOf = (sel) => page.evaluate((s) => { const el = document.querySelector(s); return el ? el.getBoundingClientRect().top : null; }, sel);
+    // Home
+    expect(await topOf('#ios-home .ih-topbar button, #ios-home .ih-topbar [data-act]')).toBeGreaterThanOrEqual(await barBottom());
+    // My certs hub and the log-result screen over it
+    await page.evaluate(() => document.querySelector('#ios-home [data-act="cert"]').click());
+    await expect(page.locator('#ios-hub')).toBeVisible();
+    expect(await topOf('#ios-hub .ihb-hdr button')).toBeGreaterThanOrEqual(await barBottom());
+    await page.locator('#ios-hub .ihb-logresult').click();
+    await expect(page.locator('#ios-log-result')).toBeVisible();
+    expect(await topOf('#ios-log-result .il-hdr button')).toBeGreaterThanOrEqual(await barBottom());
+    await page.locator('#ios-log-result [data-act="back"]').click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ios-hub')).toBeHidden();
+    // full-screen hosts that join through --ap-free-top: a drill-mistakes screen, the sign-in host, the check host, the limit popup
+    const hosts = await page.evaluate(() => ['dm-screen', 'isi-host'].map((c) => { const d = document.createElement('div'); d.className = c; document.body.appendChild(d);
+      const t = d.getBoundingClientRect().top; d.remove(); return t; }));
+    hosts.forEach((t) => expect(t).toBeGreaterThanOrEqual(56));
+    // in-flow pages: Drills and Settings
+    for (const pg of ['drills', 'settings']) {
+      await page.evaluate((p) => showPage(p), pg);
+      await page.waitForTimeout(500);
+      const t = await page.evaluate(() => { const act = document.querySelector('.page.active');
+        const first = [...act.querySelectorAll('button, a, h1, h2')].find((b) => b.offsetParent && b.getBoundingClientRect().height > 0);
+        return first ? first.getBoundingClientRect().top : null; });
+      expect(t).not.toBeNull();
+      expect(t).toBeGreaterThanOrEqual(await barBottom());
+    }
+    // off: the screens go back to the top
+    await page.evaluate(() => window._adminPreview.set(false));
+    const off = await page.evaluate(() => { const d = document.createElement('div'); d.className = 'dm-screen'; document.body.appendChild(d); const t = d.getBoundingClientRect().top; d.remove(); return t; });
+    expect(off).toBe(0);
   });
 });

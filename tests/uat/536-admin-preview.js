@@ -19,8 +19,15 @@ const { test } = require('./_context');
     /_quotaState = \(window\._adminPreview \? window\._adminPreview\.wrap\(resp\.data\[0\]\) : resp\.data\[0\]\);/.test(app));
   test('auth-state: admin counts as Pro only while not previewing; the admin flag is set on render and cleared on sign-out',
     /\.toLowerCase\(\) === 'admin' && !\(window\._adminPreview && window\._adminPreview\.on\(\)\)\)/.test(auth)
-    && /window\._certanvilIsAdmin = role === 'admin';/.test(auth)
-    && /function handleSignedOut\(\) \{[\s\S]{0,300}window\._certanvilIsAdmin = false; if \(window\._adminPreview\) window\._adminPreview\.clear\(\);/.test(auth));
+    && /if \(role === 'admin'\) \{ try \{ window\._certanvilIsAdmin = true; \} catch \(_\) \{\} \}/.test(auth) && !/_certanvilIsAdmin = role ===/.test(auth)
+    && /if \(_adminUid !== userId\) \{ _adminUid = userId; try \{ window\._certanvilIsAdmin = false; \} catch \(_\) \{\} \}/.test(auth)
+    && /function handleSignedOut\(\) \{[\s\S]{0,300}_adminUid = null; try \{ window\._certanvilIsAdmin = false; if \(window\._adminPreview\) window\._adminPreview\.clear\(\);/.test(auth)
+    && !/handleSignedOut: handleSignedOut/.test(auth));
+  test('Keep going restarts the count and closes the popup; it never starts a quiz by itself', /function _keepGoing\(\) \{[\s\S]{0,300}m\.remove\(\);\s*\n\s*_apply\(\);\s*\n\s*\}/.test(ap) && !/startQuiz/.test(ap));
+  test('the bar is kept out of inert on purpose (commented)', /Deliberate: the bar is kept out of `inert`/.test(ap) && /if \(bar\.inert\) bar\.inert = false;/.test(ap));
+  test('phone: one shared --ap-free-top offset for every full-screen host, body padding replaces (never adds to) the safe area',
+    /html\.ap-free \{ --ap-free-top: 56px; \}/.test(lift) && /#ios-log-result, \.dm-screen, \.isi-host/.test(lift) && /\{ top: var\(--ap-free-top, 0px\) !important; \}/.test(lift)
+    && /#isl-xbar \{ top: var\(--ap-free-top, 0px\); \}/.test(lift) && /html\.ap-free body \{ padding-top: calc\(var\(--ap-free-top\) \+ env\(safe-area-inset-top, 0px\)\); \}/.test(lift));
   test('the flag is device only: never one of cloud-store\'s synced keys', !/admin_free_preview/.test(cs) && /var KEY = 'nplus_' \+ 'admin_free_preview';/.test(ap));
   test('exports on / set / wrap / clear', /window\._adminPreview = \{ on: on, set: set, wrap: wrap, clear: clear \};/.test(ap));
   test('copy verbatim: Previewing as Free, Back to Pro, Keep going (admin preview)',
