@@ -1775,7 +1775,7 @@ test.describe('bug-report drawer', () => {
         }]));
       } catch (e) {}
     });
-    await page.route('**/rest/v1/user_bug_reports*', route =>
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route =>
       route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"simulated failure"}' }));
     await page.goto('/');
     await page.waitForTimeout(3500);
