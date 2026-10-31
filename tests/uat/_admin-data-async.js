@@ -13,7 +13,7 @@ function load(opts) {
   const queries = [];
   const fetches = [];
   const sb = {
-    auth: { getSession: async () => ({ data: { session: { access_token: 'tok' } } }) },
+    auth: { getSession: async () => ({ data: { session: opts.noSession ? null : { access_token: 'tok' } } }) },
     from(table) {
       const q = { table, calls: [] };
       queries.push(q);
@@ -134,6 +134,48 @@ const json = (o, ok) => ({ ok: ok !== false, status: ok === false ? 500 : 200, j
   const F = load({ fetch: async () => json({ error: 'nope' }, false) });
   const fr = await F.m.act('close', [1]);
   test('act resolves ok:false on a failed call', fr.ok === false && !!fr.error);
+
+  // fix round 1
+  const ids450 = Array.from({ length: 450 }, (_, i) => i + 1);
+  const C = load({ fetch: async (u, i) => { const n = JSON.parse(i.body).ids.length; return json({ closed: n, sent: n, skipped: 0, failed: 0, remaining: 0, next: null, paused: false }); } });
+  const cr = await C.m.act('close', ids450);
+  const sizes = C.fetches.map(f => JSON.parse(f[1].body).ids.length);
+  test('act chunks 450 ids into requests of <=200 and sums the totals',
+    cr.ok && sizes.join() === '200,200,50' && cr.data.closed === 450 && cr.data.sent === 450 && cr.data.remaining === 0 && C.fetches.every(f => !('after' in JSON.parse(f[1].body))));
+  const CP = load({ fetch: async () => json({ closed: 200, sent: 0, skipped: 0, failed: 0, remaining: 0, next: null, paused: true }) });
+  const cp = await CP.m.act('close', ids450);
+  test('act stops all chunks on paused and counts the unstarted ids as remaining', cp.ok && CP.fetches.length === 1 && cp.data.paused && cp.data.remaining === 250);
+  const MF = load({ fetch: async (u, i, n) => (n === 1 ? json({ closed: 200, sent: 200, skipped: 0, failed: 0, remaining: 0, next: null, paused: false }) : json({ error: 'boom' }, false)) });
+  const mf = await MF.m.act('close', ids450);
+  test('act keeps partial progress on a non-2xx mid-run', mf.ok === false && mf.error === 'boom' && mf.partial && mf.partial.closed === 200);
+  const MT = load({ fetch: async (u, i, n) => { if (n === 2) throw new Error('offline'); return json({ closed: 200, sent: 0, skipped: 0, failed: 0, remaining: 0, next: null, paused: false }); } });
+  const mt = await MT.m.act('close', ids450);
+  test('act keeps partial progress when the network drops', mt.ok === false && mt.partial && mt.partial.closed === 200);
+
+  const H = load();
+  await H.m.reports({ q: 'a,b)(*%\\' });
+  const orArg = H.queries[0].calls.find(c => c[0] === 'or')[1][0];
+  const inner = orArg.replace('title.ilike.%', '').replace(',description.ilike.%', '|');
+  test('hostile search text adds no commas, parens or stars to the or filter', orArg.split(',').length === 2 && !/[()*\\]/.test(orArg) && inner.indexOf('a b') >= 0);
+  const W = load();
+  await W.m.reports({ q: '  Network+   (N10-009)  ' });
+  test('search text collapses whitespace so "Network+ (N10-009)" matches', W.queries[0].calls.find(c => c[0] === 'or')[1][0].indexOf('%Network+ N10-009%') >= 0);
+
+  const NS = load({ noSession: true, resolve: () => ({ data: [], error: null, count: 2 }), fetch: async () => { throw new Error('should not fetch'); } });
+  const ns = await NS.m.today();
+  test('today() does not call the usage endpoint without a session', ns.ok && ns.data.ai === null && NS.fetches.length === 0);
+  const nsa = await NS.m.act('close', [1]);
+  test('act without a session fails before fetching', nsa.ok === false && NS.fetches.length === 0);
+  // today(): users null, ai null, all-fail
+  const UN = load({ resolve: (t) => (t === 'profiles' ? { data: null, error: { message: 'rls' } } : { data: [], error: null, count: 4 }), fetch: async () => json({ used: 1, limit: 2, resetsAt: '2026-11-01T00:00:00Z' }) });
+  const un = await UN.m.today();
+  test('today() users null when profiles reads fail', un.ok && un.data.users === null && un.data.errors === 4 && un.data.ai.limit === 2 && un.data.partial.join() === 'users');
+  const AN = load({ resolve: () => ({ data: [], error: null, count: 4 }), fetch: async () => json({}, false) });
+  const an = await AN.m.today();
+  test('today() ai null when the usage call fails', an.ok && an.data.ai === null && an.data.users.total === 4 && an.data.partial.join() === 'ai');
+  const AF = load({ resolve: () => ({ data: null, error: { message: 'rls' } }), fetch: async () => json({}, false) });
+  const af = await AF.m.today();
+  test('today() is ok:false when all three sections fail', af.ok === false && !!af.error);
 
   console.log(JSON.stringify(results));
 })().catch(e => { console.log(JSON.stringify([['admin-data async harness crashed: ' + e.message, false]])); });

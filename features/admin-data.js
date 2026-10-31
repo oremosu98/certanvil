@@ -12,7 +12,7 @@
   function ok(d) { return { ok: true, data: d }; }
   function weekAgo() { return new Date(Date.now() - 7 * DAY).toISOString(); }
   function midnight() { var d = new Date(); d.setHours(0, 0, 0, 0); return d.toISOString(); }
-  function esc(s) { return String(s == null ? '' : s).replace(/[%,()*\\]/g, ' ').trim(); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[%,()*\\]/g, ' ').replace(/\s+/g, ' ').trim(); }
   function pageRange(p) { var n = Math.max(0, p | 0); return [n * PAGE, n * PAGE + PAGE - 1]; }
 
   function firstLine(s, max) {
@@ -75,6 +75,7 @@
   async function aiUsage() {
     try {
       var t = await token();
+      if (!t) return { err: 'Not signed in' };
       var res = await fetch(window.location.origin + '/api/ai/usage', { headers: { Authorization: 'Bearer ' + t } });
       if (!res.ok) return { err: 'usage ' + res.status };
       var j = await res.json();
@@ -160,25 +161,36 @@
     return base + '/api/admin/bug-report';
   }
 
-  // Close or "fixed"-notify the given reports. The server works in batches; keep calling while it says more remains.
+  // Close or "fixed"-notify the given reports. ids are split into chunks of 200 (the endpoint's cap); per chunk the
+  // server works in batches, so keep calling while it says more remains. On a failure the work already done is
+  // returned as `partial` so the screen can say how far it got.
   async function act(action, ids) {
+    var sum = { closed: 0, sent: 0, skipped: 0, failed: 0, remaining: 0, next: null, paused: false };
+    function bad(msg) { var r = fail(msg); r.partial = sum; return r; }
     try {
       var t = await token();
       if (!t) return fail('Not signed in');
-      var sum = { closed: 0, sent: 0, skipped: 0, failed: 0, remaining: 0, next: null, paused: false };
-      var after, guard = 0;
-      do {
-        var body = { action: action, ids: ids };
-        if (after != null) body.after = after;
-        var res = await fetch(landingUrl(), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) });
-        var j = await res.json().catch(function () { return {}; });
-        if (!res.ok) return fail(j.error || ('Request failed (' + res.status + ')'));
-        sum.closed += j.closed || 0; sum.sent += j.sent || 0; sum.skipped += j.skipped || 0; sum.failed += j.failed || 0;
-        sum.remaining = j.remaining || 0; sum.next = j.next == null ? null : j.next; sum.paused = !!j.paused;
-        after = j.next;
-      } while (sum.remaining > 0 && !sum.paused && after != null && ++guard < 100);
+      var list = ids || [], chunks = [];
+      for (var i = 0; i < list.length; i += 200) chunks.push(list.slice(i, i + 200));
+      for (var c = 0; c < chunks.length && !sum.paused; c++) {
+        var after = null, guard = 0, rem;
+        do {
+          var body = { action: action, ids: chunks[c] };
+          if (after != null) body.after = after;
+          var res = await fetch(landingUrl(), { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t }, body: JSON.stringify(body) });
+          var j = await res.json().catch(function () { return {}; });
+          if (!res.ok) return bad(j.error || ('Request failed (' + res.status + ')'));
+          sum.closed += j.closed || 0; sum.sent += j.sent || 0; sum.skipped += j.skipped || 0; sum.failed += j.failed || 0;
+          rem = j.remaining || 0; after = j.next == null ? null : j.next; sum.paused = !!j.paused;
+        } while (rem > 0 && !sum.paused && after != null && ++guard < 100);
+        // remaining = what is left unprocessed: this chunk's leftover plus every chunk not yet started
+        sum.remaining = rem + chunks.slice(c + 1).reduce(function (n, x) { return n + x.length; }, 0);
+        sum.next = after;
+        if (!sum.paused && rem > 0 && after == null) break;
+      }
+      if (!chunks.length) sum.remaining = 0;
       return ok(sum);
-    } catch (e) { return fail(e); }
+    } catch (e) { return bad(e && e.message); }
   }
 
   var api = { groupReports: groupReports, topErrors: topErrors, firstLine: firstLine, today: today, requests: requests, reports: reports, openCount: openCount, errorsWeek: errorsWeek, act: act, PAGE_SIZE: PAGE };
