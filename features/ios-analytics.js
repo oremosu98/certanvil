@@ -92,17 +92,38 @@
       }).join(' ') + '"/></svg>';
     };
     var tile = function (v, l, key, unit) { return '<div class="in-tile"><div class="in-tv">' + v + (unit || '') + '</div><span class="in-tl">' + l + '</span>' + spark(sp[key]) + '</div>'; };
-    // the E2E line promises the pass only when the forecast actually reaches it
-    var line = r.pointsToPass <= 0 ? 'You\'re at the pass mark. Steady reviews keep you there.'
-      : '<b>' + r.pointsToPass + ' points</b> to the pass mark. ' + (r.forecast >= r.passScore ? 'Hold your pace and you\'ll cross it.' : 'Your forecast moves up as you practise.');
-    var dte = typeof r.daysToExam === 'number' ? (r.daysToExam <= 0 ? 'Today' : r.daysToExam + (r.daysToExam === 1 ? ' day' : ' days')) : 'Not set';
+    // Persona bundle T10: the honest forecast. Copy: reminders-forecast spec section 2, drawing cert-ios-analytics.html.
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var dayLabel = function (iso) { var mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return mm ? (+mm[3]) + ' ' + MON[+mm[2] - 1] : ''; };
+    var pc = r.pace, hasDate = typeof r.daysToExam === 'number', fLbl, fVal, fRange = '', fDim = false, line;
+    if (pc) {
+      var pw = Math.round(Math.abs(pc.pointsPerWeek)), when = dayLabel(pc.examDate);
+      var lead = pw === 0 ? 'Holding <b>steady</b>.' : (pc.pointsPerWeek > 0 ? 'Up about <b>' + pw + ' points a week</b>.' : 'Down about <b>' + pw + ' points a week</b> lately.');
+      var around = ' you\'d be around <b>' + pc.projected + ' on ' + when + '</b>';
+      line = (pc.pointsPerWeek < 0 && pw > 0)
+        ? lead + ' On this pace' + around + '. A few short sets a week turns it round.'
+        : lead + (pc.short ? ' At this pace' + around + ', short of the ' + r.passScore + ' pass mark. Study more each week, or move the date.'
+          : ' On this pace' + around + ', over the ' + r.passScore + ' pass mark.');
+      fLbl = 'Forecast for ' + when; fVal = pc.projected; fRange = 'likely ' + pc.low + ' to ' + pc.high;
+    } else if (!hasDate) {
+      line = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.') + ' Set your exam date to see where you\'ll be on the day.';
+      fLbl = 'Forecast'; fVal = 'Set a date'; fDim = true;
+    } else {
+      line = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.') + ' Your forecast appears once you have five sessions in the last two weeks.';
+      fLbl = 'Forecast'; fVal = 'Not yet'; fDim = true;
+    }
+    var pn = r.pbqNote, pbqLine = '';
+    if (pn) pbqLine = '<p class="in-rd-pbq">Readiness counts multiple-choice only. ' + (pn.n > 0
+      ? '<b>PBQs: ' + pn.right + ' of ' + pn.count + ' fully right</b> in your last ' + (pn.n === 1 ? 'full exam' : pn.n + ' full exams') + '.'
+      : '<b>Take a full exam</b> to practise PBQs too.') + '</p>';
+    var dte = hasDate ? (r.daysToExam <= 0 ? 'Today' : r.daysToExam + (r.daysToExam === 1 ? ' day' : ' days')) : 'Not set';
     h += page(0, 'Readiness', '<div class="in-rd in-reveal"><div class="in-rd-top"><span class="in-rd-eyebrow">Readiness</span><span class="in-rd-tier">' + e(r.tier) + '</span></div>'
       + '<div class="in-rd-score"><span class="in-rd-num" data-to="' + r.predicted + '">' + r.predicted + '</span><span class="in-rd-of">/ ' + (r.maxScore || 900) + '</span></div>'
       + '<div class="in-bar"><span data-w="' + (r.barPct || 0).toFixed(1) + '" style="width:0%"></span><span class="in-tick" style="left:' + (r.passTickPct || 0).toFixed(1) + '%"></span></div>'
       + '<div class="in-rd-legend"><span>Now</span><span class="in-p">Pass ' + r.passScore + '</span></div>'
       + '<p class="in-rd-insight">' + line + '</p>'
-      + '<div class="in-rd-forecast"><div class="in-rd-fc"><span class="in-fl">Forecast on this pace</span><span class="in-fv">' + r.forecast + '</span></div>'
-      + '<div class="in-rd-fc"><span class="in-fl">Days to exam</span><span class="in-fv' + (dte === 'Not set' ? ' in-dim' : '') + '">' + dte + '</span></div></div></div>'
+      + '<div class="in-rd-forecast"><div class="in-rd-fc"><span class="in-fl">' + fLbl + '</span><span class="in-fv' + (fDim ? ' in-dim' : '') + '">' + fVal + '</span>' + (fRange ? '<span class="in-fr">' + fRange + '</span>' : '') + '</div>'
+      + '<div class="in-rd-fc"><span class="in-fl">Days to exam</span><span class="in-fv' + (dte === 'Not set' ? ' in-dim' : '') + '">' + dte + '</span></div></div>' + pbqLine + '</div>'
       + '<div class="in-tiles in-reveal">' + tile(st.sessions || 0, 'Sessions', 'sessions') + tile(st.questions || 0, 'Questions', 'questions')
       + tile(st.accuracy || 0, 'Accuracy', 'accuracy', '<span class="in-tv-u">%</span>') + tile(st.studyDays || 0, 'Study days', 'studyDays') + '</div>');
 

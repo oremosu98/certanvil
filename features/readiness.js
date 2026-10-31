@@ -606,6 +606,62 @@
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     return Math.round((exam.getTime() - today) / 86400000);
   }
+  // Persona bundle Task 10: the pace to the exam date. Least-squares slope of the scaled score over the
+  // history summary rows of the last 14 local days (5 rows or more), per week, carried to the exam date
+  // from today's score. It can go down. Range = the confidence half-width the score already computes.
+  // Spec: docs/superpowers/specs/2026-10-30-reminders-forecast-pbq-design.md section 2.
+  // opts (tests): { hist, r, examDate, daysToExam }.
+  function getReadinessPace(nowMs, opts) {
+    opts = opts || {};
+    const now = typeof nowMs === 'number' ? nowMs : Date.now();
+    const DAY = 86400000;
+    const days = ('daysToExam' in opts) ? opts.daysToExam : ((typeof getDaysToExam === 'function') ? getDaysToExam() : null);
+    const examDate = ('examDate' in opts) ? opts.examDate : ((typeof getExamDate === 'function') ? getExamDate() : null);
+    if (typeof days !== 'number' || days < 0 || !examDate) return null;
+    const r = opts.r || ((typeof getReadinessScore === 'function') ? getReadinessScore() : null);
+    if (!r || typeof r.predicted !== 'number') return null;
+    const hist = Array.isArray(opts.hist) ? opts.hist : ((typeof loadHistory === 'function') ? loadHistory() : []);
+    const day = (t) => (typeof window !== 'undefined' && window._localDay) ? window._localDay(new Date(t)) : new Date(t).toISOString().slice(0, 10);
+    const since = day(now - 13 * DAY);   // today and the 13 days before it
+    const pts = [];
+    hist.forEach(e => {
+      if (!e || !(e.total > 0)) return;
+      if (typeof isHistorySplitRow === 'function' && isHistorySplitRow(e)) return;
+      const t = new Date(e.date).getTime();
+      if (isNaN(t) || day(t) < since || t > now + DAY) return;
+      pts.push([t / DAY, scaledExamScore(e.score || 0, e.total)]);
+    });
+    if (pts.length < 5) return null;
+    const n = pts.length;
+    const mx = pts.reduce((a, p) => a + p[0], 0) / n, my = pts.reduce((a, p) => a + p[1], 0) / n;
+    let sxx = 0, sxy = 0;
+    pts.forEach(p => { sxx += (p[0] - mx) * (p[0] - mx); sxy += (p[0] - mx) * (p[1] - my); });
+    if (sxx < 1e-9) return null;   // every row at the same moment: no direction to read
+    const pointsPerWeek = Math.round(sxy / sxx * 7 * 10) / 10;
+    const band = (typeof READINESS_BAND !== 'undefined') ? READINESS_BAND : [EXAM_MIN_SCORE, EXAM_MAX_SCORE];
+    const pass = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+    const projected = Math.round(Math.max(band[0], Math.min(band[1], r.predicted + pointsPerWeek * days / 7)));
+    const hw = Math.max(0, Math.round(r.ciHalfWidth || 0));
+    return { pointsPerWeek, projected, low: Math.max(band[0], projected - hw), high: Math.min(band[1], projected + hw),
+      examDate, daysToExam: days, short: projected < pass, rows: n };
+  }
+  // Does this cert's exam simulator have a PBQ budget? Same source the exam builder reads: exam.js asks the
+  // Sim Lab for EXAM_PBQ_COUNT PBQs, and only certs with a seed bank have any (the _SL_SEED_FILES keys in
+  // app.js; UAT 525 holds the two lists together). Net+ also keeps the older injectPBQs banks.
+  function examHasPbqs(certId) {
+    const EXAM_PBQ_CERTS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
+    return EXAM_PBQ_CERTS.indexOf(certId || (typeof window !== 'undefined' && window.CURRENT_CERT) || 'netplus') !== -1;
+  }
+  // The PBQ note: the last 3 full exams that kept a PBQ tally. null = hide (cert has no PBQs).
+  function getPbqNote(hist, hasPbqs) {
+    if (!hasPbqs) return null;
+    const exTopic = (typeof EXAM_TOPIC === 'string') ? EXAM_TOPIC : 'Exam Simulation';
+    const rows = (Array.isArray(hist) ? hist : []).filter(e => e && e.mode === 'exam' && e.topic === exTopic && e.pbq && e.pbq.count > 0)
+      .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+    if (!rows.length) return { n: 0, right: 0, count: 0 };
+    return { n: rows.length, right: rows.reduce((a, e) => a + (e.pbq.right || 0), 0), count: rows.reduce((a, e) => a + e.pbq.count, 0) };
+  }
+
   function getReadinessForecast() {
     // Linear regression on raw score over the last N sessions to project when we
     // hit the pass threshold. Returns null if insufficient data or flat/negative trend.
@@ -1503,6 +1559,9 @@
   window.getDaysToExam             = getDaysToExam;
   window.parseExamDate             = parseExamDate;
   window.getReadinessForecast      = getReadinessForecast;
+  window.getReadinessPace          = getReadinessPace;
+  window.examHasPbqs               = examHasPbqs;
+  window.getPbqNote                = getPbqNote;
   window.getTypeStats              = getTypeStats;
   window.updateTypeStat            = updateTypeStat;
   window.getMilestones             = getMilestones;

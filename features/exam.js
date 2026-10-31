@@ -815,7 +815,7 @@
     // v8.163.0: a PBQ earns partial credit (fraction of steps right). Fully right
     // counts as correct, otherwise wrong; the partial fraction is added to the
     // points the score is built from. pbqPartial = sum of those partial fractions.
-    let pbqPartial = 0, pbqPoints = 0, pbqCount = 0;
+    let pbqPartial = 0, pbqPoints = 0, pbqCount = 0, pbqRight = 0;   // pbqRight: fully right, for the Analytics PBQ note
 
     examAnswers.forEach((a, i) => {
       const q = examQuestions[i];
@@ -827,7 +827,7 @@
         const sc = _examScorePbq(q, a);
         if (!_examPbqTouched(a.sl)) { skipped++; return; }
         pbqPoints += sc.fraction;
-        if (sc.fraction === 1) correct++;
+        if (sc.fraction === 1) { correct++; pbqRight++; }
         else { wrong++; pbqPartial += sc.fraction; }
         return;   // PBQs stay out of the MCQ type stats
       }
@@ -923,7 +923,7 @@
     try {
       if ((getStreak().current || 0) > _prevStreakBefore) _pendingStreakPulse = true;
     } catch (_) {}
-    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', pausedMs: _examPausedMs || undefined });
+    saveToHistory({ date: new Date().toISOString(), topic: EXAM_TOPIC, difficulty: 'Mixed', score: Math.round(points), total, pct, mode: 'exam', pausedMs: _examPausedMs || undefined, pbq: pbqCount ? { right: pbqRight, count: pbqCount } : undefined });
     // v4.81.13 (Codex r∞ user request): also write per-topic split rows so the
     // exam contributes to readiness / progress / weak-spots / what-if /
     // domain mastery — pre-fix the rolled-up EXAM_TOPIC sentinel was filtered

@@ -3250,3 +3250,8 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
 #ist-sheet .iw-facts { font: 500 12.5px/1.55 Inter, sans-serif; color: var(--text-mid); margin: 0; }
 #ist-sheet .iw-facts b { color: var(--text); font-weight: 650; }
 #ist-sheet .iw-how { font: 500 12px/1.5 Inter, sans-serif; color: var(--text-dim); margin: 14px 0 0; }
+
+/* Persona bundle T10: forecast range under the tile and the PBQ note (drawing cert-ios-analytics.html) */
+#ios-analytics .in-rd-fc .in-fr { display: block; font: 600 10.5px/1.2 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; }
+#ios-analytics .in-rd-pbq { font-size: 12px; line-height: 1.45; color: var(--text-mid); margin: 11px 0 0; padding-top: 10px; border-top: 1px solid color-mix(in oklab, var(--border) 64%, transparent); }
+#ios-analytics .in-rd-pbq b { color: var(--text); font-weight: 650; }

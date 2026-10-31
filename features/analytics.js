@@ -1963,18 +1963,14 @@
     const barPct = readinessBarPct(predicted);
     const passTickPct = readinessBarPct(PASS);
 
-    // Forecast: project a scaled score on current pace from the accuracy-trend
-    // regression (getReadinessForecast). currentProj is a projected per-session
-    // pct; map pct→scaled on the cert's exam scale and clamp to its readiness
-    // band (v8.128.0; was 100-900 / 420-870 on every cert). Falls back to predicted when the trend is flat / insufficient data.
-    let forecast = predicted;
-    try {
-      const f = (typeof getReadinessForecast === 'function') ? getReadinessForecast() : null;
-      if (f && !f.trendFlat && typeof f.currentProj === 'number') {
-        const projScaled = scaledExamScore(f.currentProj, 100);
-        forecast = Math.max(READINESS_BAND[0], Math.min(READINESS_BAND[1], Math.max(predicted, projScaled)));
-      }
-    } catch (_) {}
+    // Forecast (persona bundle T10): where the last 14 days' pace lands on exam day. It can go
+    // down; there is no max(predicted, trend) any more. No exam date or too few sessions: no
+    // pace, the forecast is today's score. See getReadinessPace.
+    let pace = null;
+    try { pace = (typeof getReadinessPace === 'function') ? getReadinessPace(Date.now(), { r }) : null; } catch (_) {}
+    const forecast = pace ? pace.projected : predicted;
+    let pbqNote = null;
+    try { pbqNote = (typeof getPbqNote === 'function' && typeof examHasPbqs === 'function') ? getPbqNote(h, examHasPbqs()) : null; } catch (_) {}
 
     const totalQ = hs.reduce((a, e) => a + (e.total || 0), 0);
     const totalCorrect = hs.reduce((a, e) => a + (e.score || 0), 0);
@@ -1984,7 +1980,7 @@
       : { sessions: [], questions: [], accuracy: [], studyDays: [] };
 
     const readiness = {
-      predicted, passScore: PASS, forecast, daysToExam, examDate, tier, pointsToPass,
+      predicted, passScore: PASS, forecast, pace, pbqNote, daysToExam, examDate, tier, pointsToPass,
       barPct, passTickPct,
       stats: { sessions: hs.length, questions: totalQ, accuracy: accuracyPct, studyDays },
       spark: {
