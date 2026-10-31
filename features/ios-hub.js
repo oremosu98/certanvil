@@ -289,7 +289,7 @@
     _askEmail();
     var m = _iosHubModel(_input());
     if (!wasOpen) _prevFocus = document.activeElement;   // an in-place refresh keeps the original return target
-    var suggest = typeof openSuggestCert === 'function';
+    var suggest = typeof openSuggestCert === 'function' && window._certanvilSignedIn === true;   // signed in only
     root.innerHTML = _html(m, suggest);
     root.hidden = false;
     if (!wasOpen) _inertBehind(true);

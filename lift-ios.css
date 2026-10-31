@@ -3403,12 +3403,12 @@ html[data-theme] body #pro-only-modal { z-index: 400 !important; }   /* the Pro 
 .sg-sheet button { font-family: inherit; box-sizing: border-box; cursor: pointer; margin: 0; min-height: 0; }
 .sg-grip { flex: 0 0 auto; width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 13px; }
 .sg-eyebrow { display: block; margin-top: 4px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-deep); }
-.sg-sheet h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; letter-spacing: -0.01em; text-transform: none; margin: 4px 0 4px; color: var(--text); outline: none; }
+#ios-suggest.sg-sheet h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; letter-spacing: -0.01em; text-transform: none; margin: 4px 0 4px; color: var(--text); outline: none; }
 .sg-sub { margin: 0 0 12px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
 .sg-search { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 12px; margin: 2px 0 6px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in oklab, var(--surface2) 55%, var(--surface)); }
 .sg-search:focus-within { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); }
 .sg-search svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--text-dim); fill: none; stroke-width: 2; stroke-linecap: round; }
-.sg-search input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; color: var(--text); font: 500 16px/1 Inter, sans-serif; outline: none; }   /* 16px: iOS does not zoom the page on focus */
+.sg-search input { flex: 1 1 auto; min-width: 0; padding: 0; margin: 0; height: 40px; border: 0; box-shadow: none; background: transparent; color: var(--text); font: 500 16px/1 Inter, sans-serif; outline: none; }   /* 16px: iOS does not zoom the page on focus */
 .sg-list { flex: 1 1 auto; min-height: 0; max-height: 300px; overflow-y: auto; margin: 0 -6px; overscroll-behavior: contain; }
 .sg-vendor { margin: 12px 6px 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); }
 .sg-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 9px 6px; border: 0; background: transparent; color: var(--text); text-align: left; border-radius: 12px; transition: background-color .18s var(--ios-ease), transform .12s var(--ios-ease); }
@@ -3443,3 +3443,5 @@ html[data-theme] body #pro-only-modal { z-index: 400 !important; }   /* the Pro 
   .sg-done { animation: sg-fade .2s ease backwards; }
   @keyframes sg-fade { from { opacity: 0; } }
 }
+.sg-err { flex: 0 0 auto; margin: 8px 0 0; text-align: center; font: 600 12px/1.4 Inter, sans-serif; color: var(--miss, var(--red)); }
+.sg-err:empty { display: none; }

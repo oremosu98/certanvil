@@ -38,7 +38,14 @@ const { test, vm } = require('./_context');
   test('normaliser: strips vendor word and exam/cert words, collapses spaces',
     norm('CompTIA   Security+  Certification Exam') === 'security+' && norm('AWS Solutions Architect Associate') === 'solutions architect associate');
   test('normaliser: only a LEADING vendor word goes; "Certified" stays', norm('Azure Microsoft Certified') === 'azure microsoft certified');
-  test('normaliser: "Cisco exam" does not collapse to nothing', norm('Cisco exam') === 'cisco exam' && norm('   ') === '');
+  test('normaliser: only a vendor or filler word is refused (empty key)', ['Cisco', 'exam', 'cert', 'Cisco exam', 'CompTIA Certification', '   ', ''].every((x) => norm(x) === ''));
+  test('normaliser: "Google Cloud" is a vendor prefix, so a listed Google exam matches exactly',
+    norm('Google Cloud Associate Cloud Engineer') === 'associate cloud engineer' && L.win._certReqRows('Google Cloud Associate Cloud Engineer', []).typed === null);
+  test('typed row refused when the key is empty ("Cisco", "exam")', L.win._certReqRows('Cisco', []).typed === null && L.win._certReqRows('exam', []).typed === null);
+  const lone = /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/;
+  test('caps count code points and never split a surrogate pair',
+    Array.from(L.win._certReqLabel('\u{1F600}'.repeat(200))).length === 120 && !lone.test(L.win._certReqLabel('\u{1F600}'.repeat(200)))
+    && Array.from(norm('a' + '\u{1F600}'.repeat(200))).length === 80 && !lone.test(norm('a' + '\u{1F600}'.repeat(200))));
   test('normaliser: always within the 80-char key limit and trimmed', norm('x'.repeat(200)).length === 80 && norm('a '.repeat(60)) === norm('a '.repeat(60)).trim() && norm('a '.repeat(60)).length <= 80);
   test('label is tidied and clipped to 120', L.win._certReqLabel('  Cloud   Security ') === 'Cloud Security' && L.win._certReqLabel('y'.repeat(300)).length === 120);
 
@@ -63,5 +70,10 @@ const { test, vm } = require('./_context');
   const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
   test('Settings: "Suggest a cert" row after "Replay the tour", signed in only; handler ON.suggest',
     /row\('tour'[^\n]*\n\s*\+ \(m\.out \? '' : row\('suggest', 'star', 'Suggest a cert'/.test(fs2) && fs2.includes('ON.suggest = '));
+  const hubSrc = fs.readFileSync(path.join(ROOT, 'features', 'ios-hub.js'), 'utf8');
+  const sgSrc = fs.readFileSync(path.join(ROOT, 'features', 'ios-suggest.js'), 'utf8');
+  test('signed in only: the hub link needs _certanvilSignedIn === true; the sheet refuses anything else', /typeof openSuggestCert === 'function' && window\._certanvilSignedIn === true/.test(hubSrc) && sgSrc.includes("window._certanvilSignedIn !== true"));
+  test('sheet: Send waits for a user id, traps Tab, inerts behind, un-inerts before restoring focus, skips IME composition',
+    sgSrc.includes('!S.uid') && sgSrc.includes("ev.key !== 'Tab'") && sgSrc.includes('el.inert = true') && sgSrc.indexOf('el.inert = false') < sgSrc.indexOf('S.back.focus') && sgSrc.includes('ev.isComposing'));
   test('index.html loads cert-requests.js before ios-suggest.js', html.indexOf('lib/cert-requests.js') > 0 && html.indexOf('lib/cert-requests.js') < html.indexOf('features/ios-suggest.js'));
 })();

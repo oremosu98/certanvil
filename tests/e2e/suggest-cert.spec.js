@@ -101,4 +101,69 @@ test.describe('Suggest a cert', () => {
     await page.keyboard.press('Escape');
     await expect(hub).toBeHidden();
   });
+
+  test('signed out: the hub shows no link and the sheet does not open', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { window._certanvilSignedIn = false; _quotaState = { tier: 'pro', daily_limit: -1 }; document.querySelector('#ios-home [data-act="cert"]').click(); });
+    await expect(page.locator('#ios-hub')).toBeVisible();
+    await expect(page.locator('#ios-hub .ihb-suggest')).toHaveCount(0);
+    await page.evaluate(() => { window._certanvilSignedIn = undefined; window.openSuggestCert(); });
+    await expect(sheet(page)).toHaveCount(0);
+  });
+
+  test('Send stays disabled until a user id is known; no session means an error and no Thanks, picks kept', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => {
+      window._certanvilSignedIn = true; window.__ups = [];
+      window.certanvilSupabase = { auth: { getSession: () => Promise.resolve({ data: { session: null } }) }, from: () => ({ upsert: () => { window.__ups.push(1); return Promise.resolve({ error: null }); } }) };
+      window.openSuggestCert();
+    });
+    await sheet(page).locator('[data-c="CCNA"]').click();
+    await expect(sheet(page).locator('[data-act="send"]')).toBeDisabled();
+    await expect(sheet(page).locator('.sg-err')).toContainText('couldn’t confirm your account');
+    await expect(sheet(page).locator('[data-c="CCNA"]')).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => window.__ups.length)).toBe(0);
+    await expect(sheet(page).locator('h3')).not.toHaveText('Thanks, noted.');
+  });
+
+  test('a refused insert shows an error, keeps the picks and does not say thanks', async ({ page }) => {
+    await boot(page); await stub(page, 'ok');
+    await page.evaluate(() => { window.certanvilSupabase.from = () => ({ upsert: () => Promise.resolve({ error: { code: '23514' }, status: 400 }) }); window.openSuggestCert(); });
+    await sheet(page).locator('[data-c="CCNA"]').click();
+    await sheet(page).locator('[data-act="send"]').click();
+    await expect(sheet(page).locator('.sg-err')).toContainText('Couldn’t send that');
+    await expect(sheet(page).locator('h3')).toHaveText('Which exam should we add next?');
+    await expect(sheet(page).locator('[data-act="send"]')).toHaveText('Send 1 suggestion');
+    expect(await page.evaluate(() => localStorage.getItem('nplus_cert_req_pending'))).toBeNull();
+  });
+
+  test('typing keeps the same focused input; the sheet traps Tab and inerts everything behind it', async ({ page }) => {
+    await boot(page); await stub(page, 'ok');
+    const before = await page.evaluate(() => [...document.body.children].map((el) => el.inert));
+    await page.evaluate(() => window.openSuggestCert());
+    const q = sheet(page).locator('#sg-q');
+    await q.click();
+    await page.evaluate(() => { window.__inp = document.getElementById('sg-q'); });
+    await page.keyboard.type('Cloud Sec');
+    expect(await page.evaluate(() => window.__inp === document.getElementById('sg-q') && document.activeElement === window.__inp && window.__inp.value)).toBe('Cloud Sec');
+    await expect(sheet(page).locator('.sg-add')).toContainText('Suggest “Cloud Sec”');
+    expect(await page.evaluate(() => [...document.body.children].filter((el) => !el.hidden && el.id !== 'ios-suggest' && el.id !== 'ios-suggest-scrim' && el.tagName !== 'SCRIPT' && !el.inert && !el.classList.contains('il-toast')).map((el) => el.tagName + '#' + el.id))).toEqual([]);
+    // Tab from the last control wraps to the first; Shift+Tab from the first wraps to the last
+    await q.fill('');
+    await sheet(page).locator('[data-c="CISSP"]').click();
+    await page.evaluate(() => { document.querySelector('#ios-suggest [data-act="send"]').focus(); });
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement.id)).toBe('sg-q');
+    await page.keyboard.press('Shift+Tab');
+    expect(await page.evaluate(() => document.activeElement.getAttribute('data-act'))).toBe('send');
+    await page.keyboard.press('Escape');
+    await expect(sheet(page)).toHaveCount(0);
+    expect(await page.evaluate(() => [...document.body.children].map((el) => el.inert))).toEqual(before);   // un-inerted exactly what it inerted
+  });
+
+  test('reopening while the old sheet fades never leaves two search boxes', async ({ page }) => {
+    await boot(page); await stub(page, 'ok');
+    await page.evaluate(() => { window.openSuggestCert(); window.iosSuggest.close(); window.openSuggestCert(); });
+    await expect(page.locator('#sg-q')).toHaveCount(1);
+  });
 });
