@@ -17,7 +17,7 @@ const t = async (name, fn) => { await fn(); n++; };
 
 let calls = [];
 // requesters: rows from cert_requests; users: id -> {email} | 404 | 'boom'; role of the caller; failSend: emails that fail
-function stub({ role = 'admin', userOk = true, requesters = [], users = {}, failSend = [], tally = [], stampFail = false, resendOk = true, label = 'CCNA', rate = [] } = {}) {
+function stub({ role = 'admin', userOk = true, requesters = [], users = {}, failSend = [], tally = [], stampFail = false, resendOk = true, label = 'CCNA', rate = [], bugs = [], errs = [], bugsFail = false, errsFail = false } = {}) {
   calls = [];
   globalThis.fetch = async (url, init = {}) => {
     url = String(url); calls.push({ url, init });
@@ -44,6 +44,15 @@ function stub({ role = 'admin', userOk = true, requesters = [], users = {}, fail
       if (body.to.some((e) => rate.includes(e))) return new Response('{}', { status: 429 });
       if (!resendOk || body.to.some((e) => failSend.includes(e))) return new Response('{}', { status: 422 });
       return new Response('{"id":"m"}', { status: 200 });
+    }
+    if (url.includes('/rest/v1/user_bug_reports')) {
+      if (bugsFail) return new Response('{}', { status: 500 });
+      const open = bugs.filter((b) => ['open', 'triaged'].includes(b.status)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      return new Response(JSON.stringify(open.slice(0, 3).map((b) => ({ title: b.title }))), { status: 206, headers: { 'content-range': '0-2/' + open.length } });
+    }
+    if (url.includes('/rest/v1/client_errors') && (init.method || 'GET') === 'GET') {
+      if (errsFail) return new Response('{}', { status: 500 });
+      return new Response(JSON.stringify(errs), { status: 200 });
     }
     if (url.includes('/rest/v1/client_errors')) return new Response('', { status: 201 });
     throw new Error('unexpected fetch ' + url);
@@ -223,6 +232,55 @@ await t('digest: a failed read or send answers 502', async () => {
   globalThis.fetch = async (u, i) => String(u).includes('cert_request_tally') ? new Response('{}', { status: 500 }) : f(u, i);
   assert.equal((await digest(dreq('cron-secret'))).status, 502);
   stub({ tally, resendOk: false }); assert.equal((await digest(dreq('cron-secret'))).status, 502);
+});
+
+const bugs = [
+  { title: 'Old one', status: 'open', created_at: '2026-10-01T00:00:00Z' },
+  { title: 'Timer stuck', status: 'triaged', created_at: '2026-10-29T00:00:00Z' },
+  { title: 'Fixed thing', status: 'resolved', created_at: '2026-10-30T00:00:00Z' },
+  { title: 'Card flips twice', status: 'open', created_at: '2026-10-30T00:00:00Z' },
+  { title: 'Wrong score', status: 'open', created_at: '2026-10-28T00:00:00Z' },
+];
+const errs = [
+  { message: 'rare', version: '1', created_at: '2026-10-31T00:00:00Z' },
+  { message: 'boom', version: '1', created_at: '2026-10-29T00:00:00Z' },
+  { message: 'boom', version: '2', created_at: '2026-10-30T00:00:00Z' },
+  { message: 'tie-old', version: '1', created_at: '2026-10-25T00:00:00Z' },
+  { message: 'tie-old', version: '1', created_at: '2026-10-25T00:00:00Z' },
+  { message: 'boom', version: '2', created_at: '2026-10-28T00:00:00Z' },
+];
+await t('digest lists open reports and top errors', async () => {
+  stub({ tally, bugs, errs });
+  assert.equal((await digest(dreq('cron-secret'))).status, 200);
+  const m = mails()[0];
+  assert.ok(m.text.includes('Open bug reports: 4') && m.text.includes('Card flips twice') && m.text.includes('Timer stuck') && m.text.includes('Wrong score') && !m.text.includes('Old one'));
+  assert.ok(m.text.includes('Top errors this week'));
+  assert.ok(m.text.indexOf('3× boom') < m.text.indexOf('2× tie-old') && m.text.indexOf('2× tie-old') < m.text.indexOf('1× rare'));
+  assert.ok(m.html.includes('Open bug reports: 4') && m.html.includes('3× boom'));
+  assert.ok(!/—/.test(m.html + m.text));
+});
+await t('a 0-new week still includes them', async () => {
+  stub({ tally: [], bugs, errs });
+  assert.equal((await digest(dreq('cron-secret'))).status, 200);
+  const m = mails()[0]; assert.equal(m.subject, 'Cert requests this week: 0 new');
+  assert.ok(m.text.includes('No new requests this week.') && m.text.includes('Open bug reports: 4') && m.text.includes('3× boom'));
+  assert.ok(m.html.includes('Open bug reports: 4') && m.html.includes('3× boom'));
+});
+await t('a title with <script> is escaped', async () => {
+  stub({ tally, bugs: [{ title: '<script>alert(1)</script>', status: 'open', created_at: 'z' }], errs: [{ message: '<img src=x onerror=1>', version: '1', created_at: 'z' }] });
+  await digest(dreq('cron-secret'));
+  const m = mails()[0];
+  assert.ok(!m.html.includes('<script>') && m.html.includes('&lt;script&gt;') && !m.html.includes('<img') && m.html.includes('&lt;img'));
+});
+await t('a failing extra read still sends the cert-request part', async () => {
+  for (const o of [{ bugsFail: true }, { errsFail: true }, { bugsFail: true, errsFail: true }]) {
+    stub(Object.assign({ tally, bugs, errs }, o));
+    const res = await digest(dreq('cron-secret')); assert.equal(res.status, 200);
+    const m = mails()[0]; assert.equal(m.subject, 'Cert requests this week: 13 new'); assert.ok(m.html.includes('<b>CCNA</b>'));
+  }
+  stub({ tally, bugs, errs }); const f = globalThis.fetch;
+  globalThis.fetch = async (u, i) => { if (String(u).includes('user_bug_reports')) throw new Error('net'); return f(u, i); };
+  assert.equal((await digest(dreq('cron-secret'))).status, 200);
 });
 
 console.log('notify-cert-live + digest: ' + n + '/' + n + ' passed');
