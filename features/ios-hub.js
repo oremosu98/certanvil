@@ -300,7 +300,7 @@
       else if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
       else if (act === 'log') { b.focus(); if (typeof openLogResult === 'function') openLogResult({ preselect: null }); }
       else if (act === 'settings' || act === 'account') { _close(); _tab('settings'); }
-      else if (act === 'suggest') { if (typeof openSuggestCert === 'function') openSuggestCert(); }
+      else if (act === 'suggest') { b.focus(); if (typeof openSuggestCert === 'function') openSuggestCert(); }
       else if (act === 'unlock') {
         if (typeof _showProOnlyUI === 'function') _showProOnlyUI({ feature: 'Every cert', title: 'Every cert comes with Pro',
           body: 'You’re studying <b>' + _esc(m.active ? m.active.name : 'your cert') + '</b>. Pro adds every other exam, and your progress here stays exactly where it is.' });

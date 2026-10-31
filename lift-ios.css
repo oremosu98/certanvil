@@ -3394,3 +3394,52 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
 html[data-theme] body #pro-only-modal { z-index: 400 !important; }   /* the Pro sheet opened from the hub must sit above it */
 #ios-hub .ihb-greet { font: 600 13.5px/1.45 Inter, sans-serif; color: var(--text-mid); margin: 4px 2px 12px; }
 #ios-hub .ihb-greet b { color: var(--text); font-weight: 700; }
+
+/* ── Persona bundle Task 14: Suggest a cert sheet (cert-ios-settings.html suggestSheet). Own host, above the hub (z 410/411). ── */
+.sg-scrim { position: fixed; inset: 0; z-index: 410; background: color-mix(in oklab, var(--bg) 58%, transparent); opacity: 0; transition: opacity .2s var(--ios-ease); }
+.sg-scrim.open { opacity: 1; transition: opacity .26s var(--ios-ease); }
+.sg-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 411; box-sizing: border-box; max-height: 86dvh; display: flex; flex-direction: column; padding: 10px 20px calc(22px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; background: var(--surface); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; transform: translateY(100%); transition: transform .2s var(--ios-ease); outline: none; }
+.sg-sheet.open { transform: none; transition: transform .36s var(--ios-ease); }
+.sg-sheet button { font-family: inherit; box-sizing: border-box; cursor: pointer; margin: 0; min-height: 0; }
+.sg-grip { flex: 0 0 auto; width: 38px; height: 5px; border-radius: 999px; background: color-mix(in oklab, var(--text) 18%, transparent); margin: 0 auto 13px; }
+.sg-eyebrow { display: block; margin-top: 4px; font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-deep); }
+.sg-sheet h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; letter-spacing: -0.01em; text-transform: none; margin: 4px 0 4px; color: var(--text); outline: none; }
+.sg-sub { margin: 0 0 12px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
+.sg-search { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 12px; margin: 2px 0 6px; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in oklab, var(--surface2) 55%, var(--surface)); }
+.sg-search:focus-within { border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); }
+.sg-search svg { flex: 0 0 auto; width: 16px; height: 16px; stroke: var(--text-dim); fill: none; stroke-width: 2; stroke-linecap: round; }
+.sg-search input { flex: 1 1 auto; min-width: 0; border: 0; background: transparent; color: var(--text); font: 500 16px/1 Inter, sans-serif; outline: none; }   /* 16px: iOS does not zoom the page on focus */
+.sg-list { flex: 1 1 auto; min-height: 0; max-height: 300px; overflow-y: auto; margin: 0 -6px; overscroll-behavior: contain; }
+.sg-vendor { margin: 12px 6px 4px; font: 800 9px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); }
+.sg-row { width: 100%; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 9px 6px; border: 0; background: transparent; color: var(--text); text-align: left; border-radius: 12px; transition: background-color .18s var(--ios-ease), transform .12s var(--ios-ease); }
+.sg-row:active { transform: scale(.97); }
+.sg-row.on { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+.sg-g { flex: 0 0 auto; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font: 800 11px/1 Inter, sans-serif; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, var(--surface2)); }
+.sg-n { flex: 1 1 0; min-width: 0; font: 650 14px/1.2 Inter, sans-serif; }
+.sg-n span { display: block; margin-top: 3px; font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--text-dim); }
+.sg-tick { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; border: 1.5px solid var(--border); transition: background-color .18s var(--ios-ease), border-color .18s var(--ios-ease); }
+.sg-tick svg { width: 13px; height: 13px; stroke: var(--on-accent); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: scale(.96); transition: opacity .16s var(--ios-ease), transform .2s var(--ios-ease); }
+.sg-row.on .sg-tick { background: var(--accent); border-color: var(--accent); }
+.sg-row.on .sg-tick svg { opacity: 1; transform: none; }
+.sg-else .sg-g, .sg-add .sg-g { color: var(--text-dim); background: transparent; border: 1.5px dashed var(--border); }
+.sg-add.on .sg-g { color: var(--accent-deep); }
+.sg-else .sg-n { color: var(--text-mid); }
+.sg-pri { flex: 0 0 auto; width: 100%; min-height: 46px; margin-top: 12px; border: 0; border-radius: 12px; padding: 12px; background: var(--accent); color: var(--on-accent); font: 700 14px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease), opacity .18s var(--ios-ease); }
+.sg-pri:active:not(:disabled) { transform: scale(.97); }
+.sg-pri:disabled { opacity: .45; cursor: default; }
+.sg-note { flex: 0 0 auto; margin: 9px 0 0; text-align: center; font: 500 11.5px/1.4 Inter, sans-serif; color: var(--text-dim); }
+.sg-done { text-align: center; padding: 6px 0 4px; animation: sg-in .52s var(--ios-ease) backwards; }
+.sg-done h3 { margin-top: 14px; }
+.sg-done p { margin: 0 auto; max-width: 30ch; font: 500 13px/1.5 Inter, sans-serif; color: var(--text-mid); }
+.sg-stack { display: inline-flex; }
+.sg-stack .sg-g { width: 44px; height: 44px; border-radius: 13px; font-size: 13px; border: 2px solid var(--surface); margin-left: -10px; }
+.sg-stack .sg-g:first-child { margin-left: 0; }
+@keyframes sg-in { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.sg-sheet :is(.sg-row, .sg-pri):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .sg-row:hover { background: color-mix(in oklab, var(--text) 5%, transparent); } }
+@media (prefers-reduced-motion: reduce) {
+  .sg-sheet { transform: none; opacity: 0; transition: opacity .2s ease; } .sg-sheet.open { opacity: 1; }
+  .sg-row, .sg-tick, .sg-tick svg, .sg-pri { transition: none; } .sg-row:active, .sg-pri:active:not(:disabled) { transform: none; }
+  .sg-done { animation: sg-fade .2s ease backwards; }
+  @keyframes sg-fade { from { opacity: 0; } }
+}
