@@ -1316,7 +1316,7 @@
     if (days === null) val.textContent = '\u2014';
     else if (days === 0) val.textContent = 'Today';
     else if (days > 0) val.textContent = `${days}d`;
-    else val.textContent = `+${Math.abs(days)}d`;
+    else val.textContent = days === -1 ? 'Exam was yesterday' : `Exam was ${-days} days ago`;   // Task 6: was "+Nd"
     // Tooltip
     const dateLabel = new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     btn.title = `Exam: ${dateLabel}`;
@@ -1768,9 +1768,11 @@
       }
       const daysEl = document.getElementById('cb-days');
       if (daysEl) {
-        const d = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+        const d = (typeof getDaysToExam === 'function') ? getDaysToExam() : null, lbl = daysEl.nextElementSibling;
+        // Task 6 (drawings home-exam-ask / home-exam-passed): a past date says how long ago, never "—"
+        if (lbl) lbl.textContent = (typeof d === 'number' && d < 0) ? 'exam day' : 'days to exam';
         if (typeof d === 'number' && d >= 0) _bentoCountUp('cb-days', d, 900);
-        else daysEl.textContent = '—';
+        else daysEl.textContent = typeof d !== 'number' ? '—' : d === -1 ? 'Yesterday' : -d + ' days ago';
       }
       const streakEl = document.getElementById('cb-streak');
       if (streakEl && typeof getStreak === 'function') {

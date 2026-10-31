@@ -652,7 +652,8 @@
   function getForecastCopy(r) {
     const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayLabel = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return mm ? (+mm[3]) + ' ' + MON[+mm[2] - 1] : ''; };
-    const pc = r.pace, hasDate = typeof r.daysToExam === 'number' && r.daysToExam >= 0;   // a past date reads as no date (final review M5)
+    const pc = r.pace, hasDate = typeof r.daysToExam === 'number' && r.daysToExam >= 0;
+    const past = typeof r.daysToExam === 'number' && r.daysToExam < 0;   // founder 31 Oct: a past date asks for a NEW date
     const togo = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.');
     if (pc) {
       const pw = Math.round(Math.abs(pc.pointsPerWeek)), when = dayLabel(pc.examDate);
@@ -664,6 +665,7 @@
           : ' On this pace' + around + ', over the ' + r.passScore + ' pass mark.');
       return { line, label: 'Forecast for ' + when, value: pc.projected, range: 'likely ' + pc.low + ' to ' + pc.high, dim: false };
     }
+    if (past) return { line: togo + ' Set a new exam date to see where you\'ll be on the day.', label: 'Forecast', value: 'Set a date', range: '', dim: true };
     if (!hasDate) return { line: togo + ' Set your exam date to see where you\'ll be on the day.', label: 'Forecast', value: 'Set a date', range: '', dim: true };
     return { line: togo + ' Your forecast appears once you have five sessions in the last two weeks.', label: 'Forecast', value: 'Not yet', range: '', dim: true };
   }

@@ -386,8 +386,9 @@
       if (act === 'why-mocks') { close(); if (typeof startExam === 'function') startExam(); }
       else if (act === 'why-areas') { close(); if (typeof applyDomainPreset === 'function') applyDomainPreset(b.getAttribute('data-key')); }
       else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('focused'); }
-    });
+    }, { size: 'lg' });   // desktop: a 700px centred dialog (drawing why-sheet); phones ignore it
   }
+  window.openWhyScore = _openWhy;   // desktop Analytics "Why this score?" (Task 6)
 
   // ── Mount: phone width only. Renders into #ios-home and binds each data-act to the
   // handler the desktop Home already uses, so behaviour (Pro gates, quotas) is identical.

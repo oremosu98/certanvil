@@ -5974,3 +5974,59 @@ html[data-theme="light"] #settings-suggest-row .ss-i{color:oklch(0.42 0.150 52);
   #ios-suggest.is-dialog :is(.sg-row,.sg-tick,.sg-tick svg,.sg-pri,.sg-search),#settings-suggest-row .ss-row{transition:none;}
   #ios-suggest.is-dialog :is(.sg-row,.sg-pri):active{transform:none;}
 }
+
+/* v8.204.0 Desktop catch-up Task 6: the Analytics readiness tile (features/analytics.js _anaBtReadiness), drawing
+   analytics-why: the PBQ note and "Why this score?", which opens the phone's why sheet (features/ios-home.js _iosWhyHtml)
+   as a 700px dialog, drawing why-sheet. lift-ios.css only loads below 900px, so the sheet's inner layout lives here:
+   two columns, book-it on the left, exam areas and the evidence on the right. Motion per BRAND §6. */
+#page-analytics .s-read,#ist-sheet{--rw-acc:var(--accent-light);}
+html[data-theme="light"] #page-analytics .s-read,html[data-theme="light"] #ist-sheet{--rw-acc:oklch(0.42 0.150 52);}   /* the drawing's accent-deep: AA on light */
+#page-analytics .read-fore .fv{white-space:nowrap}   /* "2 days ago" and "Set a date" stay on one line */
+#page-analytics .read-pbq{font-size:12.5px;line-height:1.5;color:var(--text-dim);margin:14px 0 0;padding-top:12px;border-top:1px solid var(--hairline);max-width:46ch}
+#page-analytics .read-pbq b{color:var(--text);font-weight:650}
+#page-analytics .read-why{display:inline-flex;align-items:center;gap:6px;min-height:36px;margin:8px 0 0 -2px;padding:0 2px;border:0;background:none;color:var(--rw-acc);font:650 13px/1 Inter,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1)}
+#page-analytics .read-why svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s cubic-bezier(0.16,1,0.3,1)}
+#page-analytics .read-why:active{transform:scale(.97)}
+#page-analytics .read-why:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+@media (hover:hover) and (pointer:fine){ #page-analytics .read-why:hover svg{transform:translateX(3px)} }
+@media (min-width:900px){
+  #ist-sheet.is-dialog .iw-body{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);grid-template-rows:auto auto auto auto auto 1fr auto;column-gap:22px;align-items:start;}
+  #ist-sheet.is-dialog .iw-body>h3,#ist-sheet.is-dialog .iw-lede,#ist-sheet.is-dialog .iw-how{grid-column:1/-1;}
+  #ist-sheet.is-dialog .iw-lede{grid-row:2;font:500 13.5px/1.5 Inter,sans-serif;color:var(--text-mid);margin:0 0 6px;}
+  #ist-sheet.is-dialog .iw-lede b{color:var(--text);font-weight:650;}
+  #ist-sheet.is-dialog .iw-lede+.iw-sect{grid-column:1;grid-row:3;}
+  #ist-sheet.is-dialog .iw-check{grid-column:1;grid-row:4/7;}
+  #ist-sheet.is-dialog .iw-check+.iw-sect{grid-column:2;grid-row:3;}
+  #ist-sheet.is-dialog .iw-dom{grid-column:2;grid-row:4;}
+  #ist-sheet.is-dialog .iw-dom+.iw-sect{grid-column:2;grid-row:5;}
+  #ist-sheet.is-dialog .iw-facts{grid-column:2;grid-row:6;}
+  #ist-sheet.is-dialog .iw-how{grid-row:7;font:500 11.5px/1.5 Inter,sans-serif;color:var(--text-dim);margin:14px 0 0;}
+  #ist-sheet.is-dialog .iw-sect{display:flex;justify-content:space-between;align-items:baseline;font:800 10px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin:16px 0 9px;}
+  #ist-sheet.is-dialog .iw-sect span{font:700 11px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:var(--rw-acc);}
+  #ist-sheet.is-dialog .iw-check{list-style:none;margin:0;padding:0;border:1px solid var(--border);border-radius:13px;overflow:hidden;}
+  #ist-sheet.is-dialog .iw-check li{display:flex;gap:10px;padding:11px 12px;font:600 13px/1.35 Inter,sans-serif;color:var(--text);}
+  #ist-sheet.is-dialog .iw-check li+li{border-top:1px solid var(--hairline,var(--border));}
+  #ist-sheet.is-dialog .iw-check li i{flex:0 0 auto;width:20px;height:20px;border-radius:999px;border:1.5px solid var(--border);display:grid;place-items:center;margin-top:1px;}
+  #ist-sheet.is-dialog .iw-check li i svg{width:12px;height:12px;stroke:var(--bg);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0;}
+  #ist-sheet.is-dialog .iw-check li.ok i{background:var(--pass);border-color:var(--pass);}
+  #ist-sheet.is-dialog .iw-check li.ok i svg{opacity:1;}
+  #ist-sheet.is-dialog .iw-check small{display:block;font:500 11.5px/1.35 Inter,sans-serif;color:var(--text-dim);margin-top:2px;}
+  #ist-sheet.is-dialog .iw-next{display:block;margin-top:8px;min-height:36px;padding:0 12px;border-radius:10px;border:1px solid color-mix(in oklab,var(--accent) 40%,var(--border));background:transparent;color:var(--rw-acc);font:700 12px/1 Inter,sans-serif;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),border-color .16s cubic-bezier(0.16,1,0.3,1);}
+  #ist-sheet.is-dialog .iw-next:active{transform:scale(.97);}
+  #ist-sheet.is-dialog .iw-next:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #ist-sheet.is-dialog .iw-dom{border:1px solid var(--border);border-radius:13px;overflow:hidden;}
+  #ist-sheet.is-dialog .iw-dom div{display:grid;grid-template-columns:1fr auto 44px;gap:10px;padding:9px 12px;font:600 12.5px/1.3 Inter,sans-serif;color:var(--text);}
+  #ist-sheet.is-dialog .iw-dom div+div{border-top:1px solid var(--hairline,var(--border));}
+  #ist-sheet.is-dialog .iw-dom .wt{color:var(--text-dim);font-weight:500;}
+  #ist-sheet.is-dialog .iw-dom .ac{text-align:right;font-family:'Roboto Mono',monospace;font-variant-numeric:tabular-nums;}
+  #ist-sheet.is-dialog .iw-dom .weak .ac{color:var(--fail);}
+  #ist-sheet.is-dialog .iw-facts{font:500 12.5px/1.6 Inter,sans-serif;color:var(--text-mid);margin:0;}
+  #ist-sheet.is-dialog .iw-facts b{color:var(--text);font-weight:650;}
+}
+@media (min-width:900px) and (hover:hover) and (pointer:fine){
+  #ist-sheet.is-dialog .iw-next:hover{border-color:var(--accent);}
+}
+@media (prefers-reduced-motion:reduce){
+  #page-analytics .read-why,#page-analytics .read-why svg,#ist-sheet.is-dialog .iw-next{transition:none;}
+  #page-analytics .read-why:active,#ist-sheet.is-dialog .iw-next:active{transform:none;}
+}
