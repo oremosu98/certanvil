@@ -336,6 +336,89 @@ async function main() {
     }
   }
 
+  // 9. Persona bundle: per-cert maps (readiness_snapshots, exam_dates, exam_outcomes) merge per cert.
+  {
+    // 9a. per-cert maps survive a sibling flush: a secplus device's write lands after this netplus device
+    // hydrated, then netplus flushes its own map. The cloud keeps both certs in both maps.
+    {
+      const db = { profile: { metadata: {} }, history: [] };
+      const b = boot({ nplus_exam_dates: JSON.stringify({ netplus: '2026-11-17' }),
+        nplus_readiness_snapshots: JSON.stringify({ netplus: { score: 553 } }) }, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      await b.cs.flushNow();
+      db.profile.metadata = Object.assign({}, db.profile.metadata, {   // the sibling subdomain's flush
+        exam_dates: { secplus: '2026-12-03' }, readiness_snapshots: { secplus: { score: 612 } } });
+      b.cs.flush('nplus_exam_dates'); b.cs.flush('nplus_readiness_snapshots');
+      await b.cs.flushNow();
+      const m = db.profile.metadata;
+      out.s9a = { bothKept: !!(m.exam_dates && m.exam_dates.secplus === '2026-12-03' && m.exam_dates.netplus === '2026-11-17'
+        && m.readiness_snapshots && m.readiness_snapshots.secplus && m.readiness_snapshots.secplus.score === 612
+        && m.readiness_snapshots.netplus && m.readiness_snapshots.netplus.score === 553) };
+    }
+    // 9b. hydrate merges sibling certs into the local map: cloud fills the certs this device lacks,
+    // this device keeps its own entries (a cleared date, null, included), an empty local map is filled.
+    {
+      const outcome = { outcome: 'passed', score: 790, date: '2026-10-20', predicted: 760, at: '2026-10-20T15:00:00.000Z' };
+      const db = { profile: { metadata: {
+        exam_dates: { secplus: '2026-12-03', netplus: '2099-01-01', az900: '2026-12-20' },
+        readiness_snapshots: { secplus: { score: 612 }, netplus: { score: 1 } },
+        exam_outcomes: { secplus: outcome } } }, history: [] };
+      const b = boot({ nplus_exam_dates: JSON.stringify({ netplus: '2026-11-17', az900: null }),
+        nplus_readiness_snapshots: JSON.stringify({ netplus: { score: 553 } }) }, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const ed = JSON.parse(b.ls.getItem('nplus_exam_dates') || '{}');
+      const rs = JSON.parse(b.ls.getItem('nplus_readiness_snapshots') || '{}');
+      const eo = JSON.parse(b.ls.getItem('nplus_exam_outcomes') || '{}');
+      await b.cs.flushNow();
+      out.s9b = {
+        siblingsIn: ed.secplus === '2026-12-03' && rs.secplus && rs.secplus.score === 612 && eo.secplus && eo.secplus.score === 790,
+        localWins: ed.netplus === '2026-11-17' && rs.netplus.score === 553 && ed.az900 === null,
+        cloudAfter: db.profile.metadata.exam_dates.netplus === '2026-11-17' && db.profile.metadata.exam_dates.az900 === null
+          && db.profile.metadata.exam_dates.secplus === '2026-12-03'
+      };
+    }
+    // 9c. once the cloud has the map, profiles.exam_date (whichever cert flushed last) does not seed
+    // another cert's legacy date; this cert's map entry does.
+    {
+      const db = { profile: { metadata: { exam_dates: { secplus: '2026-12-03' } }, exam_date: '2026-12-03' }, history: [] };
+      const b = boot({}, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const db2 = { profile: { metadata: { exam_dates: { secplus: '2026-12-03', netplus: '2026-11-17' } }, exam_date: '2026-12-03' }, history: [] };
+      const b2 = boot({}, db2, 'netplus');
+      b2.cs.setSession(b2.session);
+      await b2.cs.hydrate();
+      const db3 = { profile: { metadata: {} , exam_date: '2026-11-17' }, history: [] };   // pre-map cloud: the column still seeds
+      const b3 = boot({}, db3, 'netplus');
+      b3.cs.setSession(b3.session);
+      await b3.cs.hydrate();
+      out.s9c = { noLeak: b.ls.getItem('nplus_exam_date') === null && b2.ls.getItem('nplus_exam_date') === '2026-11-17'
+        && b3.ls.getItem('nplus_exam_date') === '2026-11-17' };
+    }
+    // 9d. legacy exam date adopts the current cert (features/readiness.js getExamDate, run for real).
+    {
+      const RS = fs.readFileSync(path.join(__dirname, '..', 'features', 'readiness.js'), 'utf8');
+      const fn = (name) => {
+        const i = RS.indexOf('function ' + name + '(');
+        if (i === -1) return '';
+        let j = RS.indexOf('{', i), d = 1; j++;
+        while (j < RS.length && d > 0) { if (RS[j] === '{') d++; else if (RS[j] === '}') d--; j++; }
+        return RS.slice(i, j);
+      };
+      const ls = makeLocal({ nplus_exam_date: '2026-11-17' });
+      const flushed = [];
+      const ctx = { window: { CURRENT_CERT: 'netplus' }, localStorage: ls, JSON, Object, Array,
+        STORAGE: { EXAM_DATE: 'nplus_exam_date', EXAM_DATES: 'nplus_exam_dates' }, _cloudFlush: (k) => flushed.push(k) };
+      vm.createContext(ctx);
+      vm.runInContext(['_certKey', '_readExamDates', 'getExamDate'].map(fn).join('\n'), ctx);
+      const got = vm.runInContext('getExamDate()', ctx);
+      const map = JSON.parse(ls.getItem('nplus_exam_dates') || '{}');
+      out.s9d = { adopted: got === '2026-11-17' && map.netplus === '2026-11-17' && flushed.indexOf('nplus_exam_dates') !== -1 };
+    }
+  }
+
   return out;
 }
 

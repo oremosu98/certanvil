@@ -487,15 +487,49 @@
   }
 
   // ── Exam date storage + forecast ──
-  function getExamDate() {
-    const raw = localStorage.getItem(STORAGE.EXAM_DATE);
-    return raw || null;
+  // v8.203.0 (persona bundle): one exam date per cert, in STORAGE.EXAM_DATES
+  // ({certId: 'YYYY-MM-DD'}), cloud-merged per cert so the My certs hub can show
+  // every cert's date. A cleared date is kept as null so the clear survives the
+  // per-cert cloud merge (an absent key would let the cloud copy back in).
+  // STORAGE.EXAM_DATE (the old single date) is kept for the current cert: it
+  // feeds profiles.exam_date for older clients, and a device that only has it
+  // adopts it into the map on first read.
+  function _readExamDates() {
+    try {
+      const m = JSON.parse(localStorage.getItem(STORAGE.EXAM_DATES) || '{}');
+      return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+    } catch (_) { return {}; }
   }
-  function setExamDate(isoDate) {
-    if (!isoDate) localStorage.removeItem(STORAGE.EXAM_DATE);
-    else localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
-    _cloudFlush(STORAGE.EXAM_DATE);
+  function getExamDate(certId) {
+    const cert = certId || _certKey();
+    const map = _readExamDates();
+    if (Object.prototype.hasOwnProperty.call(map, cert)) return map[cert] || null;
+    if (cert !== _certKey()) return null;
+    const legacy = localStorage.getItem(STORAGE.EXAM_DATE);
+    if (!legacy) return null;
+    map[cert] = legacy;   // adopt the legacy date into the map once
+    try { localStorage.setItem(STORAGE.EXAM_DATES, JSON.stringify(map)); } catch (_) {}
+    if (typeof _cloudFlush === 'function') _cloudFlush(STORAGE.EXAM_DATES);
+    return legacy;
+  }
+  function setExamDate(isoDate, certId) {
+    const cert = certId || _certKey(), map = _readExamDates();
+    map[cert] = isoDate || null;   // null, not delete: the clear must survive the per-cert cloud merge
+    localStorage.setItem(STORAGE.EXAM_DATES, JSON.stringify(map));
+    if (cert === _certKey()) {   // the legacy single date follows the current cert only
+      if (!isoDate) localStorage.removeItem(STORAGE.EXAM_DATE);
+      else localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
+    }
+    _cloudFlush(STORAGE.EXAM_DATES); _cloudFlush(STORAGE.EXAM_DATE);
     try { window.dispatchEvent(new Event('ca:exam-date')); } catch (_) {}   // Stage 5d: the reminders re-plan the countdown
+  }
+  // Every cert's set date ({certId: 'YYYY-MM-DD'}), cleared ones left out.
+  // Exported as window.getExamDates (named apart so _fnBody('getExamDate') stays exact).
+  function examDatesByCert() {
+    getExamDate();   // adopts a legacy single date for the current cert
+    const map = _readExamDates(), out = {};
+    Object.keys(map).forEach(function (k) { if (map[k]) out[k] = map[k]; });
+    return out;
   }
   // v8.138.0: a stored exam date is a bare "YYYY-MM-DD", which new Date() reads
   // as UTC midnight: 1am on the day in the UK (so Math.ceil said "8 days" for an
@@ -1407,6 +1441,7 @@
   window._writeReadinessSnapshot   = _writeReadinessSnapshot;
   window.getExamDate               = getExamDate;
   window.setExamDate               = setExamDate;
+  window.getExamDates              = examDatesByCert;
   window.getDaysToExam             = getDaysToExam;
   window.parseExamDate             = parseExamDate;
   window.getReadinessForecast      = getReadinessForecast;

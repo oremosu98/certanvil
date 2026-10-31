@@ -62,6 +62,17 @@ const { authStateJs, test, vm, path } = require('./_context');
   test('v8.198.1 sync: a conflict that never clears stops after two automatic retries',
     s8b.capped === true);
 
+  // Persona bundle: per-cert maps (readiness_snapshots, exam_dates, exam_outcomes) merge per cert both ways.
+  const s9a = r.s9a || {}, s9b = r.s9b || {}, s9c = r.s9c || {}, s9d = r.s9d || {};
+  test('persona sync: per-cert maps survive a sibling flush (exam dates and readiness snapshots of both certs kept)',
+    s9a.bothKept === true);
+  test('persona sync: hydrate merges sibling certs into the local map, this device keeps its own entries (a cleared date too)',
+    s9b.siblingsIn === true && s9b.localWins === true && s9b.cloudAfter === true);
+  test('persona sync: once the cloud has exam_dates, profiles.exam_date never seeds another cert\'s local date',
+    s9c.noLeak === true);
+  test('persona sync: a legacy single exam date is adopted into exam_dates for the current cert',
+    s9d.adopted === true);
+
   // v8.198.1: offline, the delete flows clear the session with supabase-js's private _removeSession(). A supabase-js
   // upgrade that renames it would quietly drop them to the storage fallback, so pin it in both vendored bundles.
   test('v8.198.1 deletion: the vendored supabase-js (app and website) still defines auth._removeSession()', (() => {

@@ -1140,7 +1140,7 @@ const STORAGE = {
   PORT_PAIRS_BEST: 'nplus_port_pairs_best',
   HARDCORE_EXAM: 'nplus_hardcore_exam',   // Strict Mode (#48): retired v8.166.0, code removed v8.168.0; kept so old synced values stay recognised
   PORT_STATS: 'nplus_port_stats',
-  EXAM_DATE: 'nplus_exam_date',
+  EXAM_DATE: 'nplus_exam_date', EXAM_DATES: 'nplus_exam_dates', EXAM_OUTCOMES: 'nplus_exam_outcomes',   // persona bundle: per-cert {certId: date|null} and {certId: {outcome, score, date, predicted, at}}; EXAM_DATE = the current cert's, for profiles.exam_date
   MILESTONES: 'nplus_milestones',
   TYPE_STATS: 'nplus_type_stats',
   SUBNET_STATS: 'nplus_subnet_stats',

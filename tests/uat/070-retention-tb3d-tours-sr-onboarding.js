@@ -1333,7 +1333,7 @@ test('cloud cert-keying: buildJsonb writes sr per-cert (out.sr[cert].queue), nev
 test('cloud cert-keying: applyJsonb pulls this cert + legacy sr_queue fallback',
   (() => { const b = _fnBody(read('cloud-store.js'), 'applyJsonbToLocalStorage'); return b && /cloudKey === 'sr'/.test(b) && /meta\.sr\[cert\]/.test(b) && /cloudKey === 'sr_queue'/.test(b); })());
 test('cloud cert-keying: doFlush read-merge-writes cert-scoped maps sr/activated/onb_skips (preserves other certs)',
-  (() => { const b = _fnBody(read('cloud-store.js'), 'doFlush'); return b && /select\('metadata'\)/.test(b) && /CERT_SCOPED\s*=\s*\['sr',\s*'activated',\s*'onb_skips'\]/.test(b) && /Object\.assign\(\{\},\s*existing,\s*ours\)/.test(b); })());
+  (() => { const b = _fnBody(read('cloud-store.js'), 'doFlush'); return b && /select\('metadata'\)/.test(b) && /CERT_SCOPED\s*=\s*\['sr',\s*'activated',\s*'onb_skips'[,\]]/.test(b) && /Object\.assign\(\{\},\s*existing,\s*ours\)/.test(b); })());
 // ── Onboarding rollout gate + activation telemetry (Track A) ──────────────────
 test('onb gate: USER_DATA_KEYS includes nplus_activated + nplus_onb_skips',
   (() => { const cjs = read('cloud-store.js'); return /'nplus_activated'/.test(cjs) && /'nplus_onb_skips'/.test(cjs); })());

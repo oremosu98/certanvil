@@ -114,7 +114,15 @@
     'nplus_onb_skips',   // onboarding: per-cert diagnostic-skip record (metadata.onb_skips.<certId>)
     'nplus_freeCertId',  // free-tier cert lock: metadata.freeCertId (single global value)
     'nplus_drill_stats', // Task 3: per-cert drill stats {cert:{drill:{done,perfect}}}
+    'nplus_exam_dates',     // persona bundle: per-cert exam date {cert:'YYYY-MM-DD'|null}, merged per cert
+    'nplus_exam_outcomes',  // persona bundle: per-cert exam result {cert:{outcome,score,date,predicted,at}}, merged per cert
   ]);
+
+  // Whole per-cert maps held in localStorage as {certId: value} (unlike sr / activated / onb_skips,
+  // where local holds only this cert's entry). Flush merges them per cert over the cloud copy and
+  // hydrate merges the cloud's other certs into local, so every subdomain sees every cert.
+  var PER_CERT_MAPS = ['readiness_snapshots', 'exam_dates', 'exam_outcomes'];
+  function _isMap(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
 
   // Subset of USER_DATA that goes to a dedicated table, NOT profiles.metadata
   var TABLE_BACKED_KEYS = new Set([
@@ -205,6 +213,7 @@
 
         var meta = (profileResult.data && profileResult.data.metadata) || {};
         var examDate = profileResult.data && profileResult.data.exam_date;
+        var cert0 = _ccCert();
 
         // Fill-only: cloud values land only where this device has nothing (v8.151.0)
         applyJsonbToLocalStorage(meta);
@@ -212,6 +221,9 @@
         // so write it via the centralised KEY_PREFIX const at the top of
         // this file (keeps cloud-store the single owner of the 'nplus_'
         // prefix; the variable-arg form satisfies the literal-string lint).
+        // Persona bundle: once the cloud has the per-cert map, the column holds whichever cert flushed
+        // last, so it must not seed this cert's legacy date (getExamDate would adopt another cert's day).
+        if (meta.exam_dates && typeof meta.exam_dates === 'object') examDate = meta.exam_dates[cert0] || null;
         if (examDate && !_localHas(KEY_PREFIX + 'exam_date')) {
           try { localStorage.setItem(KEY_PREFIX + 'exam_date', examDate); } catch (e) {}
         }
@@ -445,6 +457,21 @@
         }
         return;
       }
+      // Per-cert maps: cloud fills every cert entry this device lacks; this device's own entries win
+      // (a cleared exam date is a null entry, which also wins).
+      if (PER_CERT_MAPS.indexOf(cloudKey) !== -1) {
+        var cloudMap = meta[cloudKey];
+        if (!_isMap(cloudMap)) return;
+        var mapKey = 'nplus_' + cloudKey, localMap = {};
+        try { localMap = JSON.parse(localStorage.getItem(mapKey) || '{}'); } catch (e) { localMap = {}; }
+        if (!_isMap(localMap)) localMap = {};
+        var added = false;
+        Object.keys(cloudMap).forEach(function (c) {
+          if (!Object.prototype.hasOwnProperty.call(localMap, c)) { localMap[c] = cloudMap[c]; added = true; }
+        });
+        if (added) { try { localStorage.setItem(mapKey, JSON.stringify(localMap)); } catch (e) {} }
+        return;
+      }
       var localKey = 'nplus_' + cloudKey;
       // Skip non-user-data keys defensively (in case jsonb has extra fields like
       // role / migration_v1_at / etc. that shouldn't pollute localStorage)
@@ -542,7 +569,8 @@
       // know THIS subdomain's cert locally, so re-read cloud and merge ours
       // over the existing per-cert entries — otherwise flushing one cert wipes
       // the others' sub-objects on the full-metadata column replace.
-      var CERT_SCOPED = ['sr', 'activated', 'onb_skips'];
+      // Persona bundle: the whole-map per-cert keys (PER_CERT_MAPS) merge the same way.
+      var CERT_SCOPED = ['sr', 'activated', 'onb_skips', 'readiness_snapshots', 'exam_dates', 'exam_outcomes'];
       // v8.198.1: account-deletion keys only the server writes (request_account_deletion stamps the first, the
       // sign-in trigger sets the second and clear_deletion_notice removes it). A client flush never adds, removes
       // or changes them: they are copied from the row this flush read, and the write only lands if the row
@@ -550,8 +578,8 @@
       var SERVER_OWNED = ['deletion_requested_at', 'deletion_cancelled_at'];
       var writeProfile = function (existingMeta) {
         CERT_SCOPED.forEach(function (k) {
-          var existing = (existingMeta && existingMeta[k]) || {};
-          var ours = jsonb[k] || {};
+          var existing = _isMap(existingMeta && existingMeta[k]) ? existingMeta[k] : {};
+          var ours = _isMap(jsonb[k]) ? jsonb[k] : {};
           var merged = Object.assign({}, existing, ours);   // our cert overrides, siblings preserved
           if (Object.keys(merged).length) jsonb[k] = merged;
         });
