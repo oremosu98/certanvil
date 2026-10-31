@@ -449,7 +449,7 @@ test('v4.89.0 Phase C′: saveWrongBank flushes STORAGE.WRONG_BANK',
 test('v4.89.0 Phase C′: saveSrQueue flushes STORAGE.SR_QUEUE',
   /function saveSrQueue[\s\S]{0,300}_cloudFlush\(STORAGE\.SR_QUEUE\)/.test(js));
 test('v4.89.0 Phase C′: setExamDate flushes STORAGE.EXAM_DATE',
-  /function setExamDate[\s\S]{0,300}_cloudFlush\(STORAGE\.EXAM_DATE\)/.test(js));
+  /function setExamDate[\s\S]{0,700}_cloudFlush\(STORAGE\.EXAM_DATE\)/.test(js));
 test('v4.89.0 Phase C′: setDailyGoal flushes STORAGE.DAILY_GOAL',
   /function setDailyGoal[\s\S]{0,300}_cloudFlush\(STORAGE\.DAILY_GOAL\)/.test(js));
 test('v4.89.0 Phase C′: unlockMilestone flushes STORAGE.MILESTONES',

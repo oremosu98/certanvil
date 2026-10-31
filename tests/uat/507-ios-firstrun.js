@@ -48,7 +48,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
 
     const cap = run('_ifrCappedHtml(__s)', { cert: { name: 'Network+', code: 'N10-009', glyph: 'N+' }, due: 5, hours: 5 });
     test('capped Home: Done for today, Start review, See Pro, the reset hours',
-      cap.indexOf('Done for today') >= 0 && cap.indexOf("That's today's 15 done.") >= 0 && cap.indexOf('15 fresh questions unlock in about 5 hours') >= 0
+      cap.indexOf('Done for today') >= 0 && cap.indexOf("That's today's 15 done.") >= 0 && cap.indexOf('15 new questions unlock in about 5 hours') >= 0
       && /data-act="review"/.test(cap) && /data-act="gopro"/.test(cap));
 
     const Q = { text: 'Which port does A&B <x> use?', options: ['80', '443', '22', '3389'], topic: 'Ports' };
@@ -111,7 +111,7 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
     const dg = fs.readFileSync(path.join(ROOT, 'features', 'diagnostic.js'), 'utf8');
     test('the check stays off the daily 15: the batch fetch reads _metered from the Lift C flag, app.js within its ratchet',
-      /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8302);
+      /_metered: !window\._ifrUnmetered/.test(appSrc) && appSrc.split('\n').length <= 8334);  // 8302 + 32 for persona-bundle T3 streak helpers
     test('diagnostic.js has no 720 pass-mark fallback; the phone check hooks in through onReady and _diagApi',
       !/:\s*720\b/.test(dg) && /opts\.onReady/.test(dg) && /window\._diagApi\s*=/.test(dg));
     const R = require(path.join(ROOT, 'lib', 'router.js'));
@@ -126,6 +126,19 @@ const { _fnBody, fs, path, ROOT, test, results, vm } = require('./_context');
     const ob = fs.readFileSync(path.join(ROOT, 'lib', 'onboarding-boot.js'), 'utf8');
     test('first run: no 720 fallback; boot marks a cert with history as activated and carries the saved free cert',
       !/\|\|\s*720\b/.test(fr) && /STORAGE\.HISTORY|nplus_history/.test(ob) && /freeCertId/.test(ob));
+    // Task 17: honest copy (phone) and Start practising that starts
+    const rd = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+    const sIn = rd('features/ios-signin.js'), sHome = rd('features/ios-home.js'), sProg = rd('features/ios-progress.js'), sHtml = rd('index.html');
+    const sAll = [src, sIn, sHome, sProg, sHtml].join('\n');
+    test('honest copy: the four new strings are present',
+      sIn.indexOf('Original exam-style questions and a readiness score') >= 0
+      && src.indexOf("Daily Review keeps what you\\'ve learned sharp, and 15 new questions unlock") >= 0
+      && sHome.indexOf('A long set at exam level. No timer.') >= 0 && sProg.indexOf('A good place to drill next.') >= 0);
+    test('honest copy: the four old claims are gone from every surface',
+      !/Real exam questions|still moves your readiness|Closest to the real thing|fastest per minute/.test(sAll));
+    test('Start practising after the check starts today\'s set without recording a skip',
+      /a === 'practise'\) \{ leaveCheck\(\); startToday\(\{ fromCheck: true \}\); \}/.test(src)
+      && /function startToday\(opts\)/.test(src) && /if \(!\(opts && opts\.fromCheck\)\) IFR\.recordSkip\(\);/.test(src));
   } catch (err) {
     test('Lift C first run: block (threw)', false);
     results.errors.push('507 ios-firstrun block threw: ' + err.message);

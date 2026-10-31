@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<base href="../landing/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin · Cert requests · Concept</title>
+<meta name="description" content="CertAnvil owner-only admin dashboard.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<script src="native-hide.js"></script>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="dg-system.css?v=8.197.0">
+<script>
+(function() {
+  var theme = 'light';
+  try {
+    var saved = localStorage.getItem('certanvil_theme');
+    if (saved === 'light' || saved === 'dark') theme = saved;
+  } catch (e) {}
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
+<script>
+(function() {
+  if (!('serviceWorker' in navigator)) return;
+  try { navigator.serviceWorker.register('/sw.js').catch(function () {}); } catch (e) {}
+  try {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      var hadController = !!navigator.serviceWorker.controller;
+      var pending = regs.map(function (r) { return r.unregister().catch(function () { return false; }); });
+      Promise.all(pending).then(function () {
+        if (hadController && !sessionStorage.getItem('_certanvil_sw_killed')) {
+          try { sessionStorage.setItem('_certanvil_sw_killed', '1'); } catch (e) {}
+          try { window.location.reload(); } catch (e) {}
+        }
+      });
+    });
+  } catch (e) {}
+})();
+</script>
+</head>
+<body class="account-body admin-body">
+
+<!-- ══════════════════════════════════════════
+     ADMIN v2 — editorial reskin (taste-skill + stop-slop + emil),
+     the sibling of /account in the locked bronze system. SCOPED,
+     CONTRACT-SAFE: lib/admin.js gates (#admin-loading/#admin-anon-gate/
+     #admin-403-gate/#admin-content), sets #stat-* ids, innerHTML-
+     injects #users-tbody (.mono + .admin-role-pill admin|user) /
+     #certs-tbody / #ships-tbody; auth.js drives the shared topbar.
+     The real DOM is preserved byte-for-byte. Only additive: id="site-
+     topbar" + id="admin-page" scoping roots, this scoped <style>, a
+     .acc-sec-ic span in each STATIC section head, a scoped entrance
+     IIFE. admin.js/auth.js untouched. The #site-topbar block is the
+     already-shipped index.html block. [data-theme="dark"] matches the
+     prod theme system; fonts from the existing head.
+══════════════════════════════════════════ -->
+<style id="admx-styles">
+  #site-topbar{--bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);--ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);--border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);--accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);--topbar-bg:oklch(0.975 0.007 85 / .82);--eo:cubic-bezier(0.23,1,0.32,1);position:sticky;top:0;z-index:50;background:var(--topbar-bg);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border-soft);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  [data-theme="dark"] #site-topbar{--bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);--ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);--border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);--accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);--topbar-bg:oklch(0.16 0.009 275 / .82)}
+  #site-topbar *{box-sizing:border-box}
+  #site-topbar [hidden]{display:none!important}
+  #site-topbar .topbar-inner{max-width:1180px;margin:0 auto;padding:15px clamp(20px,4vw,32px);display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative}
+  #site-topbar .logo{display:flex;align-items:center;gap:11px;text-decoration:none}
+  #site-topbar .logo-mark{width:34px;height:34px;display:block;flex:none;flex-shrink:0;background:none;border:0;border-radius:0;padding:0;box-shadow:none}
+  #site-topbar .logo-mark::before,#site-topbar .logo-mark::after{content:none!important}
+  #site-topbar .logo-mark svg{width:100%;height:100%;display:block;fill:none}
+  #site-topbar .logo-mark svg path,#site-topbar .logo-mark svg line{fill:none}
+  #site-topbar .logo-mark svg path{stroke:var(--accent)}
+  #site-topbar .logo-mark svg line{stroke:var(--muted)}
+  #site-topbar .logo-name{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:20px;letter-spacing:-.01em;color:var(--ink)}
+  #site-topbar .admin-suffix{font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.12em;color:var(--accent-deep);margin-left:2px}
+  [data-theme="dark"] #site-topbar .admin-suffix{color:var(--accent-bright)}
+  #site-topbar .topbar-nav{display:flex;align-items:center;gap:clamp(6px,1.4vw,16px)}
+  #site-topbar .nav-link{position:relative;font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none;padding:8px 4px;border-radius:0;background:none;transition:color 200ms var(--eo)}
+  #site-topbar .nav-link::after{content:"";position:absolute;left:4px;right:calc(100% - 4px);bottom:2px;height:1.5px;background:var(--accent);transition:right 260ms var(--eo)}
+  @media (hover:hover){#site-topbar .nav-link:hover{color:var(--accent);background:none}#site-topbar .nav-link:hover::after{right:4px}}
+  #site-topbar .theme-toggle{display:grid;place-items:center;width:36px;height:36px;margin-left:4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--ink-soft);cursor:pointer;position:relative;transition:color 200ms var(--eo),border-color 200ms var(--eo),background 200ms var(--eo)}
+  @media (hover:hover){#site-topbar .theme-toggle:hover{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #site-topbar .theme-toggle:focus-visible{outline:2px solid color-mix(in oklab,var(--accent) 55%,transparent);outline-offset:2px}
+  #site-topbar .theme-icon{position:absolute;width:17px;height:17px;transition:opacity 280ms var(--eo),transform 280ms var(--eo)}
+  #site-topbar .theme-icon-sun{opacity:1;transform:rotate(0)}
+  #site-topbar .theme-icon-moon{opacity:0;transform:rotate(-90deg)}
+  [data-theme="dark"] #site-topbar .theme-icon-sun{opacity:0;transform:rotate(90deg)}
+  [data-theme="dark"] #site-topbar .theme-icon-moon{opacity:1;transform:rotate(0)}
+  #site-topbar .sign-in-btn{font-family:'Inter',sans-serif;font-size:13.5px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:9px 18px;border-radius:10px;cursor:pointer;margin-left:6px;transition:background 200ms var(--eo),transform 160ms var(--eo)}
+  @media (hover:hover){#site-topbar .sign-in-btn:hover{background:var(--accent-deep)}}
+  #site-topbar .sign-in-btn:active{transform:translateY(1px)}
+  #site-topbar .account-pill{display:flex;align-items:center;gap:9px;cursor:pointer;margin-left:6px;font-family:'Inter',sans-serif;padding:5px 12px 5px 5px;border-radius:999px;background:var(--surface);border:1px solid var(--border);transition:border-color 200ms var(--eo),background 200ms var(--eo)}
+  @media (hover:hover){#site-topbar .account-pill:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+  #site-topbar .account-pill.is-open{border-color:color-mix(in oklab,var(--accent) 45%,var(--border));background:color-mix(in oklab,var(--accent) 5%,var(--surface))}
+  #site-topbar .account-avatar{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;color:var(--on-accent);background:linear-gradient(150deg,var(--accent-bright),var(--accent))}
+  #site-topbar .account-email-short{font-size:13px;font-weight:600;color:var(--ink-soft);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .account-chevron{font-size:10px;color:var(--muted);transition:transform 240ms var(--eo)}
+  #site-topbar .account-pill.is-open .account-chevron{transform:rotate(180deg)}
+  #site-topbar .account-dropdown{position:absolute;top:calc(100% + 10px);right:clamp(20px,4vw,32px);z-index:60;width:280px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 2px 4px oklch(0.22 0.015 280 / .05),0 30px 60px -24px oklch(0.22 0.015 280 / .28);overflow:hidden;animation:admxDrop 240ms var(--eo)}
+  @keyframes admxDrop{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+  #site-topbar .dropdown-header{padding:16px 18px;border-bottom:1px solid var(--border)}
+  #site-topbar .dropdown-email{font-size:13.5px;font-weight:650;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #site-topbar .dropdown-tier{font-size:12px;color:var(--muted);margin-top:3px}
+  #site-topbar .dropdown-link{display:flex;align-items:center;gap:11px;padding:11px 18px;font-size:13.5px;font-weight:550;color:var(--ink-soft);text-decoration:none;transition:background 170ms var(--eo),color 170ms var(--eo)}
+  #site-topbar .dropdown-link-icon{display:none}
+  @media (hover:hover){#site-topbar .dropdown-link:hover{background:color-mix(in oklab,var(--accent) 6%,transparent);color:var(--accent)}}
+  #site-topbar .dropdown-divider{height:1px;background:var(--border);margin:6px 0}
+  #site-topbar .dropdown-link-danger{color:var(--muted)}
+  @media (hover:hover){#site-topbar .dropdown-link-danger:hover{background:color-mix(in oklab,var(--accent) 7%,transparent);color:var(--accent-deep)}}
+
+  #admin-page{
+    --bg:oklch(0.975 0.007 85);--surface:oklch(0.992 0.004 85);--surface-2:oklch(0.965 0.010 84);
+    --ink:oklch(0.22 0.015 280);--ink-soft:oklch(0.36 0.014 280);--muted:oklch(0.50 0.013 280);
+    --border:oklch(0.86 0.008 85);--border-soft:oklch(0.91 0.006 85);
+    --accent:oklch(0.50 0.155 55);--accent-bright:oklch(0.80 0.155 64);--accent-deep:oklch(0.42 0.150 52);--on-accent:oklch(0.985 0.010 85);
+    --pass:oklch(0.52 0.13 150);
+    --shadow-soft:0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent),0 18px 38px -18px color-mix(in oklab, var(--ink) 8%, transparent);
+    --shadow-card:0 2px 4px color-mix(in oklab, var(--ink) 2%, transparent),0 30px 60px -24px color-mix(in oklab, var(--ink) 11%, transparent);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--eo:cubic-bezier(0.23,1,0.32,1);
+    display:block;background:var(--bg);color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;
+    padding:clamp(34px,6vh,64px) clamp(20px,4vw,56px) clamp(72px,12vh,120px);
+  }
+  [data-theme="dark"] #admin-page{
+    --bg:oklch(0.16 0.009 275);--surface:oklch(0.205 0.009 275);--surface-2:oklch(0.185 0.009 275);
+    --ink:oklch(0.96 0.006 275);--ink-soft:oklch(0.78 0.010 275);--muted:oklch(0.60 0.013 275);
+    --border:oklch(0.30 0.008 275);--border-soft:oklch(0.26 0.008 275);
+    --accent:oklch(0.80 0.155 64);--accent-bright:oklch(0.86 0.140 70);--accent-deep:oklch(0.70 0.150 62);--on-accent:oklch(0.18 0.020 275);
+    --pass:oklch(0.74 0.150 152);
+    --shadow-soft:0 1px 0 color-mix(in oklab, var(--ink) 2%, transparent),0 20px 40px -18px color-mix(in oklab, var(--ink) 22%, transparent);
+    --shadow-card:0 2px 4px color-mix(in oklab, var(--ink) 12%, transparent),0 32px 60px -24px color-mix(in oklab, var(--ink) 25%, transparent);
+  }
+  #admin-page *{box-sizing:border-box}
+  #admin-page [hidden]{display:none!important}
+  #admin-page .admin-container{max-width:980px;margin:0 auto}
+  #admin-page .breadcrumb{font-size:12.5px;color:var(--muted)}
+  #admin-page .breadcrumb a{color:var(--muted);text-decoration:none;transition:color 180ms var(--eo)}
+  @media (hover:hover){#admin-page .breadcrumb a:hover{color:var(--accent)}}
+  #admin-page .account-pagehead{margin-top:22px;padding-bottom:clamp(24px,3.2vw,34px);border-bottom:1px solid var(--border-soft)}
+  #admin-page .account-eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:13px}
+  #admin-page .account-eyebrow::after{content:"";width:30px;height:1px;background:linear-gradient(90deg,var(--accent),transparent)}
+  #admin-page .account-title{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(30px,4vw,46px);line-height:1.04;letter-spacing:-.02em;color:var(--ink)}
+  #admin-page .account-subtitle{margin-top:12px;font-size:clamp(13.5px,1.05vw,15px);line-height:1.65;color:var(--ink-soft);max-width:64ch}
+  #admin-page .acc-code{font-family:var(--mono);font-size:.86em;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 9%,transparent);border:1px solid color-mix(in oklab,var(--accent) 20%,transparent);border-radius:5px;padding:1px 6px}
+  [data-theme="dark"] #admin-page .acc-code{color:var(--accent-bright)}
+  #admin-page .account-loading{display:flex;align-items:center;gap:10px;margin-top:48px;font-size:14px;color:var(--muted)}
+  #admin-page .account-anon-gate{max-width:540px;margin:56px auto;text-align:center}
+  #admin-page .anon-gate-icon{display:none}
+  #admin-page .account-anon-gate h2{font-family:'Fraunces',Georgia,serif;font-size:clamp(22px,2.6vw,30px);font-weight:600;color:var(--ink);margin-bottom:12px}
+  #admin-page .account-anon-gate p{font-size:14px;line-height:1.6;color:var(--ink-soft);margin-bottom:22px}
+  #admin-page .btn-primary-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:650;color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep);padding:11px 22px;border-radius:10px;text-decoration:none;margin-right:14px}
+  #admin-page .btn-ghost-link{font-size:13.5px;font-weight:600;color:var(--ink-soft);text-decoration:none}
+  @media (hover:hover){#admin-page .btn-ghost-link:hover{color:var(--accent)}}
+  #admin-page .admin-grid{margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow-soft)}
+  #admin-page .admin-stat{padding:20px 22px;border-right:1px solid var(--border-soft)}
+  #admin-page .admin-stat:last-child{border-right:0}
+  #admin-page .admin-stat-label{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  #admin-page .admin-stat-value{margin-top:8px;font-family:'Fraunces',Georgia,serif;font-size:26px;font-weight:600;color:var(--ink);letter-spacing:-.01em;font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum"}
+  #admin-page .admin-stat-value.admin-stat-mono{font-family:var(--mono);font-size:21px;font-weight:700}
+  #admin-page .admin-stat-delta{margin-top:5px;font-size:11.5px;color:var(--muted)}
+  #admin-page .admin-table-wrap{margin-top:clamp(40px,5vw,56px)}
+  #admin-page .admin-table-head{display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:15px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+  #admin-page .acc-sec-ic{width:36px;height:36px;flex:none;border-radius:10px;background-color:color-mix(in oklab, var(--accent) 6%, var(--surface));border:1px solid var(--border);box-shadow:var(--shadow-soft);display:grid;place-items:center}
+  [data-theme="dark"] #admin-page .acc-sec-ic{background-color:color-mix(in oklab, var(--accent) 6%, var(--surface))}
+  #admin-page .acc-sec-ic img{width:28px;height:28px;display:block;object-fit:contain}
+  #admin-page .admin-table-title{font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+  #admin-page .admin-table-meta{font-size:11.5px;color:var(--muted);font-family:var(--mono);justify-self:end}
+  #admin-page .admin-table-meta-link{font-size:12.5px;font-weight:650;color:var(--accent);text-decoration:none;justify-self:end;display:inline-flex;align-items:center;gap:5px}
+  #admin-page .admin-table-meta-link::after{content:"";transition:transform 220ms var(--eo)}
+  @media (hover:hover){#admin-page .admin-table-meta-link:hover::after{transform:translateX(3px)}}
+  #admin-page .admin-table-scroll{overflow-x:auto;margin-top:4px}
+  #admin-page .admin-table{width:100%;border-collapse:collapse;font-size:13px}
+  #admin-page .admin-table th{text-align:left;padding:13px 14px 11px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap}
+  #admin-page .admin-table td{padding:14px 14px;color:var(--ink-soft);border-bottom:1px solid var(--border-soft);vertical-align:middle}
+  #admin-page .admin-table tbody tr:last-child td{border-bottom:0}
+  @media (hover:hover){#admin-page .admin-table tbody tr:hover td{background:color-mix(in oklab,var(--accent) 4%,transparent)}}
+  #admin-page .admin-table td.mono{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  #admin-page .admin-table td strong{color:var(--ink);font-weight:700}
+  #admin-page .admin-table-empty{text-align:center;color:var(--muted);padding:26px 14px!important;font-style:italic}
+  #admin-page .admin-role-pill{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:5px;color:var(--muted);border:1px solid var(--border)}
+  #admin-page .admin-role-pill.admin{color:var(--accent-deep);border-color:color-mix(in oklab,var(--accent) 42%,transparent);background:color-mix(in oklab,var(--accent) 12%,transparent)}
+  [data-theme="dark"] #admin-page .admin-role-pill.admin{color:var(--accent-bright)}
+  #admin-page .admin-table tbody tr td a{color:var(--accent);text-decoration:none;font-family:var(--mono);font-size:12px}
+  @media (hover:hover){#admin-page .admin-table tbody tr td a:hover{text-decoration:underline;text-underline-offset:3px}}
+  #admin-page .acc-section{margin-top:clamp(40px,5vw,56px)}
+  #admin-page .admin-telemetry-placeholder{border:1px dashed var(--border);border-radius:16px;padding:24px clamp(20px,2.4vw,28px)}
+  #admin-page .section-head{display:grid;grid-template-columns:auto 1fr;column-gap:15px;align-items:start}
+  #admin-page .section-eyebrow{grid-column:2;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:7px}
+  #admin-page .section-title{grid-column:2;font-family:'Fraunces',Georgia,serif;font-size:clamp(20px,2.2vw,26px);font-weight:600;letter-spacing:-.02em;color:var(--ink)}
+  #admin-page .section-sub{grid-column:2;margin-top:9px;font-size:12.5px;line-height:1.55;color:var(--muted);max-width:64ch}
+  #admin-page .section-head .acc-sec-ic{grid-row:1 / span 3;align-self:start}
+  #admin-page .admin-placeholder-text{margin-top:16px;text-align:center;font-size:12.5px;font-style:italic;color:var(--muted)}
+  #admin-page .acx-r{opacity:0;transform:translateY(14px);transition:opacity 560ms var(--eo),transform 560ms var(--eo)}
+  #admin-page.acx-in .acx-r{opacity:1;transform:none}
+  #admin-page.acx-in .acx-r[data-d="1"]{transition-delay:40ms}
+  #admin-page.acx-in .acx-r[data-d="2"]{transition-delay:100ms}
+  #admin-page.acx-in .acx-r[data-d="3"]{transition-delay:160ms}
+  #admin-page.acx-in .acx-r[data-d="4"]{transition-delay:220ms}
+  @media (max-width:760px){
+    #admin-page .admin-grid{grid-template-columns:repeat(2,1fr)}
+    #admin-page .admin-stat:nth-child(2){border-right:0}
+    #admin-page .admin-stat:nth-child(-n+2){border-bottom:1px solid var(--border-soft)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #admin-page .acx-r{transition:opacity 200ms ease!important;transform:none!important}
+    #admin-page.acx-in .acx-r{transform:none!important}
+    #admin-page .admin-table-meta-link::after{transition:none!important}
+  }
+
+  #admin-page .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  /* ── 30 Oct concept: Cert requests (Suggest a cert, private tally) ── */
+  #admin-page .cr-strip{margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+  #admin-page .cr-strip>div{padding:14px 18px;border-right:1px solid var(--border-soft)}
+  #admin-page .cr-strip>div:last-child{border-right:0}
+  #admin-page .cr-strip b{display:block;margin-top:6px;font-family:'Fraunces',Georgia,serif;font-size:22px;font-weight:600;color:var(--ink);font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum"}
+  #admin-page .cr-strip span{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  #admin-page .cr-strip small{display:block;margin-top:3px;font-size:11.5px;color:var(--muted)}
+  #admin-page .cr-exam{display:flex;align-items:center;gap:12px;min-width:220px}
+  #admin-page .cr-g{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font:800 11px/1 Inter,sans-serif;color:var(--accent-deep);background:color-mix(in oklab,var(--accent) 12%,var(--surface))}
+  [data-theme="dark"] #admin-page .cr-g{color:var(--accent-bright)}
+  #admin-page .cr-g.typed{color:var(--muted);background:transparent;border:1.5px dashed var(--border)}
+  #admin-page .cr-name{display:block;color:var(--ink);font-weight:700;font-size:13.5px}
+  #admin-page .cr-sub{display:block;margin-top:3px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  #admin-page .cr-tag{display:inline-block;margin-left:6px;vertical-align:1px;font:800 9px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;border-radius:5px;color:var(--muted);border:1px solid var(--border)}
+  #admin-page .cr-votes{display:flex;align-items:center;gap:10px;min-width:150px}
+  #admin-page .cr-votes b{font-family:'Fraunces',Georgia,serif;font-size:18px;font-weight:600;color:var(--ink);min-width:28px;font-variant-numeric:lining-nums tabular-nums;font-feature-settings:"lnum","tnum"}
+  #admin-page .cr-bar{flex:1;height:6px;border-radius:999px;background:color-mix(in oklab,var(--ink) 7%,transparent);overflow:hidden}
+  #admin-page .cr-bar i{display:block;height:100%;border-radius:999px;background:var(--accent)}
+  #admin-page .cr-new{font-weight:700;color:var(--accent-deep)}
+  [data-theme="dark"] #admin-page .cr-new{color:var(--accent-bright)}
+  #admin-page .cr-new.zero{color:var(--muted);font-weight:500}
+  #admin-page .cr-act{white-space:nowrap;font:600 12px/1 Inter,sans-serif;color:var(--muted);background:transparent;border:1px solid transparent;border-radius:9px;padding:9px 10px;cursor:pointer;transition:transform .12s var(--eo),color .18s var(--eo),border-color .18s var(--eo)}
+  #admin-page .cr-act:focus-visible,#admin-page tr:focus-within .cr-act{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 30%,transparent)}
+  #admin-page .cr-act:active{transform:scale(.97)}
+  @media (hover:hover) and (pointer:fine){#admin-page tr:hover .cr-act{color:var(--accent);border-color:color-mix(in oklab,var(--accent) 30%,transparent)}}
+  #admin-page .cr-confirm{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink)}
+  #admin-page .cr-confirm button{font:650 12.5px/1 Inter,sans-serif;border-radius:9px;padding:9px 12px;cursor:pointer}
+  #admin-page .cr-confirm .yes{color:var(--on-accent);background:var(--accent);border:1px solid var(--accent-deep)}
+  #admin-page .cr-confirm .no{color:var(--ink-soft);background:transparent;border:1px solid var(--border)}
+  #admin-page .cr-sent{font-size:12.5px;font-weight:650;color:var(--pass,#2f7d4f)}
+  #admin-page .cr-mail{margin-top:22px;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden;max-width:620px}
+  #admin-page .cr-mail-head{padding:12px 16px;border-bottom:1px solid var(--border-soft);font-size:12px;color:var(--muted);display:grid;gap:3px}
+  #admin-page .cr-mail-head b{color:var(--ink);font-weight:650}
+  #admin-page .cr-mail-body{padding:16px;font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+  #admin-page .cr-mail-body ol{margin:8px 0 12px;padding-left:20px}
+  #admin-page .cr-mail-body li b{color:var(--ink)}
+  #admin-page .cr-mail-k{display:block;margin:4px 0 8px;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  @media (max-width:720px){#admin-page .cr-strip{grid-template-columns:1fr 1fr}#admin-page .cr-strip>div:nth-child(2){border-right:0}#admin-page .cr-strip>div:nth-child(-n+2){border-bottom:1px solid var(--border-soft)}}
+  @media (prefers-reduced-motion:reduce){#admin-page .cr-act{transition:none}#admin-page .cr-act:active{transform:none}}
+</style>
+
+<header class="topbar" id="site-topbar">
+  <div class="topbar-inner container">
+    <a class="logo" href="/" aria-label="CertAnvil home">
+      <span class="logo-mark" aria-hidden="true">
+        <svg viewBox="0 0 100 100" fill="none" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/>
+          <line x1="30" y1="84" x2="70" y2="16" stroke="var(--muted)" opacity="0.55" stroke-width="5" stroke-linecap="round"/>
+          <path d="M46 88 L64 50 L82 88 M53 74 L75 74" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="logo-name">CertAnvil <span class="admin-suffix">· ADMIN</span></span>
+    </a>
+
+    <nav class="topbar-nav" aria-label="Admin navigation">
+      <a href="#users" class="nav-link">Users</a>
+      <a href="#certs" class="nav-link">Certs</a>
+      <a href="#operations" class="nav-link">Ops</a>
+      <a href="/account" class="nav-link">Back to account</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <button type="button" class="account-pill" id="account-pill" hidden aria-haspopup="menu" aria-expanded="false" aria-controls="account-dropdown">
+        <span class="account-avatar" id="account-avatar" aria-hidden="true">U</span>
+        <span class="account-email-short" id="account-email-short">you@…</span>
+        <span class="account-chevron" id="account-chevron" aria-hidden="true">▾</span>
+      </button>
+
+      <button type="button" class="sign-in-btn" id="sign-in-btn">Sign in</button>
+    </nav>
+
+    <div class="account-dropdown" id="account-dropdown" role="menu" aria-labelledby="account-pill" hidden>
+      <div class="dropdown-header">
+        <div class="dropdown-email" id="dropdown-email">you@email.com</div>
+        <div class="dropdown-tier" id="dropdown-tier">● Free tier · Network+ unlocked</div>
+      </div>
+      <a href="/account" class="dropdown-link" role="menuitem">
+        <span>Account settings</span>
+      </a>
+      <div class="dropdown-divider" role="separator"></div>
+      <a href="#" class="dropdown-link dropdown-link-danger" id="sign-out-link" role="menuitem">
+        <span class="dropdown-link-icon" aria-hidden="true">↩</span>
+        <span>Sign out</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main class="account-page admin-page" id="admin-page">
+  <div class="container account-container admin-container">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="/">Home</a> <span aria-hidden="true">·</span> <a href="/account">Account</a> <span aria-hidden="true">·</span> <span>Admin Dashboard</span>
+    </nav>
+
+    <header class="account-pagehead">
+      <div class="account-eyebrow admin-eyebrow">Admin</div>
+      <h1 class="account-title">Dashboard</h1>
+      <p class="account-subtitle">Owner-only operations + user management. Restricted by <code class="acc-code">role='admin'</code> in <code class="acc-code">profiles</code>.</p>
+    </header>
+
+    <!-- Loading state -->
+    <div class="account-loading" id="admin-loading" aria-live="polite" hidden>
+      <span class="account-loading-spinner" aria-hidden="true"></span>
+      <span>Loading dashboard…</span>
+    </div>
+
+    <!-- Anonymous gate -->
+    <div class="account-anon-gate" id="admin-anon-gate" hidden>
+      <div class="anon-gate-icon" aria-hidden="true"></div>
+      <h2>Sign in to access the admin dashboard</h2>
+      <p>This area is restricted to accounts with <code class="acc-code">role='admin'</code> in the <code class="acc-code">profiles</code> table.</p>
+      <a href="/?action=signin&return=https%3A%2F%2Fcertanvil.com%2Fadmin" class="btn-primary-cta">Sign in →</a>
+      <a href="/" class="btn-ghost-link">Back to home</a>
+    </div>
+
+    <!-- 403 — signed in but not admin -->
+    <div class="account-anon-gate admin-403" id="admin-403-gate" hidden>
+      <div class="anon-gate-icon" aria-hidden="true"></div>
+      <h2>Admin access required</h2>
+      <p>You're signed in, but your account doesn't have admin privileges. If this is a mistake, contact the CertAnvil owner.</p>
+      <a href="/account" class="btn-primary-cta">Back to my account →</a>
+      <a href="/" class="btn-ghost-link">Or back to home</a>
+    </div>
+
+    <!-- Admin content -->
+    <div class="admin-content" id="admin-content">
+
+      <!-- 4-stat hero grid -->
+      <div class="admin-grid" id="admin-stats">
+        <div class="admin-stat">
+          <div class="admin-stat-label">Total users</div>
+          <div class="admin-stat-value" id="stat-total-users">—</div>
+          <div class="admin-stat-delta" id="stat-total-users-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Active this week</div>
+          <div class="admin-stat-value" id="stat-active-week">—</div>
+          <div class="admin-stat-delta" id="stat-active-week-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Cert packs live</div>
+          <div class="admin-stat-value" id="stat-cert-packs">—</div>
+          <div class="admin-stat-delta" id="stat-cert-packs-delta">&nbsp;</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">App version</div>
+          <div class="admin-stat-value admin-stat-mono" id="stat-app-version">v—</div>
+          <div class="admin-stat-delta" id="stat-app-version-delta">&nbsp;</div>
+        </div>
+      </div>
+
+      <!-- §01 Users -->
+      <section class="admin-table-wrap" id="users">
+        <header class="admin-table-head">
+          <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/users.svg" alt=""></span>
+          <h2 class="admin-table-title">Users</h2>
+          <span class="admin-table-meta" id="users-table-meta">All registered accounts</span>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Role</th>
+                <th scope="col">Tier</th>
+                <th scope="col">Display name</th>
+                <th scope="col">Active cert</th>
+                <th scope="col">Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody">
+              <tr><td colspan="6" class="admin-table-empty">Users table unchanged (concept shows the new section below)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §02 Cert requests (30 Oct concept) -->
+      <section class="admin-table-wrap" id="requests">
+        <header class="admin-table-head">
+          <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/certs.svg" alt=""></span>
+          <h2 class="admin-table-title">Cert requests</h2>
+          <span class="admin-table-meta">Private · from Suggest a cert</span>
+        </header>
+        <div class="cr-strip">
+          <div><span>Requests</span><b>96</b><small>from 58 people</small></div>
+          <div><span>This week</span><b>+13</b><small>since Monday</small></div>
+          <div><span>Exams asked for</span><b>7</b><small>2 typed in</small></div>
+          <div><span>Next email</span><b>Mon 2 Nov</b><small>to you, 8:00 am</small></div>
+        </div>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr><th scope="col">Exam</th><th scope="col">Votes</th><th scope="col">This week</th><th scope="col">Last asked</th><th scope="col"><span class="visually-hidden">Action</span></th></tr>
+            </thead>
+            <tbody id="requests-tbody">
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g">CC</span><span><span class="cr-name">CCNA</span><span class="cr-sub">Cisco · 200-301</span></span></div></td>
+                <td><div class="cr-votes"><b>41</b><span class="cr-bar"><i style="width:100%"></i></span></div></td>
+                <td><span class="cr-new">+5</span></td>
+                <td class="mono">2 hours ago</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="CCNA" data-v="41">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g">CY</span><span><span class="cr-name">CySA+</span><span class="cr-sub">CompTIA · CS0-003</span></span></div></td>
+                <td><div class="cr-votes"><b>18</b><span class="cr-bar"><i style="width:44%"></i></span></div></td>
+                <td><span class="cr-new">+3</span></td>
+                <td class="mono">yesterday</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="CySA+" data-v="18">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g">SA</span><span><span class="cr-name">Solutions Architect Associate</span><span class="cr-sub">AWS · SAA-C03</span></span></div></td>
+                <td><div class="cr-votes"><b>15</b><span class="cr-bar"><i style="width:37%"></i></span></div></td>
+                <td><span class="cr-new">+2</span></td>
+                <td class="mono">yesterday</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="Solutions Architect Associate" data-v="15">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g">CI</span><span><span class="cr-name">CISSP</span><span class="cr-sub">ISC2</span></span></div></td>
+                <td><div class="cr-votes"><b>9</b><span class="cr-bar"><i style="width:22%"></i></span></div></td>
+                <td><span class="cr-new zero">None</span></td>
+                <td class="mono">5 days ago</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="CISSP" data-v="9">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g typed">+</span><span><span class="cr-name">ITIL 4<span class="cr-tag">Typed</span></span><span class="cr-sub">Also written: itil v4, ITIL4 Foundation</span></span></div></td>
+                <td><div class="cr-votes"><b>6</b><span class="cr-bar"><i style="width:15%"></i></span></div></td>
+                <td><span class="cr-new">+2</span></td>
+                <td class="mono">today</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="ITIL 4" data-v="6">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g">PT</span><span><span class="cr-name">PenTest+</span><span class="cr-sub">CompTIA · PT0-003</span></span></div></td>
+                <td><div class="cr-votes"><b>4</b><span class="cr-bar"><i style="width:10%"></i></span></div></td>
+                <td><span class="cr-new zero">None</span></td>
+                <td class="mono">9 days ago</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="PenTest+" data-v="4">Mark live &amp; tell them</button></td>
+              </tr>
+              <tr>
+                <td><div class="cr-exam"><span class="cr-g typed">+</span><span><span class="cr-name">CEH<span class="cr-tag">Typed</span></span><span class="cr-sub">Also written: Certified Ethical Hacker</span></span></div></td>
+                <td><div class="cr-votes"><b>3</b><span class="cr-bar"><i style="width:7%"></i></span></div></td>
+                <td><span class="cr-new">+1</span></td>
+                <td class="mono">3 days ago</td>
+                <td class="cr-cell"><button class="cr-act" type="button" data-n="CEH" data-v="3">Mark live &amp; tell them</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cr-mail" aria-label="Preview of the Monday email">
+          <div class="cr-mail-head"><span>From <b>CertAnvil</b> to you, every Monday</span><span>Subject: <b>Cert requests this week: 13 new</b></span></div>
+          <div class="cr-mail-body">
+            <span class="cr-mail-k">Most asked</span>
+            <ol><li><b>CCNA</b> · 41 (+5)</li><li><b>CySA+</b> · 18 (+3)</li><li><b>AWS Solutions Architect</b> · 15 (+2)</li></ol>
+            <span class="cr-mail-k">New typed in</span>
+            ITIL 4, CEH<br><br>
+            See them all on your dashboard.
+          </div>
+        </div>
+      </section>
+
+      <!-- §02 Cert packs -->
+      <section class="admin-table-wrap" id="certs">
+        <header class="admin-table-head">
+          <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/certs.svg" alt=""></span>
+          <h2 class="admin-table-title">Cert packs</h2>
+          <span class="admin-table-meta">Visibility + pack-state per cert</span>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Cert</th>
+                <th scope="col">Code</th>
+                <th scope="col">Visibility</th>
+                <th scope="col">Question bank</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="certs-tbody">
+              <!-- Populated by lib/admin.js (static data for now — no DB-backed cert pack table yet) -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §03 Recent ships -->
+      <section class="admin-table-wrap" id="operations">
+        <header class="admin-table-head">
+          <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/ships.svg" alt=""></span>
+          <h2 class="admin-table-title">Recent ships</h2>
+          <a href="https://github.com/oremosu98/networkplus-quiz/commits/main" target="_blank" rel="noopener" class="admin-table-meta-link">View on GitHub →</a>
+        </header>
+        <div class="admin-table-scroll">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th scope="col">Commit</th>
+                <th scope="col">Message</th>
+                <th scope="col">Date</th>
+              </tr>
+            </thead>
+            <tbody id="ships-tbody">
+              <tr><td colspan="3" class="admin-table-empty">Unchanged</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- §04 Telemetry placeholder -->
+      <section class="acc-section admin-telemetry-placeholder">
+        <header class="section-head">
+          <span class="acc-sec-ic" aria-hidden="true"><img src="assets/admin/telemetry.svg" alt=""></span>
+          <div class="section-eyebrow">§04 Telemetry</div>
+          <h2 class="section-title">Telemetry &amp; analytics</h2>
+          <p class="section-sub">Funnel, daily actives, churn signals · wired in Phase G+ when there are real users to measure.</p>
+        </header>
+        <p class="admin-placeholder-text">Deferred until ≥10 users + Stripe live</p>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<div class="toast-stack" id="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  /* Scoped entrance trigger only — no admin.js/auth.js contract.
+     admin.js owns #admin-content visibility; this just adds .acx-in
+     so the .acx-r reveals play when content appears. */
+  (function(){
+    var p=document.getElementById('admin-page');
+    if(!p)return;
+    if('IntersectionObserver' in window){
+      var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){p.classList.add('acx-in');io.disconnect();}});},{threshold:0.02});
+      io.observe(p);
+    } else { p.classList.add('acx-in'); }
+  })();
+</script>
+
+
+
+<!-- Sec-P4/M6: vendored DOMPurify (no build step). Must load before lib/admin.js,
+     which calls window.DOMPurify in sanitizeHTML() over cross-user/remote rows. -->
+
+
+<script>
+  // 30 Oct concept: "Tell them it's live" asks once, then sends.
+  document.querySelectorAll('.cr-act').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var cell = b.parentNode, n = b.getAttribute('data-n'), v = b.getAttribute('data-v');
+      cell.innerHTML = '<div class="cr-confirm"><span>Email ' + v + ' people that ' + n + ' is live?</span><button class="yes" type="button">Send</button><button class="no" type="button">Cancel</button></div>';
+      cell.querySelector('.yes').addEventListener('click', function () { cell.innerHTML = '<span class="cr-sent">Sent to ' + v + ' people</span>'; });
+      cell.querySelector('.no').addEventListener('click', function () { cell.innerHTML = ''; cell.appendChild(b); });
+    });
+  });
+</script>
+</body>
+</html>

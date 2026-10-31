@@ -68,6 +68,15 @@ test.describe('Lift A Home', () => {
     expect(await page.evaluate(() => window.__calls)).toEqual(['applyPreset:warmup', 'startDailyChallenge:', '_jumpToCustomQuiz:']);
   });
 
+  test('phone Home: one next-step card, no Practise it button', async ({ page }) => {
+    await openApp(page, PHONE);
+    await expect(page.locator('#ios-home [data-act="rec"]')).toHaveCount(1);
+    await expect(page.locator('#ios-home .ih-mo-go')).toHaveCount(0);
+    await expect(page.locator('#ios-home [data-act="practise"]')).toHaveCount(0);
+    await expect(page.locator('#ios-home')).not.toContainText('Practise it');
+    await expect(page.locator('#ios-home .ih-mo-streak')).toBeVisible();
+  });
+
   test('phone: Practice accordion opens and shows its three options', async ({ page }) => {
     await openApp(page, PHONE);
     const acc = page.locator('#ios-home [data-acc]').first();
@@ -548,5 +557,30 @@ test.describe('Lift A custom quiz (phone)', () => {
     await expect(page.locator('#custom-quiz-section')).toHaveAttribute('open', '');
     await expect(page.locator('#custom-quiz-section')).toBeVisible();
     await expect(page.locator('#ios-custom')).toBeEmpty();
+  });
+});
+
+// Persona bundle Task 9: tapping the readiness card opens the "Why this score?" sheet.
+test.describe('Why this score (phone)', () => {
+  test('tap readiness opens Why this score', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem('nplus_theme', 'dark');
+        const now = Date.now();
+        localStorage.setItem('nplus_history', JSON.stringify([{ date: new Date(now - 3600000).toISOString(), topic: 'OSPF', score: 18, total: 25, pct: 72, difficulty: 'Exam Level', mode: 'quiz', byDiff: { E: [18, 25] } }]));
+      } catch (_) {}
+    });
+    await page.goto('/');
+    await page.waitForLoadState('load');
+    await expect(page.locator('#ios-home .ih-rd[data-act="readiness"]')).toBeVisible();
+    await page.locator('#ios-home .ih-rd[data-act="readiness"]').click();
+    const sheet = page.locator('#ist-sheet');
+    await expect(sheet).toHaveClass(/open/);
+    await expect(sheet.locator('h3')).toHaveText(/^Why \d+\?$/);
+    await expect(sheet.locator('.iw-sect').first()).toContainText('Book it?');
+    await expect(sheet.locator('.iw-check li')).toHaveCount(4);
+    await expect(sheet.locator('.iw-next')).toHaveCount(1);   // first unmet item with a next step (range has none)
+    await expect(sheet.locator('.iw-how')).toContainText('count topics you haven');
   });
 });

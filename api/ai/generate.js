@@ -48,12 +48,38 @@ const MAX_PROMPT_BYTES = 100 * 1024;  // C2: cap serialized messages+system at 1
 // H1: abuse ceilings (separate from the product 20/day question quota).
 const USER_DAILY_LIMIT   = 500;    // ~20 full 90-Q exams/day — no human reaches it
 const IP_HOURLY_LIMIT    = 200;
-const GLOBAL_DAILY_LIMIT = 500;    // global kill-switch — matched to the $20/mo
-                                   // Anthropic workspace cap (founder decision
-                                   // 2026-06-11, testing phase). Equals one user's
-                                   // daily ceiling; raise at go-live alongside the
-                                   // workspace cap, after measuring per-session
-                                   // cost from the simulator E2E run.
+// App-wide daily cap on proxied calls (generation + checker + teacher), sized to a
+// $100/month Anthropic budget (spec 2026-10-30 section 1). AI_GLOBAL_DAILY_LIMIT overrides it.
+// PROVISIONAL: the proxy logged no token usage before this change, so this comes from a
+// conservative estimate, not measured data. Each call now writes one "ai_usage" log line;
+// re-size from those once a week of real traffic exists.
+// Arithmetic (final review, 2026-10-31). Prices from the claude-api skill, $ per 1M tokens in/out:
+//   claude-haiku-5-5 0.10/0.50 (writer), claude-sonnet-4-6 3.00/15.00 (checker, teacher).
+// Call structure since fast start: a 10-question quiz asks 13 (buffer), written as two Haiku
+// batches (7 + 6); the checker takes 5 questions per Sonnet call per batch, so 7 -> 5+2 and
+// 6 -> 5+1: 2 writer + 4 checker = 6 calls before top-ups. A 60-question SIM asks 78:
+// 8 batches of ~10 -> 8 writer + 16 checker = 24 calls.
+// Per call:
+//   writer, ~6.5 questions: 8,000 in + 6,600 out (A/B ~1,020 out per question) = $0.0041
+//   writer, top-up of ~5: 8,000 in + 5,100 out = $0.0034; SIM batch of ~10: 8,000 + 10,000 = $0.0058
+//   checker, full chunk of 5: 3,625 in (~1,750 instructions + 375 a question) + 300 out
+//     (one ~35-token verdict line a question, with slack) = $0.0154
+//   checker, short chunk of 1-2: 2,313 in + 150 out = $0.0092
+//   teacher: 2,500 in + 1,500 out = $0.0300
+// Short quiz: 2 x 0.0041 + 2 x 0.0154 + 2 x 0.0092 = $0.0573 (6 calls)
+//   + half a top-up round (writer + checker) = $0.0094 (1 call) + 0.3 teacher calls = $0.0090
+//   = $0.0757 over 7.3 calls ($0.0104 a call).
+// SIM: 8 x 0.0058 + 16 x 0.0154 = $0.2924 over 24 calls ($0.0122 a call).
+// Mix of 9 short quizzes to 1 SIM: $0.9736 over 89.7 calls = $0.01085 a call.
+// Budget $200 a month (founder, 31 Oct; was $100):
+// 200 / 30 = $6.667 a day / $0.01085 = 614.4 -> 614 calls a day.
+// That is ≈ 84 short quizzes a day app-wide at the default (614 / 7.3), or about 61 short
+// quizzes plus 7 SIMs on the 9:1 mix. All short quizzes ≈ $192/month; all SIMs ≈ $225/month.
+const GLOBAL_DAILY_LIMIT_DEFAULT = 614;
+function globalDailyLimit() {
+  const n = Number(process.env.AI_GLOBAL_DAILY_LIMIT);
+  return Number.isInteger(n) && n > 0 && n <= 100000 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;
+}
 const RL_SALT = process.env.RL_SALT || 'certanvil-ai-rl-v1';
 
 // ── Supabase helpers (REST, no SDK) ─────────────────────────────────────
@@ -129,6 +155,53 @@ function badJson(res, status, body) {
   res.send(JSON.stringify(body));
 }
 
+// 80% alert. Awaited by the handler (it fires at most once a day), capped at ALERT_TIMEOUT_MS so it
+// can't stall the response much; a serverless function may freeze un-awaited work after it responds.
+// Never throws; skips silently when RESEND_API_KEY / FOUNDER_EMAIL are unset. Deduped to once a day by
+// a 1-per-day counter.
+const ALERT_TIMEOUT_MS = 3000;
+async function maybeAlertFounder(token, count, limit) {
+  const key = process.env.RESEND_API_KEY, to = process.env.FOUNDER_EMAIL;
+  if (!key || !to) return;
+  const ctrl = new AbortController();
+  let timer;
+  const timeout = new Promise((resolve) => { timer = setTimeout(() => { ctrl.abort(); resolve('timeout'); }, ALERT_TIMEOUT_MS); });
+  const send = (async () => {
+    try {
+      // Gate keyed on the UTC date: the counter window starts at the first call, not at midnight, so a
+      // plain key could block or double an alert across days. One alert per calendar day.
+      const gate = await rlCheck(token, 'alert:global80:' + new Date().toISOString().slice(0, 10), 1, '1 day');
+      if (!gate || gate.allowed === false || ctrl.signal.aborted) return;
+      const from = 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>';
+      const text = 'The app-wide AI limit is at ' + count + ' of ' + limit + ' calls today (80% or more). ' +
+        'Once it is reached, everyone sees the "very busy" message until the limit window clears (24 hours after the window started, not at midnight). ' +
+        'Raise AI_GLOBAL_DAILY_LIMIT in the cert-app Vercel project if you want more headroom.';
+      const r = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: [to], subject: 'CertAnvil AI at 80% of today\'s limit', text }),
+        signal: ctrl.signal
+      });
+      if (!r.ok) console.error('[ai-proxy] 80% alert email failed: resend status ' + r.status);
+    } catch (e) { console.error('[ai-proxy] 80% alert failed:', e && e.message); }
+  })();
+  try {
+    if (await Promise.race([send, timeout]) === 'timeout') console.error('[ai-proxy] 80% alert timed out after ' + ALERT_TIMEOUT_MS + 'ms');
+  } finally { clearTimeout(timer); }
+}
+
+// One structured line per proxied call so real cost can be measured. No prompt text, no user ids.
+function logUsage(model, metered, maxTokens, ms, text) {
+  try {
+    const u = (JSON.parse(text) || {}).usage || {};
+    console.log(JSON.stringify({
+      evt: 'ai_usage', model, metered, max_tokens: maxTokens, ms,
+      input_tokens: u.input_tokens, output_tokens: u.output_tokens,
+      cache_creation_input_tokens: u.cache_creation_input_tokens, cache_read_input_tokens: u.cache_read_input_tokens
+    }));
+  } catch (_) { /* usage logging must never affect the response */ }
+}
+
 // ── Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
@@ -180,17 +253,27 @@ module.exports = async function handler(req, res) {
   // Fail OPEN on RL infra error so a not-yet-applied migration can't take the
   // proxy down — C2 input allowlisting still closes the relay exploit regardless.
   const ipHash = _hashIp((((req.headers && req.headers['x-forwarded-for']) || '').split(',')[0] || '').trim());
+  const globalLimit = globalDailyLimit();
   try {
     const checks = await Promise.all([
       rlCheck(token, `user:${userId}`, USER_DAILY_LIMIT, '1 day'),
       rlCheck(token, `ip:${ipHash}`, IP_HOURLY_LIMIT, '1 hour'),
-      rlCheck(token, 'global:daily', GLOBAL_DAILY_LIMIT, '1 day')
+      rlCheck(token, 'global:daily', globalLimit, '1 day')
     ]);
-    if (checks.some(c => c && c.allowed === false)) {
+    const scopes = ['user', 'ip', 'global'];
+    const blocked = checks.findIndex(c => c && c.allowed === false);
+    if (blocked !== -1) {
       return badJson(res, 429, {
         error: 'rate_limited',
-        message: 'Too many requests. Please slow down and try again shortly.'
+        scope: scopes[blocked],
+        message: 'We\'re very busy right now. Your questions will be back shortly.'
       });
+    }
+    // 80% warning: current_count is post-increment and the RPC row-locks, so exactly one call per window
+    // sees count === threshold. user/ip 429s above also show the busy copy (scope is not shown to users).
+    const g = checks[2];
+    if (g && Number(g.current_count) === Math.ceil(0.8 * globalLimit)) {
+      await maybeAlertFounder(token, Number(g.current_count), globalLimit);   // once a day at most, ≤3s
     }
   } catch (e) {
     console.error('[ai-proxy] rate-limit check failed (failing open):', e && e.message);
@@ -253,6 +336,7 @@ module.exports = async function handler(req, res) {
   }
 
   let upstreamRes;
+  const t0 = Date.now();
   const upstreamCtrl = new AbortController();
   const upstreamTimer = setTimeout(() => upstreamCtrl.abort(), 75000);
   try {
@@ -296,7 +380,9 @@ module.exports = async function handler(req, res) {
       error_id: errId
     });
   }
+  logUsage(model, isMetered, maxTokens, Date.now() - t0, text);
   res.status(upstreamRes.status);
   res.setHeader('Content-Type', 'application/json');
   res.send(text);
 };
+module.exports._internal = { globalDailyLimit, GLOBAL_DAILY_LIMIT_DEFAULT, ALERT_TIMEOUT_MS };

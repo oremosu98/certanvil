@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.202.0
+// Network+ AI Quiz — app.js  v8.203.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.202.0';
+const APP_VERSION = '8.203.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -533,9 +533,9 @@ async function _claudeFetch(init) {
     if (r.status === 429) {
       try {
         var detail = await r.clone().json();
-        if (typeof _showQuotaExceededUI === 'function') {
-          _showQuotaExceededUI(detail);
-        }
+        if (detail && detail.error !== 'rate_limited' && typeof _showQuotaExceededUI === 'function') _showQuotaExceededUI(detail);
+        else if (detail && detail.error === 'rate_limited' && !(Date.now() - (window._busyToastAt || 0) < 10000)) { window._busyToastAt = Date.now(); showToast("We're very busy right now. Your questions will be back shortly.", 'error'); }   // parallel fast-start 429s: one toast per ~10s
+        // rate_limited is the app-wide cap: toast only, never the quota modal
       } catch (_) { /* intentionally silent: cosmetic */ }
     } else if (wasMetered && r.ok) {
       // Successful metered call — refresh the chip in the background
@@ -1140,7 +1140,7 @@ const STORAGE = {
   PORT_PAIRS_BEST: 'nplus_port_pairs_best',
   HARDCORE_EXAM: 'nplus_hardcore_exam',   // Strict Mode (#48): retired v8.166.0, code removed v8.168.0; kept so old synced values stay recognised
   PORT_STATS: 'nplus_port_stats',
-  EXAM_DATE: 'nplus_exam_date',
+  EXAM_DATE: 'nplus_exam_date', EXAM_DATES: 'nplus_exam_dates', EXAM_OUTCOMES: 'nplus_exam_outcomes',   // persona bundle: per-cert {certId: date|null} and {certId: {outcome, score, date, predicted, at}}; EXAM_DATE = the current cert's, for profiles.exam_date
   MILESTONES: 'nplus_milestones',
   TYPE_STATS: 'nplus_type_stats',
   SUBNET_STATS: 'nplus_subnet_stats',
@@ -2778,7 +2778,7 @@ function goSetup() {
   // v4.54.0: hero v2 (display heading + dark readiness + mini cards)
   if (typeof renderHeroV2 === 'function') renderHeroV2();
   // v7.x audit 9: collapse Practice/Exam/Drill on phones only (≤620px)
-  _initHomeCollapse();
+  _initHomeCollapse(); if (window._ffAbandon) _ffAbandon();   // 31 Oct fast-start: leaving ends a live quiz fill
   showPage('setup');
 }
 
@@ -2846,7 +2846,7 @@ function renderMarathonSection() {
 }
 
 function confirmBack() {
-  if (!(window.iosSheet && iosSheet.leaveDrill && iosSheet.leaveDrill()) && confirm('Go back to the menu? Quiz progress will be lost.')) goSetup();   // phones: a drill asks in the in-app sheet
+  if (!(window.iosSheet && iosSheet.leaveDrill && iosSheet.leaveDrill()) && confirm('Go back to the menu? Quiz progress will be lost.')) { if (typeof quizResumeClear === 'function') quizResumeClear(); goSetup(); }   // phones: a drill asks in the in-app sheet
 }
 
 // ══════════════════════════════════════════
@@ -2950,9 +2950,9 @@ function getStudyStats() {
   return { totalQ, sessions, avgPct, bestExam };
 }
 function getTodayQuestionCount() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = _localDay();   // the phone's day, not UTC (persona bundle T3)
   return loadHistory()
-    .filter(e => !isHistorySplitRow(e) && new Date(e.date).toISOString().slice(0, 10) === today)
+    .filter(e => !isHistorySplitRow(e) && _localDay(new Date(e.date)) === today)
     .reduce((a, e) => a + (e.total || 0), 0);
 }
 
@@ -3173,18 +3173,51 @@ function _progressRowHtml(row) {
 // ══════════════════════════════════════════
 // STREAK
 // ══════════════════════════════════════════
-function getStreak() {
-  try { return JSON.parse(localStorage.getItem(STORAGE.STREAK) || '{"current":0,"best":0,"last":null}'); }
+// Local calendar date (mirrors features/ios-reminders.js localDay). Never toISOString: a UTC day
+// drifts from the person's own day (UK summer after midnight, US evenings).
+function _localDay(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+if (typeof window !== 'undefined') window._localDay = _localDay;
+// Raw stored streak, no interpretation.
+function _readStreakRaw() {
+  try { return JSON.parse(localStorage.getItem(STORAGE.STREAK) || '{"current":0,"best":0,"last":null}') || { current: 0, best: 0, last: null }; }
   catch(e) { return { current: 0, best: 0, last: null }; }
 }
+// A stored `last` written before the local-day switch is a UTC date. It counts as today/yesterday
+// if it matches either the local or the UTC reading, so nobody loses a streak to the change itself.
+function _streakDayKeys() {
+  const now = new Date();
+  const localToday = _localDay(now);
+  const localYest = _localDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+  const utcToday = now.toISOString().slice(0, 10);
+  // UTC counts as today only when it is AHEAD of local (US evening). When UTC is behind (UK summer
+  // after midnight) the UTC date is just local yesterday, and must still increment.
+  return {
+    today: utcToday > localToday ? [localToday, utcToday] : [localToday],
+    yesterday: [localYest, new Date(now.getTime() - 86400000).toISOString().slice(0, 10)]
+  };
+}
+// Honest when read: a streak whose last day is before yesterday shows as ended. Does not write.
+function getStreak() {
+  const s = _readStreakRaw();
+  s.current = s.current || 0; s.best = s.best || 0; s.last = s.last || null;
+  s.ended = false; s.endedFrom = 0;
+  if (s.last && s.current > 0) {
+    const k = _streakDayKeys();
+    const alive = k.today.indexOf(s.last) !== -1 || k.yesterday.indexOf(s.last) !== -1 || s.last > k.today[0];
+    if (!alive) { s.endedFrom = s.current; s.current = 0; s.ended = true; }
+  }
+  return s;
+}
 function updateStreak() {
-  const today = new Date().toISOString().slice(0, 10);
-  const s = getStreak();
-  if (s.last === today) return s;
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  s.current = (s.last === yesterday) ? s.current + 1 : 1;
+  const s = _readStreakRaw();
+  const k = _streakDayKeys();
+  if (k.today.indexOf(s.last) !== -1) return s;
+  s.current = (k.yesterday.indexOf(s.last) !== -1) ? (s.current || 0) + 1 : 1;
   s.best = Math.max(s.best || 0, s.current);
-  s.last = today;
+  s.last = k.today[0];
   localStorage.setItem(STORAGE.STREAK, JSON.stringify(s));
   _cloudFlush(STORAGE.STREAK);
   return s;
@@ -4480,7 +4513,7 @@ function _normalizeStemForDedup(stem) {
     .slice(0, 200);             // cap to avoid weird unicode tail issues
 }
 
-async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
+async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx, onBatch) {   // 31 Oct fast-start: onBatch(qs) as each batch lands
   // v4.81.15: optional staleSliceIdx threads through to the per-batch
   // prompt builder for stale-topic rotation. Callers who fire fetchQuestions
   // multiple times (startExam's 5 sequential calls) pass i=0..4 so each
@@ -4489,7 +4522,7 @@ async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
   // cache semantics identical to pre-v4.56.1 behaviour.
   if (n <= QUIZ_BATCH_THRESHOLD) {
     const result = await _fetchQuestionsBatch(key, qTopic, difficulty, n, undefined, staleSliceIdx);
-    cacheQuestions(qTopic, difficulty, n, result);
+    cacheQuestions(qTopic, difficulty, n, result); if (onBatch) onBatch(result);
     return result;
   }
 
@@ -4517,7 +4550,7 @@ async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
   // latency ends up close to a single batch's latency (~3-5s) instead of
   // n×batch-latency sequential.
   const settled = await Promise.allSettled(
-    batchSizes.map((size, i) => _fetchQuestionsBatch(key, qTopic, difficulty, size, pbqBudgets[i], outerIdx + i))
+    batchSizes.map((size, i) => _fetchQuestionsBatch(key, qTopic, difficulty, size, pbqBudgets[i], outerIdx + i).then(qs => { if (onBatch) onBatch(qs); return qs; }))
   );
 
   const merged = _mergeBatchedFetchResults(settled, numBatches, n);
@@ -4725,7 +4758,7 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (${_examVendor} exam style):
 
 ${topicStr}${mixedDistributionStr}
 Difficulty: ${diffStr}
-${exemplarBlock}${retentionBlock}${staleBlock}
+${exemplarBlock}${retentionBlock}${staleBlock}${typeof seenPromptBlock === 'function' ? seenPromptBlock(qTopic) : ''}
 Generate exactly ${n} multiple choice questions. Requirements:
 - 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)
 - One correct answer only (unless multi-select)
@@ -5001,7 +5034,7 @@ function animateReadinessCardV2(pending){
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
-    else { showReadinessStamp(card,scaled>=passLine?'Recent accuracy below pass':(passLine-scaled)+' pts to pass',true); } };
+    else { showReadinessStamp(card,scaled>=passLine?'Not book-ready yet':(passLine-scaled)+' pts to pass',true); } };
   if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
   animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);
@@ -6257,7 +6290,7 @@ function submitHotArea(q) {
   updateTypeStat('hot-area', isCorrect);
   if (isCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
   else { streak = 0; }
-  log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });
+  log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });  if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
   if (!isCorrect) addToWrongBank(q, _hotAreaPick);
   else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
   // v8.0.0 wave 2: shared helper — a raw textContent write here would
@@ -7392,7 +7425,7 @@ function submitTopology(q) {
   updateTypeStat('topology', allCorrect);
   if (allCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
   else { streak = 0; }
-  log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });
+  log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });  if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
   if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
   else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
   // v8.0.0 wave 2: shared helper — a raw textContent write here would

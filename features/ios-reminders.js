@@ -6,26 +6,55 @@
   var IR = window.iosReminders = window.iosReminders || {};
 
   // <planner>
-  // Up to 7 reminders, one per local day at s.time, each with that day's most useful line:
-  // the exam countdown (14 / 7 / 3 / 1 days), else the day's planned reviews, else the practice nudge.
-  // Pure: everything it needs arrives in s and d. d.counts = getSrTodayPlan().counts (planned reviews, day 0 = today).
+  // Up to 7 daily reminders, one per local day at s.time, each with that day's most useful line: the exam tomorrow,
+  // else the streak on the line, else the exam countdown (14 / 7 / 3 days), else "it's been N days" (3+ days away),
+  // else the day's planned reviews, else the practice nudge. Then, if the streak is alive and today isn't studied, a
+  // 9 pm last call (id 5008); and two "door's open" nudges at day 10 and day 21 after the last study (5009, 5010).
+  // Never more than two on one day. Each carries extra.kind: 'streak' | 'daily' | 'drift'.
+  // Pure: everything it needs arrives in s and d. d.counts = getSrTodayPlan().counts (planned reviews, day 0 = today);
+  // d.streak = {current, lastDay} (local 'YYYY-MM-DD'); d.lastStudyDay = local 'YYYY-MM-DD' or null.
   function planReminders(now, s, d) {
     if (!s || !s.on) return [];
     var hm = String(s.time || '19:00').split(':'), hh = parseInt(hm[0], 10) || 0, mm = parseInt(hm[1], 10) || 0;
     var counts = (d && d.counts) || [], dte = d && typeof d.daysToExam === 'number' ? d.daysToExam : null;
     var cert = (d && d.certName) || 'CertAnvil', out = [];
+    function ld(dt) { return dt.getFullYear() + '-' + ('0' + (dt.getMonth() + 1)).slice(-2) + '-' + ('0' + dt.getDate()).slice(-2); }
+    function dayNum(str) { var p = String(str || '').split('-'); return p.length === 3 ? Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000 : NaN; }
+    var today = ld(now), yest = ld(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+    var sk = d && d.streak, cur = sk && sk.current > 0 ? sk.current : 0;
+    var alive = cur > 0 && (sk.lastDay === today || sk.lastDay === yest);
+    var studied = !!(d && d.studiedToday) || (!!sk && sk.lastDay === today);
+    var last = d && d.lastStudyDay ? dayNum(d.lastStudyDay) : NaN;
     for (var k = 0; k < 7; k++) {
-      if (k === 0 && d && d.studiedToday) continue;
+      if (k === 0 && studied) continue;
       // local Date fields, so a clock-change week keeps the chosen hour
       var at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + k, hh, mm, 0, 0);
       if (at.getTime() - now.getTime() < 60000) continue;
-      var left = dte == null ? null : dte - k, n = counts[k] || 0, body;
+      var left = dte == null ? null : dte - k, n = counts[k] || 0, body, kind = 'daily';
+      var away = isNaN(last) ? 0 : dayNum(ld(at)) - last;
+      var streakDay = alive && (studied ? k === 1 : k === 0);   // only days the streak can still be alive
       if (left === 1) body = 'Your ' + cert + ' exam is tomorrow. One last warm-up?';
+      else if (streakDay) { body = 'Your ' + cur + '-day streak ends tonight. One question keeps it.'; kind = 'streak'; }
       else if (left === 14 || left === 7 || left === 3) body = 'Your ' + cert + ' exam is in ' + left + ' days. A quick session keeps you on track.';
+      else if (away >= 3) { body = 'It\'s been ' + away + ' days. A 5-minute warm-up gets you going again.'; kind = 'drift'; }
       else if (n === 1) body = '1 review card is due. About 2 minutes.';
       else if (n > 1) body = n + ' review cards are due. About ' + Math.max(2, Math.round(n * 0.5)) + ' minutes.';
       else body = d && d.pro ? 'Your daily practice is waiting.' : 'Your 15 questions for today are waiting.';
-      out.push({ id: 5001 + k, at: at, title: 'CertAnvil', body: body });
+      out.push({ id: 5001 + k, at: at, title: 'CertAnvil', body: body, extra: { kind: kind } });
+    }
+    // Last call: 21:00 tonight, if the chosen time is earlier, it isn't 21:00 yet, and the streak is still on the line
+    var lc = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21, 0, 0, 0);
+    if (alive && !studied && (hh * 60 + mm) < 21 * 60 && lc.getTime() - now.getTime() >= 60000) {
+      out.push({ id: 5008, at: lc, title: 'CertAnvil', body: 'Last call: your ' + cur + '-day streak ends at midnight. One question keeps it.', extra: { kind: 'streak' } });
+    }
+    // Door's open: day 10 and day 21 after the last study, then silence until the app is opened. Not inside the 7-day window.
+    if (!isNaN(last)) {
+      [[10, 5009], [21, 5010]].forEach(function (p) {
+        var base = new Date(last * 86400000), at2 = new Date(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate() + p[0], hh, mm, 0, 0);
+        var ahead = Math.round((dayNum(ld(at2)) - dayNum(today)));
+        if (ahead < 7 || at2.getTime() - now.getTime() < 60000) return;
+        out.push({ id: p[1], at: at2, title: 'CertAnvil', body: 'One question, about a minute. Your ' + cert + ' progress is still here.', extra: { kind: 'drift' } });
+      });
     }
     return out;
   }
@@ -69,7 +98,15 @@
     var counts = [0, 0, 0, 0, 0, 0, 0], dte = null;
     try { var plan = typeof window.getSrTodayPlan === 'function' ? window.getSrTodayPlan() : null; if (plan && plan.counts) counts = plan.counts; } catch (_) {}
     try { dte = typeof window.getDaysToExam === 'function' ? window.getDaysToExam() : null; } catch (_) { dte = null; }
-    return { counts: counts, daysToExam: typeof dte === 'number' && isFinite(dte) ? dte : null, certName: certName(), pro: isPro(), studiedToday: st.lastStudiedDay === localDay() };
+    var streakIn = null, lastStudy = st.lastStudiedDay || null;
+    try {
+      var sk = typeof window.getStreak === 'function' ? window.getStreak() : null;
+      if (sk) {
+        streakIn = { current: sk.current || 0, lastDay: sk.last || null };
+        if (sk.last && (!lastStudy || sk.last > lastStudy)) lastStudy = sk.last;   // any finished session, not only the iOS quiz paths
+      }
+    } catch (_) {}
+    return { counts: counts, daysToExam: typeof dte === 'number' && isFinite(dte) ? dte : null, certName: certName(), pro: isPro(), studiedToday: st.lastStudiedDay === localDay(), streak: streakIn, lastStudyDay: lastStudy };
   }
   function doReschedule() {
     if (!active()) return Promise.resolve();
@@ -96,6 +133,12 @@
     return IR.load().then(function (st) {
       return IR.save({ quizzes: (st.quizzes || 0) + 1, lastStudiedDay: localDay() });
     }).then(function () { return IR.reschedule(); }).catch(function () {});
+  };
+
+  // A finished Daily Review (features/sr-review.js, total > 0): counts as studying for the day. Not a quiz, so no ask count.
+  IR.markStudied = function () {
+    if (!active()) return Promise.resolve();
+    return IR.save({ lastStudiedDay: localDay() }).then(function () { return IR.reschedule(); }).catch(function () {});
   };
 
   // ── Time helpers: 'HH:MM' (stored) ↔ { h 1-12, m, ap } (the wheel) ↔ '7:00 pm' (shown) ──
@@ -249,6 +292,20 @@
   window.addEventListener('ca:home-shown', function () { IR.maybeOffer(); });
   window.addEventListener('ca:quiz-finished', function () { IR.onQuizFinished(); });
   window.addEventListener('ca:app-active', function () { IR.reschedule().then(function () { return IR.refreshRow(); }); });   // e.g. allowed in iPhone Settings
+  // Tapping a streak reminder opens the 1-question Daily Challenge (it counts for the streak). The tap can be the
+  // launch itself, so wait for the launcher to exist.
+  window.addEventListener('ca:open-daily-challenge', function () {
+    var tries = 0;
+    (function go() {
+      if (typeof window.startDailyChallenge === 'function') { try { window.startDailyChallenge(); } catch (_) {} return; }
+      if (++tries < 20) setTimeout(go, 300);
+    })();
+  });
+  try {
+    if (N() && N().reminders && N().reminders.onTap) N().reminders.onTap(function (extra) {
+      if (extra && extra.kind === 'streak') { try { window.dispatchEvent(new Event('ca:open-daily-challenge')); } catch (_) {} }
+    });
+  } catch (_) {}
   window.addEventListener('ca:exam-date', function () { IR.reschedule(); });
   // At launch, once the page's data has loaded; again when the account's tier resolves (a Pro user's first plan may
   // have used the free line).

@@ -1176,6 +1176,7 @@
       if (total > 0) {
         const beforeStreak = getStreak().current;
         const s = updateStreak();
+        try { if (window.iosReminders && typeof window.iosReminders.markStudied === 'function') window.iosReminders.markStudied(); } catch (_) {}   // a review day counts as studied
         const gained = s.current > beforeStreak;
         if (gained) _pendingStreakPulse = true;
         const flame = '<svg class="sr-streak-flame" viewBox="0 0 32 38" aria-hidden="true">'

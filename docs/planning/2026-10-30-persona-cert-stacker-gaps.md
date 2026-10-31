@@ -97,6 +97,8 @@ Keep exam-scale scores for the Exam Simulator only. Change "You're exam-ready on
 
 ### 5. Speed and guessing are invisible
 
+> **Rejected by the founder (30 Oct).** Do not re-propose.
+
 **What he sees today.** A "Time" figure for the whole session on results (`ios-quiz.js:67`). Nothing per question.
 
 **Evidence.** No time is stored per answer. History rows hold only date, topic, difficulty, score, total and mode (`quiz-engine.js:1900-1953`), and a search for per-answer timing in the quiz engine finds nothing. There is no "I guessed" option. A 3-second lucky tap counts as fully right. The exam results page shows no pacing either (`features/ios-exam.js:44-50`: correct, wrong, skipped and raw only).
@@ -146,6 +148,8 @@ Keep exam-scale scores for the Exam Simulator only. Change "You're exam-ready on
 ---
 
 ### 8. Six certs, six silos: no cross-cert view on the phone
+
+> **30 Oct:** phase 1 (the My certs hub) is in the persona bundle. Phase 2 (carrying Net+ progress into Sec+) was **rejected by the founder**. Do not re-propose.
 
 **What he sees today.** Settings → Cert opens a list with the note "Your progress stays with each cert" (`features/ios-settings.js:144`). Each cert is its own website address, so its data is stored separately (`app.js:91-147`). Home only knows about the cert that's currently open.
 

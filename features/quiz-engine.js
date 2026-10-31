@@ -111,6 +111,64 @@
       const tb = document.getElementById('topic-brief');
       if (tb) tb.classList.add('is-hidden');
     }
+    // 31 Oct fast-start: the quiz opens on the first batch that passes every check.
+    // _commit puts it on screen; later batches and top-ups append via _qAppend.
+    const _t0 = Date.now();
+    let _started = false, _mine = null;
+    _ff = null;
+    const pbqInjectCount = qCount >= 10 ? 1 : 0;
+    let _pbqLeft = pbqInjectCount;
+    // Inject CLI sim / topology PBQs from predefined bank, only at a slot nobody has seen yet.
+    const _pbqPlace = () => {
+      if (_pbqLeft <= 0 || questions.length < 5) return;
+      const at = Math.min(Math.floor(questions.length * 0.4), questions.length - 1);
+      if (_started && (at <= current || _findLogEntryFor(questions[at]))) return;
+      const inj = injectPBQs(questions, activeQuizTopic, _pbqLeft);
+      if (inj !== questions) questions.splice(0, questions.length, ...inj);
+      _pbqLeft = 0;
+    };
+    const _commit = (live) => {
+      _started = true;
+      current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
+      quizFlags = new Array(questions.length).fill(false);
+      if (window.quizResumeClear) quizResumeClear();   // Task 6
+      // v4.54.8: mark session start for the elapsed-time row on Results
+      _sessionStartTs = Date.now();
+      if (live) { _ffBegin(qCount); _mine = _ff; }
+      _fill.firstQuestionMs = Date.now() - _t0;
+      // v4.82.1: snap progress bar to 100% then hide before the quiz renders.
+      _loadingProgressFinish();
+      showPage('quiz');
+      render();
+    };
+    // Still this quiz? A new quiz, a resume, a drill or finish() ends the fill.
+    const _live = () => _genAlive(_g) && (!_started || (_ff === _mine && questions === _mine.arr));
+    const _norm = (t) => typeof _normalizeStemForDedup === 'function' ? _normalizeStemForDedup(t) : String(t || '').trim().toLowerCase();
+    // Append checked questions (no stem twice, never past qCount). Returns how many went in.
+    const _qAppend = (list) => {
+      if (!_live()) return 0;
+      const have = new Set(questions.map(q => _norm(q && q.question)));
+      let added = 0;
+      for (const q of list) {
+        if (questions.length >= qCount) break;
+        const k = _norm(q && q.question);
+        if (k && have.has(k)) continue;
+        if (k) have.add(k);
+        questions.push(q); added++;
+      }
+      if (!added) return 0;
+      _pbqPlace();
+      if (!_started) { _commit(true); return added; }
+      while (quizFlags.length < questions.length) quizFlags.push(false);
+      // Task 6: keep the resume save in step, but never bring back one ✕ already cleared.
+      const onQuiz = document.getElementById('page-quiz')?.classList.contains('active');
+      if (window.quizResumeSave && log.length && (onQuiz || (window.quizResumeState && quizResumeState()))) quizResumeSave();
+      _ffAppended();
+      return added;
+    };
+    // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
+    // Task 7: declared outside the try so a fill that fails (e.g. all repeats) still logs its rounds.
+    const _fill = { rounds: [] };
     try {
       // v4.43.4 — over-request to absorb validation dropout + retry-to-fill if short.
       // The 4-layer validation pipeline (prompt self-check → Sonnet validator →
@@ -118,38 +176,62 @@
       // generated questions. Pre-v4.43.4 the code tolerated shortfalls as
       // "acceptable", which consistently shipped 6-9 questions for a requested 10.
       // Now: over-request by 30% (min +3), then if we're still short after validation,
-      // do ONE retry for the exact deficit + buffer, then slice to qCount.
+      // retry for the exact deficit + buffer; _qAppend caps at qCount.
       const DROPOUT_BUFFER = Math.max(3, Math.ceil(qCount * 0.3));
       document.getElementById('loading-msg').textContent =
         'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
-      // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
-      const _fill = { rounds: [] };
-      let raw = await fetchQuestions(key, activeQuizTopic, diff, qCount + DROPOUT_BUFFER);
-      const _r0 = { asked: qCount + DROPOUT_BUFFER, written: raw.length };
-      _loadingProgressUpdate('Verifying quality\u2026', 45);
-      // Enhancement 1: AI second-pass validation
-      document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
-      raw = await aiValidateQuestions(key, raw);
+      // Task 7: drop questions answered in the last 30 days; the top-up refills the gap.
+      let _repeats = 0;
+      const _dropSeen = (qs) => { if (typeof seenFilter !== 'function') return qs; const r = seenFilter(qs); _repeats += r.dropped; return r.kept; };
+      // 31 Oct fast-start: each writer batch runs checker → local checks → repeat filter as it
+      // lands. Checks run one batch at a time (the checker's own 3-call limit still holds).
+      questions = [];
+      const _r0 = { asked: qCount + DROPOUT_BUFFER, written: 0, afterChecker: 0, afterLocal: 0 };
+      let _chain = Promise.resolve(), _gotBatch = false, _checkErr = null;
+      const _onBatch = (batch) => {
+        _gotBatch = true;
+        _r0.written += batch.length;
+        _chain = _chain.then(async () => {
+          if (!_live() || !batch.length) return;
+          if (!_started) {
+            _loadingProgressUpdate('Verifying quality\u2026', 45);
+            // Enhancement 1: AI second-pass validation
+            document.getElementById('loading-msg').textContent = 'Verifying question accuracy\u2026';
+          }
+          let checked;
+          try { checked = await aiValidateQuestions(key, batch); } catch (err) { _checkErr = _checkErr || err; return; }
+          if (!_live()) return;
+          _r0.afterChecker += checked.length;
+          // Enhancement 2 + 4: Programmatic validation + reported question exclusion
+          const local = validateQuestions(checked);
+          _r0.afterLocal += local.length;
+          _qAppend(_dropSeen(local));
+        });
+      };
+      const raw = await fetchQuestions(key, activeQuizTopic, diff, qCount + DROPOUT_BUFFER, undefined, _onBatch);
+      if (!_gotBatch) _onBatch(raw);   // a fetchQuestions that doesn't report batches: one batch
+      await _chain;
       if (!_genAlive(_g)) return;
-      _loadingProgressUpdate('Finalizing\u2026', 80);
-      // Enhancement 2 + 4: Programmatic validation + reported question exclusion
-      _r0.afterChecker = raw.length;
-      questions = validateQuestions(raw);
-      _r0.afterLocal = questions.length; _fill.rounds.push(_r0);
-      if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
-  
+      if (!_started) _loadingProgressUpdate('Finalizing\u2026', 80);
+      _fill.rounds.push(_r0);
+      if (_checkErr) _fill.rounds.push({ label: 'checker', error: String(_checkErr.message || _checkErr).slice(0, 80) });
+      if (_r0.afterLocal === 0) throw (_checkErr || new Error('All generated questions failed validation. Try again.'));
+
       // Retry-to-fill. v8.141.0: up to MAX_TOPUP_ROUNDS rounds (was one), so a
       // 30-question request stops shipping ~21. Every extra question passes the
       // same checks, so quality is unchanged; only the wait grows. Drops come
       // from a failed writer batch (10 at a time), a checker call that fails
       // twice (5 at a time, fail-closed) and genuine rejections.
+      // 31 Oct fast-start: top-ups run after every batch has landed, usually behind question 1.
       const MAX_TOPUP_ROUNDS = 3;
       for (let round = 1; round <= MAX_TOPUP_ROUNDS && questions.length < qCount; round++) {
-        if (!_genAlive(_g)) return;
+        if (!_genAlive(_g) || !_live()) return;
         const deficit = qCount - questions.length;
-        _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(95, 82 + round * 4));
-        document.getElementById('loading-msg').textContent =
-          'Generating ' + deficit + ' more to complete your ' + qCount + '-question set\u2026';
+        if (!_started) {
+          _loadingProgressUpdate('Topping up (' + deficit + ' more)\u2026', Math.min(95, 82 + round * 4));
+          document.getElementById('loading-msg').textContent =
+            'Generating ' + deficit + ' more to complete your ' + qCount + '-question set\u2026';
+        }
         const _rn = { asked: deficit + Math.max(3, Math.ceil(deficit * 0.5 * round)) };
         try {
           const extraRaw = await fetchQuestions(key, activeQuizTopic, diff, _rn.asked); // buffer grows each round
@@ -160,9 +242,8 @@
           const extraValidated = validateQuestions(extraChecked);
           _rn.afterLocal = extraValidated.length;
           const have = new Set(questions.map(q => String(q.question || '').trim().toLowerCase()));
-          const fresh = extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase()));
-          _rn.added = fresh.length;
-          questions = questions.concat(fresh);
+          const fresh = _dropSeen(extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase())));
+          _rn.added = _qAppend(fresh);
         } catch (retryErr) {
           if (!_genAlive(_g)) return;
           // A failed round (network/API hiccup) moves on to the next one after a
@@ -173,19 +254,27 @@
         }
         _fill.rounds.push(_rn);
       }
-  
-      // Slice to exact count — truncates buffer overage from the initial over-request
-      // and/or retry overage. If we're STILL short after retry (rare — both rounds
-      // dropped heavily), ship what we have rather than error out.
-      if (questions.length > qCount) {
-        questions = questions.slice(0, qCount);
-      }
-      _logQuizFill(qCount, questions.length, _catchUp ? 'fresh (catch-up)' : 'fresh', _fill.rounds, null);
-      _noteShortQuiz(qCount, questions.length, _fill.rounds);
+      if (_repeats) _fill.rounds.push({ label: 'repeats', dropped: _repeats });
+      if (questions.length === 0) throw new Error('Couldn\u2019t make new questions this time. Try again.');
+      if (!_live()) return;
+      _pbqPlace();
+      _logQuizFill(qCount, questions.length, _catchUp ? 'fresh (catch-up)' : 'fresh', _fill.rounds, null, _fill);
+      // A short set says so (the pill), unless the person already left with ✕.
+      const _onQuiz = document.getElementById('page-quiz')?.classList.contains('active');
+      if (_onQuiz || (window.quizResumeState && quizResumeState())) _noteShortQuiz(qCount, questions.length, _fill.rounds);
+      _ffSettle();
     } catch(e) {
       if (!_genAlive(_g)) { window._mixedPickMode = 'random'; return; }   // cancelled: say nothing, serve nothing
-      _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
-      const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
+      if (_started) {   // 31 Oct fast-start: already on screen; keep what arrived and end the fill
+        window._mixedPickMode = 'random';
+        _logQuizFill(qCount, questions.length, 'error', _fill.rounds, String((e && e.message) || e).slice(0, 120), _fill);
+        if (_ff === _mine) _ffSettle();
+        return;
+      }
+      // Task 7: never silently re-serve a set answered in the last 7 days.
+      const _cachedRaw = getCachedQuestions(activeQuizTopic, diff, qCount);
+      const cached = _cachedRaw && !(typeof seenAnsweredWithin === 'function' && seenAnsweredWithin(_cachedRaw, 7)) ? _cachedRaw : null;
+      _logQuizFill(qCount, 0, cached ? 'cache' : 'error', _fill.rounds, String((e && e.message) || e).slice(0, 120));
       if (cached) {
         questions = cached.slice(0, qCount);
         showCacheNotice(true);
@@ -199,20 +288,10 @@
       }
     }
     window._mixedPickMode = 'random';  // v8.146.0: Catch-up picking ends with this generation
-    if (!_genAlive(_g)) return;
-    // Inject CLI sim / topology PBQs from predefined bank
-    const pbqInjectCount = qCount >= 10 ? 1 : 0;
-    if (pbqInjectCount > 0) {
-      questions = injectPBQs(questions, activeQuizTopic, pbqInjectCount);
-    }
-    current = 0; score = 0; streak = 0; bestStreak = 0; answered = 0; log = [];
-    quizFlags = new Array(questions.length).fill(false);
-    // v4.54.8: mark session start for the elapsed-time row on Results
-    _sessionStartTs = Date.now();
-    // v4.82.1: snap progress bar to 100% then hide before the quiz renders.
-    _loadingProgressFinish();
-    showPage('quiz');
-    render();
+    if (!_genAlive(_g) || _started) return;   // 31 Oct fast-start: a live fill is already on screen
+    // Cached set: whole, so the PBQ goes in now and the quiz opens.
+    _pbqPlace();
+    _commit(false);
   }
   
   // v4.54.8: render segmented per-question progress dots. Derives state
@@ -227,6 +306,7 @@
     const el = document.getElementById('quiz-prog-dots');
     if (!el || !Array.isArray(questions)) return;
     const n = questions.length;
+    const shown = _ffTotal();   // 31 Oct fast-start: questions still on their way get a dot too
     // Build a quick lookup of question -> log index (log entries are in answered order;
     // we match on the question object identity since log.push({q, ...}) preserves refs).
     const logByQ = new Map();
@@ -248,6 +328,7 @@
       aria = `Question ${i + 1}, ${stateLabel}` + (i === current ? ' (current)' : '');
       cells.push(`<button type="button" class="${cls}" onclick="jumpToQuestion(${i})" title="${aria}" aria-label="${aria}">${i + 1}</button>`);
     }
+    for (let i = n; i < shown; i++) cells.push(`<button type="button" class="qpd-cell" disabled aria-label="Question ${i + 1}, pending">${i + 1}</button>`);
     el.innerHTML = cells.join('');
   }
   
@@ -402,10 +483,72 @@
     if (!Array.isArray(questions)) return;
     if (current < questions.length - 1) jumpToQuestion(current + 1);
     else if (current === questions.length - 1 && _findLogEntryFor(questions[current])) {
-      // Last question + answered → show results.
-      finish();
+      // Last question + answered → show results (31 Oct fast-start: or wait for the next batch).
+      _ffWaitAt();
     }
   }
+
+  // ── 31 Oct fast-start: the quiz opens on the first checked batch ─────────
+  // Spec: docs/superpowers/specs/2026-10-30-ai-budget-fast-start-suggest-design.md §2.
+  // startQuiz shows question 1 as soon as one writer batch has passed the checker,
+  // the local checks and the repeat filter; later batches and top-ups append to
+  // `questions` in place. _ff is that live fill. It only counts while `questions`
+  // is still the array it fills, so a new quiz, a resume or a drill ends it.
+  let _ff = null;   // { pending, waiting, target, arr }
+  function _ffPending() { return !!(_ff && _ff.pending && _ff.arr === questions); }
+  // On the last arrived question: with more on the way show "Next question coming…",
+  // otherwise finish. Returns true when it handled the step (caller stops).
+  function _ffWaitAt() {
+    if (current < questions.length - 1) return false;
+    if (!_ffPending()) { finish(); return true; }
+    _ff.waiting = true;
+    const w = document.getElementById('q-wait'), b = document.getElementById('btn-next');
+    if (w) w.hidden = false;
+    if (b) b.disabled = true;
+    return true;
+  }
+  function _ffWaitEnd() {
+    if (_ff) _ff.waiting = false;
+    const w = document.getElementById('q-wait'), b = document.getElementById('btn-next');
+    if (w) w.hidden = true;
+    if (b) b.disabled = false;
+  }
+  // New questions arrived: move on if the person was waiting, else refresh the counters.
+  function _ffOnQuiz() { const p = document.getElementById('page-quiz'); return !!(p && p.classList.contains('active')); }
+  function _ffAppended() {
+    if (!_ff || _ff.arr !== questions) return;
+    if (_ff.waiting && current < questions.length - 1 && _ffOnQuiz()) { _ffWaitEnd(); advance(); return; }
+    _ffRefresh();
+  }
+  function _ffRefresh() {
+    const lab = document.getElementById('q-label');
+    if (lab && Array.isArray(questions) && questions[current]) lab.textContent = `Question ${current + 1} of ${_ffTotal()}`;
+    _renderQuizProgressDots();
+    _renderQuizNavArrows();
+  }
+  function _ffTotal() { return _ffPending() ? Math.max(questions.length, _ff.target) : questions.length; }
+  // The fill is over (every batch and top-up settled). A waiting person moves on or finishes.
+  function _ffSettle() {
+    if (!_ff || _ff.arr !== questions) { _ff = null; return; }
+    const waiting = _ff.waiting && _ffOnQuiz();   // never jump to results from another page
+    _ff.pending = false;
+    if (waiting) { _ffWaitEnd(); if (current < questions.length - 1) advance(); else finish(); return; }
+    _ffRefresh();
+    const b = document.getElementById('btn-next');
+    if (b && current === questions.length - 1) {
+      b.textContent = b.textContent === 'Next question' ? 'See results' : b.textContent === 'Next \u2192' ? 'See Results' : b.textContent;
+    }
+  }
+  function _ffBegin(target) { _ff = { pending: true, waiting: false, target, arr: questions }; }
+  function _ffClear() { if (_ff) _ffWaitEnd(); _ff = null; }
+  // Leaving the quiz (goSetup: ✕, Menu, Home) ends a live fill: no more AI calls, no late finish().
+  function _ffAbandon() {
+    if (!_ffPending()) return;
+    _gen.cancelled = true;
+    try { if (_gen.ctrl) _gen.ctrl.abort(); } catch (_) {}
+    _ffClear();
+  }
+  window._ffAbandon = _ffAbandon;
   
   // v4.82.0: surface/hide the revisit banner. Visible whenever the rendered
   // question has a log entry (i.e. user is looking at a question they've
@@ -464,16 +607,20 @@
   // v8.178.0: say so when a quiz comes back short. Founder, 13 Oct: asked for 20, got 16
   // after the API credit ran out mid-generation, and nothing on screen said so. A toast
   // on start gives the reason; a "16 of 20" pill stays in the quiz header. (0, 0) hides it.
-  function _shortReason(rounds) {
+  function _shortReason(rounds, miss) {
     const errs = (rounds || []).map(r => r && r.error).filter(Boolean).join(' ');
     if (/credit|billing|balance|quota/i.test(errs)) return 'credit';
-    return errs ? 'error' : 'checks';
+    if (errs) return 'error';
+    // Task 7: repeats dropped and nothing failed: name them only when they cover the whole gap.
+    const rep = (rounds || []).find(r => r && r.label === 'repeats');
+    return rep && rep.dropped >= miss ? 'repeats' : 'checks';
   }
   function _noteShortQuiz(asked, got, rounds) {
     const short = got > 0 && got < asked, miss = asked - got;
-    const why = short ? _shortReason(rounds) : '';
+    const why = short ? _shortReason(rounds, miss) : '';
     const tail = why === 'credit' ? 'Your API credit ran out partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
       : why === 'error' ? 'The AI stopped responding partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
+      : why === 'repeats' ? miss + " left out because you've seen them recently."
       : miss + " didn't pass the quality checks.";
     const pill = (typeof document !== 'undefined') ? document.getElementById('short-notice') : null;
     if (pill) {
@@ -689,16 +836,19 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   function render() {
     const q     = questions[current];
     const total = questions.length;
-    if (current === 0 && answered === 0) _iosConfirm = !!(window.matchMedia && matchMedia('(max-width: 899px)').matches);
+    if ((current === 0 && answered === 0) || window._quizResumeRestored) _iosConfirm = !!(window.matchMedia && matchMedia('(max-width: 899px)').matches);   // Task 6: a resumed quiz keeps pick-then-confirm
+    window._quizResumeRestored = false;
+    if (_ff && _ff.waiting) _ffWaitEnd();   // 31 Oct fast-start: moving to a question ends the wait
     _iosSel = null;
-    const pct   = Math.round((current / total) * 100);
+    const shown = _ffTotal();   // 31 Oct fast-start: the asked-for count while batches are still landing
+    const pct   = Math.round((current / shown) * 100);
     const qType = getQType(q);
   
     _setLiveScore(score, answered);
     _setLiveStreak(streak, false);
-    document.getElementById('q-label').textContent     = `Question ${current + 1} of ${total}`;
+    document.getElementById('q-label').textContent     = `Question ${current + 1} of ${shown}`;
     _swapText(document.getElementById('q-pct'), pct + '%');
-    document.getElementById('prog-fill').style.width   = (_iosConfirm ? Math.round(((current + 1) / total) * 100) : pct) + '%';   // v8.183.0: E2E counts the current question
+    document.getElementById('prog-fill').style.width   = (_iosConfirm ? Math.round(((current + 1) / shown) * 100) : pct) + '%';   // v8.183.0: E2E counts the current question
     document.getElementById('q-num').textContent       = `Q${current + 1}`;
     // v4.54.8: segmented per-question progress dots. State derived from `log` entries.
     _renderQuizProgressDots();
@@ -764,12 +914,13 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   
     const btnNext = document.getElementById('btn-next');
     btnNext.className = 'btn-next';
-    btnNext.textContent = current === total - 1 ? 'See Results' : 'Next \u2192';
-    btnNext.onclick = current === total - 1 ? finish : advance;
+    const _end = current === total - 1 && !_ffPending();   // 31 Oct fast-start: more on the way is not the end
+    btnNext.textContent = _end ? 'See Results' : 'Next \u2192';
+    btnNext.onclick = _end ? finish : advance;
     btnNext.disabled = false;
     if (_iosConfirm) {
       // E2E labels: "Next" to confirm a pick, "Next question" / "See results" once answered.
-      const _last = current === total - 1, _done = !!_findLogEntryFor(q);
+      const _last = _end, _done = !!_findLogEntryFor(q);
       btnNext.textContent = _done ? (_last ? 'See results' : 'Next question') : (iosConfirmActive(q) ? 'Next' : (_last ? 'See results' : 'Next question'));
       if (iosConfirmActive(q)) {
         btnNext.disabled = true;
@@ -778,7 +929,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
           if (_iosSel && !_findLogEntryFor(q)) {
             const l = _iosSel; _iosSel = null;
             pick(l, q);
-            btnNext.textContent = _last ? 'See results' : 'Next question';
+            btnNext.textContent = current === questions.length - 1 && !_ffPending() ? 'See results' : 'Next question';
             return;
           }
           _go();
@@ -1084,6 +1235,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen: chosen.join(','), correct: correctAnswers.join(','), isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
     if (!isRight) addToWrongBank(q._bankOrig || q, chosen.join(','));  // v7.47.0: a missed variant re-triggers SR for its ORIGINAL (bank dedup no-ops)
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1242,6 +1394,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen: orderSequence.join(','), correct: correctOrder.join(','), isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
     if (!isRight) addToWrongBank(q._bankOrig || q, orderSequence.join(','));  // v7.47.0: original identity preserved
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1305,6 +1458,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     if (isRight) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
     else { streak = 0; }
     log.push({ q, chosen, correct: q.answer, isRight, flagged: quizFlags[current] });
+    if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6: resume after the app closes
     if (!isRight) addToWrongBank(q._bankOrig || q, chosen);  // v7.47.0: original identity preserved
     else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
     _setLiveScore(score, answered);
@@ -1717,6 +1871,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   }
   
   function advance() {
+    if (_ffWaitAt()) return;   // 31 Oct fast-start
     _navigateTo(current + 1, () => {
       if (gauntletMode && typeof _renderGauntletLadder === 'function') _renderGauntletLadder();
     });
@@ -1728,6 +1883,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     flagBtn.className = 'flag-btn' + (quizFlags[current] ? ' flagged' : '');
     flagBtn.textContent = quizFlags[current] ? 'Flagged' : 'Flag';
     flagBtn.setAttribute('aria-pressed', quizFlags[current] ? 'true' : 'false');   // v8.183.0: was never updated on toggle
+    if (typeof quizResumeSave === 'function' && log.length) quizResumeSave();   // Task 6: flags are kept on resume
   }
   
 
@@ -1788,6 +1944,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // v7.50.0: a Why-Not round's question finishing hands off to phase two
     // (the reason picker) instead of the results page.
     if (whyNotMode && _wnSession && typeof _wnFinishQuestion === 'function') { _wnFinishQuestion(); return; }
+    if (window.quizResumeClear) quizResumeClear({ record: false });   // Task 6
     // v4.42.0: snapshot streak BEFORE updateStreak so we can detect an
     // increment and flag a pulse animation for the next goSetup() render.
     const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();
@@ -1866,6 +2023,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
         scoreEl.textContent = scaled;
       }
     }
+    _ffClear();   // 31 Oct fast-start: nothing appends to a finished quiz
     if (verdictEl) {
       if (passed) {
         verdictEl.innerHTML = '\u2191 Pass mark cleared \u00b7 ' + EXAM_PASS_SCORE;
@@ -1910,6 +2068,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     } catch (_) {}
   
     if (!wrongDrillMode) {
+      if (window.seenRecord) seenRecord(log.map(e => e.q), activeQuizTopic);   // Task 7
       const entryMode = dailyChallengeMode ? 'daily' : (sessionMode ? 'session' : 'quiz');
       // v8.149.0: each row records right/total per question difficulty (readiness v3 input).
       const _byDiff = (entries) => (typeof byDiffFromLog === 'function') ? byDiffFromLog(entries, diff, e => !!e.isRight) : undefined;
@@ -2444,14 +2603,16 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   // traced: requested vs served, fresh vs cache fallback, and per round how
   // many were asked for, written, passed the checker, passed local checks.
   window._logQuizFill = function () { return _logQuizFill.apply(null, arguments); };
-  function _logQuizFill(requested, served, source, rounds, error) {
+  // 31 Oct fast-start: `fill` (optional) carries firstQuestionMs, Start → question 1 on screen.
+  function _logQuizFill(requested, served, source, rounds, error, fill) {
     try {
       if (typeof _logValidatorTelemetry !== 'function') return;
-      const r = (rounds || []).map((x, i) => (x.label ? x.label + ' ' : (i === 0 ? 'r0 ' : 'top-up' + i + ' ')) + (x.error ? 'ERR ' + x.error
+      const r = (rounds || []).map((x, i) => x.label === 'repeats' ? 'repeats -' + x.dropped : (x.label ? x.label + ' ' : (i === 0 ? 'r0 ' : 'top-up' + i + ' ')) + (x.error ? 'ERR ' + x.error
         : x.asked + '→' + (x.written ?? '?') + '→' + (x.afterChecker ?? '?') + '→' + (x.afterLocal ?? '?') + (x.added !== undefined ? ' +' + x.added : ''))).join(' | ');
       _logValidatorTelemetry([{ type: 'telemetry:quiz-fill', fingerprint: 'quiz-fill:' + (typeof CURRENT_CERT !== 'undefined' ? CURRENT_CERT : ''),
-        message: 'asked ' + requested + ' · served ' + served + ' · ' + source + (r ? ' · ' + r : '') + (error ? ' · error: ' + error : ''),
-        extra: { requested, served, source, rounds, error } }]);
+        message: 'asked ' + requested + ' · served ' + served + ' · ' + source + (r ? ' · ' + r : '') + (error ? ' · error: ' + error : '')
+          + (fill && typeof fill.firstQuestionMs === 'number' ? ' · first ' + fill.firstQuestionMs + 'ms' : ''),
+        extra: { requested, served, source, rounds, error, firstQuestionMs: fill && typeof fill.firstQuestionMs === 'number' ? fill.firstQuestionMs : null } }]);
     } catch (_) { /* diagnostics must never affect the quiz */ }
   }
   // v8.141.0: run the checker's chunks a few at a time, with a pause before

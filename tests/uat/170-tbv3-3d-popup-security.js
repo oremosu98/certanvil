@@ -817,6 +817,43 @@ console.log('\n\x1b[1m── Security Phase 3 — NOTIFY RATE LIMIT + CORS ─�
     /persisted_to_supabase:\s*persistedToSupabase/.test(notify));
 })();
 
+console.log('\n\x1b[1m── cert_requests (Suggest a cert) migration ──\x1b[0m');
+(function () {
+  const p = path.join(ROOT, 'supabase/migrations/20261031_cert_requests.sql');
+  const sql = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '';
+  const audit = fs.readFileSync(path.join(ROOT, 'scripts/sql/migration-audit.sql'), 'utf8');
+  test('cert_requests migration exists and carries the exact ROLLBACK line',
+    sql.length > 1000
+    && /^-- ROLLBACK: DROP VIEW IF EXISTS cert_request_tally; DROP TABLE IF EXISTS cert_requests;\s*$/m.test(sql));
+  test('cert_requests has RLS enabled',
+    /ALTER\s+TABLE\s+cert_requests\s+ENABLE\s+ROW\s+LEVEL\s+SECURITY/i.test(sql));
+  test('cert_requests has unique(user_id, exam_key) and cascades from auth.users',
+    /UNIQUE\s*\(\s*user_id\s*,\s*exam_key\s*\)/i.test(sql)
+    && /user_id\s+uuid\s+NOT NULL REFERENCES auth\.users ON DELETE CASCADE/i.test(sql));
+  test('cert_requests has admin-select via is_admin()',
+    /cert_requests_admin_select[\s\S]{0,200}FOR SELECT[\s\S]{0,80}USING \(is_admin\(\)\)/i.test(sql));
+  test('cert_requests insert/select-own policies are scoped to auth.uid() = user_id',
+    /cert_requests_insert_own[\s\S]{0,200}WITH CHECK \(auth\.uid\(\) = user_id\)/i.test(sql)
+    && /cert_requests_select_own[\s\S]{0,200}USING \(auth\.uid\(\) = user_id\)/i.test(sql));
+  test('cert_requests admin update is limited to notified_at by column grant, no owner update/delete',
+    /REVOKE ALL ON cert_requests FROM anon, authenticated/i.test(sql)
+    && /GRANT UPDATE \(notified_at\) ON cert_requests TO authenticated/i.test(sql)
+    && /cert_requests_admin_update_notified[\s\S]{0,200}FOR UPDATE[\s\S]{0,80}USING \(is_admin\(\)\)[\s\S]{0,40}WITH CHECK \(is_admin\(\)\)/i.test(sql)
+    && !/FOR DELETE/i.test(sql));
+  test('cert_request_tally view is security_invoker (RLS applies to the caller)',
+    /CREATE OR REPLACE VIEW cert_request_tally\s+WITH \(security_invoker = true\)/i.test(sql)
+    && /bool_or\(typed\)/i.test(sql) && /mode\(\) WITHIN GROUP/i.test(sql));
+  test('cert_requests: no table-wide ALL/UPDATE/DELETE grant; INSERT is column-scoped; view closed to anon',
+    !/GRANT\s+(ALL|UPDATE|DELETE)\s+ON\s+cert_requests/i.test(sql)
+    && /GRANT INSERT \(user_id, exam_key, label, typed\) ON cert_requests TO authenticated/i.test(sql)
+    && /REVOKE ALL ON cert_request_tally FROM anon/i.test(sql));
+  test('cert_requests: created_at NOT NULL and exam_key normalised CHECK (guarded)',
+    /created_at\s+timestamptz NOT NULL DEFAULT now\(\)/i.test(sql)
+    && /cert_requests_exam_key_normalised[\s\S]{0,200}CHECK \(exam_key = lower\(btrim\(exam_key\)\)\)/i.test(sql));
+  test('migration-audit.sql checks the cert_requests migration',
+    /20261031_cert_requests/.test(audit));
+})();
+
 // ══════════════════════════════════════════════════════════════════════════
 // Security Phase 4 · XSS defence-in-depth (M6 DOMPurify + L2 + L5)
 // M6 vendors DOMPurify (no build step — committed .min.js + <script>) and runs
@@ -892,6 +929,8 @@ console.log('\n\x1b[1m── Security Phase 4 — XSS DEFENCE-IN-DEPTH (DOMPurif
   test('Sec-P4 M6: admin renderShips (GitHub commits) routed through sanitizeRows',
     /elShipsTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs));
 
+  test('Sec-P4 M6: admin renderCertRequests (typed labels are user input) routed through sanitizeRows',
+    /elRequestsTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs) && /id="requests-tbody"/.test(adminht));
   // — L5 .gitignore secret-file guard —
   test('Sec-P4 L5: .gitignore guards .env / *.key / *.pem / secrets/',
     /^\.env$/m.test(gitig) && /^\*\.key$/m.test(gitig) && /^\*\.pem$/m.test(gitig) && /^secrets\/$/m.test(gitig));

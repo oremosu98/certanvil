@@ -80,7 +80,8 @@
       + (m.remRow ? row('reminders', 'bell', 'Reminders', null, '<span class="ist-rmv">' + e(m.remLabel) + '</span>') : '')   // Stage 5d
       + row(null, 'goal', 'Daily goal', null, m.glanceGoal + ' a day')
       + row(null, 'today', 'Today', null, m.today + ' of ' + m.glanceGoal)
-      + (m.out ? '' : row('tour', 'home', 'Replay the tour', 'Four quick tips on Home', null)) + '</div>';   // F3: signed in only, like the tour
+      + (m.out ? '' : row('tour', 'home', 'Replay the tour', 'Four quick tips on Home', null))
+      + (m.out ? '' : row('suggest', 'star', 'Suggest a cert', 'Tell us which exam to add next', null)) + '</div>';   // F3: signed in only, like the tour
     h += '<div class="ist-card reveal"><div class="ist-k">Daily goal' + (m.pro ? '' : '<span class="ist-lock">' + svg(I.lock, 10) + 'Pro</span>') + '</div>'
       + '<div class="ist-big"><b>' + (m.pro ? m.goal : 15) + '</b><span>questions a day</span></div>'
       + (m.pro ? seg('goal-pick', [10, 20, 30, 50], m.goal) + '<button type="button" class="ist-pri ist-wide" data-act="goal-save">Save</button><p class="ist-note">This sets the Today card on Home. Pick a number you can hit every day.</p>'
@@ -355,6 +356,7 @@
     var t = document.querySelector('#lift-tabbar .lift-tab[data-page="setup"]');
     if (t) t.click(); else _call('showPage', 'setup');
   };
+  ON.suggest = function (b) { if (typeof window.openSuggestCert === 'function') { if (b && b.focus) { try { b.focus({ preventScroll: true }); } catch (_) {} } window.openSuggestCert(); } };   // Task 14
   ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
   ON['goal-pick'] = function (b) {
     var n = parseInt(b.getAttribute('data-n'), 10);

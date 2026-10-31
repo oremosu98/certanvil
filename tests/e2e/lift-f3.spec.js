@@ -127,6 +127,23 @@ test.describe('F3: the first-Home tour', () => {
     await expectRingOn(page, '#ios-home .ih-rd', 5);
   });
 
+  test('Settings: Suggest a cert row sits after Replay the tour and opens the sheet', async ({ page }) => {
+    await boot(page, { prefs: Object.assign({ tourSeen: '1' }, PREFS) });
+    await page.click('#lift-tabbar .lift-tab[data-page="settings"]');
+    await expect(page.locator('#ios-settings [data-act="tour"]')).toBeVisible();
+    const rows = page.locator('#ios-settings .ist-row[data-act]');
+    const acts = await rows.evaluateAll((els) => els.map((e) => e.getAttribute('data-act')));
+    expect(acts.indexOf('suggest')).toBe(acts.indexOf('tour') + 1);
+    const row = page.locator('#ios-settings [data-act="suggest"]');
+    await expect(row).toContainText('Suggest a cert');
+    await expect(row).toContainText('Tell us which exam to add next');
+    await row.click();
+    await expect(page.locator('#ios-suggest')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ios-suggest')).toHaveCount(0);
+    await expect(row).toBeFocused();
+  });
+
   test('the X, a tap outside the bubble and Escape each close it', async ({ page }) => {
     await boot(page);
     await expect(tour(page)).toHaveClass(/\bopen\b/, { timeout: 5000 });

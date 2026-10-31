@@ -44,6 +44,57 @@ const { authStateJs, test, vm, path } = require('./_context');
   test('v8.155.0 sync: a device only pulls its own cert\'s history (no Network+ rows on the Security+ site)',
     s6.onlyThisCert === true && s6.noReupload === true);
 
+  const s7a = r.s7a || {}, s7b = r.s7b || {}, s7c = r.s7c || {}, s7d = r.s7d || {};
+  test('v8.198.1 sync: flushNow() waits for a flush already in flight (the delete flow relies on it)',
+    s7a.waitsForInflight === true);
+  test('v8.198.1 sync: a flush that read the profile before request_account_deletion cannot erase the deletion mark',
+    s7b.markKept === true && s7b.dataStillSynced === true);
+  test('v8.198.1 sync: a flush that read the profile before clear_deletion_notice cannot bring the notice back',
+    s7c.noticeNotResurrected === true);
+  test('v8.198.1 sync: an ordinary flush never adds, removes or changes deletion_requested_at / deletion_cancelled_at',
+    s7d.unchanged === true);
+
+  const s8a = r.s8a || {}, s8b = r.s8b || {};
+  test('v8.198.1 sync: a flush refused by the compare-and-set retries once by itself and then syncs',
+    s8a.retried === true && s8a.synced === true);
+  test('v8.198.1 sync: a compare-and-set miss shows as pending, not an error, and sends no telemetry',
+    s8a.pendingNotError === true && s8a.noTelemetry === true);
+  test('v8.198.1 sync: a conflict that never clears stops after two automatic retries',
+    s8b.capped === true);
+
+  // Persona bundle: per-cert maps (readiness_snapshots, exam_dates, exam_outcomes) merge per cert both ways.
+  const s9a = r.s9a || {}, s9b = r.s9b || {}, s9c = r.s9c || {}, s9d = r.s9d || {};
+  test('persona sync: per-cert maps survive a sibling flush (exam dates and readiness snapshots of both certs kept)',
+    s9a.bothKept === true);
+  test('persona sync: hydrate merges sibling certs into the local map, this device keeps its own cert\'s entries',
+    s9b.siblingsIn === true && s9b.localWins === true && s9b.siblingFromCloud === true && s9b.cloudAfter === true);
+  const s9e = r.s9e || {}, s9f = r.s9f || {}, s9g = r.s9g || {};
+  test('persona sync: a stale sibling-cert copy never goes back up (cloud keeps the newer value; the next hydrate shows it)',
+    s9e.pulledA === true && s9e.cloudKeepsB === true && s9e.hydrateShowsB === true);
+  test('persona sync: a sibling cert this device wrote is marked dirty, goes up once, then follows the cloud again',
+    s9f.dirtyUp === true && s9f.dirtyCleared === true && s9f.afterwardsCloudWins === true);
+  test('persona sync: a cleared exam date (null) wins on hydrate and goes up; the legacy date follows this cert\'s map entry',
+    s9f.legacyGone === true && s9f.nullUp === true && s9g.legacyFollowsMap === true);
+  test('persona sync: once the cloud has exam_dates, profiles.exam_date never seeds another cert\'s local date',
+    s9c.noLeak === true);
+  test('persona sync: a legacy single exam date is adopted into exam_dates for the current cert',
+    s9d.adopted === true);
+  test('final review M2: sign-out (clearLocalCache) clears the quiz-resume save, not recorded as seen',
+    (r.s10 || {}).resumeCleared === true && (r.s10 || {}).notRecorded === true);
+  const s9h = r.s9h || {};
+  test('persona sync: A+ Core 2 never adopts Core 1\'s legacy exam date (read or hydrate); an empty map still adopts it',
+    s9h.readNoLeak === true && s9h.hydrateNoLeak === true && s9h.hydrateAdopts === true);
+
+  // v8.198.1: offline, the delete flows clear the session with supabase-js's private _removeSession(). A supabase-js
+  // upgrade that renames it would quietly drop them to the storage fallback, so pin it in both vendored bundles.
+  test('v8.198.1 deletion: the vendored supabase-js (app and website) still defines auth._removeSession()', (() => {
+    try {
+      const fs = require('fs');
+      return ['lib/supabase-umd.min.js', 'landing/lib/supabase-umd.min.js'].every((f) =>
+        /async _removeSession\(\)\{/.test(fs.readFileSync(path.join(__dirname, '..', '..', f), 'utf8')));
+    } catch (e) { return false; }
+  })());
+
   test('v8.151.0 auth-state: sign-out clears local data only when cloud-store says it is backed up', (() => {
     try {
       const m = authStateJs.match(/function\s+_clearLocalIfSafe\(cs\)\s*\{[\s\S]*?\n\s\s\}/);
@@ -63,4 +114,5 @@ const { authStateJs, test, vm, path } = require('./_context');
         && !/if \(cs\) cs\.clearLocalCache\(\);/.test(authStateJs);
     } catch (e) { return false; }
   })());
+
 })();

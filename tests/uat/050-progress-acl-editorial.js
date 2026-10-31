@@ -791,10 +791,10 @@ test('v4.54.3 HTML: regression \u2014 legacy .results-stats/.results-actions rem
   })());
 
 // JS
-test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',
-  /function finish\([\s\S]{0,2000}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
-test('v4.54.3 JS: finish() writes scaled score via animateCount to #r-v2-score',
-  /function finish\([\s\S]{0,4800}animateCount\('r-v2-score'/.test(js));
+test('v4.54.3 JS: finish() guards legacy grade-ring writes with if(el)',   // window 2000→2200: Task 6 quiz-resume clear
+  /function finish\([\s\S]{0,2200}const ringFill\s*=\s*document\.getElementById\('grade-fill'\);\s*\n\s*if\s*\(ringFill\)/.test(js));
+test('v4.54.3 JS: finish() writes scaled score via animateCount to #r-v2-score',   // window 4800→5000: final review M1 clear option
+  /function finish\([\s\S]{0,5000}animateCount\('r-v2-score'/.test(js));
 test('v4.54.3 JS: scaled score on the cert scale (v8.128.0: scaledExamScore, was 100 + (pct/100) * 800)',
   /const scaled\s*=\s*scaledExamScore\(pct,\s*100\)/.test(js));
 test('v4.54.3 JS: passed = scaled >= EXAM_PASS_SCORE (cert-aware, was hardcoded 720 pre-v4.99.82)',
@@ -1002,7 +1002,7 @@ test('v4.54.8 HTML: #results-review-list container + eyebrow + italic-accent tit
 test('v4.54.8 HTML: Drill my mistakes CTA button exists',
   /id="btn-drill-mistakes"[\s\S]{0,200}drillMistakesFromResults\(\)/.test(html));
 test('v4.54.8 JS: _sessionStartTs tracked on startQuiz + drillMistakesFromResults',
-  /function startQuiz\([\s\S]{0,11200}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // →11200 (v8.164.0 Cancel checks)  // →10400 (v8.146.0 Catch-up mapping + pick-mode reset) →9600 (v8.141.0 multi-round top-up) window 6000→6800 (v7.46.0 free-tier gates) →7600 (v7.65.1 picker-dismiss block) →8400 (v8.115/v8.117 session reset + Smart topic label); scopes the match to startQuiz's body, not a size budget
+  /function startQuiz\([\s\S]{0,12000}_sessionStartTs\s*=\s*Date\.now\(\)/.test(js) &&  // →12000 (Task 7 seen filter)  // →11200 (v8.164.0 Cancel checks)  // →10400 (v8.146.0 Catch-up mapping + pick-mode reset) →9600 (v8.141.0 multi-round top-up) window 6000→6800 (v7.46.0 free-tier gates) →7600 (v7.65.1 picker-dismiss block) →8400 (v8.115/v8.117 session reset + Smart topic label); scopes the match to startQuiz's body, not a size budget
   js.includes('let _sessionStartTs') &&
   js.includes('function drillMistakesFromResults(') &&
   js.includes('function _formatElapsed('));

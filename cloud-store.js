@@ -114,7 +114,40 @@
     'nplus_onb_skips',   // onboarding: per-cert diagnostic-skip record (metadata.onb_skips.<certId>)
     'nplus_freeCertId',  // free-tier cert lock: metadata.freeCertId (single global value)
     'nplus_drill_stats', // Task 3: per-cert drill stats {cert:{drill:{done,perfect}}}
+    'nplus_exam_dates',     // persona bundle: per-cert exam date {cert:'YYYY-MM-DD'|null}, merged per cert
+    'nplus_exam_outcomes',  // persona bundle: per-cert exam result {cert:{outcome,score,date,predicted,at}}, merged per cert
   ]);
+
+  // Whole per-cert maps held in localStorage as {certId: value} (unlike sr / activated / onb_skips,
+  // where local holds only this cert's entry). The cloud is authoritative for sibling certs: hydrate
+  // overwrites every entry except this cert's, and flush sends only this cert's entry plus any other
+  // cert this device explicitly wrote (the dirty set below), so a stale sibling copy never goes back up.
+  var PER_CERT_MAPS = ['readiness_snapshots', 'exam_dates', 'exam_outcomes'];
+  function _isMap(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  // Dirty sibling certs: {cloudKey: {certId: seq}}, persisted so a reload before the flush keeps them.
+  // A flush that lands clears only the seqs it sent (a write made mid-flight stays dirty).
+  var CERT_DIRTY_KEY = KEY_PREFIX + 'cert_dirty';
+  var _dirtySeq = 0;
+  function _readDirty() {
+    try { var d = JSON.parse(localStorage.getItem(CERT_DIRTY_KEY) || '{}'); return _isMap(d) ? d : {}; } catch (e) { return {}; }
+  }
+  function _writeDirty(d) {
+    try {
+      if (Object.keys(d).length) localStorage.setItem(CERT_DIRTY_KEY, JSON.stringify(d));
+      else localStorage.removeItem(CERT_DIRTY_KEY);
+    } catch (e) {}
+  }
+  function _isDirty(cloudKey, cert) { var d = _readDirty(); return !!(d[cloudKey] && d[cloudKey][cert] != null); }
+  function _clearDirtySent(sent) {
+    var d = _readDirty();
+    Object.keys(sent).forEach(function (k) {
+      Object.keys(sent[k]).forEach(function (c) {
+        if (d[k] && d[k][c] === sent[k][c]) delete d[k][c];
+      });
+      if (d[k] && !Object.keys(d[k]).length) delete d[k];
+    });
+    _writeDirty(d);
+  }
 
   // Subset of USER_DATA that goes to a dedicated table, NOT profiles.metadata
   var TABLE_BACKED_KEYS = new Set([
@@ -124,6 +157,9 @@
   // Pending flush queue — keys waiting to be written to cloud
   var pendingFlush = new Set();
   var flushTimer = null;
+  // v8.198.1: automatic retries after a compare-and-set miss in a row (see doFlush); reset by a write that lands.
+  var conflictRetries = 0;
+  var MAX_CONFLICT_RETRIES = 2;
   var FLUSH_DEBOUNCE_MS = 1500;  // wait 1.5s of quiet before batching writes
   var lastSyncAt = null;
   var syncStatus = 'idle';  // 'idle' | 'pending' | 'syncing' | 'error' | 'offline'
@@ -164,8 +200,27 @@
 
     // Force an immediate flush (e.g., on tab close via pagehide event).
     // Returns a promise that resolves when the flush completes.
+    // Persona bundle: this device wrote another cert's entry in a per-cert map (e.g. setExamDate(iso, 'secplus')
+    // on the Network+ site). Without this mark the flush sends only this cert's entry.
+    markCertDirty: function (key, cert) {
+      var cloudKey = String(key || '').replace(/^nplus_/, '');
+      if (PER_CERT_MAPS.indexOf(cloudKey) === -1 || !cert) return;
+      var d = _readDirty();
+      if (!d[cloudKey]) d[cloudKey] = {};
+      d[cloudKey][cert] = Date.now() + '.' + (++_dirtySeq);
+      _writeDirty(d);
+    },
+
     flushNow: function () {
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+      // v8.198.1: a flush already in flight is waited for, even when nothing new is pending, then anything
+      // queued meanwhile goes too. Account deletion calls this before request_account_deletion: returning early
+      // let a write whose read predated the rpc land after it and replace the whole metadata column.
+      if (inflightFlush) {
+        return inflightFlush.catch(function () {}).then(function () {
+          return pendingFlush.size === 0 ? undefined : doFlush();
+        });
+      }
       if (pendingFlush.size === 0) return Promise.resolve();
       return doFlush();
     },
@@ -194,14 +249,28 @@
 
         var meta = (profileResult.data && profileResult.data.metadata) || {};
         var examDate = profileResult.data && profileResult.data.exam_date;
+        var cert0 = _ccCert();
 
+        // Persona bundle: a legacy single date this device holds is its own cert's entry, so it joins the
+        // local map before the merge and wins over the cloud like any other current-cert entry.
+        _adoptLegacyExamDate(cert0);
         // Fill-only: cloud values land only where this device has nothing (v8.151.0)
         applyJsonbToLocalStorage(meta);
         // exam_date lives in its own profiles column, not in metadata jsonb,
         // so write it via the centralised KEY_PREFIX const at the top of
         // this file (keeps cloud-store the single owner of the 'nplus_'
         // prefix; the variable-arg form satisfies the literal-string lint).
-        if (examDate && !_localHas(KEY_PREFIX + 'exam_date')) {
+        // Persona bundle: once a per-cert map exists, the legacy date follows this cert's map entry (so the
+        // column and the map never disagree). The column holds whichever cert flushed last, so it only seeds
+        // the legacy date on a cloud that has no map yet.
+        var localDates = {};
+        try { localDates = JSON.parse(localStorage.getItem(KEY_PREFIX + 'exam_dates') || '{}'); } catch (e) { localDates = {}; }
+        if (_isMap(localDates) && Object.prototype.hasOwnProperty.call(localDates, cert0)) {
+          try {
+            if (localDates[cert0]) localStorage.setItem(KEY_PREFIX + 'exam_date', localDates[cert0]);
+            else localStorage.removeItem(KEY_PREFIX + 'exam_date');
+          } catch (e) {}
+        } else if (!_isMap(meta.exam_dates) && examDate && !_localHas(KEY_PREFIX + 'exam_date')) {
           try { localStorage.setItem(KEY_PREFIX + 'exam_date', examDate); } catch (e) {}
         }
 
@@ -248,6 +317,10 @@
       USER_DATA_KEYS.forEach(function (key) {
         try { localStorage.removeItem(key); } catch (e) {}
       });
+      // Final review M2: the quiz-resume save is local-only (never synced, so not a user-data key) but it is
+      // this account's quiz: the next account on the device must not see "Finish your quiz". Not recorded as seen.
+      try { if (typeof window.quizResumeClear === 'function') window.quizResumeClear({ record: false }); } catch (e) {}
+      _writeDirty({});
       lastSyncAt = null;
       setStatus('idle');
     },
@@ -328,6 +401,18 @@
     try { raw = localStorage.getItem(key); } catch (e) { raw = null; }
     return !(raw == null || raw === '' || raw === 'null' || raw === '[]' || raw === '{}');
   }
+  // Persona bundle: fold a legacy single exam date into the per-cert map for this cert (same rule as
+  // features/readiness.js getExamDate). Runs before hydrate's merge.
+  function _adoptLegacyExamDate(cert) {
+    var legacy = null, map = {};
+    try { legacy = localStorage.getItem(KEY_PREFIX + 'exam_date'); } catch (e) { return; }
+    if (!legacy) return;
+    try { map = JSON.parse(localStorage.getItem(KEY_PREFIX + 'exam_dates') || '{}'); } catch (e) { map = {}; }
+    if (!_isMap(map)) map = {};
+    if (Object.keys(map).length) return;   // any entry = the map is live; the legacy date may be a sibling cert's (A+ Core 1/2 share an origin)
+    map[cert] = legacy;
+    try { localStorage.setItem(KEY_PREFIX + 'exam_dates', JSON.stringify(map)); } catch (e) {}
+  }
   // History identity = the quiz moment + topic + result (rows are append-only).
   function _historyKey(item) {
     var when = item.date || (item.at ? new Date(item.at).toISOString() : '');
@@ -398,6 +483,17 @@
         out[cloudKey][aCert] = parsed;
         return;
       }
+      // Per-cert maps: send this cert's entry plus the sibling certs this device wrote (dirty); never a
+      // sibling copy that came down from the cloud, which may be stale by now.
+      if (PER_CERT_MAPS.indexOf(cloudKey) !== -1) {
+        if (!_isMap(parsed)) return;
+        var pCert = _ccCert(), sendMap = {}, dirty = _readDirty()[cloudKey] || {};
+        Object.keys(parsed).forEach(function (c) {
+          if (c === pCert || dirty[c] != null) sendMap[c] = parsed[c];
+        });
+        out[cloudKey] = sendMap;
+        return;
+      }
       out[cloudKey] = parsed;
     });
     return out;
@@ -432,6 +528,25 @@
         if (mine != null && !_localHas('nplus_' + cloudKey)) {
           try { localStorage.setItem('nplus_' + cloudKey, JSON.stringify(mine)); } catch (e) {}
         }
+        return;
+      }
+      // Per-cert maps: the cloud is authoritative for sibling certs, so their entries are overwritten from
+      // it (unless this device wrote one that has not flushed yet). This cert's own entry: local wins, the
+      // cloud fills it only when absent (a cleared exam date is a null entry, which also wins).
+      if (PER_CERT_MAPS.indexOf(cloudKey) !== -1) {
+        var cloudMap = meta[cloudKey];
+        if (!_isMap(cloudMap)) return;
+        var mapKey = 'nplus_' + cloudKey, localMap = {};
+        try { localMap = JSON.parse(localStorage.getItem(mapKey) || '{}'); } catch (e) { localMap = {}; }
+        if (!_isMap(localMap)) localMap = {};
+        var before = JSON.stringify(localMap);
+        Object.keys(cloudMap).forEach(function (c) {
+          var own = Object.prototype.hasOwnProperty.call(localMap, c);
+          if (c === cert) { if (!own) localMap[c] = cloudMap[c]; return; }
+          if (own && _isDirty(cloudKey, c)) return;
+          localMap[c] = cloudMap[c];
+        });
+        if (JSON.stringify(localMap) !== before) { try { localStorage.setItem(mapKey, JSON.stringify(localMap)); } catch (e) {} }
         return;
       }
       var localKey = 'nplus_' + cloudKey;
@@ -493,6 +608,9 @@
   // Doflush — actually run the queued cloud writes
   function doFlush() {
     if (inflightFlush) return inflightFlush;
+    // v8.198.1: this run takes everything pending, so whichever timer called it is spent and any other is
+    // superseded. flushTimer used to keep the spent id after a debounce or hydrate timer fired.
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     if (pendingFlush.size === 0) return Promise.resolve();
     var sb = getSupabase();
     var userId = getUserId();
@@ -503,6 +621,7 @@
     pendingFlush.clear();
 
     var jsonbWrite = false;
+    var dirtySent = null;
     var historyWrite = false;
     keysSnapshot.forEach(function (k) {
       if (k === 'nplus_history') historyWrite = true;
@@ -512,6 +631,7 @@
     var ops = [];
 
     if (jsonbWrite) {
+      dirtySent = _readDirty();   // persona bundle: the sibling-cert writes this flush carries
       var jsonb = buildJsonbFromLocalStorage();
       // Also include exam_date as a top-level column update
       var examDate = null;
@@ -528,11 +648,17 @@
       // know THIS subdomain's cert locally, so re-read cloud and merge ours
       // over the existing per-cert entries — otherwise flushing one cert wipes
       // the others' sub-objects on the full-metadata column replace.
-      var CERT_SCOPED = ['sr', 'activated', 'onb_skips'];
+      // Persona bundle: the whole-map per-cert keys (PER_CERT_MAPS) merge the same way.
+      var CERT_SCOPED = ['sr', 'activated', 'onb_skips', 'readiness_snapshots', 'exam_dates', 'exam_outcomes'];
+      // v8.198.1: account-deletion keys only the server writes (request_account_deletion stamps the first, the
+      // sign-in trigger sets the second and clear_deletion_notice removes it). A client flush never adds, removes
+      // or changes them: they are copied from the row this flush read, and the write only lands if the row
+      // still holds those same values, so an rpc that ran between this read and this write is never undone.
+      var SERVER_OWNED = ['deletion_requested_at', 'deletion_cancelled_at'];
       var writeProfile = function (existingMeta) {
         CERT_SCOPED.forEach(function (k) {
-          var existing = (existingMeta && existingMeta[k]) || {};
-          var ours = jsonb[k] || {};
+          var existing = _isMap(existingMeta && existingMeta[k]) ? existingMeta[k] : {};
+          var ours = _isMap(jsonb[k]) ? jsonb[k] : {};
           var merged = Object.assign({}, existing, ours);   // our cert overrides, siblings preserved
           if (Object.keys(merged).length) jsonb[k] = merged;
         });
@@ -545,9 +671,25 @@
         // v8.151.0: keep cloud keys this device doesn't hold (a fresh device's
         // first upload used to replace the whole profile with its few keys).
         jsonb = Object.assign({}, existingMeta || {}, jsonb);
+        SERVER_OWNED.forEach(function (k) {
+          delete jsonb[k];
+          if (existingMeta && existingMeta[k] != null) jsonb[k] = existingMeta[k];
+        });
         var update = { metadata: jsonb };
         if (examDate) update.exam_date = examDate;
-        return sb.from('profiles').update(update).eq('id', userId);
+        var q = sb.from('profiles').update(update).eq('id', userId);
+        SERVER_OWNED.forEach(function (k) {   // compare-and-set on the server-owned keys
+          var v = existingMeta ? existingMeta[k] : null;
+          q = (v == null) ? q.is('metadata->>' + k, null) : q.eq('metadata->>' + k, String(v));
+        });
+        return q.select('id').then(function (r) {
+          // No row matched: the server changed a deletion key after our read. Nothing was written; the keys are
+          // re-queued below and retried against a fresh read.
+          if (r && !r.error && Array.isArray(r.data) && r.data.length === 0) {
+            return { error: 'profile changed on the server during the flush', conflict: true };
+          }
+          return r;
+        });
       };
       ops.push(
         sb.from('profiles').select('metadata').eq('id', userId).single().then(function (res) {
@@ -608,14 +750,29 @@
 
     inflightFlush = flushPromise.then(function (results) {
       inflightFlush = null;
-      var hadError = results.some(function (r) { return r && r.error; });
+      // v8.198.1: a compare-and-set miss (the server changed a deletion key mid-flush) is expected, not a failure:
+      // status 'pending', no telemetry, and an automatic retry against a fresh read, at most MAX_CONFLICT_RETRIES
+      // in a row. Any other error behaves as before.
+      var realErrors = results.filter(function (r) { return r && r.error && !r.conflict; });
+      var conflict = results.some(function (r) { return r && r.conflict; });
+      var hadError = realErrors.length > 0;
       lastSyncAt = Date.now();
-      setStatus(hadError ? 'error' : 'idle');
-      if (hadError) {
+      setStatus(hadError ? 'error' : (conflict ? 'pending' : 'idle'));
+      if (hadError || conflict) {
         // Re-queue the failed keys for retry
         keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
+      }
+      if (conflict && !hadError && conflictRetries < MAX_CONFLICT_RETRIES) {
+        conflictRetries++;
+        if (flushTimer) clearTimeout(flushTimer);
+        flushTimer = setTimeout(doFlush, FLUSH_DEBOUNCE_MS);
+      } else if (!conflict && !hadError) {
+        conflictRetries = 0;   // a write that landed
+        if (dirtySent) _clearDirtySent(dirtySent);
+      }
+      if (hadError) {
         console.warn('[cloud-store] flush had errors', results);
-        _syncTelemetry('flush', (results.filter(function (r) { return r && r.error; })[0] || {}).error);
+        _syncTelemetry('flush', (realErrors[0] || {}).error);
       }
       return results;
     }).catch(function (err) {

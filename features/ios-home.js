@@ -50,7 +50,9 @@
       }
     }
 
-    // ── recommended next: unfinished exam > reviews > first quiz > weak spots ──
+    // ── one next step: exam > quiz > reviews > outcome > nextcert (once passed) > first quiz > warmup > weak spots ──
+    // The producers of quizResumeState / outcomeDue (and the openers) land in later tasks; a missing one
+    // simply means that card never appears and the rec falls through.
     var rec = null;
     var ex = null;
     try { ex = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('nplus_exam_state')) || 'null'); } catch (_) { ex = null; }
@@ -66,19 +68,78 @@
         sub: ex.paused ? of + 'Paused with ' + left + (left === 1 ? ' minute' : ' minutes') + ' left.'
           : (left > 0 ? of + 'The clock is still running.' : of + 'See your result.') };
     }
+    // a practice quiz the app closed in the middle of
+    if (!rec && has(typeof quizResumeState === 'function' ? quizResumeState : null)) {
+      var qs = null;
+      try { qs = quizResumeState(); } catch (_) { qs = null; }
+      if (qs) {
+        var qTotal = qs.total || 0, qDone = qs.answered || 0, qLeft = (typeof qs.left === 'number') ? qs.left : Math.max(0, qTotal - qDone);
+        var qTopic = qs.topicLabel || '';
+        rec = (qs.ready || qLeft === 0)   // every question answered, results never opened: Resume lands on the last one
+          ? { kind: 'quiz', kick: 'Pick up where you left off', badge: null, unit: null, icon: 'tick', title: 'See your results',
+            sub: (qTopic ? qTopic + ' · ' : '') + 'all ' + qTotal + ' answered' }
+          : { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
+            sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
+      }
+    }
     var plan = null;
     try { plan = (typeof getSrTodayPlan === 'function') ? getSrTodayPlan() : null; } catch (_) { plan = null; }
     var due = plan && typeof plan.todo === 'number' ? plan.todo : 0;
+    // passed: read the saved outcome for this cert straight from the synced map
+    var outcomeRec = null;
+    try { var om = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem('nplus_exam_outcomes')) || 'null'); outcomeRec = om && om[certId] || null; } catch (_) { outcomeRec = null; }
+    var passedCert = !!(outcomeRec && outcomeRec.outcome === 'passed');
     if (!rec && due > 0) {
       var spread = '';
       try { spread = (plan.later > 0 && typeof _srSpreadPhrase === 'function') ? (_srSpreadPhrase(plan.later, plan.spillDays, plan.carryLeft, 'rest') || '') : ''; } catch (_) { spread = ''; }
       rec = { kind: 'review', min: Math.max(2, Math.round(due * 0.5)), title: due === 1 ? 'Review 1 card' : 'Review ' + due + ' cards',
         sub: spread ? 'Spaced repetition. ' + spread.charAt(0).toUpperCase() + spread.slice(1) + '.' : 'Spaced repetition. Re-encounter what you forgot.' };
     }
+    if (!rec && has(typeof outcomeDue === 'function' ? outcomeDue : null)) {
+      var od = false;
+      try { od = !!outcomeDue(certId); } catch (_) { od = false; }
+      if (od) {
+        var ago = null;
+        try {
+          var xd = (typeof getExamDate === 'function') ? getExamDate(certId) : null, xp = xd && String(xd).split('-');
+          if (xp && xp.length === 3) { var nw = new Date(t); ago = Math.round((new Date(nw.getFullYear(), nw.getMonth(), nw.getDate()) - new Date(+xp[0], +xp[1] - 1, +xp[2])) / 86400000); }
+        } catch (_) { ago = null; }
+        rec = { kind: 'outcome', kick: ago === 1 ? 'Your exam was yesterday' : (ago > 1 ? 'Your exam was ' + ago + ' days ago' : 'Your exam date has passed'),
+          title: 'How did your ' + cert.name + ' exam go?', sub: "Tell us and we'll update your plan." };
+      }
+    }
+    if (!rec && passedCert) {
+      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score : ''), title: 'Pick your next cert',
+        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+    }
     if (!rec && isNew) rec = { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' };
+    // days since the last study day (local midnights, so DST and time of day never matter)
+    var away = 0;
+    if (!isNew) {
+      var newest = 0;
+      rows.forEach(function (e) { var d = new Date(e.date).getTime(); if (d > newest) newest = d; });
+      if (newest) {
+        var nd = new Date(newest), nn = new Date(t);
+        away = Math.round((new Date(nn.getFullYear(), nn.getMonth(), nn.getDate()) - new Date(nd.getFullYear(), nd.getMonth(), nd.getDate())) / 86400000);
+      }
+    }
+    if (!rec && away >= 2 && due === 0) rec = { kind: 'warmup', min: 5, title: '5-min Warmup', sub: 'Ease back in. 5 questions, foundational.' };
+    // the weakest topic to pick up, from the session plan (names the weak-spot card)
+    var pick = null;
+    if (!isNew) {
+      try {
+        var p = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
+        if (p && p[0] && p[0].topic) {
+          var meta = String(p[0].meta || p[0].reason || '');
+          var m = meta.match(/~?(\d+)% accuracy/), st = meta.match(/(\d+)d stale/);
+          pick = { topic: p[0].topic, pct: m ? +m[1] : null, detail: m ? 'around ' + m[1] + '% accuracy' : (st ? 'last seen ' + st[1] + ' days ago' : (/never/.test(meta) ? 'not studied yet' : '')) };
+        }
+      } catch (_) { pick = null; }
+    }
     if (!rec) {
-      var weakTopic = r && Array.isArray(r.whatIf) && r.whatIf[0] && r.whatIf[0].topic;
-      rec = { kind: 'weak', min: 15, title: '15-min Weak Spots', sub: weakTopic ? '10 questions, exam level, on ' + weakTopic + '.' : '10 questions, exam level, your weakest topic.' };
+      var weakTopic = (pick && pick.topic) || (r && Array.isArray(r.whatIf) && r.whatIf[0] && r.whatIf[0].topic);
+      var weakPct = pick && pick.topic && pick.pct != null ? ' (around ' + pick.pct + '%)' : '';
+      rec = { kind: 'weak', min: 15, title: '15-min Weak Spots', sub: weakTopic ? '10 questions, exam level, on ' + weakTopic + weakPct + '.' : '10 questions, exam level, your weakest topic.' };
     }
 
     // ── coming up: 7-day review plan (returning only) ──
@@ -98,19 +159,12 @@
     var done = 0, goal = 20;
     try { done = (typeof getTodayQuestionCount === 'function') ? getTodayQuestionCount() : 0; } catch (_) {}
     try { goal = (typeof getDailyGoal === 'function') ? getDailyGoal() : 20; } catch (_) {}
-    var pick = null;
-    if (!isNew) {
-      try {
-        var p = (typeof buildSessionPlan === 'function') ? buildSessionPlan(1) : null;
-        if (p && p[0] && p[0].topic) {
-          var meta = String(p[0].meta || p[0].reason || '');
-          var m = meta.match(/~?(\d+)% accuracy/), st = meta.match(/(\d+)d stale/);
-          pick = { topic: p[0].topic, detail: m ? 'around ' + m[1] + '% accuracy' : (st ? 'last seen ' + st[1] + ' days ago' : (/never/.test(meta) ? 'not studied yet' : '')) };
-        }
-      } catch (_) { pick = null; }
-    }
-    var momentum = { done: done, goal: goal, pick: pick,
-      streakLine: cur > 0 ? cur + ' day streak, best is ' + best + '. One short session adds another.' : '0 day streak. Finish today to start one.' };
+    var ymd = function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+    var studiedToday = done > 0 || (!!streak.last && (streak.last === ymd(now) || streak.last === now.toISOString().slice(0, 10)));
+    var streakLine = streak.ended ? 'Your ' + (streak.endedFrom || best) + '-day streak ended. Your best is ' + best + '. A quick set starts a new one.'
+      : (cur > 0 ? cur + '-day streak. ' + (studiedToday ? "Today's done." : 'Study today to keep it.')
+        : 'No streak yet. Finish a set today to start one.');
+    var momentum = { done: done, goal: goal, streakLine: streakLine };
 
     // ── mistakes + domains ──
     var mistakes = 0;
@@ -135,7 +189,7 @@
       mins: Math.round(((typeof EXAM_TIME_SECONDS === 'number') ? EXAM_TIME_SECONDS : 5400) / 60),
       min: (typeof EXAM_MIN_SCORE === 'number') ? EXAM_MIN_SCORE : 100, max: max };
 
-    return { state: isNew ? 'new' : 'returning', signedIn: signedIn, cert: cert, streak: cur, greeting: greeting, exam: exam,
+    return { state: isNew ? 'new' : 'returning', signedIn: signedIn, cert: cert, passed: passedCert, streak: cur, greeting: greeting, exam: exam,
       readiness: readiness, rec: rec, week: week, momentum: momentum, mistakes: mistakes, domains: domains };
   }
 
@@ -161,7 +215,8 @@
       clock: '<circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2.5M9 2h6"></path>',
       chart: '<path d="M3 3v18h18"></path><path d="M7 14l3-4 3 3 5-7"></path>',
       sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"></path>',
-      arrow: '<path d="M5 12h14M13 6l6 6-6 6"></path>'
+      arrow: '<path d="M5 12h14M13 6l6 6-6 6"></path>',
+      tick: '<path d="M20 6L9 17l-5-5"></path>'   // the results screen's tick (ios-quiz.js CHECK)
     };
     var svg = function (k) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + I[k] + '</svg>'; };
     var light = (typeof document !== 'undefined' && document.documentElement && document.documentElement.getAttribute('data-theme') === 'light');
@@ -179,7 +234,7 @@
     var h = '';
     // top bar
     h += '<div class="ih-topbar"><span class="ih-tb-mark">' + e(m.cert.mark) + '</span>'
-      + '<button class="ih-tb-name" type="button" data-act="cert"><b>' + e(m.cert.name) + '</b><span>' + e(m.cert.code) + '</span></button>'
+      + '<button class="ih-tb-name" type="button" data-act="cert"><b>' + e(m.cert.name) + (m.passed ? '<span class="ih-tb-passed">Passed</span>' : '') + '</b><span>' + e(m.cert.code) + '</span></button>'
       + (m.signedIn ? '<span class="ih-tb-streak' + (m.streak ? '' : ' ih-zero') + '">' + svg('flame') + e(m.streak) + '</span>'
         : '<button class="ih-tb-signin" data-act="signin" type="button">Sign in</button>')
       + '<button class="ih-tb-set" type="button" data-act="settings" aria-label="Settings">' + svg('gear') + '</button>'
@@ -201,10 +256,21 @@
         + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
         + (r.meta ? '<p class="ih-rd-meta">' + e(r.meta) + '</p>' : '') + '</div>';
     }
-    // recommended next
-    h += '<button class="ih-rec ih-reveal" type="button" data-act="rec"><span class="ih-rc-badge">' + e(m.rec.min) + '<small>MIN</small></span>'
-      + '<span class="ih-rc-txt"><span class="ih-rc-kick">Recommended next</span><span class="ih-rc-title">' + e(m.rec.title) + '</span><span class="ih-rc-sub">' + e(m.rec.sub) + '</span></span>'
-      + '<span class="ih-rc-go">' + svg('chev') + '</span></button>';
+    // one next step: a button for most kinds, the "How did it go?" card for outcome and nextcert
+    var rc = m.rec;
+    if (rc.kind === 'outcome') {
+      h += '<div class="ih-oc ih-reveal"><span class="ih-oc-kick">' + e(rc.kick) + '</span><span class="ih-oc-title">' + e(rc.title) + '</span><span class="ih-oc-sub">' + e(rc.sub) + '</span>'
+        + '<div class="ih-oc-row"><button class="ih-oc-btn ih-pri" type="button" data-act="oc-passed">Passed</button><button class="ih-oc-btn" type="button" data-act="oc-failed">Didn\'t pass</button></div>'
+        + '<button class="ih-oc-later" type="button" data-act="oc-notyet">I haven\'t sat it yet</button></div>';
+    } else if (rc.kind === 'nextcert') {
+      h += '<div class="ih-oc ih-reveal"><span class="ih-oc-kick">' + e(rc.kick) + '</span><span class="ih-oc-title">' + e(rc.title) + '</span><span class="ih-oc-sub">' + e(rc.sub) + '</span>'
+        + '<div class="ih-oc-row"><button class="ih-oc-btn ih-pri" type="button" data-act="rec">Choose a cert</button></div></div>';
+    } else {
+      var rbtn = '<button class="ih-rec ih-reveal" type="button" data-act="rec" data-kind="' + e(rc.kind) + '"><span class="ih-rc-badge' + (rc.icon ? ' ih-rc-badge-ico' : '') + '">' + (rc.icon ? svg(rc.icon) : e(rc.badge != null ? rc.badge : rc.min) + '<small>' + e(rc.unit || 'MIN') + '</small>') + '</span>'
+        + '<span class="ih-rc-txt"><span class="ih-rc-kick">' + e(rc.kick || 'Recommended next') + '</span><span class="ih-rc-title">' + e(rc.title) + '</span><span class="ih-rc-sub">' + e(rc.sub) + '</span></span>'
+        + '<span class="ih-rc-go">' + svg('chev') + '</span></button>';
+      h += rc.kind === 'quiz' ? '<div class="ih-rec-wrap ih-reveal">' + rbtn + '<button class="ih-rec-fresh" type="button" data-act="fresh">Start fresh</button></div>' : rbtn;
+    }
     // coming up
     if (m.week && m.week.length) {
       var mx = m.week.reduce(function (a, d) { return Math.max(a, d.count); }, 0);
@@ -221,9 +287,7 @@
       + '<circle class="ih-fill-c" cx="33" cy="33" r="27" fill="none" stroke-width="6" stroke-dasharray="' + C + '" stroke-dashoffset="' + (C * (1 - frac)).toFixed(1) + '"></circle></svg>'
       + '<div class="ih-rg-num"><b>' + e(mo.done) + '</b><span>of ' + e(mo.goal) + '</span></div></div><div class="ih-mo-txt">'
       + '<span class="ih-mo-goal">' + e(mo.done) + ' / ' + e(mo.goal) + ' questions today</span><span class="ih-mo-streak">' + e(mo.streakLine) + '</span>'
-      + (mo.pick ? '<span class="ih-mo-pick">Pick up: <b>' + e(mo.pick.topic) + '</b>' + (mo.pick.detail ? ', ' + e(mo.pick.detail) : '') + '</span>'
-          + '<button class="ih-mo-go" type="button" data-act="practise">Practise it · 10 questions' + svg('arrow') + '</button>'
-        : '<span class="ih-mo-pick">First quiz finds your weak spots.</span>')
+      + (m.state === 'new' ? '<span class="ih-mo-pick">First quiz finds your weak spots.</span>' : '')
       + '</div></div>';
     // quick start
     h += '<div class="ih-sect ih-reveal">Quick start</div><p class="ih-sect-sub ih-reveal">A daily habit that keeps your streak. 3 to 5 minutes.</p>'
@@ -237,7 +301,7 @@
       + opt('bulk30', 'lines3', '30 Questions', 'Marathon, mixed. Around 25 minutes.', '30 Q')
       + opt('bulk45', 'lines4', '45 Questions', 'Marathon, mixed. Around 38 minutes.', '45 Q'));
     h += acc('check', 'Exam simulation', 'Pressure-test readiness, scored ' + ex.min + ' to ' + ex.max + '.',
-      opt('bulk60', 'check', '60-Question SIM', 'Closest to the real thing. No timer.', '60 Q', ' ih-exam-lead')
+      opt('bulk60', 'check', '60-Question SIM', 'A long set at exam level. No timer.', '60 Q', ' ih-exam-lead')
       + opt('exam', 'clock', 'Full Exam Simulator', ex.qs + ' questions, ' + ex.mins + '-min timer, scored ' + ex.min + ' to ' + ex.max + '.', ex.qs + ' Q'));
     h += acc('chart', 'Drill by domain', m.domains.length + ' domains by exam weighting, 10 questions each.',
       m.domains.map(function (d) {
@@ -252,6 +316,79 @@
   }
 
 
+  // ── "Why this score?" sheet (persona bundle Task 9). Pure: (readiness result, history, book-it checklist) in, plain object out.
+  // Spec: docs/superpowers/specs/2026-10-30-why-score-bookit-repeats-design.md §1-2. Self-contained for UAT (_fnBody).
+  function _iosWhyModel(r, hist, bookIt, now) {
+    r = r || {}; hist = Array.isArray(hist) ? hist : [];
+    var commas = function (n) { return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
+    var weights = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) || {};
+    var exTopic = (typeof EXAM_TOPIC === 'string') ? EXAM_TOPIC : 'Exam Simulation';
+    var mixTopic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var lede = { bold: r.predicted + ', likely between ' + r.lowerBound + ' and ' + r.upperBound + '.',
+      rest: ' Pass chance ' + Math.round((r.passProbability || 0) * 100) + '%. Based on ' + commas(r.totalQs) + ' answers across ' + r.studiedCount + ' of ' + r.totalTopics + ' topics.' };
+    var da = r.domainAccuracy || {};
+    var keys = Object.keys(weights).filter(function (k) { return typeof da[k] === 'number'; });
+    var weakKey = null;
+    keys.forEach(function (k) { if (weakKey === null || da[k] < da[weakKey]) weakKey = k; });
+    var areas = keys.map(function (k) {
+      return { key: k, name: labels[k] || k, weightPct: Math.round((weights[k] || 0) * 100), accPct: Math.round(da[k]), weak: k === weakKey };
+    });
+    var hard = 0, all = 0, last = null;
+    hist.forEach(function (e) {
+      if (!e) return;
+      if (e.mode === 'exam' && e.topic === exTopic) { if (!last || new Date(e.date) > new Date(last.date)) last = e; return; }
+      if (e.topic === mixTopic || e.mode === 'gauntlet' || e.mode === 'whynot') return;
+      if (typeof _isCurrentCertTopic === 'function' && !_isCurrentCertTopic(e.topic)) return;
+      if (!e.byDiff || typeof e.byDiff !== 'object') return;
+      Object.keys(e.byDiff).forEach(function (b) { var v = e.byDiff[b]; if (Array.isArray(v)) { all += (v[1] || 0); if (b === 'E' || b === 'H') hard += (v[1] || 0); } });
+    });
+    var hardLine = all > 0 ? Math.round(hard / all * 100) + '% of your answers were exam-level or hard.' : null;
+    var lastLine = 'None yet';
+    if (last) {
+      var ld = new Date(last.date);
+      var sc = (typeof scaledExamScore === 'function') ? scaledExamScore(last.score || 0, last.total || 0) : null;
+      lastLine = (sc !== null ? sc : (last.pct + '%')) + ' on ' + ld.getDate() + ' ' + MONTHS[ld.getMonth()];
+    }
+    var items = (bookIt && bookIt.items) || [];
+    return { title: 'Why ' + r.predicted + '?', lede: lede,
+      verdict: bookIt && bookIt.ready ? 'Ready to book · 4 of 4' : 'Not yet · ' + ((bookIt && bookIt.met) || 0) + ' of 4',
+      items: items, areas: areas, hardLine: hardLine, lastLine: lastLine,
+      how: "How it works: we estimate your accuracy topic by topic, adjusted for how hard each question was, weight it like the real exam, and count topics you haven't studied as 40%." };
+  }
+  function _iosWhyHtml(m) {
+    var e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+    var tick = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
+    var h = '<div class="ist-grip"></div><div class="iw-body"><h3 id="ist-sheet-title">' + e(m.title) + '</h3>'
+      + '<p class="iw-lede"><b>' + e(m.lede.bold) + '</b>' + e(m.lede.rest) + '</p>'
+      + '<div class="iw-sect">Book it?<span>' + e(m.verdict) + '</span></div><ul class="iw-check">';
+    m.items.forEach(function (i) {
+      h += '<li' + (i.met ? ' class="ok"' : '') + '><i>' + tick + '</i><span>' + e(i.label) + '<small>' + e(i.detail) + '</small>'
+        + (i.next ? '<button class="iw-next" type="button" data-act="why-' + e(i.next.act) + '"' + (i.next.domain ? ' data-key="' + e(i.next.domain) + '"' : '') + '>' + e(i.next.label) + '</button>' : '')
+        + '</span></li>';
+    });
+    h += '</ul><div class="iw-sect">Exam areas</div><div class="iw-dom">';
+    m.areas.forEach(function (a) { h += '<div' + (a.weak ? ' class="weak"' : '') + '><span>' + e(a.name) + '</span><span class="wt">' + e(a.weightPct) + '%</span><span class="ac">' + e(a.accPct) + '%</span></div>'; });
+    h += '</div><div class="iw-sect">The evidence</div><p class="iw-facts">' + (m.hardLine ? e(m.hardLine) + '<br>' : '') + 'Last full exam: <b>' + e(m.lastLine) + '</b>.</p>'
+      + '<p class="iw-how">' + e(m.how) + '</p></div>';
+    return h;
+  }
+  function _openWhy() {
+    if (!(window.iosSettings && typeof window.iosSettings.openSheet === 'function')) return;
+    var r = null, hist = [];
+    try { r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null; hist = (typeof loadHistory === 'function') ? loadHistory() : []; } catch (_) { r = null; }
+    if (!r || typeof r.predicted !== 'number') return;
+    var bi = (typeof getBookItChecklist === 'function') ? getBookItChecklist(r, hist) : { items: [], met: 0, ready: false };
+    var close = function () { try { window.iosSettings.closeSheet(true); } catch (_) {} };
+    window.iosSettings.openSheet(_iosWhyHtml(_iosWhyModel(r, hist, bi, new Date())), function (b) {
+      var act = b.getAttribute('data-act');
+      if (act === 'why-mocks') { close(); if (typeof startExam === 'function') startExam(); }
+      else if (act === 'why-areas') { close(); if (typeof applyDomainPreset === 'function') applyDomainPreset(b.getAttribute('data-key')); }
+      else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('focused'); }
+    });
+  }
+
   // ── Mount: phone width only. Renders into #ios-home and binds each data-act to the
   // handler the desktop Home already uses, so behaviour (Pro gates, quotas) is identical.
   function renderIosHome() {
@@ -265,7 +402,22 @@
     var ACT = {
       // Recommended next: the desktop tile's onclick already holds the right action
       // (resume exam / start reviews / first quiz / weak spots), set by renderBentoRecommended.
-      rec: function () { var t = document.getElementById('primaryLaunch'); if (t) t.click(); },
+      // Each kind routes to its own opener; a missing one (later task) falls back to the desktop tile.
+      rec: function () {
+        var k = m.rec.kind;
+        if (k === 'quiz' && typeof resumeQuiz === 'function') { resumeQuiz(); return; }
+        if (k === 'outcome' && typeof openLogResult === 'function') { openLogResult({ preselect: null }); return; }
+        if (k === 'warmup') { applyPreset('warmup'); return; }
+        if (k === 'nextcert' && typeof openHub === 'function') { openHub(); return; }
+        var t = document.getElementById('primaryLaunch'); if (t) t.click();
+      },
+      fresh: function () { if (typeof quizResumeClear === 'function') quizResumeClear(); renderIosHome(); },
+      'oc-passed': function () { if (typeof openLogResult === 'function') openLogResult({ preselect: 'passed' }); },
+      'oc-failed': function () { if (typeof openLogResult === 'function') openLogResult({ preselect: 'failed' }); },
+      'oc-notyet': function () {
+        var on = window.iosSettings && window.iosSettings._on;
+        if (on && typeof on.exam === 'function') { tab('settings'); on.exam(); } else tab('settings');   // the exam-date sheet; Settings tab if it is not there
+      },
       warmup: function () { applyPreset('warmup'); },
       daily: function () { startDailyChallenge(); },
       mistakes: function () { startWrongDrill(); },
@@ -273,11 +425,11 @@
       bulk30: function () { applyPreset('bulk30'); },
       bulk45: function () { applyPreset('bulk45'); },
       bulk60: function () { applyPreset('bulk60'); },
+      readiness: function () { _openWhy(); },
       exam: function () { startExam(); },
       custom: function () { _jumpToCustomQuiz(); },
-      practise: function () { if (m.momentum.pick && typeof window._startPickUpQuiz === 'function') window._startPickUpQuiz(m.momentum.pick.topic); },
       settings: function () { tab('settings'); },
-      cert: function () { tab('settings'); },
+      cert: function () { if (typeof openHub === 'function' && openHub()) return; tab('settings'); },
       theme: function () { if (typeof toggleTheme === 'function') toggleTheme(); renderIosHome(); },
       check: function () { if (window.iosFirstRun && iosFirstRun.startCheck) iosFirstRun.startCheck(); },
       signin: function () { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('home'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; }
@@ -316,4 +468,6 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _iosHomeBoot);
   else _iosHomeBoot();
   window._iosHomeHtml = _iosHomeHtml;
+  window._iosWhyModel = _iosWhyModel;
+  window._iosWhyHtml = _iosWhyHtml;
 })();

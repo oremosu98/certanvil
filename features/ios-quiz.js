@@ -126,7 +126,7 @@
       rc = _iosReadinessChangeModel({ before: ctx.before, beforeSource: ctx.beforeSource || null, after: snap && snap.score,
         afterAt: snap && snap.computed_at, startedAt: ctx.at || null, practice: !!ctx.practice,
         cert: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
-        streak: { current: st.current || 0, lastBefore: ctx.streakLastBefore || null, today: new Date().toISOString().slice(0, 10) } });
+        streak: { current: st.current || 0, lastBefore: ctx.streakLastBefore || null, today: (window._localDay || function () { return new Date().toISOString().slice(0, 10); })() } });
     } catch (_) { rc = null; }
     var e = function (s) { return escHtml(String(s)); };
     var svg = function (p) { return '<svg viewBox="0 0 24 24" aria-hidden="true">' + p + '</svg>'; };

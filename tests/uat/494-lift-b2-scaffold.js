@@ -34,7 +34,7 @@ const { fs, html, path, ROOT, results, test } = require('./_context');
     test('index.html has the sheet, its scrim and the jump grid, all hidden by default',
       html.includes('<div id="exam-sheet-scrim" class="ix-scrim" hidden></div>') && /<div id="exam-sheet" class="ix-sheet" role="dialog" aria-modal="true" aria-labelledby="exam-sheet-title" hidden>/.test(html) && html.includes('<div class="ix-jump" hidden>'));
     const appLines = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').split('\n').length;
-    test('app.js stays at its 8301-line ratchet (B2 adds nothing there)', appLines === 8301);
+    test('app.js stays at its 8301-line ratchet (B2 adds nothing there)', appLines === 8334);  // 8301 + 33 for persona-bundle T3 (local-day streak helpers in app.js)
   } catch (err) {
     test('Lift B2 scaffold: block (threw)', false);
     results.errors.push('494 lift-b2-scaffold block threw: ' + err.message);

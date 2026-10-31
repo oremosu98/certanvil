@@ -20,6 +20,11 @@ const { fs, path, ROOT, test, results } = require('./_context');
       pr.status === 0 && /reminders-planner: (\d+)\/\1 passed/.test(pr.stdout || ''));
     // Task 4: both results screens tell the reminders a session finished (once per session)
     test('ios-quiz and ios-exam results dispatch ca:quiz-finished', /ca:quiz-finished/.test(read('features/ios-quiz.js')) && /ca:quiz-finished/.test(read('features/ios-exam.js')));
+    // Persona bundle T5: ids 5001-5010, tap routing, a review marks the day studied
+    test('REMINDER_IDS covers 5001-5010 and onTap listens for localNotificationActionPerformed',
+      /REMINDER_IDS = \[5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010\]/.test(ns) && /onTap: function/.test(ns) && /localNotificationActionPerformed/.test(ns));
+    test('ios-reminders routes a streak tap to ca:open-daily-challenge and markStudied is wired from sr-review',
+      /ca:open-daily-challenge/.test(read('features/ios-reminders.js')) && /IR\.markStudied/.test(read('features/ios-reminders.js')) && /iosReminders\.markStudied/.test(read('features/sr-review.js')));
     test('index.html loads features/ios-reminders.js', /<script defer src="features\/ios-reminders\.js[^"]*"><\/script>/.test(read('index.html')));
     test('drills and Sim Lab never count as a finished quiz', !/ca:quiz-finished/.test(read('features/ios-drills.js')) && !/ca:quiz-finished/.test(read('features/sim-lab.js') + read('features/ios-simlab.js')));
     test('ios-home tells the reminders Home is showing (ca:home-shown)', /ca:home-shown/.test(read('features/ios-home.js')));

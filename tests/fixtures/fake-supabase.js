@@ -45,7 +45,7 @@
     // Lazy like supabase-js's PostgrestFilterBuilder: nothing is recorded or applied until .then runs, so an un-chained rpc() (which never sends in production) shows up as a missing call.
     rpc: function(name){ var run=function(){ window.__fakeLog.push('rpc:'+name); try{ var rc=JSON.parse(localStorage.getItem('__rpcCalls')||'[]'); rc.push(name); localStorage.setItem('__rpcCalls',JSON.stringify(rc)); }catch(e){}
       var d=null; if(name==='get_daily_quota_usage') d=[F.tier==='free'?{used:0,limit:15,tier:'free'}:{used:0,limit:-1,tier:'pro'}]; if(name==='get_daily_quota_usage' && F.quotaUsed!=null) d=[{tier:'free',used_today:F.quotaUsed,daily_limit:15}];   // F3: the app's own field names, for a capped Home
-      if(name==='request_account_deletion'){ if(F.rpcError) return {data:null,error:{message:'rpc failed',code:'500'}}; if(F.rpcNull) return {data:null,error:null}; d=new Date().toISOString(); profile.metadata.deletion_requested_at=d; }
+      if(name==='request_account_deletion'){ if(F.rpcError) return {data:null,error:{message:'rpc failed',code:'500'}}; if(F.rpcNull) return {data:null,error:null}; d=F.rpcStamp||new Date().toISOString(); profile.metadata.deletion_requested_at=d;   /* rpcStamp: a server time that differs from the device clock */ }
       if(name==='clear_deletion_notice'){ delete profile.metadata.deletion_cancelled_at; try{ localStorage.setItem('__fakeNoticeCleared','1'); }catch(e){} }
       return {data:d,error:null}; };
       var q={ then:function(a,b){ return Promise.resolve().then(run).then(a,b); }, catch:function(b){ return q.then(null,b); } }; return q; },
@@ -58,10 +58,17 @@
       getUser:function(){ var u=session?user:null; if(u && F.freshIdentities){ u=Object.assign({},user,{identities:user.identities.concat(F.freshIdentities.map(function(p){ return { provider:p, identity_id:'id-'+p }; }))}); }
         return new Promise(function(r){ setTimeout(function(){ r({data:{user:u},error:null}); }, F.getUserDelay||0); }); },
       onAuthStateChange:function(cb){ listeners.push(cb); setTimeout(function(){ try{cb('INITIAL_SESSION',session);}catch(e){} },0); return {data:{subscription:{unsubscribe:function(){}}}}; },
-      // Account deletion: F.signOutError makes a global sign-out resolve {error} (supabase-js on a network failure keeps the session).
-      signOut:function(opts){ var sc=(opts && opts.scope) || 'local'; window.__fakeLog.push('auth:signOut:'+sc);
-        if (F.signOutError && sc==='global') return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+      // Like supabase-js 2.105: a no-arg signOut() is scope 'global', and every scope but 'others' calls the network logout
+      // first, so under F.signOutOffline global AND local resolve {error} and keep the session. A sign-out that works
+      // clears the session and fires SIGNED_OUT.
+      signOut:function(opts){ var sc=(opts && opts.scope) || 'global'; window.__fakeLog.push('auth:signOut:'+sc);
+        if (F.signOutOffline) return Promise.resolve({error:{message:'Failed to fetch',status:0,name:'AuthRetryableFetchError'}});
+        if (sc!=='others'){ session=null; listeners.forEach(function(cb){ try{ cb('SIGNED_OUT',null); }catch(e){} }); }
         return Promise.resolve({error:null}); },
+      // supabase-js's private no-network session removal (storage cleared, SIGNED_OUT fired). F.removeSessionFails keeps the session.
+      _removeSession:function(){ window.__fakeLog.push('auth:removeSession');
+        if (F.removeSessionFails) return Promise.resolve();
+        session=null; listeners.forEach(function(cb){ try{ cb('SIGNED_OUT',null); }catch(e){} }); return Promise.resolve(); },
       signInWithOtp:function(o){ o=o||{}; window.__fakeLog.push('auth:otp'); window.__fakeLog.push('auth:otp:'+o.email+':'+!!(o.options&&o.options.emailRedirectTo));
         if (F.otpStatus!=null) return Promise.resolve({data:{},error:{message:'send refused',status:F.otpStatus,name:F.otpStatus===0?'AuthRetryableFetchError':'AuthApiError'}});
         return Promise.resolve({data:{},error: F.otpError?{message:F.otpError,status:400}:null}); },

@@ -6,6 +6,9 @@
   "framework": null,
   "cleanUrls": true,
   "trailingSlash": false,
+  "crons": [
+    { "path": "/api/admin/cert-requests-digest", "schedule": "0 8 * * 1" }
+  ],
   "rewrites": [
     {
       "source": "/r/:token",

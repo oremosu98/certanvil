@@ -1138,7 +1138,7 @@ test('v8.139.0 SR: review cards can be removed as broken (two-step, stays remove
       && /saveReport\(card\.question \|\| '', 'Removed from review cards as broken'\)/.test(sr)
       && /window\.srRemoveConfirm\s*=\s*srRemoveConfirm/.test(sr)
       && /#page-sr-review \.sr-remove-btn\{[^}]*min-height:44px/.test(css)
-      && /dg-system\.css\?v=8\.(139|1[4-9]\d)\.0/.test(html);  // ≥ 8.139.0
+      && /dg-system\.css\?v=8\.(139|1[4-9]\d|2\d\d)\.0/.test(html);  // ≥ 8.139.0 (31 Oct fast-start: 8.2xx allowed)
   })());
 test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 topic), money answers need figures, exam date local',
   (() => {
@@ -1184,7 +1184,8 @@ test('v8.135.0 Readiness v2: predicted = expected accuracy on the exam scale; ef
       && /PRIOR_ACC = 0\.40/.test(body)
       && /_sig\(abilityFromBands\(bandMap\[t\], ownAcc, PRIOR_W\)\) : PRIOR_ACC/.test(body)  // v8.152.0 v3 estimate (was the v2 accuracy blend)
       && /Math\.sqrt\(_pE \* \(1 - _pE\) \/ Math\.max\(10, EXAM_QUESTION_COUNT\)\)/.test(body)
-      && /const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy/.test(body)
+      // Task 9 (persona bundle): examReady now comes from the book-it checklist (getBookItChecklist), not score + recent form
+      && /const examReady = getBookItChecklist\(\{ lowerBound, domainAccuracy, passAccuracy \}, loadHistory\(\)\)\.ready/.test(body)
       && /expectedAccuracy: Math\.round\(expectedAcc \* 100\), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady/.test(body);
   })());
 test('v8.135.0 Readiness v2: home card + analytics gate "Exam ready" on recent accuracy too',

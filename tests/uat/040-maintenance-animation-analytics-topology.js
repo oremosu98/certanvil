@@ -344,7 +344,7 @@ test('v4.43.4: startQuiz body extracted (sanity)', _startQuizBody.length > 500);
 test('v4.43.4 #1: DROPOUT_BUFFER constant with 30% + min-3 formula',
   /DROPOUT_BUFFER\s*=\s*Math\.max\(3,\s*Math\.ceil\(qCount\s*\*\s*0\.3\)\)/.test(_startQuizBody));
 test('v4.43.4 #1: initial fetch over-requests (qCount + DROPOUT_BUFFER)',
-  /fetchQuestions\([^)]*qCount\s*\+\s*DROPOUT_BUFFER\s*\)/.test(_startQuizBody));
+  /fetchQuestions\([^)]*qCount\s*\+\s*DROPOUT_BUFFER\s*(, undefined, _onBatch)?\)/.test(_startQuizBody));   // 31 Oct fast-start: + onBatch
 test('v4.43.4 #2: retry-to-fill tops up while short (v8.141.0: up to MAX_TOPUP_ROUNDS rounds, was one)',
   /for \(let round = 1; round <= MAX_TOPUP_ROUNDS && questions\.length < qCount; round\+\+\)/.test(_startQuizBody)
     && /const MAX_TOPUP_ROUNDS = 3;/.test(_startQuizBody));
@@ -352,7 +352,7 @@ test('v4.43.4 #2: each top-up round fetches the deficit plus a buffer and de-dup
   /_rn = \{ asked: deficit \+ Math\.max\(3, Math\.ceil\(deficit \* 0\.5 \* round\)\) \}/.test(_startQuizBody)
     && /fetchQuestions\([^)]*_rn\.asked\)/.test(_startQuizBody) && /!have\.has\(/.test(_startQuizBody));
 test('v8.142.0 quiz-fill: per-round diagnostics logged; failed rounds pause before the next',
-  /_logQuizFill\(qCount, questions\.length, _catchUp \? 'fresh \(catch-up\)' : 'fresh', _fill\.rounds, null\)/.test(_startQuizBody)
+  /_logQuizFill\(qCount, questions\.length, _catchUp \? 'fresh \(catch-up\)' : 'fresh', _fill\.rounds, null(, _fill)?\)/.test(_startQuizBody)   // 31 Oct fast-start: + _fill (firstQuestionMs)
     && /round < MAX_TOPUP_ROUNDS && typeof _pause === 'function'\) await _pause\(1500 \* round\)/.test(_startQuizBody));
 test('v8.142.0 fetchQuestions: one failed batch no longer sinks the request (throws only if nothing merged)',
   /if \(r\.reason && r\.reason\.apiError && !apiErr\) apiErr = r\.reason;/.test(js) && /throw apiErr \|\| new Error\('AI returned malformed data/.test(js)

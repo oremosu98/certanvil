@@ -69,12 +69,13 @@ for (const vp of PHONES) {
       await expect(page.locator('#lift-tabbar')).toBeVisible();
     });
     test('day-0 with nothing left goes to the quota screen', async ({ page }) => {
-      await boot(page, vp, { signed: true });
+      // The app's own async quota refresh can land after setTier; the fake answers it with the same 15-of-15 state.
+      await boot(page, vp, { signed: true, fake: { tier: 'free', quotaUsed: 15 } });
       await setTier(page, 'free', 15);
       await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       await page.evaluate(() => { window.__quota = 0; window._showQuotaExceededUI = function () { window.__quota++; }; });
       await page.locator('#ios-home [data-act="today"]').click();
-      expect(await page.evaluate(() => window.__quota)).toBe(1);
+      await expect.poll(() => page.evaluate(() => window.__quota)).toBe(1);   // the quota check is async: poll, not one read
     });
     test('a free user at 0 left sees capped Home; Start review opens Daily Review; See Pro opens /pricing', async ({ page }) => {
       await boot(page, vp, { signed: true, seed: { nplus_history: HISTORY } });
@@ -148,15 +149,15 @@ for (const vp of PHONES) {
       await expect(chk).toContainText('Pass 700');
       await expect(chk).not.toContainText('See how readiness works');
     });
-    test('Start practising lands on placed Home and reload keeps it', async ({ page }) => {
+    test('Start practising starts a quiz (not just Home) and records no skip', async ({ page }) => {
       await openCheck(page, vp);
       await answerAll(page, 5);
+      // The mock harness has no AI, so a real startQuiz would bounce back to Home; stub it and prove it is called.
+      await page.evaluate(() => { window.__started = null; window.startQuiz = function () { window.__started = { n: qCount }; }; });
       await page.locator('#ios-check [data-act="practise"]').click();
       await expect(page.locator('#ios-check')).toBeHidden();
-      await expect(page.locator('html')).not.toHaveClass(/ifr-day0|ifr-check/);
-      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
-      await page.reload(); await page.waitForTimeout(700);
-      await expect(page.locator('#ios-home')).not.toContainText("Network+ is set.");
+      expect(await page.evaluate(() => !!window.__started)).toBe(true);
+      expect(await page.evaluate(() => localStorage.getItem('nplus_onb_skips'))).toBeNull();
     });
     test("Skip the check lands on today's new-user Home", async ({ page }) => {
       await openCheck(page, vp);

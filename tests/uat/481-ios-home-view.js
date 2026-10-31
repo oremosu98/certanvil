@@ -14,7 +14,7 @@ const { _fnBody, fs, js, path, results, ROOT, test, vm } = require('./_context')
       readiness: { score: 553, max: 900, pass: 720, tier: 'On track', fillPct: 61.4, passPct: 80, insight: 'About 167 points to a pass.', meta: 'Last 200 answers: 70% right · 34 days to exam' },
       rec: { kind: 'review', min: 4, title: 'Review 7 cards', sub: 'Spaced repetition. Re-encounter what you forgot.' },
       week: [{ label: 'Today', count: 7, isToday: true, isExam: false }, { label: 'Wed', count: 2, isToday: false, isExam: false }],
-      momentum: { done: 0, goal: 20, streakLine: '1 day streak, best is 4. One short session adds another.', pick: { topic: 'Ethernet Basics', detail: 'around 46% accuracy' } },
+      momentum: { done: 0, goal: 20, streakLine: '4-day streak. Study today to keep it.' },
       mistakes: 9, domains: [{ key: 'concepts', name: 'Networking Concepts', weightPct: 23, mastery: 100, untouched: false }],
     };
     const html = (m) => vm.runInContext('_iosHomeHtml(__m)', Object.assign(ctx, { __m: m }));
@@ -28,9 +28,8 @@ const { _fnBody, fs, js, path, results, ROOT, test, vm } = require('./_context')
     test('Recommended next: badge 4 MIN, kicker, title, sub, data-act="rec"',
       h.includes('data-act="rec"') && /ih-rc-badge">4<small>MIN<\/small>/.test(h) && h.includes('Recommended next') && h.includes('>Review 7 cards<'));
     test('Coming up strip: Today first with its count', h.includes('Coming up') && /ih-day ih-today[\s\S]*?<b>7<\/b>[\s\S]*?Today/.test(h));
-    test('Momentum: ring "0 of 20", goal line, streak line, Pick up topic + Practise it button',
-      h.includes('0 / 20 questions today') && h.includes('1 day streak, best is 4.') && h.includes('Pick up: <b>Ethernet Basics</b>, around 46% accuracy')
-      && h.includes('data-act="practise"') && h.includes('Practise it · 10 questions'));
+    test('Momentum: ring "0 of 20", goal line, streak line; no Pick up line and no Practise it button',
+      h.includes('0 / 20 questions today') && h.includes('4-day streak. Study today to keep it.') && !h.includes('Pick up:') && !/class="ih-mo-go"/.test(h) && !h.includes('data-act="practise"') && !h.includes('Practise it'));
     test('Quick start: 5-min Warmup, Daily Challenge, Drill Mistakes (9 saved)',
       h.includes('data-act="warmup"') && h.includes('data-act="daily"') && h.includes('data-act="mistakes"') && h.includes('9 saved') && h.includes('Clear the 9 wrong answers you have saved.'));
     test('Study menus: Practice (Deep Scan / 30 / 45), Exam simulation (60-Question SIM / Full Exam Simulator), Drill by domain, custom quiz',
@@ -40,7 +39,7 @@ const { _fnBody, fs, js, path, results, ROOT, test, vm } = require('./_context')
     test('No Pro lock pills on Home (E2E)', !/pro-lock/.test(h));
     const nu = html(Object.assign({}, base, { state: 'new', streak: 0, readiness: { score: null, max: 900, pass: 720, tier: 'Locked', fillPct: 0, passPct: 80, insight: 'Take a quiz to unlock your readiness score and a pass forecast.', meta: null },
       rec: { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' }, week: null, mistakes: 0,
-      momentum: { done: 0, goal: 20, streakLine: '0 day streak. Finish today to start one.', pick: null } }));
+      momentum: { done: 0, goal: 20, streakLine: 'No streak yet. Finish a set today to start one.', pick: null } }));
     test('New user: locked readiness "--", no meta line, no Coming up, no Drill Mistakes, first-quiz line',
       nu.includes('ih-rd ih-locked') && nu.includes('class="ih-rd-num">--<') && !nu.includes('ih-rd-meta') && !nu.includes('Coming up')
       && !nu.includes('data-act="mistakes"') && nu.includes('First quiz finds your weak spots.') && nu.includes('ih-tb-streak ih-zero'));
@@ -51,8 +50,19 @@ const { _fnBody, fs, js, path, results, ROOT, test, vm } = require('./_context')
       /check: function \(\) \{ if \(window\.iosFirstRun && iosFirstRun\.startCheck\) iosFirstRun\.startCheck\(\); \}/.test(fs.readFileSync(path.join(ROOT, 'features', 'ios-home.js'), 'utf8')));
     const out = html(Object.assign({}, base, { signedIn: false }));
     test('Signed out (web): Sign in pill instead of the streak', out.includes('class="ih-tb-signin" data-act="signin"') && !out.includes('ih-tb-streak'));
-    const x = html(Object.assign({}, base, { greeting: '<img src=x onerror=alert(1)>', momentum: Object.assign({}, base.momentum, { pick: { topic: '<b>x</b>', detail: '' } }) }));
+    const x = html(Object.assign({}, base, { greeting: '<img src=x onerror=alert(1)>', rec: { kind: 'weak', min: 15, title: '<b>x</b>', sub: 's' } }));
     test('Interpolated strings are escaped', !x.includes('<img src=x') && x.includes('&lt;img') && x.includes('&lt;b&gt;x&lt;/b&gt;'));
+    const rv = (rec, extra) => html(Object.assign({}, base, extra || {}, { rec }));
+    const qz = rv({ kind: 'quiz', kick: 'Pick up where you left off', badge: '3', unit: 'LEFT', title: 'Finish your quiz · 3 left', sub: 'Ports & Protocols · 7 of 10 answered' });
+    test('Resume card: 3 LEFT badge, kicker, Start fresh link, rec action',
+      /ih-rc-badge">3<small>LEFT<\/small>/.test(qz) && qz.includes('Pick up where you left off') && qz.includes('Finish your quiz · 3 left') && qz.includes('data-act="fresh"') && qz.includes('Start fresh') && qz.includes('data-act="rec"'));
+    const ocH = rv({ kind: 'outcome', kick: 'Your exam was yesterday', title: 'How did your Network+ exam go?', sub: "Tell us and we'll update your plan." });
+    test('Outcome card: Passed, Didn\'t pass, I haven\'t sat it yet; no ih-rec button',
+      ['data-act="oc-passed"', 'data-act="oc-failed"', 'data-act="oc-notyet"', '>Passed<', 'Didn&#39;t pass'.replace('&#39;', "'"), "I haven't sat it yet", 'Your exam was yesterday'].every(s => ocH.includes(s)) && !ocH.includes('class="ih-rec'));
+    const nc = rv({ kind: 'nextcert', kick: 'Network+ passed · scored 812', title: 'Pick your next cert', sub: 'We predicted 553 on exam day. Your streak carries on with your next cert.' }, { passed: true });
+    test('Next cert card + Passed badge: Choose a cert, badge beside the cert name',
+      nc.includes('Choose a cert') && nc.includes('Pick your next cert') && nc.includes('Network+ passed · scored 812') && nc.includes('class="ih-tb-passed">Passed<') && !h.includes('ih-tb-passed'));
+    test('Warmup rec renders as the normal rec button', rv({ kind: 'warmup', min: 5, title: '5-min Warmup', sub: 'Ease back in. 5 questions, foundational.' }).includes('>5-min Warmup<'));
   } catch (err) {
     test('Lift A Home view: block (threw)', false);
     results.errors.push('481 ios-home-view block threw: ' + err.message);

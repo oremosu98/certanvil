@@ -1333,7 +1333,7 @@ test('cloud cert-keying: buildJsonb writes sr per-cert (out.sr[cert].queue), nev
 test('cloud cert-keying: applyJsonb pulls this cert + legacy sr_queue fallback',
   (() => { const b = _fnBody(read('cloud-store.js'), 'applyJsonbToLocalStorage'); return b && /cloudKey === 'sr'/.test(b) && /meta\.sr\[cert\]/.test(b) && /cloudKey === 'sr_queue'/.test(b); })());
 test('cloud cert-keying: doFlush read-merge-writes cert-scoped maps sr/activated/onb_skips (preserves other certs)',
-  (() => { const b = _fnBody(read('cloud-store.js'), 'doFlush'); return b && /select\('metadata'\)/.test(b) && /CERT_SCOPED\s*=\s*\['sr',\s*'activated',\s*'onb_skips'\]/.test(b) && /Object\.assign\(\{\},\s*existing,\s*ours\)/.test(b); })());
+  (() => { const b = _fnBody(read('cloud-store.js'), 'doFlush'); return b && /select\('metadata'\)/.test(b) && /CERT_SCOPED\s*=\s*\['sr',\s*'activated',\s*'onb_skips'[,\]]/.test(b) && /Object\.assign\(\{\},\s*existing,\s*ours\)/.test(b); })());
 // ── Onboarding rollout gate + activation telemetry (Track A) ──────────────────
 test('onb gate: USER_DATA_KEYS includes nplus_activated + nplus_onb_skips',
   (() => { const cjs = read('cloud-store.js'); return /'nplus_activated'/.test(cjs) && /'nplus_onb_skips'/.test(cjs); })());
@@ -1419,7 +1419,7 @@ test('cloud cert-keying: vm — buildJsonb cert-scopes sr_queue, leaves other ke
       if (!cc || !build) return false;
       const vm = require('vm');
       const store = { 'nplus_sr_queue': JSON.stringify([{ q: 'a' }]), 'nplus_streak': JSON.stringify({ current: 3 }) };
-      const ctx = { USER_DATA_KEYS: new Set(['nplus_sr_queue', 'nplus_streak']), TABLE_BACKED_KEYS: new Set(), localStorage: { getItem: (k) => (k in store ? store[k] : null) }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
+      const ctx = { USER_DATA_KEYS: new Set(['nplus_sr_queue', 'nplus_streak']), TABLE_BACKED_KEYS: new Set(), PER_CERT_MAPS: [], localStorage: { getItem: (k) => (k in store ? store[k] : null) }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
       vm.createContext(ctx);
       const out = vm.runInContext(cc + '\n' + build + '\nbuildJsonbFromLocalStorage();', ctx);
       return out && out.sr && out.sr.secplus && Array.isArray(out.sr.secplus.queue) && out.sr.secplus.queue[0].q === 'a'

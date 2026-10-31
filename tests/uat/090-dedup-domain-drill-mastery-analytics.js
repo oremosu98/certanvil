@@ -1859,7 +1859,7 @@ test('v4.81.15 Stale: helper reuses computeWeakSpotScores for posterior accuracy
 test('v4.81.15 Stale: slice rotation uses overlapping window (step = floor(size/2))',
   /Math\.floor\(sliceSize\s*\/\s*2\)/.test(js));
 test('v4.81.15 Stale: fetchQuestions accepts staleSliceIdx parameter',
-  /async function fetchQuestions\(key, qTopic, difficulty, n, staleSliceIdx\)/.test(js));
+  /async function fetchQuestions\(key, qTopic, difficulty, n, staleSliceIdx(, onBatch)?\)/.test(js));   // 31 Oct fast-start: + onBatch
 test('v4.81.15 Stale: _fetchQuestionsBatch accepts staleSliceIdx parameter',
   /async function _fetchQuestionsBatch\(key, qTopic, difficulty, n, pbqCountOverride, staleSliceIdx\)/.test(js));
 test('v4.81.15 Stale: prompt block injected only for MIXED_TOPIC',

@@ -17,6 +17,7 @@
 // Sections:
 //   - 4-stat hero (total users, active this week, cert packs live, app version)
 //   - Users table (one row per profile)
+//   - Cert requests (Suggest a cert tally, sorted by votes; "Mark live & tell them" POSTs to /api/admin/notify-cert-live)
 //   - Cert packs table (static roster — 8 live + 3 on the anvil; exemplar
 //     counts mirror certs/*.js questionExemplars lengths, hand-synced on ship)
 //   - Recent ships (last 10 commits via GitHub REST API, no auth needed for public repo)
@@ -50,6 +51,7 @@
   var elStatAppVersionDelta = document.getElementById('stat-app-version-delta');
 
   var elUsersTbody = document.getElementById('users-tbody');
+  var elRequestsTbody = document.getElementById('requests-tbody');
   var elUsersTableMeta = document.getElementById('users-table-meta');
   var elCertsTbody = document.getElementById('certs-tbody');
   var elShipsTbody = document.getElementById('ships-tbody');
@@ -102,6 +104,7 @@
       fetchUsers(),
       fetchAppVersion(),
       fetchRecentShips(),
+      fetchCertRequests(),
     ]).then(function (results) {
       var users = results[0];
       var appVersion = results[1];
@@ -109,6 +112,7 @@
 
       renderStats(users, appVersion);
       renderUsers(users);
+      renderCertRequests(results[3]);
       renderCertPacks();
       renderShips(ships);
     }).catch(function (err) {
@@ -124,6 +128,55 @@
       }
       return r.data || [];
     });
+  }
+
+  // Cert requests (Suggest a cert). Read with the admin's own JWT: RLS lets is_admin() see the tally view. Postgres does
+  // not promise a view's ORDER BY survives, so the order is asked for explicitly. The view carries pending (people not yet
+  // told) and labels (every way the exam was written), so no per-person rows are read here.
+  function fetchCertRequests() {
+    return supabase.from('cert_request_tally').select('exam_key, label, votes, new_7d, last_at, typed, pending, labels')
+      .order('votes', { ascending: false }).order('last_at', { ascending: false }).then(function (r) {
+        if (r.error) { console.error('[certanvil-admin] cert tally fetch failed', r.error); return null; }
+        return r.data || [];
+      });
+  }
+
+  // Pure view model for the section: strip numbers + one row per exam. Exposed for tests.
+  function buildCertRequestsModel(tally, now) {
+    tally = tally || [];
+    var max = 0, total = 0, week = 0, typedCount = 0;
+    tally.forEach(function (t) {
+      var v = Number(t.votes) || 0;
+      if (v > max) max = v;
+      total += v; week += Number(t.new_7d) || 0;
+      if (t.typed) typedCount++;
+    });
+    var rows = tally.map(function (t) {
+      var votes = Number(t.votes) || 0;
+      var label = String(t.label || t.exam_key || '');
+      var others = (Array.isArray(t.labels) ? t.labels : []).map(String).filter(function (l) { return l && l !== label; });
+      return {
+        examKey: String(t.exam_key || ''), label: label, votes: votes, new7: Number(t.new_7d) || 0,
+        lastAt: t.last_at, typed: !!t.typed, pending: Number(t.pending) || 0,
+        pct: max ? Math.max(4, Math.round(votes / max * 100)) : 0, others: others
+      };
+    });
+    return { rows: rows, total: total, week: week, exams: tally.length, typedCount: typedCount, next: nextMonday(now || new Date()) };
+  }
+
+  // The Monday digest goes at 08:00 UTC on Mondays (vercel.json cron). Label: "Mon 2 Nov".
+  function nextMonday(now) {
+    var d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    var add = (8 - d.getUTCDay()) % 7;
+    if (add === 0 && now.getUTCHours() >= 8) add = 7;
+    d.setUTCDate(d.getUTCDate() + add);
+    var mon = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+    return 'Mon ' + d.getUTCDate() + ' ' + mon;
+  }
+
+  function glyph(label) {
+    var s = String(label || '').replace(/[^A-Za-z0-9]/g, '');
+    return (s.slice(0, 2) || '?').toUpperCase();
   }
 
   function fetchAppVersion() {
@@ -215,6 +268,167 @@
         + '</tr>';
     }).join(''));
   }
+
+  function renderCertRequests(tally) {
+    if (!elRequestsTbody) return;
+    var m = buildCertRequestsModel(tally);
+    function put(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+    if (tally == null) {
+      elRequestsTbody.innerHTML = '<tr><td colspan="5" class="admin-table-empty">Could not load cert requests.</td></tr>';
+      return;
+    }
+    put('cr-total', String(m.total));
+    put('cr-week', '+' + m.week);
+    put('cr-exams', String(m.exams));
+    put('cr-typed', m.typedCount + ' typed in');
+    put('cr-next', m.next);
+    renderMailPreview(m);
+    if (!m.rows.length) {
+      elRequestsTbody.innerHTML = '<tr><td colspan="5" class="admin-table-empty">No requests yet.</td></tr>';
+      return;
+    }
+    elRequestsTbody.innerHTML = sanitizeRows(m.rows.map(function (r) {
+      var sub = r.typed
+        ? (r.others.length ? 'Also written: ' + r.others.join(', ') : 'Typed in')
+        : r.examKey;
+      var tag = r.typed ? '<span class="cr-tag">Typed</span>' : '';
+      var act = r.pending > 0
+        ? '<button class="cr-act" type="button" data-key="' + escapeHtml(r.examKey) + '" data-label="' + escapeHtml(r.label) + '" data-pending="' + r.pending + '">Mark live &amp; tell them</button>'
+        : '<span class="cr-sent">Everyone told</span>';
+      return ''
+        + '<tr>'
+        +   '<td><div class="cr-exam"><span class="cr-g' + (r.typed ? ' typed' : '') + '">' + (r.typed ? '+' : escapeHtml(glyph(r.label))) + '</span>'
+        +     '<span><span class="cr-name">' + escapeHtml(r.label) + tag + '</span><span class="cr-sub">' + escapeHtml(sub) + '</span></span></div></td>'
+        +   '<td><div class="cr-votes"><b>' + r.votes + '</b><span class="cr-bar"><i style="width:' + r.pct + '%"></i></span></div></td>'
+        +   '<td>' + (r.new7 > 0 ? '<span class="cr-new">+' + r.new7 + '</span>' : '<span class="cr-new zero">None</span>') + '</td>'
+        +   '<td class="mono">' + escapeHtml(r.lastAt ? formatRelative(r.lastAt) : '—') + '</td>'
+        +   '<td class="cr-cell">' + act + '</td>'
+        + '</tr>';
+    }).join(''));
+  }
+
+  // Same wording as the Monday email (api/admin/cert-requests-digest.js), drawn from the live numbers.
+  function renderMailPreview(m) {
+    var box = document.getElementById('requests-mail');
+    var subj = document.getElementById('cr-mail-subject');
+    var body = document.getElementById('cr-mail-body');
+    if (!box || !subj || !body) return;
+    subj.textContent = 'Cert requests this week: ' + m.week + ' new';
+    if (!m.rows.length) { body.textContent = 'No new requests this week.'; box.hidden = false; return; }
+    var top = m.rows.slice(0, 3).map(function (r) {
+      return '<li><b>' + escapeHtml(r.label) + '</b> · ' + r.votes + (r.new7 > 0 ? ' (+' + r.new7 + ')' : '') + '</li>';
+    }).join('');
+    var typed = m.rows.filter(function (r) { return r.typed && r.new7 > 0; }).map(function (r) { return escapeHtml(r.label); });
+    body.innerHTML = '<span class="cr-mail-k">Most asked</span><ol>' + top + '</ol>'
+      + (typed.length ? '<span class="cr-mail-k">New typed in</span>' + typed.join(', ') + '<br><br>' : '')
+      + 'See them all on your dashboard.';
+    box.hidden = false;
+  }
+
+  // "Mark live & tell them": an inline Send / Cancel in the row (no browser dialog), then POSTs with the admin's access
+  // token, one batch per call, until the server says nothing remains. The server re-checks admin and does the sending.
+  function people(n) { return n + (n === 1 ? ' person' : ' people'); }
+
+  function onRequestsClick(e) {
+    var t = e.target;
+    var act = t && t.closest ? t.closest('.cr-act') : null;
+    if (act && !act.disabled) { askConfirm(act); return; }
+    var no = t && t.closest ? t.closest('.cr-confirm .no') : null;
+    if (no) { cancelConfirm(no.closest('.cr-cell')); return; }
+    var yes = t && t.closest ? t.closest('.cr-confirm .yes') : null;
+    if (yes && !yes.disabled) startSend(yes.closest('.cr-cell'));
+  }
+
+  function askConfirm(btn) {
+    var cell = btn.parentNode;
+    var n = parseInt(btn.getAttribute('data-pending'), 10) || 0;
+    cell._btn = btn;
+    var box = document.createElement('div');
+    box.className = 'cr-confirm';
+    box.setAttribute('role', 'group');
+    var msg = document.createElement('span');
+    msg.textContent = 'Email ' + people(n) + ' that ' + (btn.getAttribute('data-label') || '') + ' is live?';
+    var yes = document.createElement('button'); yes.type = 'button'; yes.className = 'yes'; yes.textContent = 'Send';
+    var no = document.createElement('button'); no.type = 'button'; no.className = 'no'; no.textContent = 'Cancel';
+    box.appendChild(msg); box.appendChild(yes); box.appendChild(no);
+    cell.innerHTML = '';
+    cell.appendChild(box);
+    yes.focus();
+  }
+
+  function cancelConfirm(cell) {
+    if (!cell || !cell._btn) return;
+    cell.innerHTML = '';
+    cell.appendChild(cell._btn);
+    cell._btn.focus();
+  }
+
+  // People a retry would email: those who could not be reached plus everyone the server has not got to yet.
+  function retryCount(tot, remaining) { return Math.max(1, (tot.failed || 0) + (tot.skipped || 0) + (Number(remaining) || 0)); }
+  // After a reply: 'next' (call again), 'stalled' (people remain but the cursor did not move), or 'done'.
+  function sendStep(b, after) {
+    if ((Number(b.remaining) || 0) > 0) return b.next && b.next !== after ? 'next' : 'stalled';
+    return 'done';
+  }
+
+  function startSend(cell) {
+    var btn = cell._btn;
+    var key = btn.getAttribute('data-key') || '', label = btn.getAttribute('data-label') || '';
+    var tot = { sent: 0, failed: 0, skipped: 0 };
+    var remaining = parseInt(btn.getAttribute('data-pending'), 10) || 0;
+    var box = cell.querySelector('.cr-confirm');
+    var yes = box.querySelector('.yes'), no = box.querySelector('.no');
+    yes.disabled = true; no.disabled = true; yes.textContent = 'Sending…';
+    var msg = box.querySelector('span');
+    function progress() { msg.textContent = 'Sent to ' + people(tot.sent) + '…'; msg.setAttribute('role', 'status'); }
+    function stop(text, retry) {
+      cell.innerHTML = '';
+      var d = document.createElement('div');
+      d.className = retry ? 'cr-err' : 'cr-sent'; d.setAttribute('role', retry ? 'alert' : 'status'); d.textContent = text;
+      if (retry) {
+        btn.setAttribute('data-pending', String(retryCount(tot, remaining)));
+        cell.appendChild(btn); cell.appendChild(d);
+        btn.focus();
+      } else { d.tabIndex = -1; cell.appendChild(d); d.focus(); }
+    }
+    function summary() {
+      var lost = tot.failed + tot.skipped;
+      return 'Sent to ' + people(tot.sent) + '.' + (lost ? ' ' + lost + ' couldn\'t' + ' be reached.' : '');
+    }
+    function step(after) {
+      return supabase.auth.getSession().then(function (r) {
+        var token = r && r.data && r.data.session ? r.data.session.access_token : '';
+        if (!token) throw new Error('auth');
+        return fetch('/api/admin/notify-cert-live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ exam_key: key, label: label, after: after || undefined })
+        });
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (j) { return { ok: res.ok, status: res.status, body: j }; });
+      }).then(function (out) {
+        if (!out.ok) { var err = new Error('http'); err.status = out.status; err.code = out.body && out.body.error; throw err; }
+        var b = out.body;
+        tot.sent += Number(b.sent) || 0; tot.failed += Number(b.failed) || 0; tot.skipped += Number(b.skipped) || 0;
+        remaining = Number(b.remaining) || 0;
+        progress();
+        if (b.paused) { stop(summary() + ' Email is busy, try again in a minute.', true); return; }
+        var go = sendStep(b, after);
+        if (go === 'next') return step(b.next);
+        if (go === 'stalled') { stop(summary() + ' Stopped early, try again.', true); return; }
+        if (tot.failed + tot.skipped > 0) { stop(summary(), true); return; }
+        stop(summary(), false);
+      });
+    }
+    step('').catch(function (err) {
+      var why = err && err.message === 'auth' ? 'Sign in again, then retry.'
+        : err && err.status === 503 ? 'Email is not set up yet.'
+        : err && err.status === 409 ? 'That exam changed. Reload the page.'
+        : 'Could not finish. Try again.';
+      stop('Sent to ' + people(tot.sent) + ' so far. ' + why, true);
+    });
+  }
+  if (elRequestsTbody) elRequestsTbody.addEventListener('click', onRequestsClick);
 
   function renderCertPacks() {
     if (!elCertsTbody) return;
@@ -313,6 +527,8 @@
     var tb = tmp.querySelector('tbody');
     return tb ? tb.innerHTML : s;
   }
+
+  if (typeof window !== 'undefined') window._adminCertRequests = { build: buildCertRequestsModel, nextMonday: nextMonday, retryCount: retryCount, sendStep: sendStep };
 
   init();
 })();

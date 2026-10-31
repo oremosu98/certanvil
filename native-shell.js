@@ -45,8 +45,9 @@
     return socialInit;
   }
   // Stage 5d (29 Oct): study reminders through @capacitor/local-notifications (8.3.1) and the app's iOS settings page
-  // through @capacitor/app-launcher (8.0.1). Ids 5001-5007 are the reminders' only ids.
-  var REMINDER_IDS = [5001, 5002, 5003, 5004, 5005, 5006, 5007];
+  // through @capacitor/app-launcher (8.0.1). Ids 5001-5010 are the reminders' only ids
+  // (5001-5007 daily, 5008 last call, 5009/5010 drift nudges).
+  var REMINDER_IDS = [5001, 5002, 5003, 5004, 5005, 5006, 5007, 5008, 5009, 5010];
   function notifPlugin() { return P.LocalNotifications || null; }
   function permOf(r) { var d = r && r.display; return d === 'granted' || d === 'denied' ? d : 'prompt'; }   // prompt-with-rationale → prompt
   var reminders = {
@@ -55,7 +56,14 @@
     request: function () { return notifPlugin() ? notifPlugin().requestPermissions().then(function (r) { return permOf(r) === 'granted' ? 'granted' : 'denied'; }, function () { return 'denied'; }) : Promise.resolve('denied'); },
     schedule: function (list) {
       if (!notifPlugin() || !list || !list.length) return Promise.resolve();
-      return notifPlugin().schedule({ notifications: list.map(function (n) { return { id: n.id, title: n.title, body: n.body, schedule: { at: n.at } }; }) }).then(function () {});
+      return notifPlugin().schedule({ notifications: list.map(function (n) { return { id: n.id, title: n.title, body: n.body, schedule: { at: n.at }, extra: n.extra || null }; }) }).then(function () {});
+    },
+    // cb(extra) when a notification is tapped (cold start included: the plugin replays it to a late listener)
+    onTap: function (cb) {
+      try {
+        var p = notifPlugin();
+        if (p && p.addListener) p.addListener('localNotificationActionPerformed', function (ev) { try { cb((ev && ev.notification && ev.notification.extra) || {}); } catch (_) {} });
+      } catch (_) {}
     },
     cancelAll: function () {
       return notifPlugin() ? notifPlugin().cancel({ notifications: REMINDER_IDS.map(function (id) { return { id: id }; }) }).then(function () {}, function () {}) : Promise.resolve();

@@ -22,7 +22,7 @@
       + '<div class="isi-g-center"><div class="isi-g-num">735</div><div class="isi-g-of">out of 900</div>'
       + '<div class="isi-g-ready"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></svg>Pass range</div></div></div>'
       + '<div class="isi-g-pass">Pass mark 720</div></div>'
-      + '<div class="isi-copy isi-rv"><h1>Know when you\'re ready</h1><p>Real exam questions and a readiness score that climbs as you study, so exam day is never a guess.</p></div>'
+      + '<div class="isi-copy isi-rv"><h1>Know when you\'re ready</h1><p>Original exam-style questions and a readiness score that climbs as you study, so exam day is never a guess.</p></div>'
       + '<div class="isi-cta isi-rv"><button class="isi-primary" type="button" data-act="start">Get started</button>'
       + '<div class="isi-cta-sub">Sign in with ' + (m && m.apple ? (m.google ? 'Apple, Google or email' : 'Apple or email') : (m && m.google ? 'Google or email' : 'email')) + '</div>'
       + '<button class="isi-link" type="button" data-act="signin">Already have an account? <b>Sign in</b></button></div>'

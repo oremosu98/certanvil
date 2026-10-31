@@ -91,6 +91,8 @@ The exam already does this properly. It can be paused, and Home offers "Resume y
 
 ### 6. After a session, the main button is "Redo this quiz"
 
+> **Rejected by the founder (30 Oct):** Redo stays the main button. Do not re-propose.
+
 **What he sees today.** The results footer's main button is **"Redo this quiz"**, then "Drill my N mistakes", "Review answers" and "Back to menu" (`features/ios-quiz.js:121-123`). Nothing says how much of today is left. There's no "keep going" and no "you're done for today".
 
 **Why it matters for him.** Repeating the same questions isn't the obvious next step, and four buttons is a decision he doesn't want to make. Good stopping points matter as much as starting points. Without a clear "done for today", "one more" turns into guilt.
