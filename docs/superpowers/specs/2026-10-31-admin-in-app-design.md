@@ -65,12 +65,12 @@ problem is fixed.
      version, screen, device, and whether the person can be emailed. Two actions:
      - **Fixed, tell them** (only when the reporter was signed in): sends the fixed email (below) and
        closes the report.
-     - **Close quietly:** closes it with no email (duplicate, not a bug, or anonymous).
+     - **Close, no email:** closes it with no email (duplicate, not a bug, or anonymous).
   4. **Errors:** the five most frequent error messages in the last 7 days, each with its count and the
      newest version it was seen on. Read only. Counted on the phone from the newest 500 rows; if there
      were more, the section says 'Based on the latest 500 errors.'
   5. **Preview as Free:** a switch. On, the app shows exactly what a Free user sees: locks, the
-     15-a-day counter and upgrade prompts. A thin bar, "Previewing as Free · Switch back", sits at the
+     15-a-day counter and upgrade prompts. A thin bar, "Previewing as Free · Back to Pro", sits at the
      top of every screen while it's on. It lives on this device only and survives a restart.
      - **One switch point.** The app decides Pro in two places: where `_quotaState` is set
        (`_refreshQuotaChip`) and auth-state's "admin counts as Pro". While previewing, both report Free
@@ -80,7 +80,7 @@ problem is fixed.
        doesn't count for a Pro account.
      - **The one exception:** reaching 15 shows the Free "today's 15 are done" screen, with an extra
        "Keep going (admin preview)" link, so studying is never blocked. Pro-only features stay locked
-       while previewing; switching back unlocks them.
+       while previewing; Back to Pro unlocks them.
      - The Free limit is 15 on the server too (`20260611_free_tier_15_questions`, audited ok 31 Oct).
   6. **Full dashboard on certanvil.com:** a link for the users table, cert packs and recent ships.
 - Each section loads on its own. A failed section says "Couldn't load this. Retry." and the others
@@ -88,9 +88,11 @@ problem is fixed.
 
 ### 3. Telling people it's fixed
 - **The email** (from CertAnvil, Resend, one recipient per send):
-  Subject: "Fixed: the problem you reported"
-  Body: "You told us about '{title}'. It's fixed in the latest version of CertAnvil, so the next time you
-  open it you'll have the fix. Thanks for taking the time to report it."
+  Subject: "Fixed: {title}" (the report's title, cut to about 50 characters)
+  Body: "You reported '{title}'. It's fixed. Open CertAnvil and you'll have it. Thanks for telling us.
+  CertAnvil" (no upsell). True for the iOS app too: it loads the live site, so a fix arrives on the next
+  open; a change to the app's own shell would need an App Store update, so don't use "Fixed, tell them"
+  for those until the update is live.
 - Sent once per report. The endpoint stamps `fixed_notified_at` only if it is empty, then sends with a
   Resend idempotency key; if the send fails it clears the stamp so a retry works. A second tap gets
   409.
@@ -159,3 +161,9 @@ June E2E, run the five-stage visual pass, get founder approval, then plan and bu
 
 ## Related
 [[ADR-002-rbac-admin-surface]] · [[2026-10-30-ai-budget-fast-start-suggest-design]] · [[2026-10-30-my-certs-hub-design]] · [[Mobile MOC]]
+
+## Visual pass (31 Oct)
+Drawn in the June E2E (HUD "Admin ›", 17 screens). The five-stage pass changed: 44pt tap targets, one
+hairline stat strip instead of separate cards, an X on the report sheet, reveal motion on first paint
+only, a neutral Free bar ("Back to Pro"), "Close, no email", the hear-back promise above the fields,
+and plainer copy. Sheets keep the drawer curve the shipped phone sheets already use (`lift-ios.css`).
