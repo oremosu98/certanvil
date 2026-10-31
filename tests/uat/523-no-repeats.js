@@ -85,7 +85,9 @@ const { _fnBody, js, html, test, vm } = require('./_context');
 
   const sq = _fnBody(qe, 'startQuiz') || '';
   test('startQuiz: cache served only when !seenAnsweredWithin(cached, 7)',
-    /seenAnsweredWithin\(_cachedRaw, 7\)/.test(sq) && /const cached = _cachedRaw &&/.test(sq) && /_logQuizFill\(qCount, 0, cached \? 'cache' : 'error'/.test(sq));
+    /seenAnsweredWithin\(_cachedRaw, 7\)/.test(sq) && /const cached = _cachedRaw &&/.test(sq) && /_logQuizFill\(qCount, 0, cached \? 'cache' : 'error', _fill\.rounds,/.test(sq));
+  test('startQuiz: _fill is declared before the try, so a starved fill still logs its repeats round',
+    /const _fill = \{ rounds: \[\] \};\s*\n\s*try \{/.test(sq));
   test('startQuiz: filter runs after validateQuestions and in every top-up round',
     /if \(questions\.length === 0\) throw[^\n]*\n\s*questions = _dropSeen\(questions\);/.test(sq)
       && /const fresh = _dropSeen\(extraValidated\.filter\(q => !have\.has\(/.test(sq));
@@ -95,9 +97,25 @@ const { _fnBody, js, html, test, vm } = require('./_context');
     /if \(questions\.length === 0\) throw new Error\('Couldn\\u2019t make new questions this time\. Try again\.'\)/.test(sq));
   test('Finish: answered questions are recorded, never in a mistake drill',
     /if \(!wrongDrillMode\) \{\s*\n\s*if \(window\.seenRecord\) seenRecord\(log\.map\(e => e\.q\), activeQuizTopic\);/.test(_fnBody(qe, 'finish') || ''));
-  test('Drill + resume skip the filter',
-    !/seenFilter|_dropSeen/.test(_fnBody(appJs, 'startWrongDrill') || 'x') && !/seenFilter/.test(_fnBody(js, 'resumeQuiz') || 'x')
-      && !/seenFilter/.test(_fnBody(qe, 'startWrongDrill') || ''));
+  const drillBody = _fnBody(appJs, 'startWrongDrill') || '', resumeBody = _fnBody(js, 'resumeQuiz') || '';
+  test('Drill + resume skip the filter (bodies found first)',
+    drillBody.length > 200 && resumeBody.length > 200 && /wrongDrillMode = true/.test(drillBody) && /questions/.test(resumeBody)
+      && !/seenFilter|_dropSeen|startQuiz\(/.test(drillBody) && !/seenFilter|_dropSeen|startQuiz\(/.test(resumeBody));
+
+  // Short-set notice: repeats get their own honest reason.
+  const toasts = [], pill = { cls: new Set(), textContent: '', title: '', classList: null, removeAttribute(k) { this[k] = ''; } };
+  pill.classList = { toggle: (c, on) => { if (on) pill.cls.add(c); else pill.cls.delete(c); } };
+  const nctx = vm.createContext({ document: { getElementById: (id) => (id === 'short-notice' ? pill : null) }, showErrorToast: (m) => toasts.push(m) });
+  vm.runInContext((_fnBody(js, '_shortReason') || '') + '\n' + (_fnBody(js, '_noteShortQuiz') || ''), nctx);
+  const note = (a, g, rounds) => vm.runInContext('_noteShortQuiz(' + a + ',' + g + ',' + JSON.stringify(rounds) + ')', nctx);
+  note(10, 7, [{ asked: 13, afterLocal: 13 }, { label: 'repeats', dropped: 4 }]);
+  test('Short notice: repeats covering the gap read "N left out because you\'ve seen them recently."',
+    toasts[0] === "7 of 10 questions came through. 3 left out because you've seen them recently." && pill.title === "3 left out because you've seen them recently.");
+  note(10, 6, [{ asked: 13, afterLocal: 9 }, { label: 'repeats', dropped: 2 }]);
+  test('Short notice: repeats that don\'t cover the gap keep the quality-checks reason',
+    toasts[1] === "6 of 10 questions came through. 4 didn't pass the quality checks.");
+  note(10, 8, [{ error: 'Failed to fetch' }, { label: 'repeats', dropped: 5 }]);
+  test('Short notice: an error still wins over repeats', toasts[2] === "8 of 10 questions came through. The AI stopped responding partway, so 2 weren't made.");
   test('Telemetry: _logQuizFill prints the repeats round', /x\.label === 'repeats' \? 'repeats -' \+ x\.dropped/.test(_fnBody(qe, '_logQuizFill') || ''));
   test('Loaded: index.html loads features/seen-questions.js', /<script defer src="features\/seen-questions\.js"><\/script>/.test(html));
 })();

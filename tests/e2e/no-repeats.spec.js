@@ -80,4 +80,27 @@ test.describe('No repeat questions across days', () => {
     expect(res.servedStems[0]).toContain('stem 5:');
     await expect(page.locator('#page-quiz')).toHaveClass(/active/);
   });
+
+  test('a set short because of repeats says so; a fully starved fill still logs its repeats', async ({ page }) => {
+    await boot(page);
+    const out = await page.evaluate(async () => {
+      seenRecord(__Q.slice(0, 4), 'Ports & Protocols');
+      // First call: 8 questions, 4 seen. Every top-up brings back only seen ones.
+      window.fetchQuestions = async (k, t, d, n) => (++__calls === 1 ? __Q.slice(0, n) : __Q.slice(0, 4));
+      await startQuiz();
+      const short = { served: questions.length, pill: document.getElementById('short-notice').textContent,
+        title: document.getElementById('short-notice').title };
+      __tele.length = 0;
+      window.fetchQuestions = async () => __Q.slice(0, 4);
+      await startQuiz();
+      const fill = __tele.find((r) => r.type === 'telemetry:quiz-fill');
+      return { short, starved: { source: fill.extra.source, rounds: fill.extra.rounds, error: fill.extra.error,
+        err: document.getElementById('setup-err').textContent } };
+    });
+    expect(out.short).toEqual({ served: 4, pill: '4 of 5', title: "1 left out because you've seen them recently." });
+    expect(out.starved.source).toBe('error');
+    expect(out.starved.rounds.find((r) => r.label === 'repeats').dropped).toBeGreaterThanOrEqual(4);
+    expect(out.starved.error).toContain('make new questions');
+    expect(out.starved.err).toContain('Couldn\u2019t make new questions this time. Try again.');
+  });
 });

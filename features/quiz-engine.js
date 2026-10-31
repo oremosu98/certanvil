@@ -111,6 +111,9 @@
       const tb = document.getElementById('topic-brief');
       if (tb) tb.classList.add('is-hidden');
     }
+    // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
+    // Task 7: declared outside the try so a fill that fails (e.g. all repeats) still logs its rounds.
+    const _fill = { rounds: [] };
     try {
       // v4.43.4 — over-request to absorb validation dropout + retry-to-fill if short.
       // The 4-layer validation pipeline (prompt self-check → Sonnet validator →
@@ -122,8 +125,6 @@
       const DROPOUT_BUFFER = Math.max(3, Math.ceil(qCount * 0.3));
       document.getElementById('loading-msg').textContent =
         'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
-      // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
-      const _fill = { rounds: [] };
       // Task 7: drop questions answered in the last 30 days; the top-up refills the gap.
       let _repeats = 0;
       const _dropSeen = (qs) => { if (typeof seenFilter !== 'function') return qs; const r = seenFilter(qs); _repeats += r.dropped; return r.kept; };
@@ -193,7 +194,7 @@
       // Task 7: never silently re-serve a set answered in the last 7 days.
       const _cachedRaw = getCachedQuestions(activeQuizTopic, diff, qCount);
       const cached = _cachedRaw && !(typeof seenAnsweredWithin === 'function' && seenAnsweredWithin(_cachedRaw, 7)) ? _cachedRaw : null;
-      _logQuizFill(qCount, 0, cached ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
+      _logQuizFill(qCount, 0, cached ? 'cache' : 'error', _fill.rounds, String((e && e.message) || e).slice(0, 120));
       if (cached) {
         questions = cached.slice(0, qCount);
         showCacheNotice(true);
@@ -473,16 +474,20 @@
   // v8.178.0: say so when a quiz comes back short. Founder, 13 Oct: asked for 20, got 16
   // after the API credit ran out mid-generation, and nothing on screen said so. A toast
   // on start gives the reason; a "16 of 20" pill stays in the quiz header. (0, 0) hides it.
-  function _shortReason(rounds) {
+  function _shortReason(rounds, miss) {
     const errs = (rounds || []).map(r => r && r.error).filter(Boolean).join(' ');
     if (/credit|billing|balance|quota/i.test(errs)) return 'credit';
-    return errs ? 'error' : 'checks';
+    if (errs) return 'error';
+    // Task 7: repeats dropped and nothing failed: name them only when they cover the whole gap.
+    const rep = (rounds || []).find(r => r && r.label === 'repeats');
+    return rep && rep.dropped >= miss ? 'repeats' : 'checks';
   }
   function _noteShortQuiz(asked, got, rounds) {
     const short = got > 0 && got < asked, miss = asked - got;
-    const why = short ? _shortReason(rounds) : '';
+    const why = short ? _shortReason(rounds, miss) : '';
     const tail = why === 'credit' ? 'Your API credit ran out partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
       : why === 'error' ? 'The AI stopped responding partway, so ' + miss + (miss === 1 ? " wasn't" : " weren't") + ' made.'
+      : why === 'repeats' ? miss + " left out because you've seen them recently."
       : miss + " didn't pass the quality checks.";
     const pill = (typeof document !== 'undefined') ? document.getElementById('short-notice') : null;
     if (pill) {
