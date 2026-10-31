@@ -2195,7 +2195,7 @@
       : (pn.hasExams ? 'PBQ results show from your next full exam.' : '<b>Take a full exam</b> to practise PBQs too.')}</p>` : '';
     const why = (typeof window.openWhyScore === 'function')
       ? '<button type="button" class="read-why" onclick="openWhyScore()">Why this score?<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>' : '';
-    const book = (r.book && typeof getBookItRowHtml === 'function')
+    const book = (r.book && typeof getBookItRowHtml === 'function' && typeof window.openWhyScore === 'function')
       ? `<button type="button" class="rc-v2-book read-book" onclick="openWhyScore()" aria-label="${esc('Before you book: ' + r.book.step + '. ' + r.book.bi.met + ' of 4. Why this score?')}">${getBookItRowHtml(r.book.bi, r.book.step)}</button>` : '';
     const passCls = (r.tier === 'Pass level' || r.tier === 'Exam Ready') ? ' is-pass' : '';
     return `<div class="tile s-read">

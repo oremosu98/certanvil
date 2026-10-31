@@ -270,7 +270,8 @@
   // Inner markup of the desktop "Before you book" row (Home readiness card and the Analytics readiness tile):
   // one dot per book-it item (met = pass colour), the next step, then "{met} of 4 >".
   function getBookItRowHtml(bi, step) {
-    const esc = (typeof escHtml === 'function') ? escHtml : (s => String(s));
+    const esc = (typeof escHtml === 'function') ? escHtml
+      : (s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])));
     return '<span class="rc-v2-book-l"><span class="rc-v2-book-dots" aria-hidden="true">'
       + bi.items.map(i => '<i' + (i.met ? ' class="on"' : '') + '></i>').join('')
       + '</span><span>Before you book: <strong>' + esc(step) + '</strong></span></span>'

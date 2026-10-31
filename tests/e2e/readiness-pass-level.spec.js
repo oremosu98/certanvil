@@ -11,6 +11,12 @@ const PHONE = { width: 390, height: 844 };
 // Seeded on localhost only, in this test's own isolated browser context.
 async function boot(page, { score = 47, mocks = 0, size = DESKTOP } = {}) {
   await page.setViewportSize(size);
+  // spy on the global confetti: app.js is deferred, so it has run by DOMContentLoaded, before the card's
+  // settle (IntersectionObserver + 1150ms) can call it. Counts calls, draws nothing.
+  await page.addInitScript(() => {
+    window.__confetti = 0;
+    document.addEventListener('DOMContentLoaded', () => { window.launchConfetti = function () { window.__confetti++; }; });
+  });
   await page.goto('/');
   await page.waitForLoadState('load');
   await page.evaluate(([score, mocks]) => {
@@ -38,6 +44,8 @@ test.describe('Desktop: Pass level and Before you book', () => {
     expect(await stampTxt(page).evaluate((el) => el.style.color)).toBe('var(--green)');
     await expect(page.locator('#readiness-card-v2')).not.toHaveClass(/is-pass/);
     await expect(page.locator('#readiness-card-v2 .rc-v2-confetti i')).toHaveCount(0);
+    await page.waitForTimeout(600);   // past the stamp's settle, so a late call would be counted
+    expect(await page.evaluate(() => window.__confetti)).toBe(0);
     await expect(row(page)).toBeVisible();
     await expect(row(page)).toContainText('Before you book: Do 2 full exams and pass them');
     await expect(row(page).locator('.rc-v2-book-k')).toHaveText('3 of 4 ›');
@@ -70,12 +78,14 @@ test.describe('Desktop: Pass level and Before you book', () => {
     await expect(stampTxt(page)).toHaveText('Exam ready', { timeout: 8000 });
     await expect(page.locator('#readiness-card-v2')).toHaveClass(/is-pass/);
     await expect(row(page)).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__confetti)).toBeGreaterThan(0);   // the spy sees the 4 of 4 celebration
   });
 
   test('below the pass mark: "{N} pts to pass" as before, and no row', async ({ page }) => {
     await boot(page, { score: 25 });
     await expect(stampTxt(page)).toHaveText(/^\d+ pts to pass$/, { timeout: 8000 });
     expect(await stampTxt(page).evaluate((el) => el.style.color)).toBe('var(--yellow)');
+    expect(await page.evaluate(() => window.__confetti)).toBe(0);
     await expect(row(page)).toBeHidden();
   });
 });
@@ -90,8 +100,11 @@ test.describe('Phone Home: Pass level and Before you book', () => {
     await expect(card(page)).not.toHaveClass(/ih-passed/);
     await expect(card(page).locator('.ih-rd-book-k')).toHaveText('Before you book · 3 of 4');
     await expect(card(page).locator('.ih-rd-book-s')).toHaveText('Do 2 full exams and pass them.');
-    await card(page).click();
-    await expect(page.locator('#ist-sheet')).toBeVisible();
+    // tap as a user would; repeat if it lands while Home's entrance is still binding (WebKit)
+    await expect(async () => {
+      await card(page).click();
+      await expect(page.locator('#ist-sheet')).toBeVisible({ timeout: 2500 });
+    }).toPass({ timeout: 15000 });
     await expect(page.locator('#ist-sheet h3')).toHaveText(/^Why \d+\?$/);
   });
 
