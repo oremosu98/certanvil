@@ -126,7 +126,7 @@
     try {
       var rg = pageRange(o.page);
       var q = sb().from('user_bug_reports')
-        .select('id,created_at,title,description,status,context,user_id,fixed_notified_at');
+        .select('id,created_at,title,description,steps,status,context,user_id,fixed_notified_at');
       if (o.open !== false) q = q.in('status', OPEN);
       var s = esc(o.q);
       if (s) q = q.or('title.ilike.%' + s + '%,description.ilike.%' + s + '%');
@@ -137,6 +137,26 @@
       if (r.error) return fail(r.error);
       var rows = r.data || [];
       return ok({ rows: rows, page: Math.max(0, o.page | 0), more: rows.length === PAGE });
+    } catch (e) { return fail(e); }
+  }
+
+  // Task 8: the "32 exams · 118 votes" line and "See all N exams". The tally is one row per exam, so this stays small.
+  async function requestTotals() {
+    try {
+      var r = await sb().from('cert_request_tally').select('votes').range(0, 999);
+      if (r.error) return fail(r.error);
+      var rows = r.data || [];
+      return ok({ exams: rows.length, votes: rows.reduce(function (n, x) { return n + (Number(x.votes) || 0); }, 0) });
+    } catch (e) { return fail(e); }
+  }
+
+  // Task 8: the report sheet names who can hear back. Admins can read profiles (RLS); null when there is no row.
+  async function reporterEmail(uid) {
+    try {
+      if (!uid) return ok(null);
+      var r = await sb().from('profiles').select('email').eq('id', uid).maybeSingle();
+      if (r.error) return fail(r.error);
+      return ok((r.data && r.data.email) || null);
     } catch (e) { return fail(e); }
   }
 
@@ -193,7 +213,7 @@
     } catch (e) { return bad(e && e.message); }
   }
 
-  var api = { groupReports: groupReports, topErrors: topErrors, firstLine: firstLine, today: today, requests: requests, reports: reports, openCount: openCount, errorsWeek: errorsWeek, act: act, PAGE_SIZE: PAGE };
+  var api = { groupReports: groupReports, topErrors: topErrors, firstLine: firstLine, today: today, requests: requests, reports: reports, requestTotals: requestTotals, reporterEmail: reporterEmail, openCount: openCount, errorsWeek: errorsWeek, act: act, PAGE_SIZE: PAGE };
   window.adminData = api;
   window._certanvilFeatures = window._certanvilFeatures || {};
   window._certanvilFeatures['admin-data'] = api;

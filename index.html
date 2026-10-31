@@ -108,8 +108,8 @@
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=8.204.0-d12" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d12"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=8.204.0-d13" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d13"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -142,7 +142,7 @@
 <link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="print" onload="this.media='(max-width: 899px)'">
 <noscript><link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="(max-width: 899px)"></noscript>
 <!-- v8.183.0 Lift A: E2E tokens + phone-only containers (iOS June design). Phone width only. -->
-<link rel="stylesheet" href="lift-ios.css?v=8.204.3" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-ios.css?v=8.204.4" media="(max-width: 899px)">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -1828,6 +1828,12 @@
   <div id="desk-mycerts"></div>
 </div>
 
+<!-- Admin in the app Task 8: the Admin screen on desktop (features/admin-screen.js fills #desk-admin; drawing cert-ios-admin.html?v=desktop).
+     Admin account only; phones use the #ios-admin overlay from My certs. -->
+<div id="page-admin" class="page">
+  <div id="desk-admin"></div>
+</div>
+
 <div id="page-settings" class="page">
   <section id="ios-settings" class="ios-only" aria-label="Settings"></section>
   <!-- v4.54.9: editorial treatment -->
@@ -2327,6 +2333,7 @@
 <script defer src="features/ios-suggest.js"></script>
 <script defer src="features/report-sheet.js"></script>
 <script defer src="features/admin-preview.js"></script>
+<script defer src="features/admin-screen.js"></script>
 <script defer src="features/ios-firstrun.js"></script>
 <script defer src="features/ios-signin.js"></script>
 <script defer src="features/ios-custom.js"></script>

@@ -1108,6 +1108,7 @@
       </div>
       <div class="sb-foot">${streakHtml}</div>`;
     _deskPassBadges();   // desktop catch-up Task 3: Passed beside the version line
+    if (typeof window._adminSidebar === 'function') window._adminSidebar();   // Admin in the app Task 8: the admin-only "Admin" item
     // Initial active-state sync
     const active = document.querySelector('.page.active');
     if (active) {
@@ -1200,6 +1201,7 @@
     // MVP-QUIZ-ONLY (Ships 4+5): drill crumb labels removed
     // (subnet/ports/acronyms/osi-sorter/cables/network-analysis/ptr/drills).
     'mycerts': 'My certs',
+    'admin': 'Admin',
     'settings': 'Settings',
     'monitor': 'Production Monitor'
   };

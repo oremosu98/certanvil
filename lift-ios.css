@@ -3597,7 +3597,7 @@ html.ap-free body { padding-top: calc(var(--ap-free-top) + env(safe-area-inset-t
    a new full-screen screen opts in by joining this list. */
 html.ap-free { --ap-free-top: 56px; }
 html[data-theme] body :is(#ios-hub, #ios-check, #ios-log-result, .dm-screen, .isi-host, #onb-firstrun.ifr-on, #page-progress.active #ios-progress:not(:empty),
-  #page-analytics.active #ios-analytics:not(:empty), #page-exam-results.active #ios-exam-results:not(:empty), #page-exam.active, .lift-sheet-scrim, .quota-exceeded-modal) { top: var(--ap-free-top, 0px) !important; }
+  #page-analytics.active #ios-analytics:not(:empty), #page-exam-results.active #ios-exam-results:not(:empty), #page-exam.active, .lift-sheet-scrim, .quota-exceeded-modal, #ios-admin, .adm-scrim) { top: var(--ap-free-top, 0px) !important; }
 :is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xbar { top: var(--ap-free-top, 0px); }
 html.ap-free body .app-topbar { top: var(--ap-free-top) !important; }   /* sticky: sticks under the bar, not behind it */
 :is(#page-sim-lab.isl-exam, #page-decision-lab.idl-exam) #isl-xstrip { top: calc(56px + var(--ap-free-top, 0px)); }
@@ -3610,3 +3610,173 @@ html.ap-free body .app-topbar { top: var(--ap-free-top) !important; }   /* stick
   @keyframes ap-bar-fade { from { opacity: 0; } }
   .ap-freebar-back { transition: none; } .ap-freebar-back:active { transform: none; }
 }
+
+/* ── Admin in the app Task 8: the Admin screen on phones (features/admin-screen.js; drawing cert-ios-admin.html, phone views).
+   #ios-admin sits over My certs (z 300, above the hub); report and group sheets (#adm-sheet) sit above it (z 430/431) on the
+   drawer curve, in 340ms / out 220ms. Reveal on first paint only (a section's first fill), BRAND §6 curve; reduced motion fades.
+   The desktop layout is in dg-system.css. ── */
+#ios-admin[hidden] { display: none !important; }
+#ios-admin { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; background: var(--bg); color: var(--text); font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+#ios-admin *, #ios-admin *::before, #ios-admin *::after, .adm-sheet *, .adm-sheet *::before, .adm-sheet *::after { box-sizing: border-box; }
+#ios-admin :is(button, input), .adm-sheet button { font-family: inherit; margin: 0; }
+#ios-admin .adm-i, .adm-sheet .adm-i, .adm-toast .adm-i { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+#ios-admin .adm-hdr { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 18px 6px; }
+html.ap-free #ios-admin .adm-hdr { padding-top: 12px; }   /* the host already starts below the bar and the status bar */
+#ios-admin .adm-back { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text-mid); display: grid; place-items: center; cursor: pointer; transition: transform .14s var(--ios-ease); }
+#ios-admin .adm-back:active { transform: scale(.94); }
+#ios-admin .adm-h1 { margin: 0; font: 600 22px/1.1 Fraunces, Georgia, serif; letter-spacing: -0.01em; color: var(--text); outline: none; }
+#ios-admin .adm-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 6px 18px calc(22px + env(safe-area-inset-bottom)); }
+#ios-admin .adm-body::-webkit-scrollbar { width: 0; }
+#ios-admin .adm-sect { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 20px 2px 9px; }
+#ios-admin :is(.adm-sect-h, .adm-sect > b) { margin: 0; font: 800 10px/1 Inter, sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+#ios-admin .adm-count { font: 600 10.5px/1 'Roboto Mono', monospace; color: var(--text-dim); }
+#ios-admin .adm-count.adm-hot { color: var(--accent-deep); }
+/* Today: one hairline stat strip + the AI instrument (tick at 80%) */
+#ios-admin .adm-stats { display: flex; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); }
+#ios-admin .adm-stat { flex: 1 1 0; min-width: 0; padding: 11px 12px; }
+#ios-admin .adm-stat + .adm-stat { border-left: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+#ios-admin .adm-stat b { display: block; font: 600 21px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+#ios-admin .adm-stat span { display: block; font: 600 10px/1.2 Inter, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-dim); margin-top: 6px; }
+#ios-admin .adm-stat small { display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--green); margin-top: 5px; }
+#ios-admin .adm-ai { margin-top: 9px; border: 1px solid var(--border); border-radius: 13px; background: var(--surface); padding: 12px 13px 11px; }
+#ios-admin .adm-ai-top { display: flex; align-items: baseline; gap: 6px; margin-bottom: 9px; }
+#ios-admin .adm-ai-top b { font: 600 19px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+#ios-admin .adm-ai-top span { font: 600 12px/1 Inter, sans-serif; color: var(--text-dim); }
+#ios-admin .adm-ai-top em { margin-left: auto; font: 700 10px/1 Inter, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); font-style: normal; }
+#ios-admin .adm-bar { height: 7px; border-radius: 999px; background: var(--track); position: relative; overflow: hidden; }
+#ios-admin .adm-bar > span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); transform-origin: left; }
+#ios-admin .adm-tick { position: absolute; top: -2px; bottom: -2px; left: 80%; width: 2px; background: color-mix(in oklab, var(--text) 40%, var(--track)); }
+#ios-admin .adm-bar-legend { display: flex; justify-content: space-between; margin-top: 6px; font: 600 10.5px/1 Inter, sans-serif; color: var(--text-dim); }
+/* hairline lists */
+#ios-admin .adm-list { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+#ios-admin .adm-dash { margin-top: 20px; }
+#ios-admin .adm-row { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; text-align: left; background: none; border: 0; font: inherit; color: var(--text); text-decoration: none; cursor: pointer; padding: 12px 13px; transition: background-color .16s var(--ios-ease), transform .12s var(--ios-ease); }
+#ios-admin :is(.adm-row + .adm-row, .adm-row + .adm-confirm, .adm-confirm + .adm-row) { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+#ios-admin .adm-row:active { transform: scale(.992); }
+#ios-admin .adm-m { flex: 1 1 auto; min-width: 0; }
+#ios-admin .adm-t { display: block; font: 600 14px/1.25 Inter, sans-serif; color: var(--text); overflow-wrap: anywhere; }
+#ios-admin .adm-s { display: block; font: 500 11.5px/1.35 Inter, sans-serif; color: var(--text-dim); margin-top: 3px; }
+#ios-admin .adm-v { flex: 0 0 auto; text-align: right; }
+#ios-admin .adm-v b { display: block; font: 600 17px/1 Fraunces, Georgia, serif; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+#ios-admin .adm-v span { display: block; font: 600 10px/1 Inter, sans-serif; color: var(--text-dim); margin-top: 4px; letter-spacing: .04em; text-transform: uppercase; }
+#ios-admin .adm-chev { flex: 0 0 auto; width: 16px; height: 16px; color: var(--text-dim); }
+#ios-admin .adm-cue { display: block; font: 600 10.5px/1 Inter, sans-serif; color: var(--accent-deep); margin-top: 4px; }
+#ios-admin .adm-errrow .adm-t { font: 600 12px/1.35 'Roboto Mono', monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#ios-admin .adm-static { cursor: default; }
+#ios-admin .adm-static:active { transform: none; }
+#ios-admin .adm-grp { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-width: 26px; height: 22px; padding: 0 7px; border-radius: 999px; background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--accent-deep); font: 700 11px/1 'Roboto Mono', monospace; }
+/* inline confirm (Tell them it's live) */
+#ios-admin .adm-confirm { padding: 12px 13px 13px; background: color-mix(in oklab, var(--accent) 6%, var(--surface)); }
+#ios-admin .adm-confirm p { margin: 0 0 10px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
+#ios-admin .adm-confirm p b { color: var(--text); font-weight: 650; }
+#ios-admin .adm-btns { display: flex; gap: 8px; }
+:is(#ios-admin, .adm-sheet) .adm-btn-pri { flex: 1 1 auto; min-height: 44px; border: 0; border-radius: 11px; padding: 12px; cursor: pointer; background: var(--accent); color: var(--on-accent); font: 700 13.5px/1 Inter, sans-serif; box-shadow: 0 10px 22px -12px color-mix(in oklab, var(--accent) 70%, transparent); transition: transform .15s var(--ios-ease), opacity .18s var(--ios-ease); }
+:is(#ios-admin, .adm-sheet) .adm-btn-sec { flex: 0 0 auto; min-height: 44px; border: 1px solid var(--border); border-radius: 11px; background: transparent; color: var(--text-mid); font: 650 13.5px/1 Inter, sans-serif; padding: 0 16px; cursor: pointer; transition: transform .14s var(--ios-ease); }
+:is(#ios-admin, .adm-sheet) :is(.adm-btn-pri, .adm-btn-sec):disabled { opacity: .55; cursor: default; box-shadow: none; }
+:is(#ios-admin, .adm-sheet) .adm-btn-pri:active:not(:disabled) { transform: scale(.985); }
+:is(#ios-admin, .adm-sheet) .adm-btn-sec:active:not(:disabled) { transform: scale(.97); }
+:is(#ios-admin, .adm-sheet) .adm-err { margin: 0 0 10px; font: 600 12.5px/1.4 Inter, sans-serif; color: var(--red); }
+/* section states, offline, notes */
+#ios-admin .adm-state { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 16px 14px; text-align: center; }
+#ios-admin .adm-state p { margin: 0 0 10px; font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
+#ios-admin .adm-state p:last-child { margin-bottom: 0; }
+#ios-admin .adm-ai + .adm-state, #ios-admin .adm-stats + .adm-state { margin-top: 9px; }
+#ios-admin .adm-state button { min-height: 44px; border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); border-radius: 10px; background: transparent; color: var(--accent-deep); font: 700 12.5px/1 Inter, sans-serif; padding: 9px 16px; cursor: pointer; transition: transform .14s var(--ios-ease); }
+#ios-admin .adm-state button:active { transform: scale(.97); }
+#ios-admin .adm-offline { margin-top: 30px; padding: 26px 18px; }
+#ios-admin .adm-offline .adm-i { width: 26px; height: 26px; color: var(--text-dim); margin-bottom: 8px; }
+#ios-admin .adm-offline h2 { font: 600 18px/1.2 Fraunces, Georgia, serif; margin: 0 0 6px; color: var(--text); }
+#ios-admin .adm-note { font: 500 11px/1.4 Inter, sans-serif; color: var(--text-dim); margin: 7px 2px 0; }
+#ios-admin .adm-skel { height: 96px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); opacity: .6; }
+/* See all, search, chips, Show 20 more */
+#ios-admin .adm-seeall { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; border: 0; border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); background: none; cursor: pointer; padding: 0 13px; font: 700 12.5px/1 Inter, sans-serif; color: var(--accent-deep); transition: transform .12s var(--ios-ease); }
+#ios-admin .adm-seeall:active { transform: scale(.992); }
+#ios-admin .adm-seeall .adm-chev { color: currentColor; width: 15px; height: 15px; }
+#ios-admin .adm-search { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); margin-top: 4px; }
+#ios-admin .adm-search .adm-i { width: 16px; height: 16px; color: var(--text-dim); flex: 0 0 auto; }
+#ios-admin .adm-search input { flex: 1 1 auto; min-width: 0; min-height: 42px; border: 0; outline: none; background: transparent; color: var(--text); font: 500 16px/1 Inter, sans-serif; -webkit-appearance: none; appearance: none; }   /* 16px: iOS does not zoom on focus */
+#ios-admin .adm-search input::placeholder { color: var(--text-dim); }
+#ios-admin .adm-search:focus-within { border-color: var(--accent); }
+#ios-admin .adm-chips { display: flex; gap: 7px; overflow-x: auto; margin: 10px -18px 4px; padding: 0 18px 2px; scrollbar-width: none; }
+#ios-admin .adm-chips::-webkit-scrollbar { display: none; }
+#ios-admin .adm-chip { position: relative; flex: 0 0 auto; min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-mid); font: 650 12px/1 Inter, sans-serif; cursor: pointer; transition: transform .14s var(--ios-ease), background-color .16s var(--ios-ease), border-color .16s var(--ios-ease); }
+#ios-admin .adm-chip::before { content: ""; position: absolute; inset: -5px 0; }   /* 44pt to the finger */
+#ios-admin .adm-chip:active { transform: scale(.97); }
+#ios-admin .adm-chip[aria-pressed="true"] { background: color-mix(in oklab, var(--accent) 12%, transparent); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); color: var(--accent-deep); }
+#ios-admin .adm-more { width: 100%; min-height: 44px; margin-top: 10px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text-mid); font: 650 13px/1 Inter, sans-serif; cursor: pointer; transition: transform .14s var(--ios-ease); }
+#ios-admin .adm-more:active:not(:disabled) { transform: scale(.985); }
+/* the Preview switch: the Settings .st-sw */
+#ios-admin .adm-sw { position: relative; flex: 0 0 auto; width: 48px; height: 30px; border-radius: 999px; border: 0; background: var(--track); cursor: pointer; padding: 0; transition: background-color .2s var(--ios-ease); }
+#ios-admin .adm-sw::before { content: ""; position: absolute; inset: -7px -2px; }
+#ios-admin .adm-sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s var(--ios-ease); }
+#ios-admin .adm-sw[aria-checked="true"] { background: var(--accent); }
+#ios-admin .adm-sw[aria-checked="true"]::after { transform: translateX(18px); }
+#ios-admin :is(.adm-back, .adm-row, .adm-seeall, .adm-chip, .adm-more, .adm-sw, .adm-state button, .adm-btn-pri, .adm-btn-sec):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* the sheet: report and group details */
+.adm-scrim { position: fixed; inset: 0; z-index: 430; background: color-mix(in oklab, var(--bg) 55%, transparent); opacity: 0; transition: opacity .18s var(--ios-ease); }
+.adm-scrim.open { opacity: 1; transition: opacity .28s var(--ios-ease); }
+.adm-scrim[hidden], .adm-sheet[hidden] { display: none !important; }
+.adm-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: calc(var(--ap-free-top, 0px) + max(64px, calc(env(safe-area-inset-top) + 20px))); z-index: 431; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface); color: var(--text); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; box-shadow: 0 -20px 50px -24px rgba(0,0,0,.5);
+  font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; transform: translateY(102%); transition: transform .22s var(--ease-drawer, cubic-bezier(0.32,0.72,0,1)); }
+.adm-sheet.open { transform: none; transition: transform .34s var(--ease-drawer, cubic-bezier(0.32,0.72,0,1)); }
+.adm-sheet .adm-grab { flex: 0 0 auto; width: 38px; height: 4px; border-radius: 999px; background: var(--border); margin: 9px auto 4px; }
+.adm-sheet .adm-sh-x { position: absolute; top: 10px; right: 12px; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: var(--text-dim); display: grid; place-items: center; cursor: pointer; transition: transform .14s var(--ios-ease); }
+.adm-sheet .adm-sh-x:active { transform: scale(.94); }
+.adm-sheet .adm-sh-scroll { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 20px 10px; }
+.adm-sheet .adm-sh-eyebrow { font: 800 10px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-deep); }
+#adm-sheet .adm-sh-title { font: 600 21px/1.15 Fraunces, Georgia, serif; letter-spacing: -0.01em; text-transform: none; margin: 8px 52px 4px 0; color: var(--text); overflow-wrap: anywhere; }
+.adm-sheet .adm-sh-when { font: 500 12px/1.4 Inter, sans-serif; color: var(--text-dim); }
+.adm-sheet .adm-sh-k { font: 800 10px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); margin: 16px 0 7px; }
+.adm-sheet .adm-sh-p { font: 500 13.5px/1.55 Inter, sans-serif; color: var(--text); margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+.adm-sheet .adm-meta { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin: 0; font: 500 12.5px/1.3 Inter, sans-serif; }
+.adm-sheet .adm-meta dt { color: var(--text-dim); }
+.adm-sheet .adm-meta dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.adm-sheet .adm-sh-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.adm-sheet .adm-sh-list li + li { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
+.adm-sheet .adm-sh-list li[hidden] { display: none; }
+.adm-sheet .adm-sh-list button { display: block; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; background: none; text-align: left; cursor: pointer; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--text); overflow-wrap: anywhere; transition: background-color .16s var(--ios-ease); }
+.adm-sheet .adm-sh-list button span { display: block; font: 500 11px/1.3 Inter, sans-serif; color: var(--text-dim); margin-top: 2px; }
+.adm-sheet .adm-sh-list .adm-sh-more span { margin: 0; }
+.adm-sheet .adm-reach { display: flex; align-items: flex-start; gap: 9px; margin-top: 16px; padding: 11px 12px; border-radius: 12px; border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface3)); font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); }
+.adm-sheet .adm-reach.adm-anon { border-color: var(--border); background: var(--surface3); }
+.adm-sheet .adm-reach .adm-i { flex: 0 0 auto; width: 16px; height: 16px; margin-top: 1px; color: var(--accent-deep); }
+.adm-sheet .adm-reach.adm-anon .adm-i { color: var(--text-dim); }
+.adm-sheet .adm-reach b { color: var(--text); font-weight: 650; overflow-wrap: anywhere; }
+.adm-sheet .adm-sh-foot { flex: 0 0 auto; padding: 12px 20px calc(18px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); display: flex; flex-direction: column; gap: 8px; }
+.adm-sheet .adm-sh-foot :is(.adm-btn-pri, .adm-btn-sec) { width: 100%; padding: 13px; min-height: 46px; }
+.adm-sheet .adm-sh-foot .adm-err { margin: 0; }
+.adm-sheet .adm-sh-confirm { font: 500 12.5px/1.45 Inter, sans-serif; color: var(--text-mid); margin: 0 0 2px; overflow-wrap: anywhere; }
+.adm-sheet .adm-sh-confirm b { color: var(--text); font-weight: 650; }
+.adm-sheet :is(button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* toast */
+.adm-toast { position: fixed; z-index: 2100; left: 16px; right: 16px; bottom: calc(22px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 16px; pointer-events: none;
+  background: var(--surface); color: var(--text); border: 1px solid color-mix(in oklab, var(--green) 50%, var(--border)); box-shadow: 0 18px 40px -16px color-mix(in oklab, var(--text) 24%, transparent);
+  opacity: 0; transform: translateY(140%); transition: transform .22s var(--ease-drawer, cubic-bezier(0.32,0.72,0,1)), opacity .2s var(--ios-ease); font-family: Inter, -apple-system, sans-serif; }
+.adm-toast.open { opacity: 1; transform: none; transition: transform .36s var(--ease-drawer, cubic-bezier(0.32,0.72,0,1)), opacity .25s var(--ios-ease); }
+.adm-toast-i { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; color: var(--green); background: color-mix(in oklab, var(--green) 15%, transparent); }
+.adm-toast-b { display: block; font: 700 13px/1.25 Inter, sans-serif; color: var(--text); }
+.adm-toast-s { display: block; font: 500 11.5px/1.3 Inter, sans-serif; color: var(--text-dim); margin-top: 2px; }
+.adm-fade { animation: adm-fade .15s var(--ios-ease) backwards; }
+@keyframes adm-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  #ios-admin .adm-first .adm-sec:not([data-still]) .adm-rv, #ios-admin .adm-first .adm-offline { animation: adm-rise .52s cubic-bezier(0.16,1,0.3,1) backwards; animation-delay: calc(min(var(--d, 0), 4) * 60ms); }
+  #ios-admin .adm-first .adm-sec:not([data-still]) .adm-ai .adm-bar > span { animation: adm-fill 1s cubic-bezier(0.16,1,0.3,1) .25s backwards; }
+  @keyframes adm-rise { from { opacity: 0; transform: translateY(9px); } }
+  @keyframes adm-fill { from { transform: scaleX(0); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  #ios-admin .adm-first .adm-sec:not([data-still]) .adm-rv { animation: adm-fade .3s linear backwards; }
+  .adm-sheet, .adm-sheet.open { transform: none; opacity: 0; transition: opacity .15s ease; } .adm-sheet.open { opacity: 1; }
+  .adm-toast, .adm-toast.open { transform: none; transition: opacity .18s ease; }
+  #ios-admin :is(.adm-row, .adm-back, .adm-seeall, .adm-chip, .adm-more, .adm-state button, .adm-btn-pri, .adm-btn-sec):active, .adm-sheet :is(.adm-sh-x, .adm-btn-pri, .adm-btn-sec):active { transform: none; }
+}
+@media (hover: hover) and (pointer: fine) {
+  #ios-admin .adm-row:not(.adm-static):hover, .adm-sheet .adm-sh-list button:hover { background: color-mix(in oklab, var(--accent) 5%, var(--surface)); }
+  #ios-admin .adm-back:hover { border-color: color-mix(in oklab, var(--accent) 40%, var(--border)); color: var(--accent); }
+  .adm-sheet .adm-sh-x:hover { background: color-mix(in oklab, var(--text) 6%, transparent); color: var(--text); }
+}
+/* the hub's Admin row: "N open" (drawing cert-ios-hub.html?v=admin) */
+#ios-hub .ihb-count-pill { flex: 0 0 auto; font: 700 10px/1 'Roboto Mono', monospace; color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); border-radius: 999px; padding: 4px 7px; }
+#ios-hub .ihb-count-pill[hidden] { display: none; }
+html[data-theme] body #ios-admin .adm-h1:focus, html[data-theme] body #ios-admin .adm-h1:focus-visible { outline: none !important; box-shadow: none !important; }   /* the heading takes focus on open for screen readers; no ring */

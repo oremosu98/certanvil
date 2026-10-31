@@ -118,9 +118,10 @@
       configurable: true, enumerable: true,
       get: function () { return _isAdmin; },
       set: function (v) {
-        var was = on();
+        var was = on(), wasAdmin = _isAdmin;
         _isAdmin = v === true;
         if (was !== on()) { _draw(false); _apply(); }
+        if (wasAdmin !== _isAdmin) { try { window.dispatchEvent(new Event('ca:admin')); } catch (_) {} }   // Task 8: the sidebar Admin item follows the flag
       }
     });
   } catch (_) {}
