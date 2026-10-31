@@ -6290,7 +6290,7 @@ function submitHotArea(q) {
   updateTypeStat('hot-area', isCorrect);
   if (isCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
   else { streak = 0; }
-  log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });
+  log.push({ q, chosen: _hotAreaPick, correct: correctIds.join(','), isRight: isCorrect, flagged: quizFlags[current] });  if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
   if (!isCorrect) addToWrongBank(q, _hotAreaPick);
   else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
   // v8.0.0 wave 2: shared helper — a raw textContent write here would
@@ -7425,7 +7425,7 @@ function submitTopology(q) {
   updateTypeStat('topology', allCorrect);
   if (allCorrect) { score++; streak++; if (streak > bestStreak) bestStreak = streak; }
   else { streak = 0; }
-  log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });
+  log.push({ q, chosen: JSON.stringify(topoDevices), correct: JSON.stringify(correct), isRight: allCorrect, flagged: quizFlags[current] });  if (typeof quizResumeSave === 'function') quizResumeSave();   // Task 6
   if (!allCorrect) addToWrongBank(q, JSON.stringify(topoDevices));
   else if (wrongDrillMode) graduateFromBank(q._bankKey || q.question);  // v7.47.0: variant graduates its original
   // v8.0.0 wave 2: shared helper — a raw textContent write here would

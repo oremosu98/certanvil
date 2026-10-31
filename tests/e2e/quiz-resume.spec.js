@@ -121,6 +121,33 @@ test.describe('Quiz resume after the app closes', () => {
     expect(await saved(page)).toBeNull();
   });
 
+  test('backgrounding during the ✕ exit (page still .active + .page-exit) does not re-save', async ({ page }) => {
+    await boot(page);
+    await play(page, 2);
+    page.once('dialog', (d) => d.accept());
+    const r = await page.evaluate((k) => {
+      confirmBack();   // clears, then showPage('setup') starts the 300ms exit
+      const pg = document.getElementById('page-quiz');
+      pg.classList.add('active', 'page-exit');   // pin the outgoing state the exit holds for up to 300ms
+      window.dispatchEvent(new Event('pagehide'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      return localStorage.getItem(k);
+    }, KEY);
+    expect(r).toBeNull();
+  });
+
+  test('every question answered, results never opened: Home says "See your results"', async ({ page }) => {
+    await boot(page);
+    await play(page, 10);
+    await page.reload(); await page.waitForLoadState('load');
+    const card = page.locator('#ios-home [data-act="rec"][data-kind="quiz"]');
+    await expect(card).toBeVisible({ timeout: 8000 });
+    await expect(card).toContainText('See your results');
+    await expect(card).toContainText('Mixed topics · all 10 answered');
+    await expect(card).not.toContainText('0 left');
+    expect((await saved(page)).log.length).toBe(10);   // Home never finishes it
+  });
+
   test('finishing clears it', async ({ page }) => {
     await boot(page);
     await play(page, 10);

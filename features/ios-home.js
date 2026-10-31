@@ -75,8 +75,11 @@
       if (qs) {
         var qTotal = qs.total || 0, qDone = qs.answered || 0, qLeft = (typeof qs.left === 'number') ? qs.left : Math.max(0, qTotal - qDone);
         var qTopic = qs.topicLabel || '';
-        rec = { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
-          sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
+        rec = (qs.ready || qLeft === 0)   // every question answered, results never opened: Resume lands on the last one
+          ? { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'See your results',
+            sub: (qTopic ? qTopic + ' · ' : '') + 'all ' + qTotal + ' answered' }
+          : { kind: 'quiz', kick: 'Pick up where you left off', badge: String(qLeft), unit: 'LEFT', title: 'Finish your quiz · ' + qLeft + ' left',
+            sub: (qTopic ? qTopic + ' · ' : '') + qDone + ' of ' + qTotal + ' answered' };
       }
     }
     var plan = null;

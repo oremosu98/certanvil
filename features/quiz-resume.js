@@ -90,7 +90,8 @@
       : t.indexOf('Multi: ') === 0 && typeof _parseMultiTopicSentinel === 'function' ? _parseMultiTopicSentinel(t).join(', ')
       : t.indexOf('Mixed') === 0 ? 'Mixed topics'
       : t.replace(/\s*[—·]\s*/g, ', ');
-    return { topicLabel: label, answered: done, total, left: Math.max(0, total - done), savedAt: st.savedAt };
+    const left = Math.max(0, total - done);
+    return { topicLabel: label, answered: done, total, left, savedAt: st.savedAt, ready: left === 0 };
   }
 
   // The saved quiz, or null. One that can't be restored exactly is discarded quietly.
@@ -142,8 +143,10 @@
   // The app going to the background: save the quiz on screen. iOS can close a
   // backgrounded app without another event, so this is the last chance.
   function _quizResumeOnHide() {
+    // An outgoing page keeps .active with .page-exit for up to 300ms (showPage): backgrounding right
+    // after ✕ or finish must not re-save the quiz that was just cleared.
     const page = document.getElementById('page-quiz');
-    if (page && page.classList.contains('active')) quizResumeSave();
+    if (page && page.classList.contains('active') && !page.classList.contains('page-exit')) quizResumeSave();
   }
   window.addEventListener('pagehide', _quizResumeOnHide);
   document.addEventListener('visibilitychange', function () {
@@ -157,4 +160,5 @@
   window.resumeQuiz = resumeQuiz;
   window._quizResumeValid = _quizResumeValid;
   window._quizResumeSummary = _quizResumeSummary;
+  window._quizResumeOnHide = _quizResumeOnHide;
 })();

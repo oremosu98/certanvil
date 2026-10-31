@@ -104,9 +104,20 @@ const { _fnBody, js, html, test, vm } = require('./_context');
   const qe = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8');
   const saveAfterPush = (fn) => /log\.push\([^\n]*\n\s*if \(typeof quizResumeSave === 'function'\) quizResumeSave\(\);/.test(_fnBody(qe, fn));
   test('Saves after each answer: pick, submitMultiSelect, submitOrder', saveAfterPush('pick(') && saveAfterPush('submitMultiSelect') && saveAfterPush('submitOrder'));
+  const appSrc = require('./_context').appJs;
+  const saveAfterPushApp = (fn) => /log\.push\([^\n]*\);\s*if \(typeof quizResumeSave === 'function'\) quizResumeSave\(\);/.test(_fnBody(appSrc, fn));
+  test('Saves after each PBQ answer too: submitHotArea and submitTopology', saveAfterPushApp('submitHotArea') && saveAfterPushApp('submitTopology'));
+  const done = sandbox(); done.ctx.__qs = QS(3);
+  done.ev("questions = __qs; quizFlags = [false,false,false]; log = questions.map((q) => ({ q, chosen: q.answer, correct: q.answer, isRight: true })); answered = 3; current = 2; quizResumeSave()");
+  const dst = done.ev('quizResumeState()');
+  test('State: all answered, results never opened → ready: true, left 0 (other fields kept)',
+    dst.ready === true && dst.left === 0 && dst.total === 3 && dst.answered === 3 && dst.topicLabel === 'Subnetting' && typeof dst.savedAt === 'number');
+  test('State: mid-quiz → ready: false', young.ev('quizResumeState()').ready === false);
   const rq = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'quiz-resume.js'), 'utf8');
   test('Saves when the app goes to the background: pagehide + visibilitychange hidden',
     /addEventListener\('pagehide'/.test(rq) && /visibilitychange[\s\S]{0,120}visibilityState === 'hidden'/.test(rq));
+  test('Background save skips an outgoing quiz page (.active + .page-exit) so ✕ / finish stay cleared',
+    /classList\.contains\('active'\) && !page\.classList\.contains\('page-exit'\)/.test(_fnBody(rq, '_quizResumeOnHide')));
   test('Clears on finish (after the drill hand-offs), on ✕ leave, and when startQuiz commits a new quiz',
     /quizResumeClear\(\)/.test(_fnBody(qe, 'finish()')) && _fnBody(qe, 'finish()').indexOf('quizResumeClear') > _fnBody(qe, 'finish()').indexOf('_wnFinishQuestion')
     && /quizResumeClear\(\); goSetup\(\)/.test(_fnBody(js, 'confirmBack')) && /quizResumeClear\(\)/.test(_fnBody(qe, 'startQuiz')));
