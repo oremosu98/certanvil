@@ -87,6 +87,35 @@ test.describe('How did your exam go', () => {
     await expect(page.locator('#ist-sheet')).toHaveClass(/open/);
   });
 
+  test('From the hub, Didn\'t pass then Set a new date opens a live exam-date sheet (hub closed, nothing inert)', async ({ page }) => {
+    await boot(page, dayOffset(-2));
+    await page.locator('#ios-home [data-act="cert"]').click();
+    const hub = page.locator('#ios-hub');
+    await expect(hub).toBeVisible();
+    await hub.locator('[data-act="log"]').click();
+    const screen = page.locator('#ios-log-result');
+    await expect(screen).toBeVisible();
+    await screen.locator('[data-v="failed"]').click();
+    await screen.locator('#il-save').click();
+    await expect(screen.locator('#il-done-t')).toHaveText("That's a hard exam.");
+    await screen.locator('#il-done-go').click();   // Set a new date
+    await expect(screen).toBeHidden();
+    await expect(hub).toBeHidden();   // the hub closes first, so the sheet is not trapped under it
+    const sheet = page.locator('#ist-sheet');
+    await expect(sheet).toHaveClass(/open/);
+    await expect(sheet).toBeVisible();
+    expect(await page.evaluate(() => {
+      const s = document.getElementById('ist-sheet'); let n = s, inert = false;
+      while (n) { if (n.inert) inert = true; n = n.parentElement; }
+      const tab = document.querySelector('.lift-tab[data-page="settings"]');
+      return { inert, tabInert: !!(tab && tab.closest('[inert]')) };
+    })).toEqual({ inert: false, tabInert: false });
+    const day = sheet.locator('.ist-day:not([disabled])').last();   // the date control takes a real tap
+    await day.click();
+    await expect(day).toHaveClass(/sel/);
+    await expect(sheet.locator('[data-act="cal-save"]')).toBeEnabled();
+  });
+
   test('outcomeDue is false on the exam day and the card does not show', async ({ page }) => {
     await boot(page, dayOffset(0));
     expect(await page.evaluate(() => outcomeDue('netplus'))).toBe(false);

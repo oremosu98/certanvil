@@ -168,6 +168,8 @@
     _prevFocus = null;
   }
   function _toSettingsExamSheet() {
+    // From the hub, the hub is still open and has the tab bar inert: close it first, or the sheet opens under it.
+    if (window.iosHub && typeof window.iosHub.close === 'function') window.iosHub.close();
     var tab = document.querySelector('.lift-tab[data-page="settings"]');
     if (tab) tab.click(); else if (typeof showPage === 'function') showPage('settings');
     var on = window.iosSettings && window.iosSettings._on;
