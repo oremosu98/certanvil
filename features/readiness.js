@@ -242,7 +242,8 @@
       detail: passes.length ? passes.length + ' so far, scored ' + scoreOf(lastPass) : 'None yet' };
     const items = [range, volume, areas, mocks];
     const met = items.filter(i => i.met).length;
-    const firstUnmet = items.find(i => !i.met);
+    // range has no next step, so the button sits on the first unmet item that has one
+    const firstUnmet = items.find(i => !i.met && i.key !== 'range');
     if (firstUnmet) {
       if (firstUnmet.key === 'mocks') firstUnmet.next = { label: 'Start a full exam', act: 'mocks' };
       else if (firstUnmet.key === 'areas' && weakKey) firstUnmet.next = { label: 'Practise ' + weakName, act: 'areas', domain: weakKey };

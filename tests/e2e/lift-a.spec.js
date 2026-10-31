@@ -580,7 +580,7 @@ test.describe('Why this score (phone)', () => {
     await expect(sheet.locator('h3')).toHaveText(/^Why \d+\?$/);
     await expect(sheet.locator('.iw-sect').first()).toContainText('Book it?');
     await expect(sheet.locator('.iw-check li')).toHaveCount(4);
-    await expect(sheet.locator('.iw-next')).toHaveCount(0);   // range is the first unmet item and carries no next step
+    await expect(sheet.locator('.iw-next')).toHaveCount(1);   // first unmet item with a next step (range has none)
     await expect(sheet.locator('.iw-how')).toContainText('count topics you haven');
   });
 });

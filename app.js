@@ -5034,7 +5034,7 @@ function animateReadinessCardV2(pending){
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
-    else { showReadinessStamp(card,scaled>=passLine?'Recent accuracy below pass':(passLine-scaled)+' pts to pass',true); } };
+    else { showReadinessStamp(card,scaled>=passLine?'Not book-ready yet':(passLine-scaled)+' pts to pass',true); } };
   if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
   animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);

@@ -44,13 +44,15 @@ const { _fnBody, test, vm } = require('./_context');
   const all = B(good, [vol(300), ...pass2]);
   test('Book-it: ready only when all four hold, 4 of 4', all.ready === true && all.met === 4 && all.total === 4);
   test('Book-it: three of four is not ready', B(good, [vol(300)]).ready === false && B(good, [vol(300)]).met === 3);
-  test('Book-it: next sits only on the first unmet item',
+  test('Book-it: next sits on exactly one item, the first unmet one that has a next step',
     (() => { const b = B(good, [vol(300), mock(1, 70)]); return b.items.filter((i) => i.next).length === 1 && !!b.items[3].next; })());
+  test('Book-it: range unmet plus mocks unmet still puts the button on mocks',
+    (() => { const b = B({ ...good, lowerBound: 500 }, [vol(300)]); return !b.items[0].next && b.items[3].next && b.items[3].next.label === 'Start a full exam'; })());
   test('Book-it: mocks next is "Start a full exam"', B(good, [vol(300)]).items[3].next.label === 'Start a full exam');
   test('Book-it: areas next is "Practise {weakest domain}"',
     B({ ...good, domainAccuracy: { a: 90, b: 62 } }, [vol(300)]).items[2].next.label === 'Practise Bravo');
   test('Book-it: volume next is "Start an exam-level set"', B(good, []).items[1].next.label === 'Start an exam-level set');
-  test('Book-it: range unmet carries no next step', (() => { const b = B({ ...good, lowerBound: 500 }, []); return !b.items[0].next && !b.items.some((i) => i.next); })());
+  test('Book-it: range unmet carries no next step itself', B({ ...good, lowerBound: 500 }, []).items[0].next === undefined);
   test('Book-it: all four met carries no next', B(good, [vol(300), ...pass2]).items.every((i) => !i.next));
 
   // examReady comes from the checklist; the formula is untouched
@@ -59,6 +61,10 @@ const { _fnBody, test, vm } = require('./_context');
   test('Readiness: the score still comes from the same prediction line (#139 untouched)',
     /const predicted = Math\.round\(EXAM_MIN_SCORE \+ expectedAcc \* _range\)/.test(rd));
   test('Home: tier "Pass ready" only when examReady', /r\.examReady \? 'Pass ready'/.test(ih));
+
+  test('Why sheet: the exam-level set uses the ungated focused preset', /applyPreset\('focused'\)/.test(ih) && !/applyPreset\('grind'\)/.test(_fnBody(ih, '_openWhy')));
+  const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
+  test('Desktop stamp: scored above the line but not book-ready reads "Not book-ready yet"', appSrc.includes("'Not book-ready yet'") && !appSrc.includes('Recent accuracy below pass'));
 
   // the sheet
   const r = { predicted: 553, lowerBound: 505, upperBound: 600, passProbability: 0.08, totalQs: 1240, studiedCount: 41, totalTopics: 50,

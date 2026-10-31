@@ -385,7 +385,7 @@
       var act = b.getAttribute('data-act');
       if (act === 'why-mocks') { close(); if (typeof startExam === 'function') startExam(); }
       else if (act === 'why-areas') { close(); if (typeof applyDomainPreset === 'function') applyDomainPreset(b.getAttribute('data-key')); }
-      else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('grind'); }
+      else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('focused'); }
     });
   }
 
