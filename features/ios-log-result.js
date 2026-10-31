@@ -7,7 +7,7 @@
   'use strict';
 
   var MQ = window.matchMedia ? window.matchMedia('(max-width: 899px)') : null;
-  function isPhone() { return !!(MQ && MQ.matches); }
+  function isPhone() { return !!(MQ && MQ.matches); }   // phone: the full-screen June screen; desktop: a dialog in the middle of the page
 
   // ── Pure models (UAT vm-testable; no DOM, no storage) ──
   // Due from the day AFTER the exam date (local day). Nothing saved: due. A 'failed' record asks again once a LATER
@@ -75,6 +75,8 @@
     var first = o.outcome === 'passed' && !(prev && prev.outcome === 'passed');
     if (first) _passToast();
     try { if (typeof renderIosHome === 'function') renderIosHome(); } catch (_) {}
+    try { if (typeof renderDeskOutcome === 'function') renderDeskOutcome(); } catch (_) {}   // desktop Home: the slot and the Passed badges
+    try { if (window.iosHub && typeof window.iosHub.refresh === 'function') window.iosHub.refresh(); } catch (_) {}   // desktop My certs, when it is showing
     return { ok: true, rec: rec, first: first };
   }
 
@@ -142,7 +144,7 @@
     note.textContent = v === 'passed' ? 'This updates your hub. You can edit it later in the cert menu.' : 'Your progress is all still here.';
   }
 
-  var _prevFocus = null, _host = null, _inerted = [];
+  var _prevFocus = null, _host = null, _inerted = [], _frame = null, _seq = 0;
   function _inertBehind(on) {
     if (on) {
       [].forEach.call(document.body.children, function (el) {
@@ -161,11 +163,40 @@
     _host.setAttribute('role', 'dialog'); _host.setAttribute('aria-modal', 'true'); _host.setAttribute('aria-label', 'Log your result');
     return _host;
   }
-  function _close() {
+  // Desktop catch-up Task 3: at 900px and up the screen is a desktop dialog (caDialogFrame owns scrim, inert, X, focus,
+  // Escape). info.instant: the window crossed 900px, so hide at once; otherwise the dialog plays its 200ms exit first.
+  function _close(info) {
     var root = document.getElementById('ios-log-result'); if (!root) return;
-    root.hidden = true; root.innerHTML = ''; _inertBehind(false);
-    if (_prevFocus && _prevFocus.focus) { try { _prevFocus.focus(); } catch (_) {} }
+    var desk = !!(_frame && _frame.isDialog), instant = !!(info && info.instant);
+    if (_frame) { var f = _frame; _frame = null; f.release(instant); }   // un-inert before focus goes back
+    _inertBehind(false);
+    var my = ++_seq, hide = function () { if (my !== _seq) return; root.hidden = true; root.innerHTML = ''; root.inert = false; };
+    if (desk && !instant) { root.inert = true; setTimeout(hide, 200); } else hide();
+    var back = _prevFocus && _prevFocus.isConnected ? _prevFocus : null;
+    // desktop: a save redraws the Home card that opened us, so hand focus to the card that took its place
+    if (!back && desk) back = document.querySelector('#page-mycerts.active #desk-mycerts [data-act="continue"]') || document.querySelector('#desk-oc:not([hidden]) button') || document.getElementById('primaryLaunch');   // My certs redraws too: its main button
+    if (back && back.focus) { try { back.focus({ preventScroll: true }); } catch (_) {} }
     _prevFocus = null;
+  }
+  function _isDesk() { return !isPhone() && typeof window.caIsDesk === 'function' && window.caIsDesk(); }
+  // Desktop: the Settings page's exam-date chip (the same picker Home and Analytics use), focused with its picker open.
+  function _deskExamDate() {
+    if (typeof showPage === 'function') showPage('settings');
+    if (typeof syncSettingsExamDate === 'function') syncSettingsExamDate();
+    var tries = 0;
+    (function go() {   // the page switch shows Settings a frame or two later: wait until the chip is laid out
+      var row = document.getElementById('settings-exam-row'), btn = row && row.querySelector('button');
+      if (!btn || !btn.getClientRects().length) { if (++tries < 12) setTimeout(go, 50); return; }
+      try { row.scrollIntoView({ block: 'nearest' }); } catch (_) {}
+      try { btn.focus({ preventScroll: true }); } catch (_) {}
+      var inp = document.getElementById('settings-exam-input');
+      try { if (inp && inp.showPicker) inp.showPicker(); } catch (_) {}   // needs the click's user activation; the focused chip stands in when refused
+    })();
+  }
+  function _toExamDate() { if (_isDesk()) _deskExamDate(); else _toSettingsExamSheet(); }
+  function _toHub() {
+    if (typeof openHub === 'function' && openHub()) return;   // the phone hub, or the desktop My certs page
+    if (typeof showPage === 'function') showPage('settings');   // only if the hub module failed to load
   }
   function _toSettingsExamSheet() {
     // From the hub, the hub is still open and has the tab bar inert: close it first, or the sheet opens under it.
@@ -198,7 +229,6 @@
   }
 
   function openLogResult(opts) {
-    if (!isPhone()) return false;
     opts = opts || {};
     var cert = _certId(), meta = _meta(), sc = _scale(), today = _today();
     var prev = _readOutcomes()[cert] || null;
@@ -210,10 +240,19 @@
     var m = { name: name, code: meta.code || '', mark: MARKS[cert] || 'CA',
       min: sc.min, max: sc.max, pass: sc.pass, date: date, today: today, score: prev && typeof prev.score === 'number' ? prev.score : '' };
     var root = _ensureHost();
-    _prevFocus = document.activeElement;
+    _prevFocus = opts.from || document.activeElement;   // opts.from: the opener (WebKit does not focus a clicked button)
+    _seq++;   // a reopen inside the 200ms exit keeps the dialog
+    root.inert = false;
     root.innerHTML = _html(m);
     root.hidden = false;
-    _inertBehind(true);
+    var desk = _isDesk();
+    if (!desk) _inertBehind(true);
+    // both widths: the frame watches the 900px breakpoint, so neither layout is left over the other after a resize
+    if (_frame) { _frame.release(true); _frame = null; }
+    if (typeof window.caDialogFrame === 'function') {
+      var fr = window.caDialogFrame(root, { size: 'sm', onClose: function (o) { if (_frame !== fr) return; _frame = null; _close(o); } });
+      _frame = fr;
+    }
     _setOutcome(opts.preselect === 'failed' ? 'failed' : opts.preselect === 'passed' ? 'passed' : (prev && prev.outcome) || 'passed');
     root.onclick = function (ev) {
       var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b) return;
@@ -230,20 +269,21 @@
       } else if (act === 'done-go') {
         var failed = root.getAttribute('data-end') === 'failed';
         _close();
-        if (failed) _toSettingsExamSheet(); else if (typeof openHub === 'function') openHub();
+        if (failed) _toExamDate(); else _toHub();
       } else if (act === 'done-alt') {
         if (root.getAttribute('data-end') === 'failed') _close();
-        else { root.querySelector('#il-done').classList.remove('il-show'); _inertForm(root, false); root.querySelector('.il-h1').focus(); }
+        else { root.querySelector('#il-done').classList.remove('il-show'); _inertForm(root, false); root.querySelector(desk ? '[data-ca-close]' : '.il-h1').focus(); }
       }
     };
     root.oninput = function (ev) { if (ev.target && ev.target.id === 'il-score') { var e = root.querySelector('#il-err'); e.hidden = true; ev.target.removeAttribute('aria-invalid'); } };
-    root.onkeydown = function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); _close(); } };   // one Escape closes only the top layer
-    var h = root.querySelector('.il-h1'); if (h) h.focus();
+    // one Escape closes only the top layer; on desktop the frame owns Escape (no double close)
+    root.onkeydown = desk ? null : function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); _close(); } };
+    if (!desk) { var h = root.querySelector('.il-h1'); if (h) h.focus(); }   // desktop: the frame has focused Close
     return true;
   }
 
   window.outcomeDue = outcomeDue;
   window.openLogResult = openLogResult;
   window.saveExamOutcome = saveExamOutcome;
-  window.iosLogResult = { close: _close };
+  window.iosLogResult = { close: _close, examDate: _toExamDate, toHub: _toHub };
 })();

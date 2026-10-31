@@ -85,8 +85,8 @@ const { _fnBody, test, vm } = require('./_context');
   test('Copy, no date: "Set your exam date to see where you\'ll be on the day." and a dim "Set a date" tile',
     nod.includes('<b>120 points</b> to the pass mark. Set your exam date to see where you\'ll be on the day.') && nod.includes('Set a date'));
   const past = H({ ...base, daysToExam: -12, pace: null });
-  test('Copy, past date (M5): a date that has passed reads as no date (set-a-date copy and tile, not the five-sessions line; exam tile "12 days ago", as on desktop)',
-    past.includes('Set your exam date to see where you\'ll be on the day.') && past.includes('Set a date') && !past.includes('five sessions')
+  test('Copy, past date (M5, founder 31 Oct): "Set a new exam date to see where you\'ll be on the day." and the set-a-date tile, not the five-sessions line; exam tile "12 days ago", as on desktop',
+    past.includes('Set a new exam date to see where you\'ll be on the day.') && !past.includes('Set your exam date') && past.includes('Set a date') && !past.includes('five sessions')
     && !/>Today</.test(past) && past.includes('12 days ago') && !past.includes('Not set'));
   test('Exam tile, one day past: "1 day ago"', H({ ...base, daysToExam: -1, pace: null }).includes('>1 day ago<'));
   test('Copy, exam day (0 days) still counts as a date', H({ ...base, daysToExam: 0, pace: null }).includes('five sessions'));

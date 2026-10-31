@@ -666,7 +666,7 @@ test('v4.54.1 HTML: #page-settings exists',
 // Backups. Also bumped importData → clearWrongBank window 2500 → 3500 for
 // headroom (current gap ~2250 with §04 Danger Zone wrapper).
 test('v4.54.1 (v4.54.16 update) HTML: settings has API key + Exam Date + Daily Goal + Export/Import + Clear Wrong Bank',
-  html.includes('id="api-key"') && /id="page-settings"[\s\S]{0,10000}exportData\(\)[\s\S]{0,800}importData\([\s\S]{0,3500}clearWrongBank/.test(html));  // window 7000→9500: v7.42.0 GAP-3 tier-lock markup grew the settings page; →10000: v8.160.0 reviews-per-day hint
+  html.includes('id="api-key"') && /id="page-settings"[\s\S]{0,11000}exportData\(\)[\s\S]{0,800}importData\([\s\S]{0,3500}clearWrongBank/.test(html));  // window 7000→9500: v7.42.0 GAP-3 tier-lock markup grew the settings page; →10000: v8.160.0 reviews-per-day hint; →11000: Suggest a cert row
 test('v4.54.1 HTML: #history-panel moved to #page-analytics',
   /id="page-analytics"[\s\S]{0,1500}id="history-panel"/.test(html));
 test('v4.54.1 HTML: regression \u2014 #advanced-section removed from home',

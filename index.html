@@ -108,8 +108,8 @@
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=8.203.0" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=8.203.0"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=8.204.0-d9" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d9"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -560,6 +560,7 @@
             <div class="mo-stat"><span class="n mono" id="moStreak">0</span><span class="k">day streak, best <span id="moBest">0</span></span></div>
           </div>
         </div>
+        <div class="mo-line" id="moLine"></div>
         <div class="mo-resume" id="moResume"></div>
       </section>
 
@@ -573,7 +574,7 @@
         </div>
         <div class="opts" id="grp-quick">
           <button type="button" class="opt" onclick="applyPreset('warmup')"><span class="on">5-min Warmup</span><span class="od">5 questions, foundational</span></button>
-          <button type="button" class="opt" onclick="startDailyChallenge()"><span class="on">Daily Challenge</span><span class="od">1 question, about a minute, streak +1</span></button>
+          <button type="button" class="opt" onclick="startDailyChallenge()"><span class="on">Daily Challenge</span><span class="od" id="bento-dc-sub">1 question, about a minute. Keeps the streak, +1.</span></button>
           <button type="button" class="opt is-hidden" id="bento-wrong-opt" onclick="startWrongDrill()"><span class="on">Drill Mistakes <span class="pro-lock-pill tier-free-only"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>Pro</span></span><span class="od" id="bento-wrong-sub">0 wrong answers saved</span></button>
         </div>
       </section>
@@ -962,7 +963,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.203.2</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.204.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -1098,7 +1099,7 @@
     <div class="pass-plan-pbq-rec">
       <div class="pass-plan-pbq-text">
         <div class="pass-plan-pbq-title" id="pass-plan-pbq-title">Try the ACL Ordering PBQ</div>
-        <div class="pass-plan-pbq-sub" id="pass-plan-pbq-sub">PBQs carry 3-4× weight on the real exam. Start practising now.</div>
+        <div class="pass-plan-pbq-sub" id="pass-plan-pbq-sub">Performance-based questions are part of the real exam. Practise them in Sim Lab.</div>
       </div>
       <a href="#" class="pass-plan-pbq-cta" id="pass-plan-pbq-cta" onclick="event.preventDefault();aclOpenFromPassPlan()">Open ACL PBQ →</a>
     </div>
@@ -1820,6 +1821,13 @@
      Moved out of the home-page .advanced-section <details> so it can be
      reached directly from the sidebar + topbar gear.
 ══════════════════════════════════════════ -->
+<!-- v8.204.0 desktop catch-up Task 4: My certs on desktop (features/ios-hub.js openHub fills #desk-mycerts; drawing desktop-catchup.html?v=mycerts).
+     Phones use the #ios-hub overlay instead. The heading takes focus on a page switch; the top bar shows the title. -->
+<div id="page-mycerts" class="page">
+  <h1 class="dmc-h1">My certs</h1>
+  <div id="desk-mycerts"></div>
+</div>
+
 <div id="page-settings" class="page">
   <section id="ios-settings" class="ios-only" aria-label="Settings"></section>
   <!-- v4.54.9: editorial treatment -->
@@ -1918,6 +1926,10 @@
           <p>Free review is capped at <b>5 cards a day</b>, with no light-day top-ups. Go Pro for custom sizes, All-due sessions, and top-ups.</p>
         </div>
         <a class="settings-go-pro-btn tier-free-only" href="https://certanvil.com/pricing" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"></path></svg>Go Pro for full review control</a>
+      </section>
+      <!-- Desktop catch-up Task 5: Suggest a cert (signed in only: features/settings.js _syncSuggestRow; hidden below 900px, the phone page has its own) -->
+      <section class="card settings-section" id="settings-suggest-row" hidden>
+        <button type="button" class="ss-row" id="settings-suggest-btn"><span class="ss-i" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.25 4.15 1 5.85L12 16.9l-5.25 2.8 1-5.85L3.5 9.7l5.9-.9z"/></svg></span><span class="ss-t"><b>Suggest a cert</b><span>Tell us which exam to add next</span></span><span class="ss-g" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>
       </section>
     </div>
 

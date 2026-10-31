@@ -149,6 +149,18 @@
     }
   }
 
+  // Task 7: one streak reading for every desktop surface, so Home, the sidebar, the top-bar chip and the
+  // Daily Challenge cannot disagree. The line is the phone's own (features/ios-home.js momentum model).
+  function _streakView() {
+    let s = { current: 0, best: 0, ended: false };
+    try { s = (typeof getStreak === 'function' ? getStreak() : s) || s; } catch (_) {}
+    let m = null;
+    try { m = (typeof window._iosHomeModel === 'function') ? window._iosHomeModel().momentum : null; } catch (_) { m = null; }
+    return { cur: s.current || 0, best: s.best || 0, ended: !!s.ended, endedFrom: s.endedFrom || 0,
+      line: m && m.streakLine ? m.streakLine : '', studiedToday: !!(m && m.studiedToday) };
+  }
+  function _dcSub(ended) { return '1 question, about a minute. ' + (ended ? 'Starts a new streak.' : 'Keeps the streak, +1.'); }
+
   function renderDailyChallengeCard() {
     const card = document.getElementById('daily-challenge-card');
     if (!card) return;
@@ -160,7 +172,8 @@
     }
     const dc = getDailyChallenge();
     const topicToday = getDailyChallengeTopic();
-    const streakText = dc.currentStreak > 0
+    const _sv = _streakView();
+    const streakText = _sv.ended ? 'Starts a new streak.' : dc.currentStreak > 0
       ? `${dc.currentStreak}-day streak${dc.bestStreak > dc.currentStreak ? ' · Best ' + dc.bestStreak : ''}`
       : 'Start your streak today';
     card.innerHTML = `
@@ -929,6 +942,8 @@
   ];
   // v4.54.1: Settings section (own sidebar section so it's visually separate from study tools)
   const APP_SIDEBAR_SETTINGS = [
+    // desktop catch-up Task 4: My certs (features/ios-hub.js openHub shows #page-mycerts at 900px and up)
+    { page: 'mycerts',           label: 'My certs',         icon: '\u25A6', handler: () => { if (typeof openHub === 'function') openHub(); } },
     { page: 'settings',          label: 'Settings',         icon: '\u2699', handler: () => { showPage('settings'); if (typeof renderSettingsPage === 'function') renderSettingsPage(); } }
   ];
   // MVP-QUIZ-ONLY (Ships 4+5): all drills deleted (Net+ subnet/ports/acronyms/
@@ -952,6 +967,7 @@
     // MVP-QUIZ-ONLY (Ships 4+5): drill highlight entries removed (subnet/ports/
     // acronyms/osi-sorter/cables/network-analysis/ptr/drills launcher).
     'topic-dive': 'progress',
+    'mycerts': 'mycerts',
     'settings': 'settings'
   };
 
@@ -967,6 +983,7 @@
       // MVP-QUIZ-ONLY (Ship 1): 'irw' + 'pht' sidebar nav icons removed.
       // MVP-QUIZ-ONLY (Ships 4+5): drill sidebar nav icons removed
       // (subnet/ports/acronyms/osi-sorter/cables/network-analysis/ptr).
+      'mycerts': '<svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 14v5M14 16.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
       'settings': '<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1.08 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1.08z" stroke="currentColor" stroke-width="1.4"/></svg>',
       // MVP-QUIZ-ONLY (Ship 1): 'amm' + 'cts' sidebar nav icons removed.
       // MVP-QUIZ-ONLY (Ship 2): 'topology-builder-v2' nav icon removed.
@@ -1020,9 +1037,18 @@
     const streakFlameSvg = '<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sbStreakFlame" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E27822"/><stop offset="1" stop-color="#C95500"/></linearGradient></defs><path d="M67 19c12 18-2 29 13 41 5 4 11 10 11 22 0 18-13 31-28 31S35 100 35 82c0-14 8-25 19-34 8-7 11-15 13-29z" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path class="sb-streak-core" d="M66 57c8 10-1 17 8 25 3 3 5 6 5 11 0 9-7 16-16 16s-16-7-16-16c0-8 5-14 11-19 5-5 7-9 8-17z" fill="url(#sbStreakFlame)" stroke="#C95500" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     try {
       const s = (typeof getStreak === 'function') ? getStreak() : { current: 0, best: 0 };
-      if (s && s.current >= 1) {
-        const _best = (s && typeof s.best === 'number') ? s.best : 0;
-        const _streakSub = (_best > s.current) ? `Longest <b>${_best} days</b>` : 'Your best run yet';
+      if (s && s.ended) {
+        // Task 7 (drawing home-streak-ended): an ended streak says so, instead of looking brand new.
+        streakHtml = `<button type="button" class="sb-streak sb-streak-ended" onclick="goSetup()">
+          <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
+          <span class="sb-streak-text">
+            <span class="sb-streak-empty-t">Streak ended \u00b7 best ${s.best || s.endedFrom || 0}</span>
+            <span class="sb-streak-empty-s">A quick set starts a new one.</span>
+          </span>
+        </button>`;
+      } else if (s && s.current >= 1) {
+        const _sv = _streakView();
+        const _streakSub = _sv.studiedToday ? "Today's done." : 'Study today to keep it.';
         streakHtml = `<button type="button" class="sb-streak sb-streak-active" onclick="goSetup()" title="View full streak history">
           <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
           <span class="sb-streak-text">
@@ -1081,6 +1107,7 @@
         ${APP_SIDEBAR_SETTINGS.map(renderItem).join('')}
       </div>
       <div class="sb-foot">${streakHtml}</div>`;
+    _deskPassBadges();   // desktop catch-up Task 3: Passed beside the version line
     // Initial active-state sync
     const active = document.querySelector('.page.active');
     if (active) {
@@ -1172,6 +1199,7 @@
     // MVP-QUIZ-ONLY (Ship 3): 'acl' crumb label removed.
     // MVP-QUIZ-ONLY (Ships 4+5): drill crumb labels removed
     // (subnet/ports/acronyms/osi-sorter/cables/network-analysis/ptr/drills).
+    'mycerts': 'My certs',
     'settings': 'Settings',
     'monitor': 'Production Monitor'
   };
@@ -1310,7 +1338,7 @@
     if (days === null) val.textContent = '\u2014';
     else if (days === 0) val.textContent = 'Today';
     else if (days > 0) val.textContent = `${days}d`;
-    else val.textContent = `+${Math.abs(days)}d`;
+    else val.textContent = days === -1 ? 'Exam was yesterday' : `Exam was ${-days} days ago`;   // Task 6: was "+Nd"
     // Tooltip
     const dateLabel = new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     btn.title = `Exam: ${dateLabel}`;
@@ -1381,8 +1409,9 @@
   }
 
   // ── Deletion moments (persona bundle T18) ───────────────────────────────
-  // Phones get a full-screen goodbye (mockups/onboarding-account-deletion.html ?v=goodbye) and a full-screen welcome
-  // back (mockups/cert-ios-home.html #wb); desktop keeps the card and the toast. Spec: 2026-10-30-deletion-moments-design.md
+  // A full-frame goodbye (mockups/onboarding-account-deletion.html ?v=goodbye) and welcome back (mockups/cert-ios-home.html #wb)
+  // at every width; desktop centres them (mockups/desktop-catchup.html ?v=goodbye, ?v=welcome-back, styled in dg-system.css).
+  // Spec: 2026-10-30-deletion-moments-design.md
   function _dmPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
   // "Fri 6 Nov" in the person's own timezone. dayOnly gives "6 Nov". Pure: UAT runs its body in a vm.
   function _dmDate(d, dayOnly) {
@@ -1451,7 +1480,7 @@
     var when = _dmScheduled(stamp), full = _dmDate(when), short = _dmDate(when, true);
     var rot = [-90.0, -38.6, 12.9, 64.3, 115.7, 167.1, 218.6], ticks = '';
     rot.forEach(function (a, i) { ticks += '<g class="gb-tick" style="--i:' + i + '" transform="rotate(' + a + ' 32 32)"><circle cx="32" cy="7.5" r="2.4"></circle></g>'; });
-    var html = '<div class="dm-body"><span class="gb-clockwrap" aria-hidden="true"><svg class="gb-dial" viewBox="0 0 64 64">' + ticks
+    var html = '<span class="cover-brand" aria-hidden="true">CertAnvil</span><div class="dm-body"><span class="gb-clockwrap" aria-hidden="true"><svg class="gb-dial" viewBox="0 0 64 64">' + ticks
       + '<circle class="gb-face" cx="32" cy="32" r="15"></circle><g class="gb-hand"><line x1="32" y1="32" x2="32" y2="23"></line></g>'
       + '<line class="gb-hour" x1="32" y1="32" x2="37" y2="35"></line><circle class="gb-pin" cx="32" cy="32" r="1.6"></circle></svg></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Goodbye for now</h2>'
@@ -1465,6 +1494,15 @@
       if (b.getAttribute('data-act') === 'done') { if (modal) modal.remove(); window.location.reload(); }
       else _dmClose(el, function () { if (modal) modal.remove(); if (window.iosSignIn && window.iosSignIn.go) window.iosSignIn.go('signedout'); else window.location.reload(); });
     });
+    // Desktop draws Sign back in first; the phone draws Done first. Order the markup itself, so Tab follows what is drawn.
+    var mq = window.matchMedia ? window.matchMedia('(min-width: 900px)') : null;
+    var order = function () {
+      if (!document.body.contains(el)) { if (mq) { if (mq.removeEventListener) mq.removeEventListener('change', order); else if (mq.removeListener) mq.removeListener(order); } return; }
+      var f = el.querySelector('.dm-foot'), si = f && f.querySelector('[data-act="signin"]');
+      if (si) { if (mq && mq.matches) f.insertBefore(si, f.firstChild); else f.appendChild(si); }
+    };
+    order();
+    if (mq) { if (mq.addEventListener) mq.addEventListener('change', order); else if (mq.addListener) mq.addListener(order); }
   }
   function _dmWelcome(withTiles) {
     var t = _dmTiles(), name = '', certName = '';
@@ -1544,15 +1582,9 @@
           '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
         var stay = document.getElementById('dla-done');
         if (stay) stay.addEventListener('click', function () { modal.remove(); });
-      } else if (card && _dmPhone()) {
-        _dmGoodbye(modal, stamp, wasPro);
       } else if (card) {
-        card.innerHTML =
-          '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
-          '<p class="dlpb-lede">You&rsquo;re signed out. Sign back in within <b>7 days</b> if you change your mind &mdash; after that, your data is permanently purged.</p>' +
-          '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
-        var done = document.getElementById('dla-done');
-        if (done) done.addEventListener('click', function () { modal.remove(); window.location.reload(); });
+        modal.style.display = 'none';   // the goodbye replaces the card; on desktop its overlay would otherwise sit above the screen
+        _dmGoodbye(modal, stamp, wasPro);
       }
     }).catch(function () {
       if (card) {
@@ -1578,22 +1610,16 @@
       return sb.from('profiles').select('metadata').eq('id', uid).maybeSingle().then(function (pr) {
         var meta = pr && pr.data && pr.data.metadata;
         if (_noticeShown || !meta || !meta.deletion_cancelled_at) return null;
-        if (_dmPhone()) {
-          // The full moment. Wait (up to ~15s) for the cloud copy to land so the tiles show the real numbers, show it,
-          // and only then clear the flag, so a reload before it appeared still gets the moment.
-          _noticeShown = true;
-          var t0 = Date.now(), limit = window._dmHydrateWaitMs || 15000;
-          return new Promise(function (res) {
-            (function wait() {
-              var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
-              if (ok) res(true); else if (Date.now() - t0 > limit) res(false); else setTimeout(wait, 150);
-            })();
-          }).then(function (safe) { _dmWelcome(safe); return sb.rpc('clear_deletion_notice'); });
-        }
-        if (typeof window.showToast !== 'function') return null;
+        // The full moment. Wait (up to ~15s) for the cloud copy to land so the tiles show the real numbers, show it,
+        // and only then clear the flag, so a reload before it appeared still gets the moment.
         _noticeShown = true;
-        window.showToast("Welcome back. We've cancelled the deletion and your account is safe.", 'info');
-        return sb.rpc('clear_deletion_notice');
+        var t0 = Date.now(), limit = window._dmHydrateWaitMs || 15000;
+        return new Promise(function (res) {
+          (function wait() {
+            var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
+            if (ok) res(true); else if (Date.now() - t0 > limit) res(false); else setTimeout(wait, 150);
+          })();
+        }).then(function (safe) { _dmWelcome(safe); return sb.rpc('clear_deletion_notice'); });
       });
     }).catch(function (e) { console.error('[deletion-notice]', e); });
   }
@@ -1713,6 +1739,7 @@
     // real ids to real data; the real onclick actions are baked into the markup.
     try { renderBentoTopbar(); } catch (_) {}
     try { renderBentoRecommended(); } catch (_) {}
+    try { renderDeskResume(); } catch (_) {}
     try { renderBentoMomentum(); } catch (_) {}
     try { renderBentoQuickStart(); } catch (_) {}
     try { renderBentoDomains(); } catch (_) {}
@@ -1757,12 +1784,15 @@
         // (avoids a redundant late DOM write on top of the correct static text).
         const html = `${escHtml(String(name).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''))} <b>${escHtml(code)}</b>`;
         if (certEl.innerHTML !== html) certEl.innerHTML = html;
+        _deskPassBadges();   // Task 3: the Passed badge rides after the code
       }
       const daysEl = document.getElementById('cb-days');
       if (daysEl) {
-        const d = (typeof getDaysToExam === 'function') ? getDaysToExam() : null;
+        const d = (typeof getDaysToExam === 'function') ? getDaysToExam() : null, lbl = daysEl.nextElementSibling;
+        // Task 6 (drawings home-exam-ask / home-exam-passed): a past date says how long ago, never "—"
+        if (lbl) lbl.textContent = (typeof d === 'number' && d < 0) ? 'exam day' : 'days to exam';
         if (typeof d === 'number' && d >= 0) _bentoCountUp('cb-days', d, 900);
-        else daysEl.textContent = '—';
+        else daysEl.textContent = typeof d !== 'number' ? '—' : d === -1 ? 'Yesterday' : -d + ' days ago';
       }
       const streakEl = document.getElementById('cb-streak');
       if (streakEl && typeof getStreak === 'function') {
@@ -1787,21 +1817,145 @@
     }
   }
 
+  // Desktop catch-up Task 2: the "Finish your quiz" card above the readiness hero, drawing home-resume.
+  // Same save and same copy as the phone card (ios-home.js): the summary comes from _quizResumeSummary via
+  // quizResumeState(), nothing is re-derived. It sits above the bento so it outranks Recommended next, as on the phone.
+  function renderDeskResume() {
+    let host = document.getElementById('desk-resume');
+    if (!host) {   // made on first use, between the console bar and the bento
+      const bento = document.querySelector('#page-setup .board > .bento');
+      if (!bento) return;
+      host = document.createElement('div'); host.className = 'desk-resume'; host.id = 'desk-resume'; host.hidden = true;
+      bento.parentNode.insertBefore(host, bento);
+    }
+    host.hidden = true; host.innerHTML = '';
+    if (!(typeof window.caIsDesk === 'function' && window.caIsDesk())) return;
+    if (_examSave()) return;   // the Home tile is already "Resume your exam": one ask, as on the phone
+    let qs = null;
+    try { qs = (typeof quizResumeState === 'function') ? quizResumeState() : null; } catch (_) { qs = null; }
+    if (!qs) return;
+    const total = qs.total || 0, done = qs.answered || 0;
+    const left = (typeof qs.left === 'number') ? qs.left : Math.max(0, total - done);
+    const topicLabel = qs.topicLabel ? escHtml(qs.topicLabel) + ' \u00B7 ' : '';
+    const ready = !!(qs.ready || left === 0);   // every question answered, results never opened
+    const badge = ready ? '<span class="rc-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>'
+      : '<span class="rc-badge"><b>' + left + '</b><small>LEFT</small></span>';
+    const title = ready ? 'See your results' : 'Finish your quiz \u00B7 ' + left + ' left';
+    const sub = ready ? topicLabel + 'all ' + total + ' answered' : topicLabel + done + ' of ' + total + ' answered';
+    host.innerHTML = '<button class="dr-card" type="button" data-act="resume" aria-label="Resume your quiz">' + badge
+      + '<span class="rc-txt"><span class="rc-kick">Pick up where you left off</span><span class="rc-title">' + title + '</span><span class="rc-sub">' + sub + '</span></span>'
+      + '<span class="rc-go" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></span></button>'
+      + '<button class="dr-fresh" type="button" data-act="fresh">Start fresh</button>';
+    host.hidden = false;
+    host.onclick = function (ev) {
+      const b = ev.target.closest && ev.target.closest('[data-act]');
+      if (!b) return;
+      if (b.getAttribute('data-act') === 'fresh') { if (typeof quizResumeClear === 'function') quizResumeClear(); renderDeskResume();
+        // the focused button is gone: hand focus to the next Home card's main control
+        const nxt = document.getElementById('primaryLaunch'); if (nxt && nxt.focus) nxt.focus({ preventScroll: true });
+        return; }
+      if (typeof resumeQuiz === 'function') resumeQuiz();
+    };
+  }
+  if (window.matchMedia) {
+    const _drMq = window.matchMedia('(min-width: 900px)');
+    const _drChange = function () { try { renderDeskResume(); } catch (_) {} try { renderDeskOutcome(); } catch (_) {} };
+    if (_drMq.addEventListener) _drMq.addEventListener('change', _drChange); else if (_drMq.addListener) _drMq.addListener(_drChange);
+    // renderHeroV2 can run while home.js is still parsing, before quiz-resume.js: draw once the page is ready (as ios-home.js does).
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _drChange); else _drChange();
+    window.addEventListener('load', _drChange);
+  }
+
+  // Desktop catch-up Task 3: "How did your exam go?" in the Recommended next slot (drawings home-exam-ask and
+  // home-exam-passed). Same store and copy as the phone card (ios-home.js); the opener is features/ios-log-result.js.
+  // The phone's order holds: an exam or quiz to resume and due reviews come first, then the ask, then "Pick your next cert".
+  function _deskOcCert() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus'; }
+  function _deskOcSaved() {
+    try { const m = JSON.parse(localStorage.getItem('nplus_exam_outcomes') || 'null'); return (m && m[_deskOcCert()]) || null; } catch (_) { return null; }
+  }
+  function _deskOutcomeRec() {
+    if (!(typeof window.caIsDesk === 'function' && window.caIsDesk())) return null;
+    try { if (typeof quizResumeState === 'function' && quizResumeState()) return null; } catch (_) {}
+    const certId = _deskOcCert();
+    const name = String((typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'Network+').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, '');
+    let due = false;
+    try { due = typeof outcomeDue === 'function' && !!outcomeDue(certId); } catch (_) { due = false; }
+    if (due) {
+      let ago = null;
+      try {
+        const xp = String((typeof getExamDate === 'function' && getExamDate(certId)) || '').split('-');
+        if (xp.length === 3) { const n = new Date(); ago = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - new Date(+xp[0], +xp[1] - 1, +xp[2])) / 86400000); }
+      } catch (_) { ago = null; }
+      return { kind: 'outcome', kick: ago === 1 ? 'Your exam was yesterday' : (ago > 1 ? 'Your exam was ' + ago + ' days ago' : 'Your exam date has passed'),
+        title: 'How did your ' + name + ' exam go?', sub: "Tell us and we'll update your plan." };
+    }
+    const rec = _deskOcSaved();
+    if (rec && rec.outcome === 'passed') {
+      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score : ''), title: 'Pick your next cert',
+        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+    }
+    return null;
+  }
+  // Fills #desk-oc (first child of the Recommended next cell) and hides #primaryLaunch while it shows. Returns true when shown.
+  function _deskOcSlot(rc) {
+    const cell = document.querySelector('#page-setup .cell-recommend');
+    if (!cell) return false;
+    let host = document.getElementById('desk-oc');
+    if (!host) { host = document.createElement('div'); host.id = 'desk-oc'; host.className = 'desk-oc'; host.hidden = true; cell.insertBefore(host, cell.firstChild); }
+    cell.classList.toggle('has-oc', !!rc);
+    if (!rc) { host.hidden = true; host.innerHTML = ''; return false; }
+    const row = rc.kind === 'outcome'
+      ? '<button class="oc-btn oc-pri" type="button" data-act="oc-passed">Passed</button><button class="oc-btn" type="button" data-act="oc-failed">Didn\'t pass</button><button class="oc-link" type="button" data-act="oc-notyet">I haven\'t sat it yet</button>'
+      : '<button class="oc-btn oc-pri" type="button" data-act="choose">Choose a cert</button>';
+    host.innerHTML = '<span class="oc-kick">' + escHtml(rc.kick) + '</span><span class="oc-title">' + escHtml(rc.title) + '</span><span class="oc-sub">' + escHtml(rc.sub) + '</span><div class="oc-row">' + row + '</div>';
+    host.setAttribute('data-kind', rc.kind);
+    host.hidden = false;
+    host.onclick = function (ev) {
+      const b = ev.target.closest && ev.target.closest('[data-act]');
+      if (!b) return;
+      const act = b.getAttribute('data-act'), lr = window.iosLogResult || {};
+      if (act === 'oc-passed' || act === 'oc-failed') { if (typeof openLogResult === 'function') openLogResult({ preselect: act === 'oc-passed' ? 'passed' : 'failed', from: b }); }
+      else if (act === 'oc-notyet') { if (typeof lr.examDate === 'function') lr.examDate(); }
+      else if (act === 'choose') { if (typeof lr.toHub === 'function') lr.toHub(); }   // openHub(): the My certs page on desktop
+    };
+    return true;
+  }
+  // The Passed badge on the console bar's cert and beside the sidebar's version line (drawing home-exam-passed).
+  function _deskPassBadges() {
+    const rec = _deskOcSaved(), on = !!(rec && rec.outcome === 'passed');
+    ['#cb-cert', '#app-sidebar .sb-brand-version'].forEach(function (sel) {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      let b = el.querySelector('.badge-pass');
+      if (on && !b) { b = document.createElement('span'); b.className = 'badge-pass'; b.textContent = 'Passed'; el.appendChild(b); }
+      else if (!on && b) b.remove();
+    });
+  }
+  // After a save (features/ios-log-result.js): repaint the slot and the badges in place.
+  function renderDeskOutcome() { _deskPassBadges(); renderBentoRecommended(); }
+
   // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
   // baked into markup). Meta nods to the weakest topic when readiness has one.
+  // An unfinished full exam still worth resuming (exam.js's EXAM_STATE_KEY), or null. Shared by the Home tile and the
+  // desktop quiz card, so desktop ranks exam over quiz the way the phone does (ios-home.js).
+  function _examSave() {
+    let ex = null;
+    try { ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { ex = null; }
+    return (ex && Array.isArray(ex.questions) && ex.questions.length && typeof ex.endTime === 'number'
+      && (ex.paused ? (ex.savedAt || 0) > Date.now() - 7 * 86400000 : ex.endTime > Date.now() - 86400000)) ? ex : null;
+  }
   function renderBentoRecommended() {
     const minEl = document.getElementById('pl-min');
     const titleEl = document.getElementById('pl-title');
     const metaEl = document.getElementById('pl-meta');
     const launchEl = document.getElementById('primaryLaunch');
+    _deskOcSlot(null);   // Task 3: the outcome card takes this slot only after exam, quiz and reviews (the phone's order)
 
     // v8.162.0: an unfinished full exam outranks everything: resume it. Read
     // straight from storage (exam.js is lazy-loaded); the key is exam.js's
     // EXAM_STATE_KEY. Once its time is up, the tile submits what was answered.
-    let _ex = null;
-    try { _ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { _ex = null; }
-    if (_ex && Array.isArray(_ex.questions) && _ex.questions.length && typeof _ex.endTime === 'number'
-        && (_ex.paused ? (_ex.savedAt || 0) > Date.now() - 7 * 86400000 : _ex.endTime > Date.now() - 86400000)) {
+    const _ex = _examSave();
+    if (_ex) {
       // v8.164.0: a paused exam keeps its remaining time; a running one counts down.
       const left = _ex.paused ? Math.max(1, Math.round((_ex.timeLeft || 0) / 60))
         : Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));
@@ -1858,6 +2012,7 @@
     }
 
     _renderHomeForecast(false);    // #6 — no reviews due, hide the strip
+    if (_deskOcSlot(_deskOutcomeRec())) return;
 
     // v7.x: new user has no weak-spot data — show a friendly first-quiz CTA instead.
     // v7.89.0 (Lighthouse-90 TASK 2): index.html's static #pl-* defaults now
@@ -1928,6 +2083,10 @@
     const best = (s && s.best) ? s.best : 0;
     const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
 
+    const lineEl = document.getElementById('moLine');
+    if (lineEl) lineEl.textContent = _streakView().line;
+    const dcEl = document.getElementById('bento-dc-sub');
+    if (dcEl) dcEl.textContent = _dcSub(!!(s && s.ended));
     const goalEl = document.getElementById('moGoal'); if (goalEl) goalEl.textContent = goal;
     const bestEl = document.getElementById('moBest'); if (bestEl) bestEl.textContent = best;
 
@@ -2588,6 +2747,8 @@
   window.renderHeroV2                = renderHeroV2;
   window.renderBentoTopbar           = renderBentoTopbar;
   window.renderBentoRecommended      = renderBentoRecommended;
+  window.renderDeskResume            = renderDeskResume;
+  window.renderDeskOutcome           = renderDeskOutcome;
   window.renderBentoMomentum         = renderBentoMomentum;
   window.renderBentoQuickStart       = renderBentoQuickStart;
   window.renderBentoDomains          = renderBentoDomains;

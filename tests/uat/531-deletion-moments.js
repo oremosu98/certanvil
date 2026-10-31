@@ -29,12 +29,12 @@ const { _fnBody, js, test, vm } = require('./_context');
   test('Back opens Home; Escape on document respects defaultPrevented', /showPage\('setup'\)/.test(home) && /ev\.defaultPrevented\) return;/.test(home) && /aria-labelledby/.test(home));
   test('fallback date adds calendar days with setDate', /d\.setDate\(d\.getDate\(\) \+ 7\)/.test(home));
   test('css: explicit focus ring on the buttons, welcome back delays reset under reduced motion', /\.dm-cta:focus-visible/.test(css) && /#ios-welcomeback\.dm-open \.dm-in \{ animation: dm-fade-only/.test(css));
-  test('goodbye is phone-gated; the desktop card stays', /else if \(card && _dmPhone\(\)\) \{\s*_dmGoodbye\(modal, stamp, wasPro\);/.test(home) && home.includes("Account scheduled for deletion"));
+  test('goodbye shows at every width once signed out; the offline card is the only other success outcome', /\} else if \(card\) \{[^\n]*\n\s*modal\.style\.display = 'none';[^\n]*\n\s*_dmGoodbye\(modal, stamp, wasPro\);/.test(home) && !/else if \(card && _dmPhone\(\)\) \{\s*_dmGoodbye/.test(home) && home.includes("Account scheduled for deletion") && /if \(card && !signedOut\) \{/.test(home));
   test('goodbye uses the server stamp from request_account_deletion', /stamp = r\.data;/.test(home));
   test('Pro is read before sign-out, so the Apple billing line can show', /var wasPro = false, stamp = null;[\s\S]{0,300}_quotaState/.test(home));
   test('Done reloads; Sign back in goes through iosSignIn', /data-act="done"[\s\S]{0,40}Done/.test(home) && /window\.location\.reload\(\); \}\s*else _dmClose\(el, function \(\) \{[\s\S]{0,200}iosSignIn\.go\('signedout'\)/.test(home));
-  test('welcome back: phones get the moment, desktop keeps the toast', /if \(_dmPhone\(\)\) \{[\s\S]{0,900}_dmWelcome\(safe\)[\s\S]{0,200}clear_deletion_notice[\s\S]{0,400}showToast\("Welcome back\. We've cancelled/.test(home));
-  test('welcome back: one clear_deletion_notice call per branch, guarded by the shown flag', (home.match(/sb\.rpc\('clear_deletion_notice'\)/g) || []).length === 2 && /_noticeShown = true;/.test(home));
+  test('welcome back: the full moment at every width, no toast', /deletion_cancelled_at\) return null;[\s\S]{0,900}_dmWelcome\(safe\)[\s\S]{0,200}clear_deletion_notice/.test(home) && !/Welcome back\. We've cancelled the deletion/.test(home) && !/if \(_dmPhone\(\)\) \{\s*\/\/ The full moment/.test(home));
+  test('welcome back: one clear_deletion_notice call, guarded by the shown flag', (home.match(/sb\.rpc\('clear_deletion_notice'\)/g) || []).length === 1 && /_noticeShown = true;/.test(home));
   test('welcome back tiles skip split history rows and read the best streak', /isHistorySplitRow\(e\)\) return;/.test(home) && /st && Number\(st\.best\)/.test(home) && /_readReadinessSnapshots/.test(home));
   test('overlay: inert behind, un-inert first on close, focus restored, Escape on welcome back',
     /c\.inert = true/.test(home) && /_dmInerted\.forEach\(function \(c\) \{ c\.inert = false; \}\);[\s\S]{0,200}_dmPrevFocus\.focus/.test(home) && /ev\.key !== 'Escape'/.test(home));

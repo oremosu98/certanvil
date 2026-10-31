@@ -36,9 +36,11 @@ is lost. That includes the person swiping the app away and iOS closing it in the
    question or a different cert), it is discarded rather than half-restored.
 
 ## Cross-platform
-Phone only for now (founder, 31 Oct). The "Finish your quiz" card is on the phone Home, in the iOS
-app and on mobile web, where iOS closing background apps causes the problem. Desktop Home doesn't
-change, as the Home spec says. Adding a desktop card later is its own decision.
+Every platform (founder, 31 Oct, later the same day: "desktop gets quiz resume too", under the new
+rule that every feature exists on the iOS app, mobile web and the desktop web app). The phone card
+shipped in v8.203.0; the desktop card ships in the desktop catch-up,
+[[2026-10-31-desktop-parity-catchup-design]]. Desktop already saves the quiz; it needs the Home card and
+the resume entry.
 
 ## Process
 Draw the Home card into the June E2E, run the visual pass with the bundle, get founder approval,

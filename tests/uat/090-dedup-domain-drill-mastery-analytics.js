@@ -1321,8 +1321,10 @@ test('v4.85.13 Tooltip hint text: "Hover any node to see stats"',
 // on Analytics. 4 component bars + plain-English diagnosis + 2 click-through
 // action cards (refresh recency / drill weakest). User-approved mockup at
 // mockups/readiness-why-card-concept.html.
-test('v4.85.14 WhyScore: _renderAnaWhyScore renderer defined',
-  /function _renderAnaWhyScore\(/.test(js));
+// Desktop catch-up Task 6 (31 Oct 2026): the old "Why you're at N" card (_renderAnaWhyScore) never rendered after the
+// v7.16.0 bento and is gone; the phone's "Why this score?" sheet (features/ios-home.js) is the one explanation now.
+test('Desktop catch-up T6: the old "Why you\'re at N" card renderer is removed (Why this score? replaces it)',
+  !/function _renderAnaWhyScore\(/.test(js) && !/Why you're at <em>/.test(js));
 test('v4.85.14 WhyScore: _startReadinessRefreshQuiz click handler defined',
   /function _startReadinessRefreshQuiz\(/.test(js));
 test('v4.85.14 WhyScore: _startReadinessWeakestQuiz click handler defined',
@@ -1334,17 +1336,6 @@ test('v4.85.14 WhyScore: getReadinessScore returns staleTopics array (sorted old
   })());
 test('v4.85.14 WhyScore: bento composes the why tile after readiness',
   /_anaBtReadiness\(D\)[\s\S]{0,400}_anaBtWhy\(D\)/.test(js));
-test('v4.85.14 WhyScore: 4 component bars (accuracy, coverage, recency, volume)',
-  (() => {
-    const body = _fnBody(js, '_renderAnaWhyScore');
-    return body
-      && /Accuracy[\s\S]{0,500}Coverage[\s\S]{0,500}Recency[\s\S]{0,500}Volume/.test(body);
-  })());
-test('v4.85.14 WhyScore: bottleneck detection picks highest-drag component',
-  (() => {
-    const body = _fnBody(js, '_renderAnaWhyScore');
-    return body && /bottleneck/.test(body) && /dragPts/.test(body);
-  })());
 test('v4.85.14 WhyScore: refresh handler builds Multi: sentinel from staleTopics',
   (() => {
     const body = _fnBody(js, '_startReadinessRefreshQuiz');
@@ -1379,43 +1370,6 @@ test('v4.85.14 WhyScore CSS: action card has hover lift + primary orange variant
   /\.why-action-card\.is-primary[\s\S]{0,400}rgba\(251,\s*146,\s*60/.test(css));
 test('v4.85.14 WhyScore CSS: mobile breakpoint (<720px) stacks action row vertically',
   /@media\s*\(max-width:\s*720px\)[\s\S]{0,800}\.ana-why-score\s+\.why-action-row\s*\{[^}]*grid-template-columns:\s*1fr/.test(css));
-test('v4.85.14 WhyScore: vm fixture — bottleneck = recency when recencyScore is lowest',
-  (() => {
-    try {
-      const body = _fnBody(js, '_renderAnaWhyScore');
-      if (!body) return false;
-      const vm = require('vm');
-      const ctx = { READINESS_BAND: [420, 870], EXAM_MIN_SCORE: 100, EXAM_MAX_SCORE: 900, CERT_CODE: 'N10-009', 
-        EXAM_PASS_SCORE: 720,
-        escHtml: s => String(s || ''),
-        Math, Object, Array, String, JSON
-      };
-      vm.createContext(ctx);
-      vm.runInContext(body, ctx);
-      const fakeReadiness = {
-        predicted: 702,
-        accuracyScore: 78,
-        coverageScore: 100,
-        recencyScore: 28,
-        volumeScore: 100,
-        totalTopics: 50,
-        studiedCount: 50,
-        totalQs: 611,
-        staleTopics: [
-          { topic: 'BGP', daysSince: 21 },
-          { topic: 'OSPF', daysSince: 18 }
-        ],
-        whatIf: [
-          { topic: 'BGP', currentPct: 61, targetPct: 80, deltaPredicted: 4 }
-        ]
-      };
-      const html = vm.runInContext('_renderAnaWhyScore(' + JSON.stringify(fakeReadiness) + ')', ctx);
-      // Should call out recency as the bottleneck and show 18-pt gap
-      return /Recency is the bottleneck/.test(html)
-        && /18 pts to pass/.test(html)
-        && /Refresh recency/.test(html);
-    } catch (e) { return false; }
-  })());
 
 // v4.85.15 — Mixed-mode quizzes now save per-topic splits + readiness
 // dropped the e.total >= 3 filter. Pre-fix Mixed-mode quizzes (Deep Scan,

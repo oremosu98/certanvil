@@ -164,7 +164,7 @@
     var streakLine = streak.ended ? 'Your ' + (streak.endedFrom || best) + '-day streak ended. Your best is ' + best + '. A quick set starts a new one.'
       : (cur > 0 ? cur + '-day streak. ' + (studiedToday ? "Today's done." : 'Study today to keep it.')
         : 'No streak yet. Finish a set today to start one.');
-    var momentum = { done: done, goal: goal, streakLine: streakLine };
+    var momentum = { done: done, goal: goal, streakLine: streakLine, ended: !!streak.ended, best: best, studiedToday: !!studiedToday, cur: cur };
 
     // ── mistakes + domains ──
     var mistakes = 0;
@@ -292,7 +292,7 @@
     // quick start
     h += '<div class="ih-sect ih-reveal">Quick start</div><p class="ih-sect-sub ih-reveal">A daily habit that keeps your streak. 3 to 5 minutes.</p>'
       + opt('warmup', 'bolt', '5-min Warmup', '5 questions, foundational. Ease back in.', '5 Q', ' ih-reveal')
-      + opt('daily', 'star', 'Daily Challenge', '1 question, about a minute. Keeps the streak, +1.', '1 Q', ' ih-reveal')
+      + opt('daily', 'star', 'Daily Challenge', '1 question, about a minute. ' + (mo.ended ? 'Starts a new streak.' : 'Keeps the streak, +1.'), '1 Q', ' ih-reveal')
       + (m.mistakes > 0 ? opt('mistakes', 'warn', 'Drill Mistakes', 'Clear the ' + m.mistakes + ' wrong answer' + (m.mistakes === 1 ? '' : 's') + ' you have saved.', m.mistakes + ' saved', ' ih-reveal') : '');
     // study menus
     h += '<div class="ih-sect ih-reveal">Study menus</div><p class="ih-sect-sub ih-reveal">Tap to open. Everything is one tap away.</p>';
@@ -386,8 +386,9 @@
       if (act === 'why-mocks') { close(); if (typeof startExam === 'function') startExam(); }
       else if (act === 'why-areas') { close(); if (typeof applyDomainPreset === 'function') applyDomainPreset(b.getAttribute('data-key')); }
       else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('focused'); }
-    });
+    }, { size: 'lg' });   // desktop: a 700px centred dialog (drawing why-sheet); phones ignore it
   }
+  window.openWhyScore = _openWhy;   // desktop Analytics "Why this score?" (Task 6)
 
   // ── Mount: phone width only. Renders into #ios-home and binds each data-act to the
   // handler the desktop Home already uses, so behaviour (Pro gates, quotas) is identical.

@@ -30,14 +30,27 @@
         .then(function () { renderPassPlanSection(); })
         .catch(function () { /* offline — the guards below still degrade safely */ });
     }
-    host.innerHTML = _passPlanHtml();
+    var html = _passPlanHtml();
+    host.innerHTML = _ppDesk() ? _passPlanDeskHtml(html) : html;
     _wirePassPlanSection(host);
     // v8.193.0: the phone card fills once the diagnostic module has loaded (in place: keeps the entrance reveal)
-    if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ passPlanHtml: host.innerHTML });
+    if (window.iosSettings && window.iosSettings.patch) window.iosSettings.patch({ passPlanHtml: html });
   }
   function _ppIsPro() {
     return !!_quotaState && (_quotaState.tier === 'pro' ||
       (typeof _quotaState.daily_limit === 'number' && _quotaState.daily_limit < 0));
+  }
+  // Desktop catch-up Task 4: at 900px and up the "Your Pass Plans" list (and its cert picker) gives way to one
+  // My certs row: the My certs page is the place to switch cert. The phone page keeps _passPlanHtml() unchanged.
+  function _ppDesk() { return typeof window.caIsDesk === 'function' && window.caIsDesk(); }
+  function _passPlanDeskHtml(html) {
+    var pro = _ppIsPro(), standalonePro = pro && document.body.classList.contains('is-standalone');
+    var base = standalonePro ? _renderPassPlanBrowserProHtml() : html;
+    var sub = pro ? 'Switch cert and see where each one stands' : 'See where your cert stands';   // Free studies one cert: no switching promise
+    return base + '<button type="button" class="pp-mycerts" data-act="pp-mycerts">' +
+      '<span class="pp-mc-i" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><path d="M16.5 14v5M14 16.5h5" stroke-linecap="round"/></svg></span>' +
+      '<span class="pp-mc-t"><b>My certs</b><span>' + sub + '</span></span>' +
+      '<span class="pp-mc-g" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>';
   }
   function _passPlanHtml() {
     var isPro = _ppIsPro();
@@ -166,6 +179,7 @@
         else if (act === 'pp-retake') { if (typeof retakeDiagnostic === 'function') retakeDiagnostic(); }
         else if (act === 'pp-empty') { if (typeof startDiagnostic === 'function') startDiagnostic(); }
         else if (act === 'pp-pro') { if (typeof _showProWaitlist === 'function') _showProWaitlist(); }
+        else if (act === 'pp-mycerts') { if (typeof openHub === 'function') openHub(); }
         else if (act === 'pp-add') { if (typeof _showPassPlanCertPicker === 'function') _showPassPlanCertPicker(); }
         else if (act === 'pp-open-cert') {
           var id = el.getAttribute('data-cert');
@@ -632,6 +646,7 @@
     if (typeof renderSrSettings === 'function') renderSrSettings();
     // v7.45.0 GAP-6: show the Delete-my-account row for signed-in users
     if (typeof _syncDeleteAccountRow === 'function') _syncDeleteAccountRow();
+    _syncSuggestRow();
     // v4.81.2: refresh the auto-backup list every time Settings opens so the
     // user sees what's available + can restore/download from any snapshot.
     if (typeof renderAutoBackupList === 'function') renderAutoBackupList();
@@ -853,6 +868,17 @@
       if (!tog._srBound) { tog._srBound = true; tog.addEventListener('click', toggleSrTopUp); }
       tog.classList.toggle('is-on', !!prefs.topUp);
       tog.setAttribute('aria-checked', prefs.topUp ? 'true' : 'false');
+    }
+  }
+
+  // Desktop catch-up Task 5: the Suggest a cert row (signed in only; CSS hides it below 900px)
+  function _syncSuggestRow() {
+    var sec = document.getElementById('settings-suggest-row'); if (!sec) return;
+    if (window._certanvilSignedIn === true) sec.removeAttribute('hidden'); else sec.setAttribute('hidden', '');
+    var btn = document.getElementById('settings-suggest-btn');
+    if (btn && !btn._ssBound) {
+      btn._ssBound = true;
+      btn.addEventListener('click', function () { try { btn.focus({ preventScroll: true }); } catch (_) {} if (typeof window.openSuggestCert === 'function') window.openSuggestCert(); });
     }
   }
 

@@ -1,7 +1,7 @@
 ---
 up: "[[Mobile MOC]]"
 type: spec
-status: draft
+status: approved
 cert: all
 updated: 2026-10-31
 tags: [spec, mobile]
@@ -9,7 +9,7 @@ tags: [spec, mobile]
 # Admin in the app, and a full bug-report loop
 
 The founder studies in the app like any user and is also the only admin. Today admin lives only on
-certanvil.com/admin, a desktop page. The founder agreed this design on 31 Oct. It has three parts:
+certanvil.com/admin, a desktop page. The founder agreed this design and approved the spec on 31 Oct. It has three parts:
 reporting a problem from a phone, an Admin screen in the app, and telling the person when their
 problem is fixed.
 
@@ -28,21 +28,26 @@ problem is fixed.
 
 ## The design
 
-### 1. Report a problem (phones)
-- **Entry points:** a "Report a problem" row in Settings, and a "Something wrong? Tell us" link on
-  screens that show a failure (a quiz that can't load, a failed sync, the busy message).
+### 1. Report a problem (every platform, one form)
+- **One form everywhere** (founder, 31 Oct): the iOS app, mobile web and the desktop web app use the
+  same form, copy, confirmation and pipeline. On phones it is a bottom sheet; on desktop the same form
+  is a centred dialog (drawing `cert-ios-report.html?v=desktop`). The old desktop drawer (title +
+  description + steps) is retired; the top-bar report button now opens the shared form.
+- **Entry points:** a "Report a problem" row in Settings (phone Settings and desktop Settings), the
+  desktop top-bar report button, and a "Something wrong? Tell us" link on screens that show a failure
+  (a quiz that can't start, on phone and desktop).
 - **The form:** "What happened?" (required) and "Steps, if you remember them" (optional). The app
   attaches the version, screen, cert, theme and device, as the desktop form already does.
 - **Who hears back:** signed in, the form says "We'll email you when it's fixed." Signed out, it says
   "Sign in if you'd like to hear back."
-- **After sending:** "Thanks, got it. Report #142." The number is the report's row number, returned by
+- **After sending:** "Thanks, Alex, got it. Report #142." The name is the person's display name, left out when it is email-derived or missing (the hub greeting's rule). The app speaks as CertAnvil and never names the founder (founder, 31 Oct). The number is the report's row number, returned by
   the new `submit_bug_report` RPC (below).
 - **Offline:** it is queued and sent later (the existing retry queue), with "Saved. We'll send it when
   you're back online." A report that lands later from the queue shows no number; nothing is on screen
   for it by then.
-- **One form, one queue:** the phone form reuses `features/reports.js` (its payload builder, submit and
-  retry queue); only the sheet is new. Desktop keeps its top-bar button and drawer and gains the same
-  "Thanks, got it. Report #N" line.
+- **One form, one queue:** one shared form module on top of `features/reports.js` (its payload builder,
+  submit and retry queue). Desktop keeps the top-bar button as an entry point; its old drawer screen
+  goes.
 - **Who wrote it:** the queued payload keeps the signed-in user id from when the report was written.
   If a different person (or nobody) is signed in when it finally sends, the report is saved without a
   user id, so it can never email the wrong person.
@@ -65,12 +70,12 @@ problem is fixed.
      version, screen, device, and whether the person can be emailed. Two actions:
      - **Fixed, tell them** (only when the reporter was signed in): sends the fixed email (below) and
        closes the report.
-     - **Close quietly:** closes it with no email (duplicate, not a bug, or anonymous).
+     - **Close, no email:** closes it with no email (duplicate, not a bug, or anonymous).
   4. **Errors:** the five most frequent error messages in the last 7 days, each with its count and the
      newest version it was seen on. Read only. Counted on the phone from the newest 500 rows; if there
      were more, the section says 'Based on the latest 500 errors.'
   5. **Preview as Free:** a switch. On, the app shows exactly what a Free user sees: locks, the
-     15-a-day counter and upgrade prompts. A thin bar, "Previewing as Free · Switch back", sits at the
+     15-a-day counter and upgrade prompts. A thin bar, "Previewing as Free · Back to Pro", sits at the
      top of every screen while it's on. It lives on this device only and survives a restart.
      - **One switch point.** The app decides Pro in two places: where `_quotaState` is set
        (`_refreshQuotaChip`) and auth-state's "admin counts as Pro". While previewing, both report Free
@@ -80,17 +85,37 @@ problem is fixed.
        doesn't count for a Pro account.
      - **The one exception:** reaching 15 shows the Free "today's 15 are done" screen, with an extra
        "Keep going (admin preview)" link, so studying is never blocked. Pro-only features stay locked
-       while previewing; switching back unlocks them.
+       while previewing; Back to Pro unlocks them.
      - The Free limit is 15 on the server too (`20260611_free_tier_15_questions`, audited ok 31 Oct).
   6. **Full dashboard on certanvil.com:** a link for the users table, cert packs and recent ships.
 - Each section loads on its own. A failed section says "Couldn't load this. Retry." and the others
   still show. Offline: "You're offline. Admin needs a connection." with Retry.
 
+### 2b. Long lists stay manageable (founder, 31 Oct)
+With 100 reports or requests, Admin must not become one long scroll.
+- **Admin shows the top few only:** the 3 newest open reports and the top 5 requests by votes, each with
+  "See all N". Errors stay at the top 5. Admin always fits in about two thumb-scrolls.
+- **See all** opens a list screen for that section, with Back to Admin:
+  - **Bug reports:** a search box (title and what happened), filter chips (Open, on by default; Can hear
+    back; This week; one per cert), 20 at a time with "Show 20 more", newest first.
+  - **Cert requests:** search, chips (Not told yet, on by default; Written in; This week), 20 at a time,
+    most votes first.
+- **Grouped reports:** reports from the same screen, cert and app version show as one row with a count
+  ("12 · Quiz · Security+ · v8.203.2", newest title shown). Free-text titles rarely match, so wording is
+  not used to group. Opening a group lists what people said and offers **Fixed, tell all N** (each
+  signed-in reporter gets the email with their own report's title; confirmed once) and **Close all N, no
+  email**. The endpoint takes a list of report ids and works through them 20 per call, like
+  `notify-cert-live`.
+- Paging, search and filters run on the server (`range`, `ilike`, `eq`), so the phone never loads
+  everything.
+
 ### 3. Telling people it's fixed
 - **The email** (from CertAnvil, Resend, one recipient per send):
-  Subject: "Fixed: the problem you reported"
-  Body: "You told us about '{title}'. It's fixed in the latest version of CertAnvil, so the next time you
-  open it you'll have the fix. Thanks for taking the time to report it."
+  Subject: "Fixed: {title}" (the report's title, cut to about 50 characters)
+  Body: "You reported '{title}'. It's fixed. Open CertAnvil and you'll have it. Thanks for telling us.
+  CertAnvil" (no upsell). True for the iOS app too: it loads the live site, so a fix arrives on the next
+  open; a change to the app's own shell would need an App Store update, so don't use "Fixed, tell them"
+  for those until the update is live.
 - Sent once per report. The endpoint stamps `fixed_notified_at` only if it is empty, then sends with a
   Resend idempotency key; if the send fails it clears the stamp so a retry works. A second tap gets
   409.
@@ -114,7 +139,8 @@ problem is fixed.
     `scripts/sql/migration-audit.sql`. Tested in PGlite like the deletion and cert-request migrations,
     including that anon can no longer overwrite a report.
 - A new endpoint on the landing project, `api/admin/bug-report` (POST, Edge, admin checked on the
-  server like `notify-cert-live`), with `action` `fixed` or `close`:
+  server like `notify-cert-live`), with `action` `fixed` or `close` and a list of report ids (one, or a
+  group; at most 20 per call, with an `after` cursor for the rest):
   - `close` sets `status = 'closed'`.
   - `fixed` gets the reporter's email from the auth admin API by `user_id`, sends the email, and sets
     `status = 'closed'` and `fixed_notified_at`.
@@ -125,9 +151,16 @@ problem is fixed.
   `client_errors`, `cert_request_tally`.
 
 ## Cross-platform
-- **iOS app and mobile web:** the phone report form, the Admin screen and Preview as Free.
-- **Desktop:** keeps its top-bar report button (plus the new "Report #N" line) and the account-menu link
-  to the web dashboard. No desktop Admin screen; the web dashboard is the desktop one.
+- **Report a problem:** the same form on the iOS app, mobile web and desktop (sheet on phones, centred
+  dialog on desktop).
+- **Admin and Preview as Free on every platform** (founder, 31 Oct: "everything in unison"). One Admin
+  module, two layouts: on phones it opens from My certs → More; on the desktop web app it is an
+  **Admin** sidebar item (admin account only, with the open-report count) opening the same sections in
+  two columns, with Today across the top; report and group details open as centred dialogs; See all
+  lists replace the main view with a back arrow (drawing `cert-ios-admin.html?v=desktop`, `desktop-report`,
+  `desktop-group`, `desktop-all-reports`, `desktop-free`). The Free bar sits across the top of the
+  desktop main area. The account-menu link to certanvil.com/admin stays for the users table and cert
+  packs.
 - **iOS specifics:** requests can be cut off when the app goes to the background, so every admin action
   shows its result only after the server answers, and the report queue covers sending. Touch targets at
   least 44pt, safe-area insets, no hover.
@@ -159,3 +192,9 @@ June E2E, run the five-stage visual pass, get founder approval, then plan and bu
 
 ## Related
 [[ADR-002-rbac-admin-surface]] · [[2026-10-30-ai-budget-fast-start-suggest-design]] · [[2026-10-30-my-certs-hub-design]] · [[Mobile MOC]]
+
+## Visual pass (31 Oct)
+Drawn in the June E2E (HUD "Admin ›", 17 screens). The five-stage pass changed: 44pt tap targets, one
+hairline stat strip instead of separate cards, an X on the report sheet, reveal motion on first paint
+only, a neutral Free bar ("Back to Pro"), "Close, no email", the hear-back promise above the fields,
+and plainer copy. Sheets keep the drawer curve the shipped phone sheets already use (`lift-ios.css`).

@@ -35,7 +35,8 @@
         + '<h3 id="sg-title" tabindex="-1">Thanks, noted.</h3><p>When ' + (second ? e(first) + ' or ' + e(second) : e(first || 'yours')) + ' lands, we’ll tell you.</p></div>'
         + '<button class="sg-pri" type="button" data-act="done">Done</button>';
     }
-    return '<div class="sg-grip"></div><span class="sg-eyebrow">Help shape CertAnvil</span><h3 id="sg-title">Which exam should we add next?</h3><p class="sg-sub">Tap any you’d study. We build the most-asked first.</p>'
+    // Desktop catch-up Task 5: the founder-approved desktop line says "Pick", the phone keeps "Tap"
+    return '<div class="sg-grip"></div><span class="sg-eyebrow">Help shape CertAnvil</span><h3 id="sg-title">Which exam should we add next?</h3><p class="sg-sub">' + (S.desk ? 'Pick' : 'Tap') + ' any you’d study. We build the most-asked first.</p>'
       + '<label class="sg-search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="sg-q" type="text" maxlength="120" placeholder="Search or type an exam" value="' + e(S.q) + '" aria-label="Search or type an exam" autocomplete="off" autocapitalize="off" enterkeyhint="search"></label>'
       + '<div class="sg-list">' + _listHtml(S) + '</div>'
       + '<p class="sg-err" role="status">' + e(S.err) + '</p>'
@@ -77,6 +78,7 @@
       if (r.accepted && r.accepted.length) {
         S.sent = r.accepted.slice(); S.done = true;
         S.host.innerHTML = _html(S);
+        if (S.frame && S.frame.isDialog) S.frame.ensureClose();   // the rewrite dropped the Close X
         var h = document.getElementById('sg-title'); if (h) { try { h.focus({ preventScroll: true }); } catch (_) {} }
       } else {
         S.err = r.noUser ? ERR_USER : ERR_SEND;
@@ -101,9 +103,10 @@
     var S = _cur; if (!S) return;
     _cur = null;
     if (S.keyFn) window.removeEventListener('keydown', S.keyFn, true);
+    if (S.frame) S.frame.release(instant === true);   // desktop: un-inert first, then focus goes back (a frame-initiated close has released already)
     S.inerted.forEach(function (el) { el.inert = false; });   // first: the opener must be focusable again
-    S.host.classList.remove('open'); S.scrim.classList.remove('open');
-    var done = function () { if (S.host.parentNode) S.host.parentNode.removeChild(S.host); if (S.scrim.parentNode) S.scrim.parentNode.removeChild(S.scrim); };
+    S.host.classList.remove('open'); if (S.scrim) S.scrim.classList.remove('open');
+    var done = function () { if (S.host.parentNode) S.host.parentNode.removeChild(S.host); if (S.scrim && S.scrim.parentNode) S.scrim.parentNode.removeChild(S.scrim); };
     if (instant) done(); else setTimeout(done, 220);
     if (S.back && S.back.isConnected && S.back.focus) { try { S.back.focus({ preventScroll: true }); } catch (_) {} }
   }
@@ -118,13 +121,16 @@
     if (typeof window._certReqRows !== 'function') return;
     [].forEach.call(document.querySelectorAll('.sg-sheet, .sg-scrim'), function (n) { n.parentNode.removeChild(n); });   // a sheet still fading out: gone now, so there is never a second #sg-q
     var S = _cur = { picks: [], q: '', back: document.activeElement, uid: null, sending: false, done: false, sent: [], err: '', composing: false, inerted: [] };
-    S.scrim = document.createElement('div'); S.scrim.id = 'ios-suggest-scrim'; S.scrim.className = 'sg-scrim';
+    var desk = typeof window.caDialogFrame === 'function' && typeof window.caIsDesk === 'function' && window.caIsDesk();
+    S.desk = desk;
+    if (!desk) { S.scrim = document.createElement('div'); S.scrim.id = 'ios-suggest-scrim'; S.scrim.className = 'sg-scrim'; }
     S.host = document.createElement('div'); S.host.id = 'ios-suggest'; S.host.className = 'sg-sheet'; S.host.tabIndex = -1;
     S.host.setAttribute('role', 'dialog'); S.host.setAttribute('aria-modal', 'true'); S.host.setAttribute('aria-labelledby', 'sg-title');
-    document.body.appendChild(S.scrim); document.body.appendChild(S.host);
-    _inertBehind(S);
+    if (S.scrim) document.body.appendChild(S.scrim);
+    document.body.appendChild(S.host);   // body level: the dialog frame needs a direct child of <body>
+    if (!desk) _inertBehind(S);   // desktop: the dialog frame owns scrim, inert, Escape, Tab and focus
     S.host.innerHTML = _html(S);
-    S.scrim.addEventListener('click', function () { if (_cur === S) close(); });
+    if (S.scrim) S.scrim.addEventListener('click', function () { if (_cur === S) close(); });
     S.host.addEventListener('click', function (ev) {
       var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b || b.disabled || S.sending) return;
       var a = b.getAttribute('data-act');
@@ -149,10 +155,16 @@
       else if (ev.shiftKey && (at === first || at === S.host)) { ev.preventDefault(); last.focus(); }
       else if (!ev.shiftKey && at === last) { ev.preventDefault(); first.focus(); }
     };
-    window.addEventListener('keydown', S.keyFn, true);
+    if (!desk) window.addEventListener('keydown', S.keyFn, true);
     // Send stays off until we know who is sending
     (typeof window.certReqUid === 'function' ? window.certReqUid() : Promise.resolve(null)).then(function (u) { if (_cur !== S) return; S.uid = u; S.uidChecked = true; _update(S); });
     void S.host.offsetWidth;
+    // Both widths arm the frame's 900px watch, so neither layout is left over the other after a resize.
+    if (typeof window.caDialogFrame === 'function') {
+      var fr = window.caDialogFrame(S.host, { size: 'md', onClose: function (o) { if (_cur === S) close(o && o.instant); } });
+      if (fr.isDialog) { S.frame = fr; return; }   // desktop: the frame shows it and focuses Close
+      S.frame = fr;
+    }
     S.host.classList.add('open'); S.scrim.classList.add('open');
     try { S.host.focus({ preventScroll: true }); } catch (_) {}   // the sheet itself: no keyboard pops until they tap the box
   }

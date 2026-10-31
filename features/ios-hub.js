@@ -3,6 +3,8 @@
 // "Unlock every cert with Pro" row on Free. Spec: docs/superpowers/specs/2026-10-30-my-certs-hub-design.md
 // Opened from Home (the cert name) and from the exam-outcome flow ("See it in your hub").
 // Reads only: per-cert readiness snapshots, exam dates and exam outcomes. Never writes user state.
+// Desktop catch-up Task 4 (31 Oct): at 900px and up openHub() shows the same model as the #page-mycerts page
+// (drawing desktop-catchup.html?v=mycerts) instead of the overlay; crossing 900px swaps one for the other.
 (function () {
   'use strict';
 
@@ -144,9 +146,10 @@
       var u = r && r.data && r.data.session && r.data.session.user;
       _email = (u && u.email) || '';
       var root = document.getElementById('ios-hub'), g = root && !root.hidden && root.querySelector('.ihb-greet');
-      if (!g || !_email) return;
+      var dg = _deskShowing() && document.querySelector('#desk-mycerts .dmc-greet');   // the desktop page, same rule
+      if ((!g && !dg) || !_email) return;
       var html = _greetHtml(_iosHubModel(_input()).greeting);
-      if (g.innerHTML !== html) g.innerHTML = html;   // text only: no rebuild, so rows, focus and the log screen's return target stay put
+      [g, dg].forEach(function (el) { if (el && el.innerHTML !== html) el.innerHTML = html; });   // text only: no rebuild, so rows, focus and the log screen's return target stay put
     }).catch(function () { _emailAsked = false; });
   }
   function _input() {
@@ -296,8 +299,115 @@
     if (b) b.click(); else if (typeof showPage === 'function') showPage(p);
   }
 
+  // ── Desktop page (desktop catch-up Task 4, drawing desktop-catchup.html?v=mycerts) ──
+  // The same model in a desktop layout on #page-mycerts: greeting + three numbers, your cert on the left, the other
+  // certs as a grid (Pro) or one folded Pro row plus the Go Pro card (Free) on the right. Free never gets a switch.
+  var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.9H22l-6 4.6 2.3 7L12 16.9 5.7 20.5l2.3-7-6-4.6h7.6L12 2z"></path></svg>';
+  // wait: the cert registry (auth-state.js) has not loaded yet, so the left column says so instead of sitting empty
+  function _deskHtml(m, suggest, wait) {
+    var s = m.stats, a = m.active;
+    function sect(label, sub, gap) { return '<div class="dmc-sect' + (gap ? ' dmc-gap' : '') + '"><b>' + _esc(label) + '</b>' + (sub ? '<span>' + _esc(sub) + '</span>' : '') + '</div>'; }
+    function stat(v, label, cls) { return '<div class="dmc-stat' + (cls ? ' ' + cls : '') + '"><b>' + v + '</b><span>' + _esc(label) + '</span></div>'; }
+    function tile(r, kind) {
+      var ft;
+      if (kind === 'passed') ft = '<span class="dmc-st">Passed</span><span>' + (r.scored != null ? 'Scored <b>' + _esc(r.scored) + '</b>' : 'No score logged') + '</span>';
+      else if (kind === 'fresh') ft = '<span class="dmc-st">Start</span>';
+      else ft = '<span class="dmc-st">Open</span><span><b>' + _esc(Math.round(r.score)) + '</b> / ' + _esc(r.max) + '</span>';
+      var cd = kind === 'studying' ? r.sub : r.code;
+      return '<button class="dmc-cg' + (kind === 'passed' ? ' dmc-pass' : kind === 'fresh' ? ' dmc-fresh' : '') + '" type="button" data-act="open-cert" data-id="' + _esc(r.id) + '">'
+        + '<span class="dmc-row1"><span class="dmc-mark' + (kind === 'passed' ? ' dmc-is-pass' : kind === 'fresh' ? ' dmc-dim' : '') + '">' + _esc(r.glyph) + '</span><span class="dmc-nm">' + _esc(r.name) + '</span></span>'
+        + '<span class="dmc-cd' + (kind === 'studying' && r.days !== null && r.days >= 0 ? ' dmc-ex' : '') + '">' + _esc(cd) + '</span><span class="dmc-ft">' + ft + '</span></button>';
+    }
+
+    var h = '<div class="dmc-top dmc-rv" style="--d:0"><p class="dmc-greet">' + _greetHtml(m.greeting) + '</p><div class="dmc-stats">';
+    if (m.pro) h += stat(s.nextExamDays === null ? '<small>None set</small>' : _esc(s.nextExamDays) + '<small> ' + (s.nextExamDays === 1 ? 'day' : 'days') + '</small>', 'Next exam') + stat(_esc(s.passed), 'Passed', 'dmc-pass') + stat(_esc(s.streak), 'Day streak');
+    else h += stat(s.readiness === null ? '<small>None yet</small>' : _esc(Math.round(s.readiness)), 'Readiness') + stat(_esc(s.due), 'Due today') + stat(_esc(s.streak), 'Day streak');
+    h += '</div></div><div class="dmc-grid"><div class="dmc-col dmc-rv" style="--d:1">' + sect(m.pro ? 'My certs' : 'Your cert', m.pro ? 'all certs' : 'Free plan');
+    if (a) {
+      var pct = a.hasScore ? Math.max(0, Math.min(100, (a.score - a.min) / (a.max - a.min) * 100)) : 0;
+      var tick = Math.max(0, Math.min(100, (a.pass - a.min) / (a.max - a.min) * 100));
+      h += '<div class="dmc-card dmc-ac"><div class="dmc-ac-top"><span class="dmc-mark' + (a.passed ? ' dmc-is-pass' : '') + '">' + _esc(a.glyph) + '</span>'
+        + '<span><span class="dmc-nm">' + _esc(a.name) + '</span><span class="dmc-cd">' + _esc(a.code) + '</span></span>'
+        + '<span class="dmc-badge' + (a.passed ? ' dmc-is-pass' : '') + '">' + (a.passed ? 'Passed' : 'Active') + '</span></div>';
+      if (a.passed) h += '<p>' + _esc(a.sub) + '</p>';
+      else if (a.hasScore) {
+        h += '<div class="dmc-ac-score"><b>' + _esc(Math.round(a.score)) + '</b><span>/ ' + _esc(a.max) + ' readiness</span></div>'
+          + '<div class="dmc-bar"><span style="width:' + pct.toFixed(1) + '%"></span><i style="left:' + tick.toFixed(1) + '%"></i></div>'
+          + '<div class="dmc-leg"><span>' + _esc(a.min) + '</span><span>Pass <b>' + _esc(a.pass) + '</b></span><span>' + _esc(a.max) + '</span></div>'
+          + (m.pro ? '<p>' + _esc(a.sub) + '</p>' : '');
+      } else h += '<p>No readiness yet. Your first quiz sets the baseline.</p>';
+      h += '<button class="dmc-btn dmc-pri" type="button" data-act="continue">' + (a.passed ? 'Review ' : 'Continue ') + _esc(a.name) + '</button>'
+        + (a.passed ? '' : '<button class="dmc-link" type="button" data-act="log">Took your exam? Log your result</button>') + '</div>';
+    } else if (wait) h += '<div class="dmc-card dmc-ac dmc-wait" role="status"><p>Loading your certs…</p></div>';
+    h += '</div><div class="dmc-col dmc-rv" style="--d:2">';
+    if (wait) return h + '</div></div>';
+    if (m.freeRow) {
+      h += sect('Other certs', 'Pro') + '<button class="dmc-card dmc-locked" type="button" data-act="unlock"><span class="dmc-mark dmc-dim">' + LOCK + '</span>'
+        + '<span><span class="dmc-nm">' + _esc(m.freeRow.title) + '</span><span class="dmc-cd">' + _esc(m.freeRow.list) + '</span></span><span class="dmc-pill">Pro</span></button>';
+    } else {
+      var tiles = '';
+      m.studying.forEach(function (r) { tiles += tile(r, 'studying'); });
+      m.passed.forEach(function (r) { tiles += tile(r, 'passed'); });
+      m.notStarted.forEach(function (r) { tiles += tile(r, 'fresh'); });
+      if (tiles) h += sect('Other certs', 'nearest exam first') + '<div class="dmc-certgrid">' + tiles + '</div>';
+    }
+    if (suggest) h += sect('More', '', true) + '<div class="dmc-links"><button class="dmc-ln" type="button" data-act="suggest"><span class="dmc-li">' + STAR + '</span>'
+      + '<span class="dmc-lt"><b>Suggest a cert</b><span>Tell us which exam to add next</span></span><span class="dmc-lg">' + CHEV + '</span></button></div>';
+    if (!m.pro) h += '<div class="dmc-card dmc-procard"><span class="dmc-eyebrow">On Free, you study one cert</span><h3>Study every cert with Pro</h3>'
+      + '<p>Every cert unlocked, no daily question cap, and analytics across all of them. Your <b>' + _esc(a ? a.name : 'cert') + '</b> progress comes with you.</p>'
+      + '<div class="dmc-prow"><a class="dmc-btn dmc-gopro" href="https://certanvil.com/pricing" target="_blank" rel="noopener">Go Pro</a><span>From $7.42 a month. Cancel anytime.</span></div></div>';
+    return h + '</div></div>';
+  }
+
+  function _deskShowing() { var p = document.getElementById('page-mycerts'); return !!(p && p.classList.contains('active')); }
+  // drawn = filled once; it may still be mid page switch (showPage's 300ms exit), so redraws key on this, never on .active.
+  // Redrawing hidden content is harmless and never switches page.
+  function _deskDrawn() { var h = document.getElementById('desk-mycerts'); return !!(h && h.firstChild); }
+  // still: an in-place redraw (plan, result, cert list or email landing) shows the new content without replaying the
+  // first paint's rise and bar fill; a fresh visit to the page animates.
+  var _waitTries = 0;
+  function _renderDesk(still) {
+    var host = document.getElementById('desk-mycerts'); if (!host) return false;
+    var m = _iosHubModel(_input());
+    var wait = !m.active && typeof window.getAvailableCerts !== 'function';
+    if (wait && _waitTries < 60) { _waitTries++; setTimeout(function () { if (_deskDrawn()) _renderDesk(true); }, 150); }   // up to ~9s, then give up quietly
+    else if (!wait) _waitTries = 0;
+    host.classList.toggle('dmc-still', !!still);
+    var suggest = typeof openSuggestCert === 'function' && window._certanvilSignedIn === true;   // signed in only
+    // an in-place redraw (the plan or a result arriving) keeps focus on the same control
+    var ae = document.activeElement, key = ae && host.contains(ae) && ae.getAttribute ? (ae.getAttribute('data-act') || '') + '|' + (ae.getAttribute('data-id') || '') : null;
+    host.innerHTML = _deskHtml(m, suggest, wait);
+    if (key) {
+      var back = [].filter.call(host.querySelectorAll('[data-act]'), function (b) { return (b.getAttribute('data-act') || '') + '|' + (b.getAttribute('data-id') || '') === key; })[0];
+      if (back) { try { back.focus({ preventScroll: true }); } catch (_) {} }
+    }
+    host.onclick = function (ev) {
+      var b = ev.target.closest && ev.target.closest('[data-act]'); if (!b || !host.contains(b)) return;
+      var act = b.getAttribute('data-act');
+      if (act === 'continue') { if (typeof goSetup === 'function') goSetup(); else if (typeof showPage === 'function') showPage('setup'); }
+      else if (act === 'log') { if (typeof openLogResult === 'function') openLogResult({ preselect: null, from: b }); }
+      else if (act === 'suggest') { try { b.focus({ preventScroll: true }); } catch (_) {} if (typeof openSuggestCert === 'function') openSuggestCert(); }   // Safari does not focus a clicked button: Escape must land back here
+      else if (act === 'unlock') {
+        if (typeof _showProOnlyUI === 'function') _showProOnlyUI({ feature: 'Every cert', title: 'Every cert comes with Pro',
+          body: 'You’re studying <b>' + _esc(m.active ? m.active.name : 'your cert') + '</b>. Pro adds every other exam, and your progress here stays exactly where it is.' });
+      }
+      else if (act === 'open-cert') {
+        if (!_iosHubModel(_input()).pro) return;   // Free never switches, whatever is on the page
+        if (typeof window.tadSwitchCert === 'function') window.tadSwitchCert(b.getAttribute('data-id'));
+      }
+    };
+    return true;
+  }
+  function _openDesk() {
+    if (!document.getElementById('page-mycerts') || typeof showPage !== 'function') return false;
+    _askEmail();
+    _renderDesk(_deskShowing());   // already on the page (e.g. See it in your hub): refresh without replaying the entrance
+    if (!_deskShowing()) showPage('mycerts');
+    return true;
+  }
+
   function openHub() {
-    if (!isPhone()) return false;
+    if (!isPhone()) return _openDesk();
     var root = _ensureHost(), wasOpen = !root.hidden;
     _askEmail();
     var m = _iosHubModel(_input());
@@ -332,6 +442,17 @@
   window._iosHubModel = _iosHubModel;
   window.openHub = openHub;
   // The plan (Free/Pro) can land after the hub is drawn, right after launch: redraw in place so a Pro user never sees the Free view.
-  window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); });
-  window.iosHub = { close: _close };
+  window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); else if (_deskDrawn()) _renderDesk(true); });
+  // Crossing 900px swaps the two layouts so only one is ever up: the phone overlay becomes the page, and back.
+  // One tick late on purpose: a desktop dialog over the page (log result, suggest) watches the same breakpoint and
+  // must release first, or it un-inerts the page behind the phone hub after the hub inerted it.
+  function _swap() {
+    var root = document.getElementById('ios-hub');
+    if (isPhone()) { if (_deskShowing()) { if (typeof showPage === 'function') showPage('setup'); openHub(); } }
+    else if (root && !root.hidden) { _close(); openHub(); }
+  }
+  function _onBreak() { setTimeout(_swap, 0); }
+  if (MQ) { if (MQ.addEventListener) MQ.addEventListener('change', _onBreak); else if (MQ.addListener) MQ.addListener(_onBreak); }
+  // refresh: a logged result redraws the desktop page in place when it is showing
+  window.iosHub = { close: _close, refresh: function () { if (_deskDrawn()) _renderDesk(true); } };
 })();
