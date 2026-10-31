@@ -18,7 +18,7 @@ const t = async (name, fn) => { try { await fn(); n++; } catch (e) { console.err
 
 let calls = [];
 // counts: current_count per rl key prefix; block: which rl keys answer allowed=false; alertUsed: alert gate already spent
-function stub({ counts = {}, block = [], alertSeen = false, resendHangs = false, resendStatus = 200 } = {}) {
+function stub({ counts = {}, block = [], alertSeen = false, resendHangs = false, resendStatus = 200, resendThrows = false, gateFails = false } = {}) {
   calls = [];
   let alertSent = alertSeen;
   globalThis.fetch = async (url, init = {}) => {
@@ -27,7 +27,10 @@ function stub({ counts = {}, block = [], alertSeen = false, resendHangs = false,
     if (url.includes('/rpc/ai_rl_check_and_increment')) {
       const { p_key, p_limit } = JSON.parse(init.body);
       let allowed = !block.some((b) => p_key.startsWith(b));
-      if (p_key === 'alert:global80') { allowed = !alertSent; alertSent = true; }
+      if (p_key.startsWith('alert:global80')) {
+        if (gateFails) return new Response('{}', { status: 500 });
+        allowed = !alertSent; alertSent = true;
+      }
       const cur = p_key.startsWith('global') ? (counts.global ?? 1) : 1;
       return new Response(JSON.stringify([{ allowed, current_count: cur, limit: p_limit }]), { status: 200 });
     }
@@ -36,6 +39,7 @@ function stub({ counts = {}, block = [], alertSeen = false, resendHangs = false,
       return new Response(JSON.stringify({ content: [{ type: 'text', text: 'hi' }], usage: { input_tokens: 11, output_tokens: 22, cache_read_input_tokens: 3 } }), { status: 200 });
     }
     if (url === 'https://api.resend.com/emails') {
+      if (resendThrows) throw new Error('network down');
       if (resendHangs) return new Promise(() => {});
       return new Response('{"id":"m"}', { status: resendStatus });
     }
@@ -88,25 +92,58 @@ await t('80% email: sent exactly once at the threshold, with limit and count', a
   await call(); await settle(); // gate already spent in the stub
   assert.equal(emails().length, 1);
 });
+await t('alert gate is keyed on the UTC date and the email states the 24-hour window', async () => {
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  stub({ counts: { global: 80 } }); await call(); await settle();
+  const keys = calls.map((c) => c.url.includes('ai_rl_check') ? JSON.parse(c.init.body).p_key : '').filter((k) => k.startsWith('alert:'));
+  assert.deepEqual(keys, ['alert:global80:' + new Date().toISOString().slice(0, 10)]);
+  const text = JSON.parse(emails()[0].init.body).text;
+  assert.ok(text.includes('24 hours') && !text.includes('midnight UTC'));
+});
+await t('alert fires only at exactly the threshold, not past it', async () => {
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  stub({ counts: { global: 81 } }); await call(); await settle();
+  assert.equal(emails().length, 0);
+  assert.ok(!calls.some((c) => c.url.includes('ai_rl_check') && JSON.parse(c.init.body).p_key.startsWith('alert:')));
+});
+await t('non-integer threshold rounds up: limit 7 alerts at 6', async () => {
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '7', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  stub({ counts: { global: 5 } }); await call(); await settle(); assert.equal(emails().length, 0);
+  stub({ counts: { global: 6 } }); await call(); await settle(); assert.equal(emails().length, 1);
+});
+await t('Resend throwing, a non-ok Resend, or the gate RPC failing never touches the AI response', async () => {
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  const errs = []; const oe = console.error; console.error = (...a) => errs.push(a.join(' '));
+  try {
+    stub({ counts: { global: 80 }, resendThrows: true }); let r = await call(); await settle(); assert.equal(r.code, 200);
+    stub({ counts: { global: 80 }, gateFails: true }); r = await call(); await settle(); assert.equal(r.code, 200); assert.equal(emails().length, 0);
+    stub({ counts: { global: 80 }, resendStatus: 422 }); r = await call(); await settle(); assert.equal(r.code, 200);
+    assert.ok(errs.some((e) => e.includes('resend status 422') && !e.includes('f@example.com') && !e.includes('rk')));
+  } finally { console.error = oe; }
+});
+await t('env limit must be a positive integer up to 100000', async () => {
+  for (const v of ['1.5', '100001', '1e3x', ' ', 'Infinity']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 160, v); }
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '100000' }); stub(); await call(); assert.equal(rlLimit('global'), 100000);
+});
 await t('no email below the threshold', async () => {
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
   stub({ counts: { global: 79 } }); await call(); await settle();
   assert.equal(emails().length, 0);
-  assert.ok(!calls.some((c) => c.url.includes('ai_rl_check') && JSON.parse(c.init.body).p_key === 'alert:global80'));
+  assert.ok(!calls.some((c) => c.url.includes('ai_rl_check') && JSON.parse(c.init.body).p_key.startsWith('alert:global80')));
 });
 await t('no email (and no alert counter) when RESEND_API_KEY or FOUNDER_EMAIL is missing', async () => {
   for (const env of [{ FOUNDER_EMAIL: 'f@example.com' }, { RESEND_API_KEY: 'rk' }, {}]) {
-    setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', ...env }); stub({ counts: { global: 95 } });
+    setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', ...env }); stub({ counts: { global: 80 } });
     const r = await call(); await settle();
     assert.equal(r.code, 200); assert.equal(emails().length, 0);
   }
 });
 await t('a failing or hanging Resend never delays or fails the AI response', async () => {
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
-  stub({ counts: { global: 90 }, resendHangs: true });
+  stub({ counts: { global: 80 }, resendHangs: true });
   const r = await Promise.race([call(), new Promise((res) => setTimeout(() => res('TIMEOUT'), 1500))]);
   assert.notEqual(r, 'TIMEOUT'); assert.equal(r.code, 200); assert.ok(JSON.parse(r.body).content);
-  stub({ counts: { global: 90 }, resendStatus: 500 });
+  stub({ counts: { global: 80 }, resendStatus: 500 });
   const r2 = await call(); assert.equal(r2.code, 200);
 });
 await t('usage is logged as one structured line with no prompt text or user id', async () => {

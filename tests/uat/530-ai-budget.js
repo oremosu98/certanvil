@@ -14,8 +14,8 @@ const { test } = require('./_context');
   const cp = require('child_process');
 
   let apiOut = '';
-  try { apiOut = cp.execFileSync(process.execPath, [path.join(ROOT, 'tests', 'api', 'generate-limits.test.mjs')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); }
-  catch (e) { apiOut = 'FAILED ' + String(e.stdout || e.message).slice(-400); }
+  try { apiOut = cp.execFileSync(process.execPath, [path.join(ROOT, 'tests', 'api', 'generate-limits.test.mjs')], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
+  catch (e) { apiOut = 'FAILED ' + String(e.stdout || '').slice(-300) + ' ' + String(e.stderr || e.message).slice(-500); }
   test('api tests (generate-limits) pass: ' + apiOut.trim().split('\n').pop(), /passed/.test(apiOut) && !/FAILED/.test(apiOut));
 
   let out = [];
@@ -26,7 +26,7 @@ const { test } = require('./_context');
   test('proxy: env override read per call, default is a positive number with the arithmetic beside it',
     gen.includes('process.env.AI_GLOBAL_DAILY_LIMIT') && /GLOBAL_DAILY_LIMIT_DEFAULT = \d+/.test(gen) && gen.includes('PROVISIONAL') && gen.includes('100 / 30'));
   test('proxy: user and IP ceilings unchanged (500/day, 200/hour)', gen.includes('USER_DAILY_LIMIT   = 500') && gen.includes('IP_HOURLY_LIMIT    = 200'));
-  test('proxy: 80% alert is deduped by alert:global80 and never awaited', gen.includes("'alert:global80', 1, '1 day'") && /\n\s+maybeAlertFounder\(token/.test(gen) && !/await maybeAlertFounder/.test(gen));
+  test('proxy: 80% alert is deduped by alert:global80 and never awaited', gen.includes("'alert:global80:'") && /\n\s+maybeAlertFounder\(token/.test(gen) && !/await maybeAlertFounder/.test(gen));
   const dash = String.fromCharCode(0x2014);
   test('copy: no em dashes in the new tests, the busy toast or the alert email', !fs.readFileSync(path.join(ROOT, 'tests', 'api', 'generate-limits.test.mjs'), 'utf8').includes(dash) && !gen.slice(gen.indexOf('function maybeAlertFounder'), gen.indexOf('module.exports = async')).includes(dash));
 })();

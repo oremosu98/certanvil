@@ -64,8 +64,8 @@ const IP_HOURLY_LIMIT    = 200;
 //   100 / 30 = $3.333 a day / $0.02057 = 162.1 calls -> 162, rounded down to 160.
 const GLOBAL_DAILY_LIMIT_DEFAULT = 160;
 function globalDailyLimit() {
-  const n = parseInt(process.env.AI_GLOBAL_DAILY_LIMIT, 10);
-  return n > 0 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;
+  const n = Number(process.env.AI_GLOBAL_DAILY_LIMIT);
+  return Number.isInteger(n) && n > 0 && n <= 100000 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;
 }
 const RL_SALT = process.env.RL_SALT || 'certanvil-ai-rl-v1';
 
@@ -149,17 +149,20 @@ function maybeAlertFounder(token, count, limit) {
   if (!key || !to) return;
   (async () => {
     try {
-      const gate = await rlCheck(token, 'alert:global80', 1, '1 day');
+      // Gate keyed on the UTC date: the counter window starts at the first call, not at midnight, so a
+      // plain key could block or double an alert across days. One alert per calendar day.
+      const gate = await rlCheck(token, 'alert:global80:' + new Date().toISOString().slice(0, 10), 1, '1 day');
       if (!gate || gate.allowed === false) return;
       const from = 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>';
       const text = 'The app-wide AI limit is at ' + count + ' of ' + limit + ' calls today (80% or more). ' +
-        'Once it is reached, everyone sees the "very busy" message until the day resets (midnight UTC). ' +
+        'Once it is reached, everyone sees the "very busy" message until the limit window clears (24 hours after the window started, not at midnight). ' +
         'Raise AI_GLOBAL_DAILY_LIMIT in the cert-app Vercel project if you want more headroom.';
-      await fetch('https://api.resend.com/emails', {
+      const r = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
         body: JSON.stringify({ from, to: [to], subject: 'CertAnvil AI at 80% of today\'s limit', text })
       });
+      if (!r.ok) console.error('[ai-proxy] 80% alert email failed: resend status ' + r.status);
     } catch (e) { console.error('[ai-proxy] 80% alert failed:', e && e.message); }
   })();
 }
@@ -243,9 +246,10 @@ module.exports = async function handler(req, res) {
         message: 'We\'re very busy right now. Your questions will be back shortly.'
       });
     }
-    // 80% warning: once a day, the first call at or past the threshold emails the founder.
+    // 80% warning: current_count is post-increment and the RPC row-locks, so exactly one call per window
+    // sees count === threshold. user/ip 429s above also show the busy copy (scope is not shown to users).
     const g = checks[2];
-    if (g && Number(g.current_count) >= Math.ceil(0.8 * globalLimit)) {
+    if (g && Number(g.current_count) === Math.ceil(0.8 * globalLimit)) {
       maybeAlertFounder(token, Number(g.current_count), globalLimit);
     }
   } catch (e) {
