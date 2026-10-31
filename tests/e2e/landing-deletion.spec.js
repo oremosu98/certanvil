@@ -40,20 +40,37 @@ test.describe('website account deletion', () => {
     expect(log.filter((e) => /^(rpc:request_account_deletion|auth:signOut:)/.test(e))).toEqual(['rpc:request_account_deletion', 'auth:signOut:global']);
   });
 
-  test('/account delete: a global sign-out that fails still signs this device out before going home', async ({ page }) => {
-    await route(page, { signOutError: true });
+  test('/account delete: offline, a failed global sign-out clears this device\'s session before going home', async ({ page }) => {
+    await route(page, { signOutOffline: true });
     page.on('dialog', (d) => d.accept());
     await page.goto('/account');
     await expect(page.locator('#btn-delete-account')).toBeVisible();
     await page.evaluate(() => {
-      const so = window.certanvilSupabase.auth.signOut;
-      window.certanvilSupabase.auth.signOut = function () { const r = so.apply(this, arguments); sessionStorage.setItem('log', JSON.stringify(window.__fakeLog)); return r; };
+      const a = window.certanvilSupabase.auth, so = a.signOut, rm = a._removeSession;
+      a.signOut = function () { const r = so.apply(this, arguments); sessionStorage.setItem('log', JSON.stringify(window.__fakeLog)); return r; };
+      // '1' once the session is really gone (checked before the page leaves)
+      a._removeSession = function () { return rm.apply(this, arguments).then(() => a.getSession()).then((r) => { sessionStorage.setItem('removed', r.data.session ? '0' : '1'); }); };
     });
     await page.click('#btn-delete-account');
     await page.waitForURL((u) => u.pathname === '/', { timeout: 8000 });
     await expect(page.locator('#toast-stack .toast')).toHaveText(AFTER_DELETING);
     const log = JSON.parse(await page.evaluate(() => sessionStorage.getItem('log')));
-    expect(log.filter((e) => /^auth:signOut:/.test(e))).toEqual(['auth:signOut:global', 'auth:signOut:local']);
+    // v8.198.1: no second network sign-out (offline it fails too); the stored session goes without the network
+    expect(log.filter((e) => /^auth:(signOut|removeSession)/.test(e))).toEqual(['auth:signOut:global']);
+    expect(await page.evaluate(() => sessionStorage.getItem('removed'))).toBe('1');
+  });
+
+  test('/account delete: offline, if the session cannot be cleared it stays and says so', async ({ page }) => {
+    await route(page, { signOutOffline: true, removeSessionFails: true });
+    page.on('dialog', (d) => d.accept());
+    await page.goto('/account');
+    await expect(page.locator('#btn-delete-account')).toBeVisible();
+    await page.click('#btn-delete-account');
+    await expect(page.locator('#toast-stack .toast')).toHaveText(
+      "Your account will be deleted in 7 days. We couldn't sign you out on this device, so sign out here when you're back online.");
+    expect(new URL(page.url()).pathname).toBe('/account');
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
+    expect(await page.evaluate(() => window.certanvilSupabase.auth.getSession().then((r) => !!(r.data && r.data.session)))).toBe(true);
   });
 
   for (const [name, fake] of [['an rpc error', { rpcError: true }], ['a NULL result', { rpcNull: true }]]) {

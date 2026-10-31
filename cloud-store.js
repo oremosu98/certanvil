@@ -124,6 +124,9 @@
   // Pending flush queue — keys waiting to be written to cloud
   var pendingFlush = new Set();
   var flushTimer = null;
+  // v8.198.1: automatic retries after a compare-and-set miss in a row (see doFlush); reset by a write that lands.
+  var conflictRetries = 0;
+  var MAX_CONFLICT_RETRIES = 2;
   var FLUSH_DEBOUNCE_MS = 1500;  // wait 1.5s of quiet before batching writes
   var lastSyncAt = null;
   var syncStatus = 'idle';  // 'idle' | 'pending' | 'syncing' | 'error' | 'offline'
@@ -166,6 +169,14 @@
     // Returns a promise that resolves when the flush completes.
     flushNow: function () {
       if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+      // v8.198.1: a flush already in flight is waited for, even when nothing new is pending, then anything
+      // queued meanwhile goes too. Account deletion calls this before request_account_deletion: returning early
+      // let a write whose read predated the rpc land after it and replace the whole metadata column.
+      if (inflightFlush) {
+        return inflightFlush.catch(function () {}).then(function () {
+          return pendingFlush.size === 0 ? undefined : doFlush();
+        });
+      }
       if (pendingFlush.size === 0) return Promise.resolve();
       return doFlush();
     },
@@ -493,6 +504,9 @@
   // Doflush — actually run the queued cloud writes
   function doFlush() {
     if (inflightFlush) return inflightFlush;
+    // v8.198.1: this run takes everything pending, so whichever timer called it is spent and any other is
+    // superseded. flushTimer used to keep the spent id after a debounce or hydrate timer fired.
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
     if (pendingFlush.size === 0) return Promise.resolve();
     var sb = getSupabase();
     var userId = getUserId();
@@ -529,6 +543,11 @@
       // over the existing per-cert entries — otherwise flushing one cert wipes
       // the others' sub-objects on the full-metadata column replace.
       var CERT_SCOPED = ['sr', 'activated', 'onb_skips'];
+      // v8.198.1: account-deletion keys only the server writes (request_account_deletion stamps the first, the
+      // sign-in trigger sets the second and clear_deletion_notice removes it). A client flush never adds, removes
+      // or changes them: they are copied from the row this flush read, and the write only lands if the row
+      // still holds those same values, so an rpc that ran between this read and this write is never undone.
+      var SERVER_OWNED = ['deletion_requested_at', 'deletion_cancelled_at'];
       var writeProfile = function (existingMeta) {
         CERT_SCOPED.forEach(function (k) {
           var existing = (existingMeta && existingMeta[k]) || {};
@@ -545,9 +564,25 @@
         // v8.151.0: keep cloud keys this device doesn't hold (a fresh device's
         // first upload used to replace the whole profile with its few keys).
         jsonb = Object.assign({}, existingMeta || {}, jsonb);
+        SERVER_OWNED.forEach(function (k) {
+          delete jsonb[k];
+          if (existingMeta && existingMeta[k] != null) jsonb[k] = existingMeta[k];
+        });
         var update = { metadata: jsonb };
         if (examDate) update.exam_date = examDate;
-        return sb.from('profiles').update(update).eq('id', userId);
+        var q = sb.from('profiles').update(update).eq('id', userId);
+        SERVER_OWNED.forEach(function (k) {   // compare-and-set on the server-owned keys
+          var v = existingMeta ? existingMeta[k] : null;
+          q = (v == null) ? q.is('metadata->>' + k, null) : q.eq('metadata->>' + k, String(v));
+        });
+        return q.select('id').then(function (r) {
+          // No row matched: the server changed a deletion key after our read. Nothing was written; the keys are
+          // re-queued below and retried against a fresh read.
+          if (r && !r.error && Array.isArray(r.data) && r.data.length === 0) {
+            return { error: 'profile changed on the server during the flush', conflict: true };
+          }
+          return r;
+        });
       };
       ops.push(
         sb.from('profiles').select('metadata').eq('id', userId).single().then(function (res) {
@@ -608,14 +643,28 @@
 
     inflightFlush = flushPromise.then(function (results) {
       inflightFlush = null;
-      var hadError = results.some(function (r) { return r && r.error; });
+      // v8.198.1: a compare-and-set miss (the server changed a deletion key mid-flush) is expected, not a failure:
+      // status 'pending', no telemetry, and an automatic retry against a fresh read, at most MAX_CONFLICT_RETRIES
+      // in a row. Any other error behaves as before.
+      var realErrors = results.filter(function (r) { return r && r.error && !r.conflict; });
+      var conflict = results.some(function (r) { return r && r.conflict; });
+      var hadError = realErrors.length > 0;
       lastSyncAt = Date.now();
-      setStatus(hadError ? 'error' : 'idle');
-      if (hadError) {
+      setStatus(hadError ? 'error' : (conflict ? 'pending' : 'idle'));
+      if (hadError || conflict) {
         // Re-queue the failed keys for retry
         keysSnapshot.forEach(function (k) { pendingFlush.add(k); });
+      }
+      if (conflict && !hadError && conflictRetries < MAX_CONFLICT_RETRIES) {
+        conflictRetries++;
+        if (flushTimer) clearTimeout(flushTimer);
+        flushTimer = setTimeout(doFlush, FLUSH_DEBOUNCE_MS);
+      } else if (!conflict && !hadError) {
+        conflictRetries = 0;   // a write that landed
+      }
+      if (hadError) {
         console.warn('[cloud-store] flush had errors', results);
-        _syncTelemetry('flush', (results.filter(function (r) { return r && r.error; })[0] || {}).error);
+        _syncTelemetry('flush', (realErrors[0] || {}).error);
       }
       return results;
     }).catch(function (err) {

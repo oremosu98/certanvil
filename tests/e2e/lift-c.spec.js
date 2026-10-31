@@ -69,12 +69,13 @@ for (const vp of PHONES) {
       await expect(page.locator('#lift-tabbar')).toBeVisible();
     });
     test('day-0 with nothing left goes to the quota screen', async ({ page }) => {
-      await boot(page, vp, { signed: true });
+      // The app's own async quota refresh can land after setTier; the fake answers it with the same 15-of-15 state.
+      await boot(page, vp, { signed: true, fake: { tier: 'free', quotaUsed: 15 } });
       await setTier(page, 'free', 15);
       await expect(page.locator('#ios-home')).toContainText("Network+ is set.");
       await page.evaluate(() => { window.__quota = 0; window._showQuotaExceededUI = function () { window.__quota++; }; });
       await page.locator('#ios-home [data-act="today"]').click();
-      expect(await page.evaluate(() => window.__quota)).toBe(1);
+      await expect.poll(() => page.evaluate(() => window.__quota)).toBe(1);   // the quota check is async: poll, not one read
     });
     test('a free user at 0 left sees capped Home; Start review opens Daily Review; See Pro opens /pricing', async ({ page }) => {
       await boot(page, vp, { signed: true, seed: { nplus_history: HISTORY } });

@@ -1365,6 +1365,21 @@
   // with type-your-email → deleting state → goodbye).
 
 
+  // Offline, supabase-js's signOut() (any scope) calls the network logout first and returns {error} with the
+  // session still stored. supabase-js 2.105 has no public local-only sign-out, so use its private _removeSession()
+  // (clears the stored session and fires SIGNED_OUT) when it exists, else remove the stored session from the
+  // client's storage. Resolves true only when getSession() then finds no session.
+  function _dropLocalSession(sb) {
+    var a = sb && sb.auth;
+    if (!a) return Promise.resolve(false);
+    return Promise.resolve().then(function () {
+      if (typeof a._removeSession === 'function') return a._removeSession();
+      if (a.storage && a.storageKey && typeof a.storage.removeItem === 'function') return a.storage.removeItem(a.storageKey);
+    }).then(function () { return a.getSession(); }).then(function (r) {
+      return !(r && r.data && r.data.session);
+    }, function () { return false; });
+  }
+
   function _confirmDeleteAccount(modal, userId) {
     var sb = window.certanvilSupabase;
     if (!sb) return;
@@ -1384,17 +1399,28 @@
     // mark, so send anything pending first. A failed flush never stops the deletion.
     var CS = window.cloudStore;
     var flushed = function () {
-      return (CS && typeof CS.flushNow === 'function') ? Promise.resolve().then(function () { return CS.flushNow(); }).catch(function () {}) : null;
+      if (!CS || typeof CS.flushNow !== 'function') return null;
+      // Waits at most 5s (offline a flush can take far longer); cloud-store's compare-and-set keeps the mark safe anyway.
+      var f = Promise.resolve().then(function () { return CS.flushNow(); });
+      return Promise.race([f, new Promise(function (r) { setTimeout(r, 5000); })]).catch(function () {});
     };
     // The server stamps the mark (and sees the whole row, so nothing is clobbered), then every device is signed out.
-    // A global sign-out that fails (supabase-js resolves {error} offline and keeps the session) falls back to this device.
+    // A global sign-out that fails (supabase-js resolves {error} offline and keeps the session) falls back to
+    // clearing this device's session without the network; resolves true only once the session is really gone.
     apple.then(flushed).then(function () { return sb.rpc('request_account_deletion'); }).then(function (r) {
       if (!r || r.error || !r.data) throw (r && r.error) || new Error('no profile');
       return sb.auth.signOut({ scope: 'global' }).then(function (so) {
-        if (so && so.error) return sb.auth.signOut();
-      }, function () { return sb.auth.signOut(); }).catch(function () {});
-    }).then(function () {
-      if (card) {
+        return (so && so.error) ? _dropLocalSession(sb) : true;
+      }, function () { return _dropLocalSession(sb); }).catch(function () { return false; });
+    }).then(function (signedOut) {
+      if (card && !signedOut) {
+        card.innerHTML =
+          '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
+          '<p class="dlpb-lede">Your account will be deleted in 7 days. We couldn&rsquo;t sign you out on this device, so sign out from Settings when you&rsquo;re back online.</p>' +
+          '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
+        var stay = document.getElementById('dla-done');
+        if (stay) stay.addEventListener('click', function () { modal.remove(); });
+      } else if (card) {
         card.innerHTML =
           '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
           '<p class="dlpb-lede">You&rsquo;re signed out. Sign back in within <b>7 days</b> if you change your mind &mdash; after that, your data is permanently purged.</p>' +
