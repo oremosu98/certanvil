@@ -32,7 +32,11 @@ checks(migration, item, ok) as (values
   ('20260718_client_errors',            'table client_errors',           to_regclass('public.client_errors') is not null),
   ('20260718_user_bug_reports',         'table user_bug_reports',        to_regclass('public.user_bug_reports') is not null),
   ('20261029_account_deletion',         'purge_deleted_accounts()',      exists (select 1 from fn where proname='purge_deleted_accounts')),
-  ('20261029_account_deletion',         'trigger on_signin_cancel_deletion', exists (select 1 from pg_trigger where tgname='on_signin_cancel_deletion'))
+  ('20261029_account_deletion',         'trigger on_signin_cancel_deletion', exists (select 1 from pg_trigger where tgname='on_signin_cancel_deletion')),
+  ('20261031_cert_requests',            'table cert_requests',           to_regclass('public.cert_requests') is not null),
+  ('20261031_cert_requests',            'view cert_request_tally',       to_regclass('public.cert_request_tally') is not null),
+  ('20261031_cert_requests',            'policy cert_requests_admin_select', exists (select 1 from pg_policies where tablename='cert_requests' and policyname='cert_requests_admin_select')),
+  ('20261031_cert_requests',            'policy cert_requests_insert_own', exists (select 1 from pg_policies where tablename='cert_requests' and policyname='cert_requests_insert_own'))
 )
 select migration, item, case when ok then 'ok' else 'MISSING' end as status
 from checks
