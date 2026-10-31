@@ -10,25 +10,27 @@ const handler = mod.default;
 mod._tuning.gapMs = 0;
 
 let n = 0;
-const t = async (name, fn) => { await fn(); n++; };
+const t = async (name, fn) => { try { await fn(); n++; } catch (e) { console.error('FAIL: ' + name); throw e; } };
 let calls = [], db = [];
 let opts = {};
-function stub({ role = 'admin', reports = [], emails = {}, failSend = false, rate = [] } = {}) {
+function stub({ userOk = true, failClose = false, failRelease = false, noRange = false, lookupBoom = [], role = 'admin', reports = [], emails = {}, failSend = false, rate = [] } = {}) {
   calls = []; db = reports.map((r) => Object.assign({ status: 'open', user_id: null, fixed_notified_at: null, title: 'T' + r.id }, r));
   globalThis.fetch = async (url, init = {}) => {
     url = String(url); calls.push({ url, init });
     const method = init.method || 'GET';
-    if (url.endsWith('/auth/v1/user')) return new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 });
+    if (url.endsWith('/auth/v1/user')) return userOk ? new Response(JSON.stringify({ id: 'admin-1' }), { status: 200 }) : new Response('{}', { status: 401 });
     if (url.includes('/rest/v1/profiles')) return new Response(JSON.stringify([{ role }]), { status: 200 });
     if (url.includes('/rest/v1/admin_audit_log')) return new Response('', { status: 201 });
     if (url.includes('/rest/v1/user_bug_reports') && method === 'GET') {
       const ids = (url.match(/id=in\.\(([\d,]+)\)/) || [])[1].split(',').map(Number);
       const aft = Number((url.match(/id=gt\.(\d+)/) || [])[1] || 0), lim = Number((url.match(/limit=(\d+)/) || [])[1]);
       const pool = db.filter((r) => ids.includes(r.id) && r.id > aft).sort((a, b) => a.id - b.id);
-      return new Response(JSON.stringify(pool.slice(0, lim)), { status: 206, headers: { 'content-range': '0-0/' + pool.length } });
+      return new Response(JSON.stringify(pool.slice(0, lim)), { status: 206, headers: noRange ? {} : { 'content-range': '0-0/' + pool.length } });
     }
     if (url.includes('/rest/v1/user_bug_reports') && method === 'PATCH') {
       const data = JSON.parse(init.body);
+      if (failClose && data.status === 'closed' && url.includes('id=eq.')) return new Response('{}', { status: 500 });
+      if (failRelease && data.fixed_notified_at === null) return new Response('{}', { status: 500 });
       const inIds = (url.match(/id=in\.\(([\d,]+)\)/) || [])[1], eqId = (url.match(/id=eq\.(\d+)/) || [])[1];
       let hit = db.filter((r) => inIds ? inIds.split(',').map(Number).includes(r.id) : r.id === Number(eqId));
       if (url.includes('status=in.(open,triaged)')) hit = hit.filter((r) => r.status === 'open' || r.status === 'triaged');
@@ -38,6 +40,7 @@ function stub({ role = 'admin', reports = [], emails = {}, failSend = false, rat
     }
     if (url.includes('/auth/v1/admin/users/')) {
       const id = decodeURIComponent(url.split('/auth/v1/admin/users/')[1]);
+      if (lookupBoom.includes(id)) return new Response('{}', { status: 500 });
       return emails[id] ? new Response(JSON.stringify({ id, email: emails[id] }), { status: 200 }) : new Response('{}', { status: 404 });
     }
     if (url === 'https://api.resend.com/emails') {
@@ -126,6 +129,62 @@ await t('buildFixedEmail escapes the title and cuts to 50 plus an ellipsis', asy
   const all = JSON.stringify(e) + JSON.stringify(long);
   assert.ok(!all.includes('—') && !/founder|simi/i.test(all));
   assert.ok(e.text.includes("It's fixed. Open CertAnvil and you'll have it. Thanks for telling us.") && e.text.trim().endsWith('CertAnvil'));
+});
+
+await t('two concurrent fixed calls send exactly one mail (atomic claim)', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' } });
+  const [a, b] = await Promise.all([handler(post({ action: 'fixed', ids: [1] })), handler(post({ action: 'fixed', ids: [1] }))]);
+  const ja = await a.json(), jb = await b.json();
+  assert.equal(mails().length, 1); assert.equal(ja.sent + jb.sent, 1); assert.equal(ja.skipped + jb.skipped, 1);
+});
+await t('a failed final close still counts sent, is not closed, counts failed', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' }, failClose: true });
+  const j = await (await handler(post({ action: 'fixed', ids: [1] }))).json();
+  assert.deepEqual([j.sent, j.closed, j.failed], [1, 0, 1]);
+});
+await t('a failed un-stamp counts failed', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' }, failSend: true, failRelease: true });
+  const j = await (await handler(post({ action: 'fixed', ids: [1] }))).json();
+  assert.deepEqual([j.sent, j.failed], [0, 1]);
+  stub({ reports: [{ id: 1, user_id: 'u9' }], emails: {}, failRelease: true });
+  const k = await (await handler(post({ action: 'fixed', ids: [1] }))).json();
+  assert.deepEqual([k.skipped, k.failed], [0, 1]);
+});
+await t('a row closed after the read is not claimed or emailed', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' } });
+  const f = globalThis.fetch; let first = true;
+  globalThis.fetch = async (u, i) => { const r = await f(u, i); if (first && String(u).includes('user_bug_reports') && !(i && i.method)) { first = false; db[0].status = 'closed'; } return r; };
+  const j = await (await handler(post({ action: 'fixed', ids: [1] }))).json();
+  assert.equal(mails().length, 0); assert.equal(j.skipped, 1);
+});
+await t('missing content-range is 502', async () => {
+  stub({ reports: [{ id: 1 }], noRange: true });
+  assert.equal((await handler(post({ action: 'close', ids: [1] }))).status, 502);
+});
+await t('a bad token is 401', async () => {
+  stub({ userOk: false, reports: [{ id: 1 }] });
+  assert.equal((await handler(post({ action: 'close', ids: [1] }))).status, 401);
+});
+await t('email lookup 404 is skipped and released; lookup failure is failed and released', async () => {
+  stub({ reports: [{ id: 1, user_id: 'gone' }, { id: 2, user_id: 'boom' }], emails: {}, lookupBoom: ['boom'] });
+  const j = await (await handler(post({ action: 'fixed', ids: [1, 2] }))).json();
+  assert.deepEqual([j.skipped, j.failed, j.sent], [1, 1, 0]);
+  assert.deepEqual(db.map((r) => r.fixed_notified_at), [null, null]);
+});
+await t('fixed paginates with after across batches', async () => {
+  const ids = Array.from({ length: 25 }, (_, i) => i + 1);
+  stub({ reports: ids.map((id) => ({ id, user_id: 'u' + id })), emails: Object.fromEntries(ids.map((id) => ['u' + id, id + '@x.com'])) });
+  const j = await (await handler(post({ action: 'fixed', ids }))).json();
+  assert.deepEqual([j.sent, j.remaining, j.next], [20, 5, 20]);
+  const k = await (await handler(post({ action: 'fixed', ids, after: j.next }))).json();
+  assert.deepEqual([k.sent, k.remaining, k.next], [5, 0, 25]); assert.equal(mails().length, 25);
+});
+await t('the time budget cuts a batch short', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }, { id: 2, user_id: 'u2' }, { id: 3, user_id: 'u3' }], emails: { u1: 'a@x.com', u2: 'b@x.com', u3: 'c@x.com' } });
+  mod._tuning.budgetMs = -1;
+  const j = await (await handler(post({ action: 'fixed', ids: [1, 2, 3] }))).json();
+  mod._tuning.budgetMs = 15000;
+  assert.deepEqual([j.sent, j.remaining, j.next], [1, 2, 1]);
 });
 
 console.log('bug-report: ' + n + '/' + n + ' passed');

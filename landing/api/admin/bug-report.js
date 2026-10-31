@@ -66,7 +66,8 @@ export default async function handler(req) {
   const rows = await q.json().catch(function () { return null; });
   if (!Array.isArray(rows)) return jsonResponse({ error: 'reports-read-failed' }, 502, h);
   const totalMatch = /\/(\d+)$/.exec(q.headers.get('content-range') || '');
-  const total = totalMatch ? Number(totalMatch[1]) : rows.length;
+  if (!totalMatch) return jsonResponse({ error: 'reports-read-failed' }, 502, h);
+  const total = Number(totalMatch[1]);
 
   const patch = (qs, data, prefer) => fetch(supabaseUrl() + '/rest/v1/user_bug_reports?' + qs,
     { method: 'PATCH', headers: svcHeaders(Object.assign({ Prefer: prefer || 'return=representation' }, JSONH)), body: JSON.stringify(data) }).catch(function () { return null; });
@@ -90,15 +91,15 @@ export default async function handler(req) {
     for (const row of rows) {
       if (processed > 0 && Date.now() - started > _tuning.budgetMs) break;
       if (row.status === 'closed' || !row.user_id || row.fixed_notified_at) { skipped++; processed++; next = row.id; continue; }
-      const claim = await patch('id=eq.' + row.id + '&fixed_notified_at=is.null', { fixed_notified_at: new Date().toISOString() });
+      const claim = await patch('id=eq.' + row.id + '&fixed_notified_at=is.null&status=in.(open,triaged)', { fixed_notified_at: new Date().toISOString() });
       const got = claim && claim.ok ? await claim.json().catch(function () { return null; }) : null;
       if (!Array.isArray(got) || !got.length) { skipped++; processed++; next = row.id; continue; }
-      const release = () => patch('id=eq.' + row.id, { fixed_notified_at: null }, 'return=minimal');
+      const release = async () => { const r = await patch('id=eq.' + row.id, { fixed_notified_at: null }, 'return=minimal'); return !!(r && r.ok); };
 
       const ur = await fetch(supabaseUrl() + '/auth/v1/admin/users/' + encodeURIComponent(row.user_id), { headers: svcHeaders() }).catch(function () { return null; });
       const u = ur && ur.status === 200 ? await ur.json().catch(function () { return null; }) : null;
       const email = u && typeof u.email === 'string' ? u.email.trim() : '';
-      if (!email || email.indexOf('@') < 1) { await release(); (ur && ur.status === 404) ? skipped++ : failed++; processed++; next = row.id; continue; }
+      if (!email || email.indexOf('@') < 1) { const rel = await release(); (rel && ur && ur.status === 404) ? skipped++ : failed++; processed++; next = row.id; continue; }
 
       if (_tuning.gapMs && lastSend) { const wait = _tuning.gapMs - (Date.now() - lastSend); if (wait > 0) await sleep(wait); }
       const mail = buildFixedEmail(row.title);
@@ -107,8 +108,10 @@ export default async function handler(req) {
       if (res.status === 429) { await release(); paused = true; break; }
       processed++; next = row.id;
       if (!res.ok) { await release(); failed++; continue; }
-      await patch('id=eq.' + row.id, { status: 'closed' }, 'return=minimal');
-      sent++; closed++;
+      // The email is out, so it counts as sent; if the close does not stick the report counts failed (not closed) for the admin to retry.
+      const cl = await patch('id=eq.' + row.id, { status: 'closed' }, 'return=minimal');
+      sent++;
+      if (cl && cl.ok) closed++; else failed++;
     }
   }
   const remaining = Math.max(0, total - processed);
