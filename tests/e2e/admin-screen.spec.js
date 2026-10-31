@@ -223,7 +223,7 @@ test.describe('Admin screen', () => {
     const acts = await page.evaluate(() => window.__adminCalls.filter((x) => x.name === 'act').map((x) => x.args));
     expect(acts).toHaveLength(1);
     expect(acts[0].action).toBe('fixed');
-    expect(acts[0].ids).toEqual([200, 199, 198, 197, 196, 195, 194, 193, 192, 191, 190, 189]);
+    expect(acts[0].ids).toEqual([189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]);   // the group's own ids, ascending (the server's walk order)
     await expect(page.locator('#adm-toast')).toContainText('Sent 9 emails. 12 reports closed.');
   });
 
@@ -305,5 +305,107 @@ test.describe('Admin screen', () => {
     await expect(adm).toBeHidden();
     await expect(page.locator('#ios-hub')).toBeVisible();   // back to My certs, still open
     await expect(page.locator('#ios-hub [data-act="admin"]')).toBeFocused();
+  });
+
+  // Fix round 1: the group sheet acts on its own reports, whatever the list behind it does.
+  async function openTwelve(page, firstAct) {
+    const adm = await openPhone(page);
+    await page.evaluate((first) => {
+      const d = window.adminData, realReports = d.reports;
+      let n = 0;
+      d.act = async (action, ids) => {
+        window.__adminCalls.push({ name: 'act', args: { action, ids } });
+        if (n++ === 0) {
+          // the list behind reloads slowly and re-sorts: a brand-new group lands first
+          d.reports = async (q) => {
+            await new Promise((r) => setTimeout(r, 1500));
+            const res = await realReports(q);
+            res.data.rows.unshift({ id: 900, created_at: new Date().toISOString(), title: 'A new one', description: 'x', status: 'open', context: { page: 'Home', cert: 'AZ-900', version: '1' }, user_id: 'z', fixed_notified_at: null },
+              { id: 901, created_at: new Date().toISOString(), title: 'A new two', description: 'x', status: 'open', context: { page: 'Home', cert: 'AZ-900', version: '1' }, user_id: 'y', fixed_notified_at: null });
+            return res;
+          };
+          return first;
+        }
+        return { ok: true, data: { closed: ids.length, sent: ids.length, skipped: 0, failed: 0, remaining: 0, next: null, paused: false } };
+      };
+    }, firstAct);
+    await adm.locator('[data-act="all-reports"]').click();
+    await adm.locator('[data-grp]').first().click();
+    const sh = page.locator('#adm-sheet');
+    await expect(sh.locator('.adm-sh-eyebrow')).toHaveText('12 reports');
+    await sh.locator('[data-act="g-tell"]').click();
+    await sh.locator('[data-act="g-send"]').click();
+    return sh;
+  }
+  const acts = (page) => page.evaluate(() => window.__adminCalls.filter((x) => x.name === 'act').map((x) => x.args));
+
+  test('a partial failure keeps the group sheet open with "k closed so far", and the retry sends only what is left, even mid-reload', async ({ page }) => {
+    const sh = await openTwelve(page, { ok: false, error: 'Request failed (500)', partial: { closed: 4, sent: 4, skipped: 0, failed: 0, remaining: 8, next: 192, paused: false } });
+    await expect(sh).toBeVisible();
+    await expect(sh.locator('.adm-err')).toHaveText('That didn’t go through. 4 closed so far. Try again.');
+    await expect(sh.locator('.adm-sh-title')).toHaveText('Quiz · Security+');
+    await expect(sh.locator('.adm-sh-eyebrow')).toHaveText('8 reports');
+    // the list behind is still reloading (1.5s): Try again works now
+    await sh.locator('[data-act="g-send"]').click();
+    await expect(sh).toBeHidden();
+    const a = await acts(page);
+    expect(a).toHaveLength(2);
+    expect(a[0].ids).toEqual([189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200]);
+    expect(a[1]).toEqual({ action: 'fixed', ids: [193, 194, 195, 196, 197, 198, 199, 200] });
+    await expect(page.locator('#adm-toast')).toContainText('12 reports closed.');
+    // and after the reload has re-sorted the list, a different group sits first: the focus went back to OUR group's row
+    await expect(page.locator('#ios-admin [data-grp]').first()).toContainText('A new');
+  });
+
+  test('paused: the sheet says email is busy, and the retry sends the ids past the cursor', async ({ page }) => {
+    const sh = await openTwelve(page, { ok: true, data: { closed: 3, sent: 3, skipped: 0, failed: 0, remaining: 9, next: 191, paused: true } });
+    await expect(sh.locator('.adm-err')).toHaveText('Email is busy, try again in a minute. 3 closed so far.');
+    await page.waitForTimeout(1700);   // the list behind has reloaded and re-sorted
+    await sh.locator('[data-act="g-send"]').click();
+    await expect(sh).toBeHidden();
+    const a = await acts(page);
+    expect(a[1]).toEqual({ action: 'fixed', ids: [192, 193, 194, 195, 196, 197, 198, 199, 200] });
+  });
+
+  test('stopped early (remaining, not paused): Stopped early with the count, retry narrows the same way', async ({ page }) => {
+    const sh = await openTwelve(page, { ok: true, data: { closed: 2, sent: 2, skipped: 0, failed: 0, remaining: 10, next: 190, paused: false } });
+    await expect(sh.locator('.adm-err')).toHaveText('Stopped early. 2 closed so far. Try again.');
+    await sh.locator('[data-act="g-send"]').click();
+    await expect(sh).toBeHidden();
+    expect((await acts(page))[1].ids).toEqual([191, 192, 193, 194, 195, 196, 197, 198, 199, 200]);
+  });
+
+  test('desktop: the admin flag dropping closes an open dialog and leaves the Admin page', async ({ page }) => {
+    await boot(page, DESKTOP);
+    await stub(page);
+    await asAdmin(page);
+    await page.evaluate(() => window.openAdmin());
+    await page.locator('#desk-admin [data-rep]').first().click();
+    const dlg = page.locator('#adm-sheet');
+    await expect(dlg).toBeVisible();
+    await page.evaluate(() => { window._certanvilIsAdmin = false; });
+    await expect(dlg).toBeHidden();
+    await expect(page.locator('.ca-dlg-scrim')).toHaveCount(0);
+    await expect(page.locator('#page-admin')).not.toHaveClass(/active/);
+    expect(await page.evaluate(() => document.getElementById('app-topbar').inert)).toBe(false);
+  });
+
+  test('desktop: offline shows "You\'re offline" and loads nothing', async ({ page, context }) => {
+    await boot(page, DESKTOP);
+    await stub(page);
+    await asAdmin(page);
+    // modules the app fetches on its own later (the bug-report queue) must be in first: a feature script failing offline raises
+    // the app's boot fallback over everything, which is the app's offline behaviour, not Admin's
+    await page.evaluate(() => _loadFeature('reports').catch(() => {}));
+    await context.setOffline(true);
+    await page.evaluate(() => { window.__adminCalls.length = 0; window.openAdmin(); });
+    const host = page.locator('#desk-admin');
+    await expect(host.locator('.adm-offline h2')).toHaveText('You’re offline');
+    await expect(host.locator('section[aria-labelledby]')).toHaveCount(0);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => window.__adminCalls.filter((x) => x.name !== 'openCount').length)).toBe(0);
+    await context.setOffline(false);
+    await host.locator('.adm-offline button').click();
+    await expect(host.locator('section[aria-labelledby="adm-s-today"] .adm-stat b').first()).toHaveText('8');
   });
 });

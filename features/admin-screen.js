@@ -179,9 +179,10 @@
   function _focusKey(el) {
     var a = document.activeElement; if (!a || !el.contains(a)) return null;
     var at = ['data-req', 'data-rep', 'data-grp', 'data-act', 'data-retry', 'data-chip'];
-    for (var i = 0; i < at.length; i++) if (a.hasAttribute(at[i])) return '[' + at[i] + '="' + String(a.getAttribute(at[i])).replace(/"/g, '\\"') + '"]';
+    for (var i = 0; i < at.length; i++) if (a.hasAttribute(at[i])) return _attrSel(at[i], a.getAttribute(at[i]));
     return null;
   }
+  function _attrSel(name, v) { v = String(v); return '[' + name + '="' + (window.CSS && CSS.escape ? CSS.escape(v) : v.replace(/["\\]/g, '\\$&')) + '"]'; }
   function _refocus(el, sel) {
     if (!sel) return;
     var b = null; try { b = el.querySelector(sel); } catch (_) {}
@@ -233,9 +234,13 @@
       sb.setAttribute('aria-label', 'Admin, ' + fmt(S.openN) + ' open bug report' + (S.openN === 1 ? '' : 's'));
     }
   }
-  function refreshCount() {
+  var _countAt = 0, COUNT_EVERY = 30000;
+  // throttle: the sidebar redraws often, so it reuses a count younger than 30s; everything else (hub open, after an action) fetches.
+  function refreshCount(throttle) {
     if (!isAdmin()) return Promise.resolve(null);
     if (S.openN != null) _setOpenN(S.openN);   // a redrawn hub row or sidebar shows the last count at once
+    if (throttle === true && S.openN != null && Date.now() - _countAt < COUNT_EVERY) return Promise.resolve(S.openN);
+    _countAt = Date.now();
     return D().then(function (d) { return d.openCount(); }).then(function (r) { if (r && r.ok) _setOpenN(r.data); return S.openN; }).catch(function () { return null; });
   }
 
@@ -280,7 +285,7 @@
     draw(false);
     var body = S.root.querySelector('.adm-body'); if (body) body.scrollTop = 0;
     if (S.layout === 'desk') { try { window.scrollTo(0, 0); } catch (_) {} }
-    if (view === 'admin') loadAll(true); else loadList(false);
+    if (view === 'admin') { if (!S.offline) loadAll(true); } else loadList(false);
     var h1 = S.root.querySelector('.adm-h1'); if (h1) { try { h1.focus({ preventScroll: true }); } catch (_) {} }
   }
 
@@ -309,7 +314,7 @@
     var r = g.rows.filter(function (x) { return x.created_at === g.newest; })[0] || g.rows[0];
     var bits = [g.screen, g.cert, known(g.ver) ? 'v' + g.ver : ''].filter(known);
     var s = (many ? bits : (known((r.context || {}).cert) ? ['#' + r.id, r.context.cert] : ['#' + r.id])).map(_esc).join(' · ') + ' · ' + _esc(ago(g.newest));
-    return '<button class="adm-row" type="button" ' + (many ? 'data-grp="' + i + '"' : 'data-rep="' + _esc(r.id) + '"') + '><span class="adm-m"><span class="adm-t">' + _esc(titleOf(r)) + '</span><span class="adm-s">' + s + '</span>'
+    return '<button class="adm-row" type="button" ' + (many ? 'data-grp="' + _esc(g.key) + '"' : 'data-rep="' + _esc(r.id) + '"') + '><span class="adm-m"><span class="adm-t">' + _esc(titleOf(r)) + '</span><span class="adm-s">' + s + '</span>'
       + (hear ? '<span class="adm-cue">' + (many ? hear + ' can hear back' : 'Can hear back') + '</span>' : '') + '</span>'
       + (many ? '<span class="adm-grp" aria-label="' + g.n + ' reports">' + g.n + '</span>' : '') + CHEV + '</button>';
   }
@@ -403,8 +408,8 @@
       });
     }
     step('').catch(function (e) {
-      var why = e && e.message === 'auth' ? 'Sign in again, then retry.' : e && e.status === 503 ? 'Email is not set up yet.' : e && e.status === 409 ? 'That exam changed. Reload and try again.' : 'Could not finish. Try again.';
-      stop('Sent to ' + people(tot.sent) + ' so far. ' + why);
+      var why = e && e.message === 'auth' ? 'Sign in again, then retry.' : e && e.status === 503 ? 'Email is not set up yet.' : e && e.status === 409 ? 'That exam changed. Reload and try again.' : 'Couldn' + Q + 't finish. Try again.';
+      stop((tot.sent ? 'Sent to ' + people(tot.sent) + ' so far. ' : '') + why);
     });
   }
 
@@ -447,7 +452,7 @@
     return h + '</div>';
   }
   function groupHtml(g) {
-    var hear = g.rows.filter(canHear).length, n = g.n;
+    var hear = g.rows.filter(canHear).length, n = g.ids.length;
     var items = g.rows.map(function (r, k) {
       return '<li' + (k >= 4 && !SH.more ? ' hidden' : '') + '><button type="button" data-rep="' + _esc(r.id) + '">' + _esc(titleOf(r)) + '<span>#' + _esc(r.id) + ' · ' + _esc(ago(r.created_at)) + (canHear(r) ? ' · can hear back' : '') + '</span></button></li>';
     }).join('');
@@ -467,7 +472,7 @@
   }
   function renderSheet(focusSel) {
     if (!SH.kind) return;
-    var g = SH.kind === 'group' ? S.groups[SH.id] : null, r = SH.kind === 'report' ? S.byId[SH.id] : null;
+    var g = SH.kind === 'group' ? SH.group : null, r = SH.kind === 'report' ? S.byId[SH.id] : null;
     if (!g && !r) { closeSheet(); return; }
     var keep = focusSel || _focusKey(SH.host);
     var sc = SH.host.querySelector('.adm-sh-scroll'), top = sc ? sc.scrollTop : 0;
@@ -476,10 +481,11 @@
     if (SH.frame) SH.frame.ensureClose();
     if (keep) _refocus(SH.host, keep);
   }
-  function openSheet(kind, id, opener) {
+  function openSheet(kind, id, opener, group) {
     _sheetHosts();
     var was = sheetOpen();
     clearTimeout(SH.hideT);
+    SH.group = kind === 'group' ? group : null;
     SH.kind = kind; SH.id = id; SH.step = null; SH.busy = false; SH.err = ''; SH.more = false;
     if (!was) SH.back = opener || null;
     renderSheet();
@@ -506,11 +512,14 @@
   }
   function closeSheet(instant) {
     if (!SH.host || !SH.kind) return;
-    if (SH.frame) { SH.frame.close(); return; }   // desktop: the frame tears down, then _sheetGone
+    if (SH.frame) {   // desktop: the frame tears down, then _sheetGone
+      if (instant) { var f = SH.frame; SH.frame = null; f.release(true); _sheetGone(true); } else SH.frame.close();
+      return;
+    }
     _sheetGone(instant);
   }
   function _sheetGone(instant) {
-    var back = SH.back; SH.kind = null; SH.back = null; SH.busy = false;
+    var back = SH.back; SH.kind = null; SH.back = null; SH.busy = false; SH.group = null;
     if (S.root) S.root.inert = false;   // un-inert first, so focus can land back
     if (SH.scrim) SH.scrim.classList.remove('open');
     SH.host.classList.remove('open');
@@ -523,13 +532,20 @@
     }
   }
   function _selFor(el) {
-    if (el.hasAttribute('data-rep')) return '[data-rep="' + el.getAttribute('data-rep') + '"]';
-    if (el.hasAttribute('data-grp')) return '[data-grp="' + el.getAttribute('data-grp') + '"]';
+    if (el.hasAttribute('data-rep')) return _attrSel('data-rep', el.getAttribute('data-rep'));
+    if (el.hasAttribute('data-grp')) return _attrSel('data-grp', el.getAttribute('data-grp'));
     return null;
+  }
+  // The group sheet keeps its own copy of the group it opened with (key, ids ascending, rows). A list reload rebuilds
+  // S.groups and may re-sort it; the sheet, its retry and its actions never look there again.
+  function _snapGroup(key) {
+    var g = S.groups.filter(function (x) { return x.key === key; })[0]; if (!g) return null;
+    var rows = g.rows.slice().sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
+    return { key: g.key, screen: g.screen, cert: g.cert, ver: g.ver, newest: g.newest, rows: rows, ids: g.ids.slice().sort(function (a, b) { return a - b; }), all: g.ids.slice() };
   }
 
   // Close or fixed-notify reports. The result shows only after the server answers (iOS can cut requests off in the background).
-  function runAct(action, ids, done) {
+  function runAct(action, ids, done, onPartial) {
     if (SH.busy) return;
     SH.busy = true; SH.err = ''; renderSheet();
     D().then(function (d) { return d.act(action, ids); }).then(function (res) {
@@ -538,6 +554,7 @@
       var did = p ? (p.closed || 0) : 0;
       if (res && res.ok && !p.paused && !(p.remaining > 0) && !p.failed) { closeSheet(); setTimeout(function () { done(p); }, 230); }
       else {
+        if (onPartial && p) onPartial(p);
         var tail = did ? ' ' + did + ' closed so far.' : '';
         SH.err = res && res.ok ? (p.paused ? 'Email is busy, try again in a minute.' + tail : p.failed ? p.failed + ' couldn' + Q + 't be emailed.' + tail + ' Try again.' : 'Stopped early.' + tail + ' Try again.')
           : 'That didn' + Q + 't go through.' + tail + ' Try again.';
@@ -547,9 +564,36 @@
     }).catch(function () { SH.busy = false; SH.err = 'That didn' + Q + 't go through. Try again.'; renderSheet(); });
   }
   function afterAct() {
-    refreshCount();
+    refreshCount();   // forced: the count just changed
     if (S.view === 'admin') load('rep', true);
     else if (S.list && S.list.kind === 'reports') loadList(false);
+  }
+
+  function closedTx(n) { return n + (n === 1 ? ' report closed' : ' reports closed'); }
+  // A group action acts on the sheet's own ids only. After a partial run the group narrows to what is left: ids past the
+  // server's cursor (ids are walked in ascending order), or every id when some failed (the server skips the done ones).
+  function actGroup(g, action) {
+    var total = g.done || (g.done = { closed: 0, sent: 0 });   // kept on the group, so a retry's toast counts the first try too
+    function narrow(p) {
+      total.closed += p.closed || 0; total.sent += p.sent || 0;
+      if (SH.group !== g) return;
+      var left = (p.failed || p.next == null) ? g.ids : g.ids.filter(function (id) { return id > p.next; });
+      if (!left.length) return;
+      g.ids = left; g.rows = g.rows.filter(function (r) { return left.indexOf(r.id) >= 0; });
+    }
+    function finish(p) {
+      var closed = total.closed + (p.closed || 0), sent = total.sent + (p.sent || 0);
+      if (action === 'fixed') toast('Sent ' + emails(sent) + '. ' + closedTx(closed) + '.', 'Each person got their own report' + Q + 's title.');
+      else toast(closedTx(closed), 'No emails sent.');
+    }
+    runAct(action, g.ids.slice(), function (p) {
+      // "fixed" skips reports nobody can hear about and leaves them open; the confirm promised to close all, so close those too.
+      if (action !== 'fixed' || !(p.skipped > 0)) return finish(p);
+      D().then(function (d) { return d.act('close', g.all.slice()); }).then(function (c) {
+        if (c && c.ok) p = { closed: (p.closed || 0) + (c.data.closed || 0), sent: p.sent };
+        finish(p); afterAct();
+      }).catch(function () { finish(p); });
+    }, narrow);
   }
 
   function onSheetClick(ev) {
@@ -558,7 +602,7 @@
     if (a === 'sh-close') { if (!SH.frame) closeSheet(); return; }   // desktop: the frame's own [data-ca-close] handler closes
     if (b.hasAttribute('data-rep') && SH.kind === 'group') { var id = +b.getAttribute('data-rep'); SH.kind = 'report'; SH.id = id; SH.step = null; SH.err = ''; openSheet('report', id); return; }
     if (a === 'g-more') { SH.more = true; renderSheet('[data-rep]'); return; }
-    var r = SH.kind === 'report' ? S.byId[SH.id] : null, g = SH.kind === 'group' ? S.groups[SH.id] : null;
+    var r = SH.kind === 'report' ? S.byId[SH.id] : null, g = SH.kind === 'group' ? SH.group : null;
     if (a === 'r-tell' || a === 'g-tell') { SH.step = 'confirm'; SH.err = ''; renderSheet('[data-act="' + (a === 'r-tell' ? 'r-send' : 'g-send') + '"]'); }
     else if (a === 'r-cancel' || a === 'g-cancel') { SH.step = null; SH.err = ''; renderSheet('[data-act="' + (a === 'r-cancel' ? 'r-tell' : 'g-tell') + '"]'); }
     else if (a === 'r-send' && r) {
@@ -566,8 +610,8 @@
       runAct('fixed', [r.id], function () { toast('Email sent. Report #' + r.id + ' closed.', em ? 'Sent to ' + em + '.' : 'They' + Q + 'll get it in a minute.'); });
     }
     else if (a === 'r-close' && r) runAct('close', [r.id], function () { toast('Report #' + r.id + ' closed', 'No email sent.'); });
-    else if (a === 'g-send' && g) runAct('fixed', g.ids.slice(), function (p) { toast('Sent ' + emails(p.sent || 0) + '. ' + (p.closed || 0) + ' reports closed.', 'Each person got their own report' + Q + 's title.'); });
-    else if (a === 'g-close' && g) runAct('close', g.ids.slice(), function (p) { toast((p.closed || 0) + ' reports closed', 'No emails sent.'); });
+    else if (a === 'g-send' && g) actGroup(g, 'fixed');
+    else if (a === 'g-close' && g) actGroup(g, 'close');
   }
 
   // ── Toast ──
@@ -597,7 +641,11 @@
     else if (a === 'cr-cancel') { if (S.send && S.send.busy) return; var was = S.confirmFor; S.confirmFor = null; S.send = null; redrawReq(); _refocus(S.root, '[data-req="' + was + '"]'); }
     else if (a === 'cr-send') sendLive(b.getAttribute('data-key'));
     else if (b.hasAttribute('data-rep')) { try { b.focus({ preventScroll: true }); } catch (_) {} openSheet('report', +b.getAttribute('data-rep'), _selFor(b)); }
-    else if (b.hasAttribute('data-grp')) { try { b.focus({ preventScroll: true }); } catch (_) {} openSheet('group', +b.getAttribute('data-grp'), _selFor(b)); }
+    else if (b.hasAttribute('data-grp')) {
+      var snap = _snapGroup(b.getAttribute('data-grp')); if (!snap) return;
+      try { b.focus({ preventScroll: true }); } catch (_) {}
+      openSheet('group', snap.key, _selFor(b), snap);
+    }
     else if (b.hasAttribute('data-chip')) toggleChip(b.getAttribute('data-chip'));
     else if (a === 'more') loadList(true);
     else if (a === 'free') { if (window._adminPreview) window._adminPreview.set(!window._adminPreview.on()); _syncSwitch(); }
@@ -671,7 +719,7 @@
     if (!host.__admWired) { host.__admWired = true; host.addEventListener('click', onClick); host.addEventListener('input', onInput); }
     var showing = page.classList.contains('active') && S.layout === 'desk';
     S.layout = 'desk'; S.root = host; S.from = null;
-    if (view !== 'admin') { S.view = 'admin'; draw(!showing); go(view); } else { S.view = 'admin'; draw(!showing); loadAll(showing); }
+    if (view !== 'admin') { S.view = 'admin'; draw(!showing); go(view); } else { S.view = 'admin'; draw(!showing); if (!S.offline) loadAll(showing); }
     if (!page.classList.contains('active')) showPage('admin');
     refreshCount();
     return true;
@@ -698,8 +746,7 @@
     }
     var p = document.getElementById('page-admin');
     cur.querySelector('.sb-item').classList.toggle('sb-item-active', !!(p && p.classList.contains('active')));
-    if (S.openN != null) _setOpenN(S.openN);
-    refreshCount();
+    refreshCount(true);
   }
 
   // Crossing 900px swaps the layouts, like the hub: one tick late so a desktop dialog releases first.
@@ -715,6 +762,7 @@
   window.addEventListener('ca:admin', function () {
     sidebar();
     if (!isAdmin()) {
+      if (sheetOpen()) closeSheet(true);
       close();
       var p = document.getElementById('page-admin');
       if (p && p.classList.contains('active') && typeof showPage === 'function') showPage('setup');
@@ -726,5 +774,5 @@
 
   window.openAdmin = openAdmin;
   window._adminSidebar = sidebar;
-  window.adminScreen = { close: close, refreshCount: refreshCount, ago: ago, SHIELD: SHIELD };
+  window.adminScreen = { close: close, refreshCount: function () { return refreshCount(false); }, ago: ago, SHIELD: SHIELD };
 })();

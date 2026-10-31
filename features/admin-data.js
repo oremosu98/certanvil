@@ -202,6 +202,7 @@
           if (!res.ok) return bad(j.error || ('Request failed (' + res.status + ')'));
           sum.closed += j.closed || 0; sum.sent += j.sent || 0; sum.skipped += j.skipped || 0; sum.failed += j.failed || 0;
           rem = j.remaining || 0; after = j.next == null ? null : j.next; sum.paused = !!j.paused;
+          if (after != null) sum.next = after;   // how far the walk got (ids ascending), also on a later failure
         } while (rem > 0 && !sum.paused && after != null && ++guard < 100);
         // remaining = what is left unprocessed: this chunk's leftover plus every chunk not yet started
         sum.remaining = rem + chunks.slice(c + 1).reduce(function (n, x) { return n + x.length; }, 0);

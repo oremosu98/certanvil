@@ -34,7 +34,11 @@ const { test } = require('./_context');
   test('the module never names the founder', !/simi|oremosu/i.test(as));
   test('user-written text goes through _esc (titles, descriptions, steps, labels, messages)',
     /_esc\(titleOf\(r\)\)/.test(as) && /_esc\(r\.description\)/.test(as) && /_esc\(r\.steps\)/.test(as) && /_esc\(r\.label \|\| k\)/.test(as) && /_esc\(e\.message\)/.test(as) && /_esc\(SH\.err\)/.test(as));
-  test('group Fixed sends every id in the group (the server emails the reachable, closes all)', /runAct\('fixed', g\.ids\.slice\(\)/.test(as));
+  test('the group sheet acts on its own snapshot (key, ids, rows), never on S.groups by index', /SH\.group = kind === 'group' \? group : null;/.test(as)
+    && /g = SH\.kind === 'group' \? SH\.group : null/.test(as) && /runAct\(action, g\.ids\.slice\(\)/.test(as) && !/S\.groups\[SH\.id\]/.test(as) && /data-grp="' \+ _esc\(g\.key\)/.test(as));
+  test('after a partial run the group narrows to ids past the cursor (all ids when some failed)', /var left = \(p\.failed \|\| p\.next == null\) \? g\.ids : g\.ids\.filter\(function \(id\) \{ return id > p\.next; \}\);/.test(as));
+  test('the admin flag dropping closes an open sheet at once; the sidebar count is throttled', /if \(sheetOpen\(\)\) closeSheet\(true\);\s*close\(\);/.test(as) && /refreshCount\(true\);\s*\}/.test(as) && /COUNT_EVERY = 30000/.test(as));
+  test('copy: no "Sent to 0 people", Couldn\u2019t finish, pluralised closed', /\(tot\.sent \? 'Sent to ' \+ people\(tot\.sent\) \+ ' so far\. ' : ''\)/.test(as) && /'Couldn' \+ Q \+ 't finish\. Try again\.'/.test(as) && !/Could not/.test(as) && /' report closed' : ' reports closed'/.test(as));
   test('cert requests reuse the notify-cert-live loop', /\/api\/admin\/notify-cert-live/.test(as) && /if \(b\.next && b\.next !== after\) return step\(b\.next\);/.test(as));
   test('Escape handled once (capture phase, preventDefault): sheet, then list, then Admin', /document\.addEventListener\('keydown', onKey, true\)/.test(as) && /ev\.preventDefault\(\);[^\n]*\n\s*if \(sheetOpen\(\)\) closeSheet\(\);/.test(as));
   test('un-inert first on close', /_inertBehind\(false\);   \/\/ un-inert first/.test(as));
