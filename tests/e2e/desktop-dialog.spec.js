@@ -35,8 +35,8 @@ test.describe('Desktop dialog layout', () => {
     const box = await sheet.boundingBox();
     expect(Math.abs(box.x + box.width / 2 - DESKTOP.width / 2)).toBeLessThan(2);
     expect(Math.abs(box.y + box.height / 2 - DESKTOP.height / 2)).toBeLessThan(2);
-    // 520 CSS px wide (desktop pages run at html { zoom: 1.10 }, so the on-screen box is about 572px)
-    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('ist-sheet')).width))).toBe(520);
+    // md by default: 560 CSS px (desktop pages run at html { zoom: 1.10 }, so the on-screen box is wider)
+    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('ist-sheet')).width))).toBe(560);
     await expect(page.locator('.ca-dlg-scrim')).toBeVisible();
     // focus lands on the close button; the page behind is inert, the dialog is not
     expect(await page.evaluate(() => { var a = document.activeElement; return a && a.classList.contains('ca-dlg-x') && a.getAttribute('aria-label'); })).toBe('Close');
@@ -134,5 +134,69 @@ test.describe('Desktop dialog layout', () => {
     await page.evaluate(() => { var h = document.getElementById('dlg-test'); h.hidden = false; window.__frame = window.caDialogFrame(h, { onClose: function () { window.__closed.push('again'); } }); window.__frame.release(); });
     expect(await inertCount(page)).toBe(before);
     expect(await page.evaluate(() => window.__closed)).toEqual([false]);
+  });
+
+  test('sizes: the drawing\'s three widths (sm 460, md 560 default, lg 700) for openSheet and caDialogFrame', async ({ page }) => {
+    await boot(page, DESKTOP);
+    const w = (sel) => page.evaluate((s) => parseFloat(getComputedStyle(document.querySelector(s)).width), sel);
+    await page.evaluate((h) => window.iosSettings.openSheet(h, null, { size: 'lg' }), HTML);
+    await expect(page.locator('#ist-sheet')).toHaveClass(/is-lg/);
+    expect(await w('#ist-sheet')).toBe(700);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ist-sheet')).toBeHidden();
+    await expect(page.locator('#ist-sheet')).not.toHaveClass(/is-lg/);
+    await page.evaluate(() => {
+      var h = document.createElement('section'); h.id = 'dlg-sm'; h.innerHTML = '<h2>Small</h2>'; document.body.appendChild(h);
+      window.__f = window.caDialogFrame(h, { size: 'sm', onClose: function () { h.hidden = true; } });
+    });
+    expect(await w('#dlg-sm')).toBe(460);
+    await page.evaluate(() => window.__f.setSize('md'));
+    expect(await w('#dlg-sm')).toBe(560);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#dlg-sm')).toBeHidden();
+  });
+
+  test('stacked: a module dialog over an openSheet dialog; one Escape closes only the top one', async ({ page }) => {
+    await boot(page, DESKTOP);
+    const before = await inertCount(page);
+    await open(page);
+    await page.waitForTimeout(400);
+    await page.evaluate(() => {
+      var h = document.createElement('section'); h.id = 'dlg-top'; h.innerHTML = '<h2>Top</h2><button type="button" id="top-go">Go</button>'; document.body.appendChild(h);
+      window.__closed = [];
+      window.caDialogFrame(h, { size: 'sm', onClose: function () { window.__closed.push('top'); h.hidden = true; } });
+    });
+    await page.waitForTimeout(400);
+    // the top dialog is live and above the sheet; the sheet underneath is inert
+    expect(await page.evaluate(() => !!document.getElementById('dlg-top').closest('[inert]'))).toBe(false);
+    expect(await page.evaluate(() => document.getElementById('ist-sheet').inert)).toBe(true);
+    expect(await page.evaluate(() => { var r = document.getElementById('dlg-top').getBoundingClientRect(); var el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!(el && el.closest('#dlg-top')); })).toBe(true);
+    await page.keyboard.press('Escape');
+    expect(await page.evaluate(() => window.__closed)).toEqual(['top']);
+    await expect(page.locator('#dlg-top')).toBeHidden();
+    await expect(page.locator('#ist-sheet')).toBeVisible();
+    await expect(page.locator('#ist-sheet')).toHaveClass(/is-dialog/);
+    expect(await page.evaluate(() => document.getElementById('ist-sheet').inert)).toBe(false);
+    expect(await inertCount(page)).toBeGreaterThan(before);   // the page behind the sheet is still inert
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ist-sheet')).toBeHidden();
+    expect(await inertCount(page)).toBe(before);
+    await expect(page.locator('.ca-dlg-scrim')).toHaveCount(0);
+  });
+
+  test('an in-place redraw keeps focus on the control the user was on, not Close', async ({ page }) => {
+    await boot(page, DESKTOP);
+    await open(page);
+    await page.locator('#ist-sheet [data-act="two"]').focus();
+    await page.evaluate((h) => window.iosSettings.openSheet(h, null), HTML.replace('Two</button>', 'Two (picked)</button>'));
+    expect(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('data-act'))).toBe('two');
+    await expect(page.locator('#ist-sheet [data-act="two"]')).toHaveText('Two (picked)');
+    await expect(page.locator('#ist-sheet .ca-dlg-x')).toHaveCount(1);   // the X is back after the redraw
+    // with focus outside the sheet's controls (the dialog itself), a redraw does not grab focus to Close either
+    await page.evaluate(() => { var s = document.getElementById('ist-sheet'); s.tabIndex = -1; s.focus(); });
+    await page.evaluate((h) => window.iosSettings.openSheet(h, null), HTML);
+    expect(await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('ca-dlg-x'))).toBe(false);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ist-sheet')).toBeHidden();
   });
 });

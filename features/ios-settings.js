@@ -8,24 +8,36 @@
   // ── Desktop catch-up Task 1: the shared desktop dialog (≥900px). Phone sheets show as a centred dialog. ──
   var DESK = window.matchMedia ? window.matchMedia('(min-width: 900px)') : null;
   function caIsDesk() { return !!(DESK && DESK.matches); }
-  /* caDialogFrame(host, opts) -> { isDialog, close(), release(), ensureClose() }
+  /* caDialogFrame(host, opts) -> { isDialog, close(), release(), ensureClose(), setSize(size) }
      Call it AFTER the host is in the DOM and visible (hidden = false). host should be a direct child of <body>.
      opts.onClose(info): the module's own teardown (hide the host, restore focus). info = { instant: true } when the
        window crossed 900px (hide at once, no exit animation), otherwise { instant: false }.
+     opts.size: the drawing's three widths. 'sm' = 460px (log result), 'md' = 560px (default: suggest, goodbye),
+       'lg' = 700px (the why sheet). Sets .is-sm / .is-md / .is-lg on host. setSize(size) changes it while open.
+       iosSettings.openSheet(html, onTap, { size }) takes the same option.
      Desktop (caIsDesk()): adds .is-dialog + .is-in to host, a .ca-dlg-scrim (click closes), inerts every other
        body child, adds a Close X ([data-ca-close], .ca-dlg-x) unless host already has a [data-ca-close], focuses it,
        Escape closes, Tab wraps inside host. Phone: none of that (the module keeps its own sheet); only the
        breakpoint watch is armed, so a phone sheet never sits over the desktop layout after a resize.
+     Stacking: desktop frames form a stack. A frame opened over another sits above it (scrim and host z-index step
+       up per level) and inerts it; only the TOP frame answers Escape and Tab (it calls preventDefault), so one Escape
+       closes one layer, and closing it hands the lower dialog back un-inerted. Module Escape handlers inside host
+       should call preventDefault too, so the frame ignores that key.
      Either width: crossing 900px releases the frame and calls onClose({ instant: true }).
      close()   = release() then opts.onClose({ instant: false }). Use for X / scrim / Escape (the frame does).
      release() = tear the frame down (un-inert first, drop scrim and listeners) WITHOUT calling onClose. A module
                  that closes itself (its own Back / Save / Escape) must call release() before restoring focus.
-     ensureClose() = re-add the X after the module rewrote host.innerHTML in place.
+     ensureClose() = re-add the X after the module rewrote host.innerHTML in place (it does not move focus).
      .is-dialog stays on the host for the 200ms exit, then comes off. Both calls are idempotent. */
   var X_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>';
+  var SIZES = { sm: 'is-sm', md: 'is-md', lg: 'is-lg' }, _caStack = [];
   function caDialogFrame(host, opts) {
     opts = opts || {};
-    var desk = caIsDesk(), done = false, inerted = [], scrim = null, me = {};
+    var desk = caIsDesk(), done = false, inerted = [], scrim = null, me = {}, hostWasInert = false;
+    function setSize(size) {
+      Object.keys(SIZES).forEach(function (k) { host.classList.remove(SIZES[k]); });
+      if (desk && !done) host.classList.add(SIZES[size] || SIZES.md);
+    }
     function ensureClose() {
       if (!desk || done || host.querySelector('[data-ca-close]')) return;
       var x = document.createElement('button');
@@ -34,7 +46,7 @@
     }
     function onClick(e) { var c = e.target.closest && e.target.closest('[data-ca-close]'); if (c && host.contains(c)) { e.preventDefault(); close(); } }
     function onKey(e) {
-      if (e.defaultPrevented) return;
+      if (e.defaultPrevented || _caStack[_caStack.length - 1] !== me) return;   // only the top-most frame answers
       if (e.key === 'Escape') { e.preventDefault(); close(); return; }
       if (e.key !== 'Tab') return;
       var f = [].filter.call(host.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'), function (el) { return !el.disabled && el.getClientRects().length; });
@@ -47,22 +59,28 @@
     function onMq() { if (done) return; release(true); if (opts.onClose) opts.onClose({ instant: true }); }
     function release(instant) {
       if (done) return; done = true;
+      var at = _caStack.indexOf(me); if (at >= 0) _caStack.splice(at, 1);
       inerted.forEach(function (el) { el.inert = false; }); inerted = [];   // un-inert first, so focus can go back
+      if (hostWasInert && _caStack.length) host.inert = true;   // a lower dialog still open had it inert; give that back
       document.removeEventListener('keydown', onKey); host.removeEventListener('click', onClick);
       if (DESK) { if (DESK.removeEventListener) DESK.removeEventListener('change', onMq); else if (DESK.removeListener) DESK.removeListener(onMq); }
       if (scrim) { var s = scrim; scrim = null; s.classList.remove('is-in'); if (instant === true) s.remove(); else setTimeout(function () { s.remove(); }, 200); }
       host.classList.remove('is-in');
-      var off = function () { if (host.__caFrame === me) { host.classList.remove('is-dialog'); host.__caFrame = null; } };
+      var off = function () { if (host.__caFrame === me) { host.classList.remove('is-dialog', 'is-sm', 'is-md', 'is-lg'); host.style.zIndex = ''; host.__caFrame = null; } };
       if (instant === true) off(); else setTimeout(off, 200);   // BRAND §6: out in 200ms
     }
     function close() { if (done) return; release(); if (opts.onClose) opts.onClose({ instant: false }); }
     if (host.__caFrame && host.__caFrame.release) host.__caFrame.release(true);   // never two frames on one host
     host.__caFrame = me;
-    me.isDialog = desk; me.close = close; me.release = function (i) { release(i === true); }; me.ensureClose = ensureClose;
+    me.isDialog = desk; me.close = close; me.release = function (i) { release(i === true); }; me.ensureClose = ensureClose; me.setSize = setSize;
     if (DESK) { if (DESK.addEventListener) DESK.addEventListener('change', onMq); else if (DESK.addListener) DESK.addListener(onMq); }
     host.classList.toggle('is-dialog', desk);
     if (!desk) return me;
+    setSize(opts.size);
+    var level = _caStack.length; _caStack.push(me);
+    if (host.inert) { hostWasInert = true; host.inert = false; }   // opened over another dialog that inerted it
     scrim = document.createElement('div'); scrim.className = 'ca-dlg-scrim'; scrim.setAttribute('aria-hidden', 'true');
+    scrim.style.zIndex = String(9500 + level * 2); host.style.zIndex = String(9501 + level * 2);
     scrim.addEventListener('click', close);
     document.body.appendChild(scrim);
     [].forEach.call(document.body.children, function (el) {
@@ -314,11 +332,13 @@
       + (sm.on && sm.wheel ? '<div class="irm-wheel ist-wheel">' + wcol('h', H, sm.parts.h, 'Hour') + wcol('m', M, sm.parts.m, 'Minute') + wcol('ap', ['am', 'pm'], sm.parts.ap, 'am or pm') + '</div>' : '')
       + '</div>';
   }
-  function openSheet(html, onTap) {
+  // opts.size: 'sm' | 'md' | 'lg' at desktop width (see caDialogFrame); ignored on phones.
+  function openSheet(html, onTap, opts) {
     var sheet = document.getElementById('ist-sheet'), scrim = document.getElementById('ist-sheet-scrim');
     if (!sheet || !scrim) return;
     _hookDismiss();
     if (!sheet.contains(document.activeElement)) _sheetBack = document.activeElement;   // a redraw keeps the original opener
+    var keep = _focusKey(sheet);
     sheet.innerHTML = html;
     sheet.__istTap = onTap || null;
     if (!sheet.__istBound) {
@@ -331,10 +351,10 @@
     }
     // ≥900px: the same content in a centred dialog; caDialogFrame owns scrim, inert, X, focus and Escape there.
     // Already open (a redraw): keep the frame, put the X back.
-    if (_sheetDlg && _sheetDlg.isDialog && caIsDesk() && sheet.classList.contains('open')) { _sheetDlg.ensureClose(); _focusX(sheet); return; }
+    if (_sheetDlg && _sheetDlg.isDialog && caIsDesk() && sheet.classList.contains('open')) { _sheetDlg.ensureClose(); if (opts && opts.size) _sheetDlg.setSize(opts.size); _focusBack(sheet, keep); return; }
     var desk = caIsDesk();
     sheet.hidden = false; scrim.hidden = desk;
-    _sheetDlg = caDialogFrame(sheet, { onClose: function (o) { _sheetDlg = null; closeSheet(o && o.instant); } });
+    _sheetDlg = caDialogFrame(sheet, { size: opts && opts.size, onClose: function (o) { _sheetDlg = null; closeSheet(o && o.instant); } });
     void sheet.offsetWidth;
     sheet.classList.add('open'); if (!desk) scrim.classList.add('open');
     if (_sheetKey) { window.removeEventListener('keydown', _sheetKey, true); _sheetKey = null; }
@@ -344,7 +364,23 @@
     var first = sheet.querySelector('button:not([disabled])');
     if (first) { try { first.focus({ preventScroll: true }); } catch (_) {} }
   }
-  function _focusX(sheet) { var x = sheet.querySelector('[data-ca-close]'); if (x) { try { x.focus({ preventScroll: true }); } catch (_) {} } }
+  // An in-place redraw replaces the focused control; put focus back on its twin (same data-* attributes), else the
+  // control at the same position, else Close. Focus outside the sheet stays where it is.
+  function _focusKey(sheet) {
+    var a = document.activeElement;
+    if (!a || a === sheet || !sheet.contains(a)) return null;
+    var sel = (a.tagName || '').toLowerCase();
+    [].forEach.call(a.attributes, function (at) { if (/^data-/.test(at.name)) sel += '[' + at.name + '="' + String(at.value).replace(/["\\]/g, '\\$&') + '"]'; });
+    var all = [].slice.call(sheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]'));
+    return { sel: sel, idx: all.indexOf(a) };
+  }
+  function _focusBack(sheet, k) {
+    if (!k) return;
+    var all = sheet.querySelectorAll('button, [href], input, select, textarea, [tabindex]'), el = null;
+    try { el = sheet.querySelector(k.sel); } catch (_) { el = null; }
+    if (!el || el.disabled) el = all[k.idx] && !all[k.idx].disabled ? all[k.idx] : sheet.querySelector('[data-ca-close]');
+    if (el) { try { el.focus({ preventScroll: true }); } catch (_) {} }
+  }
   function closeSheet(instant) {
     var sheet = document.getElementById('ist-sheet'), scrim = document.getElementById('ist-sheet-scrim');
     if (!sheet || !scrim || sheet.hidden) return;
@@ -396,7 +432,7 @@
     var sheet = document.getElementById('ist-sheet');
     var code = (_state && _state.cert && _state.cert.code) || '';
     var html = _iosStExamSheetHtml({ code: code, year: _cal.year, month: _cal.month, selected: _cal.selected, today: _todayIso() });
-    if (sheet && !sheet.hidden && sheet.classList.contains('open')) { sheet.innerHTML = html; if (_sheetDlg) { _sheetDlg.ensureClose(); _focusX(sheet); } }   // a tap redraws in place
+    if (sheet && !sheet.hidden && sheet.classList.contains('open')) { var k = _focusKey(sheet); sheet.innerHTML = html; if (_sheetDlg && _sheetDlg.isDialog) { _sheetDlg.ensureClose(); _focusBack(sheet, k); } }   // a tap redraws in place
     else openSheet(html, _onExamTap);
   }
   function _onExamTap(b) {

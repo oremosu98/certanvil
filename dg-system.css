@@ -5635,15 +5635,17 @@ html[data-theme] body .topbar-countdown.is-hidden{display:none!important;}
 html.is-native a[href*="certanvil.com/pricing"],html.is-native a[href*="manage-subscription"],html.is-native .settings-go-pro-btn,html.is-native .a2hs-banner,html.is-native #ios-settings [data-act="gopro"],html.is-native .ifr-see,html.is-native #ios-check [data-act="limit-pro"]{display:none!important;}   /* Stage 5a: the Lift B/C Go Pro paths too (Settings rows and secondaries, capped Home, the daily limit) */
 
 /* v8.204.0 Desktop catch-up Task 1: the shared desktop dialog (features/ios-settings.js caDialogFrame).
-   A phone sheet at 900px and up shows as a centred dialog: about 520px, 18px corners, hairline border, a scrim,
+   A phone sheet at 900px and up shows as a centred dialog: 460 / 560 (default) / 700px via .is-sm/.is-md/.is-lg, 18px corners, hairline border, a scrim,
    a Close X top right. In 340ms, out 200ms (BRAND §6); reduced motion fades only. */
 @media (min-width:900px){
   .ca-dlg-scrim{position:fixed;inset:0;z-index:9500;background:color-mix(in oklab,var(--bg) 60%,transparent);opacity:0;transition:opacity .2s cubic-bezier(0.16,1,0.3,1);}
   .ca-dlg-scrim.is-in{opacity:1;transition:opacity .3s cubic-bezier(0.16,1,0.3,1);}
-  .is-dialog{position:fixed!important;z-index:9501!important;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;width:min(520px,calc(100vw - 32px))!important;max-height:min(640px,calc(100dvh - 48px))!important;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;margin:0!important;padding:20px 22px 22px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:0 30px 70px -28px color-mix(in oklab,#000 55%,transparent);font:15px/1.55 Inter,-apple-system,BlinkMacSystemFont,sans-serif;
+  .is-dialog{position:fixed!important;z-index:9501;top:50%!important;left:50%!important;right:auto!important;bottom:auto!important;width:min(560px,calc(100vw - 32px))!important;max-height:min(640px,calc(100dvh - 48px))!important;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;margin:0!important;padding:20px 22px 22px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:0 30px 70px -28px color-mix(in oklab,#000 55%,transparent);font:15px/1.55 Inter,-apple-system,BlinkMacSystemFont,sans-serif;
     opacity:0;transform:translate(-50%,-50%) scale(.97);transition:opacity .18s cubic-bezier(0.16,1,0.3,1),transform .2s cubic-bezier(0.16,1,0.3,1);}
   .is-dialog.is-in{opacity:1;transform:translate(-50%,-50%);transition:opacity .34s cubic-bezier(0.16,1,0.3,1),transform .34s cubic-bezier(0.16,1,0.3,1);}
   .is-dialog[hidden]{display:none!important;}
+  .is-dialog.is-sm{width:min(460px,calc(100vw - 32px))!important;}
+  .is-dialog.is-lg{width:min(700px,calc(100vw - 32px))!important;}
   .is-dialog .ist-grip,.is-dialog .ix-sheet-grip{display:none;}
   .ca-dlg-x{position:absolute;top:10px;right:10px;z-index:1;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:12px;background:transparent;color:var(--text-dim);display:grid;place-items:center;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),background-color .16s cubic-bezier(0.16,1,0.3,1);}
   .ca-dlg-x svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
