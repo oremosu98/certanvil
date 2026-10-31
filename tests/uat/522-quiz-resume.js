@@ -100,6 +100,22 @@ const { _fnBody, js, html, test, vm } = require('./_context');
   const mx = sandbox(); mx.ev("activeQuizTopic = 'Mixed \\u2014 All Topics'"); played(mx);
   test('Mixed quiz label reads "Mixed topics"', mx.ev('quizResumeState()').topicLabel === 'Mixed topics');
 
+  // ── final review M1: an abandoned quiz's answers still count as seen ──
+  const spy = (s) => { s.ctx.__seen = []; s.ev('window.seenRecord = (qs, t) => { __seen.push({ n: qs.length, t, stems: qs.map((q) => q.question) }); return qs.length; }'); return s.ctx.__seen; };
+  const ab = sandbox(); const abSeen = spy(ab); played(ab); ab.ev('quizResumeClear()');
+  test('Seen (M1): ✕ / a new quiz over a left one records the 7 answered questions once, under the quiz topic, and removes the save',
+    abSeen.length === 1 && abSeen[0].n === 7 && abSeen[0].t === 'Subnetting' && abSeen[0].stems[6] === 'Stem 7: which port?' && !ab.store.has('nplus_quiz_resume'));
+  const fin = sandbox(); const finSeen = spy(fin); played(fin); fin.ev('quizResumeClear({ record: false })');
+  test('Seen (M1): finish() clears with { record: false } and records nothing here (finish records its own log)',
+    finSeen.length === 0 && !fin.store.has('nplus_quiz_resume'));
+  const exp = sandbox('netplus', { nplus_quiz_resume: JSON.stringify(Object.assign({}, saved, { savedAt: Date.now() - 25 * HOUR })) }); const expSeen = spy(exp);
+  exp.ev('quizResumeState()');
+  test('Seen (M1): an expired save is recorded as it is discarded', expSeen.length === 1 && expSeen[0].n === 7);
+  const fr = sandbox('secplus', Object.fromEntries(a.store)); const frSeen = spy(fr); fr.ev('quizResumeState()');
+  test('Seen (M1): another cert\'s save is discarded without recording', frSeen.length === 0);
+  const wdr = sandbox(); const wdrSeen = spy(wdr); wdr.ev('wrongDrillMode = true'); played(wdr); wdr.ev('quizResumeClear()');
+  test('Seen (M1): a mistakes drill is never recorded (same rule as finish)', wdrSeen.length === 0);
+
   // ── wiring: when it saves and clears ──
   const qe = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8');
   const saveAfterPush = (fn) => /log\.push\([^\n]*\n\s*if \(typeof quizResumeSave === 'function'\) quizResumeSave\(\);/.test(_fnBody(qe, fn));
@@ -119,7 +135,8 @@ const { _fnBody, js, html, test, vm } = require('./_context');
   test('Background save skips an outgoing quiz page (.active + .page-exit) so ✕ / finish stay cleared',
     /classList\.contains\('active'\) && !page\.classList\.contains\('page-exit'\)/.test(_fnBody(rq, '_quizResumeOnHide')));
   test('Clears on finish (after the drill hand-offs), on ✕ leave, and when startQuiz commits a new quiz',
-    /quizResumeClear\(\)/.test(_fnBody(qe, 'finish()')) && _fnBody(qe, 'finish()').indexOf('quizResumeClear') > _fnBody(qe, 'finish()').indexOf('_wnFinishQuestion')
+    /quizResumeClear\(\{ record: false \}\)/.test(_fnBody(qe, 'finish()')) && _fnBody(qe, 'finish()').indexOf('quizResumeClear') > _fnBody(qe, 'finish()').indexOf('_wnFinishQuestion')
+    && /seenRecord\(log\.map/.test(_fnBody(qe, 'finish()'))
     && /quizResumeClear\(\); goSetup\(\)/.test(_fnBody(js, 'confirmBack')) && /quizResumeClear\(\)/.test(_fnBody(qe, 'startQuiz')));
   test('Not cloud-synced: nplus_quiz_resume is absent from cloud-store', !require('./_context').cloudStoreJs.includes('nplus_quiz_resume'));
   test('index.html loads quiz-resume.js right after quiz-engine.js',

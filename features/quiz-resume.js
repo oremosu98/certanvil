@@ -54,7 +54,20 @@
     } catch (_) { return false; }   // storage full or an unserialisable question: the quiz still runs
   }
 
-  function quizResumeClear() {
+  // Final review M1: answers in a quiz that never reaches finish() (✕, an expired save, a new quiz over a
+  // left one) still count as seen, so they don't come back tomorrow. finish() records its own log and
+  // passes { record: false }, so a finished quiz is recorded once. Mistakes drills are never recorded
+  // (same rule as finish()), nor a save from another cert.
+  function quizResumeClear(opts) {
+    try {
+      if (!(opts && opts.record === false) && typeof window.seenRecord === 'function') {
+        const st = JSON.parse(localStorage.getItem(QUIZ_RESUME_KEY) || 'null');
+        if (st && st.cert === CURRENT_CERT && !st.wrongDrillMode && Array.isArray(st.questions) && Array.isArray(st.log)) {
+          const qs = st.log.map(function (e) { return e && st.questions[e.qi]; }).filter(Boolean);
+          if (qs.length) window.seenRecord(qs, st.activeQuizTopic || st.topic);
+        }
+      }
+    } catch (_) {}   // an unreadable save is just removed
     try { localStorage.removeItem(QUIZ_RESUME_KEY); } catch (_) {}
   }
 

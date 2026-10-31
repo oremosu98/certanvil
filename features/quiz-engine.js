@@ -1944,7 +1944,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     // v7.50.0: a Why-Not round's question finishing hands off to phase two
     // (the reason picker) instead of the results page.
     if (whyNotMode && _wnSession && typeof _wnFinishQuestion === 'function') { _wnFinishQuestion(); return; }
-    if (window.quizResumeClear) quizResumeClear();   // Task 6
+    if (window.quizResumeClear) quizResumeClear({ record: false });   // Task 6
     // v4.42.0: snapshot streak BEFORE updateStreak so we can detect an
     // increment and flag a pulse animation for the next goSetup() render.
     const _prevStreakBefore = (function(){ try { return getStreak().current || 0; } catch (_) { return 0; } })();
