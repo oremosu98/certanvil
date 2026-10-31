@@ -1192,6 +1192,7 @@ html[data-theme] body #page-analytics .ana-bento .tile.s-read{
   justify-content:space-between!important;
 }
 #page-analytics .read-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+#page-analytics .read-tier.is-pass{background:color-mix(in oklab,var(--pass) 13%,transparent);color:var(--pass)}
 #page-analytics .read-tier{
   display:inline-flex;align-items:center;gap:7px;background:var(--accent-soft);color:var(--accent);
   border-radius:999px;padding:4px 12px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;
@@ -2933,6 +2934,21 @@ html[data-theme] body #page-setup #readiness-card-v2.is-pass .readiness-score #r
 #readiness-card-v2 .rc-v2-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:4;border-radius:inherit}
 #readiness-card-v2 .rc-v2-confetti i{position:absolute;width:8px;height:12px;border-radius:2px;opacity:0;will-change:transform,opacity}
 @media (prefers-reduced-motion:reduce){#readiness-card-v2 #rc-v2-num,#readiness-card-v2 .rc-v2-bar-fill-green,#readiness-card-v2 .rc-v2-glow,#readiness-card-v2 .rc-v2-ring{transition:none}}
+/* Before you book row (fix/readiness-pass-level, drawing readiness-bookit-stamp option C): at or above the pass mark
+   but not 4 of 4 book-it points, a full-width row under the footer names the next step and opens Why this score. */
+#readiness-card-v2 .rc-v2-book[hidden],#readiness-card-v2.is-pending .rc-v2-book,#page-analytics .rc-v2-book[hidden]{display:none!important}
+#readiness-card-v2 .rc-v2-book,#page-analytics .rc-v2-book{position:relative;z-index:6;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;width:100%;min-height:44px;margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:500 13px/1.35 'Inter',sans-serif;text-align:left;cursor:pointer;transition:transform .15s cubic-bezier(0.16,1,0.3,1),border-color .15s cubic-bezier(0.16,1,0.3,1)}
+#readiness-card-v2 .rc-v2-book:active,#page-analytics .rc-v2-book:active{transform:scale(0.97)}
+#readiness-card-v2 .rc-v2-book:focus-visible,#page-analytics .rc-v2-book:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#readiness-card-v2 .rc-v2-book strong,#page-analytics .rc-v2-book strong{font-weight:700;color:var(--text)}
+#readiness-card-v2 .rc-v2-book-l,#page-analytics .rc-v2-book-l{display:block;flex:1 1 200px;min-width:0}
+#readiness-card-v2 .rc-v2-book-dots,#page-analytics .rc-v2-book-dots{display:inline-flex;gap:4px;margin-right:8px;vertical-align:1px}
+#readiness-card-v2 .rc-v2-book-dots i,#page-analytics .rc-v2-book-dots i{width:7px;height:7px;border-radius:50%;background:color-mix(in oklab,var(--text-dim) 45%,transparent)}
+#readiness-card-v2 .rc-v2-book-dots i.on,#page-analytics .rc-v2-book-dots i.on{background:var(--pass)}
+#readiness-card-v2 .rc-v2-book-k,#page-analytics .rc-v2-book-k{flex:none;margin-left:auto;font:700 11px/1 'JetBrains Mono',ui-monospace,monospace;color:var(--text-dim);white-space:nowrap}
+@media (hover:hover) and (pointer:fine){#readiness-card-v2 .rc-v2-book:hover,#page-analytics .rc-v2-book:hover{border-color:color-mix(in oklab,var(--accent) 40%,var(--border))}}
+@media (prefers-reduced-motion:reduce){#readiness-card-v2 .rc-v2-book,#page-analytics .rc-v2-book{transition:none}#readiness-card-v2 .rc-v2-book:active,#page-analytics .rc-v2-book:active{transform:none}}
+@media (max-width:620px){#page-setup #readiness-card-v2 .rc-v2-book{display:none}}
 
 /* Brand · light-theme heading underlines were hardcoded purple (#6355e0) in
    styles.css ([data-theme="light"] .ed-pagehead::after ~9240 / .ed-section-head::after

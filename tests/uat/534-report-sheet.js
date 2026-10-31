@@ -49,7 +49,7 @@ const { test } = require('./_context');
   test('CSS: reduced motion fades only, hover gated', /prefers-reduced-motion: reduce\) \{\s*\n\s*\.irp-sheet, \.irp-sheet\.open \{ transform: none; opacity: 0;/.test(lift)
     && /\(hover:hover\) and \(pointer:fine\)\{\s*\n\s*#ios-report\.is-dialog \.irp-close:hover/.test(dg));
   test('no em dash in the form, its styles or its tests', !sheet.includes(dash) && !lift.slice(lift.indexOf('Admin in the app Task 3')).includes(dash) && !dg.slice(dg.indexOf('Admin in the app Task 3: Report a problem')).includes(dash));
-  test('dg-system.css and lift-ios.css versions bumped for the report form', /dg-system\.css\?v=8\.204\.0-d(1\d|[2-9]\d)/.test(html) && /lift-ios\.css\?v=8\.204\.[1-9]\d*"/.test(html));
+  test('dg-system.css and lift-ios.css versions bumped for the report form', /dg-system\.css\?v=8\.204\.0-d(1\d|[2-9]\d)/.test(html) && /lift-ios\.css\?v=8\.204\.(?:[1-9]\d*|[1-9]\d*\.[1-9]\d*)"/.test(html));
 
   // the link only under real failures: run isFailure against every #setup-err message family
   const g0 = sheet.indexOf('  var GUIDANCE = ['), g1 = sheet.indexOf('  function _wireSetupErr');

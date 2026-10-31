@@ -18,7 +18,7 @@ const { test } = require('./_context');
   test('resume card: drawing copy, and the card renders on every Home render', /Pick up where you left off/.test(home) && /Finish your quiz \\u00B7 /.test(home) && /Start fresh/.test(home) && /renderDeskResume\(\); \} catch/.test(home));
   test('resume card: desktop only, phone Home untouched', /@media \(min-width:900px\)\{\s*#desk-resume:not\(\[hidden\]\)/.test(css) && /caIsDesk\(\)/.test(home));
   test('resume card: no em dash in its markup or styles', !new RegExp(dash).test(home.slice(home.indexOf('function renderDeskResume'), home.indexOf('// RECOMMENDED-NEXT tile'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 2'))));
-  test('dg-system.css version bumped for the resume card', /dg-system\.css\?v=8\.204\.0-d(?:[2-9]|\d\d)/.test(html));
+  test('dg-system.css version bumped for the resume card', /dg-system\.css\?v=8\.204\.0-d([2-9]|[1-9]\d)/.test(html));
 
   // Task 3: How did your exam go, on desktop
   const lr = fs.readFileSync(path.join(ROOT, 'features', 'ios-log-result.js'), 'utf8');
@@ -26,7 +26,7 @@ const { test } = require('./_context');
   test('outcome card: phone copy verbatim', /How did your ' \+ name \+ ' exam go\?/.test(home) && /Tell us and we'll update your plan\./.test(home) && /I haven\\'t sat it yet/.test(home) && /Pick your next cert/.test(home) && /Your streak carries on with your next cert\./.test(home));
   test('log result: opens on desktop through caDialogFrame (size sm); the frame owns Escape there', /caDialogFrame\(root, \{ size: 'sm'/.test(lr) && /root\.onkeydown = desk \? null/.test(lr) && !/if \(!isPhone\(\)\) return false;/.test(lr));
   test('log result: inner desktop styles live in dg-system.css (lift-ios.css is phone-only)', /#ios-log-result\.is-dialog \.il-seg/.test(css) && /#desk-oc:not\(\[hidden\]\)/.test(css));
-  test('dg-system.css version bumped for the exam outcome', /dg-system\.css\?v=8\.204\.0-d(?:[3-9]|\d\d)/.test(html));
+  test('dg-system.css version bumped for the exam outcome', /dg-system\.css\?v=8\.204\.0-d([3-9]|[1-9]\d)/.test(html));
 
   // Task 4: My certs as a desktop page
   const hub = fs.readFileSync(path.join(ROOT, 'features', 'ios-hub.js'), 'utf8');
@@ -37,14 +37,14 @@ const { test } = require('./_context');
   test('My certs: sidebar item under Account, above Settings', /page: 'mycerts',[^\n]*label: 'My certs'[^\n]*\n\s*\{ page: 'settings'/.test(home));
   test('My certs: Settings shows one My certs row on desktop; the phone page keeps the Pass Plan html', /host\.innerHTML = _ppDesk\(\) \? _passPlanDeskHtml\(html\) : html;/.test(st) && /patch\(\{ passPlanHtml: html \}\)/.test(st));
   test('My certs: no em dash in its markup or styles', !new RegExp(dash).test(hub.slice(hub.indexOf('function _deskHtml'), hub.indexOf('function openHub'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 4'))));
-  test('dg-system.css version bumped for My certs', /dg-system\.css\?v=8\.204\.0-d(?:[4-9]|\d\d)/.test(html));
+  test('dg-system.css version bumped for My certs', /dg-system\.css\?v=8\.204\.0-d([4-9]|[1-9]\d)/.test(html));
 
   // Task 8: goodbye and welcome back on desktop
   test('goodbye/welcome back: desktop layout lives in dg-system.css under min-width:900 with its own keyframes, and the brand mark is phone-hidden', /\.dm-screen \.cover-brand\{display:none;\}\s*@media \(min-width:900px\)\{\s*\.dm-screen\{/.test(css) && /@keyframes dmd-rise/.test(css));
   // Final review: Sign back in comes first on desktop in the markup itself (Tab follows what is drawn), never by CSS order
   test('goodbye: the button order is set in the markup by width, not by CSS order', !/\.dm-foot \[data-act="signin"\]\{order:/.test(css) && /f\.insertBefore\(si, f\.firstChild\)/.test(home) && /else f\.appendChild\(si\)/.test(home));
   test('goodbye/welcome back: no em dash in the desktop styles', !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 8'))));
-  test('dg-system.css version bumped for the goodbye', /dg-system\.css\?v=8\.204\.0-d(?:[8-9]|\d\d)/.test(html));
+  test('dg-system.css version bumped for the goodbye', /dg-system\.css\?v=8\.204\.0-d([8-9]|[1-9]\d)/.test(html));
 
   // Task 9: no unbacked PBQ weight claim anywhere in the shipped source
   const srcFiles = ['index.html', 'app.js'].concat(['features', 'certs'].reduce((a, d) => a.concat(fs.readdirSync(path.join(ROOT, d)).filter((f) => /\.js$/.test(f)).map((f) => d + '/' + f)), []));

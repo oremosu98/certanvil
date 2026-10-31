@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.204.0
+// Network+ AI Quiz — app.js  v8.204.1
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.204.0';
+const APP_VERSION = '8.204.1';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -5034,7 +5034,7 @@ function animateReadinessCardV2(pending){
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
-    else { showReadinessStamp(card,scaled>=passLine?'Not book-ready yet':(passLine-scaled)+' pts to pass',true); } };
+    else { showReadinessStamp(card,scaled>=passLine?'Pass level':(passLine-scaled)+' pts to pass',scaled<passLine); } };  // Pass level: green, no ring or confetti; the Before you book row names the next step
   if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
   animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);
@@ -5052,7 +5052,7 @@ function drawReadinessRing(card){
   path.animate([{strokeDashoffset:len},{strokeDashoffset:0}],{duration:600,easing:'ease-in-out',fill:'forwards'});
   ring.animate([{transform:'rotate(-7deg) scale(.86)'},{transform:'rotate(-3deg) scale(1)'}],{duration:600,easing:'cubic-bezier(.34,1.56,.64,1)',fill:'forwards'});
 }
-function showReadinessStamp(card,text,warn){ const stamp=card.querySelector('.rc-v2-stamp'); if(!stamp) return; const t=stamp.querySelector('.txt'); if(t) t.textContent=text; const col=warn?'var(--yellow)':'var(--green)'; stamp.style.borderColor=col; if(t) t.style.color=col; const p=stamp.querySelector('svg path'); if(p) p.style.stroke=col; stamp.animate([{opacity:0,transform:'scale(1.4) rotate(-14deg)'},{opacity:1,transform:'scale(1) rotate(-6deg)'}],{duration:500,delay:120,easing:'cubic-bezier(.34,1.8,.64,1)',fill:'forwards'}); }
+function showReadinessStamp(card,text,warn){ const stamp=card.querySelector('.rc-v2-stamp'); if(!stamp) return; const t=stamp.querySelector('.txt'); if(t) t.textContent=text; const col=warn?'var(--yellow)':'var(--green)'; stamp.style.borderColor=col; if(t) t.style.color=col; const p=stamp.querySelector('svg path'); if(p) p.style.stroke=col; stamp.animate(matchMedia('(prefers-reduced-motion: reduce)').matches?[{opacity:0,transform:'rotate(-6deg)'},{opacity:1,transform:'rotate(-6deg)'}]:[{opacity:0,transform:'scale(1.4) rotate(-14deg)'},{opacity:1,transform:'scale(1) rotate(-6deg)'}],{duration:500,delay:120,easing:'cubic-bezier(.34,1.8,.64,1)',fill:'forwards'}); }
 function fireReadinessConfetti(card){ const host=card.querySelector('.rc-v2-confetti'); if(!host) return; host.innerHTML=''; const r=host.getBoundingClientRect(); const ox=r.width*0.3, oy=r.height*0.4; const colors=['var(--green)','var(--accent)','var(--text)']; for(let i=0;i<30;i++){ const p=document.createElement('i'); p.style.left=ox+'px'; p.style.top=oy+'px'; p.style.background=colors[(Math.random()*colors.length)|0]; host.appendChild(p); const ang=(-90+(Math.random()*150-75))*Math.PI/180, dist=120+Math.random()*200; const px=Math.cos(ang)*dist, py=Math.sin(ang)*dist; const fall=r.height-oy+60+Math.random()*80, rot=Math.random()*720-360; p.animate([{transform:'translate(0,0) rotate(0)',opacity:1,offset:0},{transform:`translate(${px}px,${py}px) rotate(${rot*.5}deg)`,opacity:1,offset:.35},{transform:`translate(${px*1.3}px,${fall}px) rotate(${rot}deg)`,opacity:0,offset:1}],{duration:1500+Math.random()*900,delay:Math.random()*160,easing:'cubic-bezier(.2,.7,.3,1)',fill:'forwards'}); } }
 window.__rcAnimTest = function(scaled, barPct){ var c=document.getElementById('readiness-card-v2'); if(c){ c.dataset.animated=''; c.classList.remove('is-pass'); } animateReadinessCardV2({scaled:scaled, barPct:barPct}); };
 
