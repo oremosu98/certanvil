@@ -17,6 +17,6 @@ const { test } = require('./_context');
   test('resume card: reads the one saved quiz, resumes and clears through the shared helpers', /renderDeskResume/.test(home) && /quizResumeState\(\)/.test(home) && /resumeQuiz\(\)/.test(home) && /quizResumeClear\(\)/.test(home));
   test('resume card: drawing copy, and the card renders on every Home render', /Pick up where you left off/.test(home) && /Finish your quiz \\u00B7 /.test(home) && /Start fresh/.test(home) && /renderDeskResume\(\); \} catch/.test(home));
   test('resume card: desktop only, phone Home untouched', /@media \(min-width:900px\)\{\s*#desk-resume:not\(\[hidden\]\)/.test(css) && /caIsDesk\(\)/.test(home));
-  test('resume card: no em dash in its markup or styles', !new RegExp(dash).test(home.slice(home.indexOf('function renderDeskResume'), home.indexOf('function renderBentoRecommended'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 2'))));
+  test('resume card: no em dash in its markup or styles', !new RegExp(dash).test(home.slice(home.indexOf('function renderDeskResume'), home.indexOf('// RECOMMENDED-NEXT tile'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 2'))));
   test('dg-system.css version bumped for the resume card', /dg-system\.css\?v=8\.204\.0-d2/.test(html));
 })();

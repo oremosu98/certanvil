@@ -43,7 +43,10 @@ test.describe('Desktop: Finish your quiz', () => {
     await boot(page);
     await expect(card(page)).toBeHidden();
     await play(page, 7);
+    await page.evaluate(() => { quizFlags[2] = true; quizFlags[5] = true; });   // flagged questions travel with the save
     const before = await page.evaluate(() => JSON.stringify(questions));
+    const picks = await page.evaluate(() => log.map((e) => [questions.indexOf(e.q), e.chosen, e.isRight]));
+    expect(picks.map((p) => p[1])).toEqual(['A', 'B', 'A', 'D', 'A', 'B', 'A']);   // specific chosen options, right and wrong
     await page.reload();   // pagehide saves the quiz on question 8
     await page.waitForLoadState('load');
     await expect(card(page)).toBeVisible({ timeout: 8000 });
@@ -60,8 +63,11 @@ test.describe('Desktop: Finish your quiz', () => {
     const aiBefore = page.__ai;
     await card(page).click();
     await expect(page.locator('#page-quiz')).toHaveClass(/active/);
-    const st = await page.evaluate(() => ({ qs: JSON.stringify(questions), log: log.length, current, linked: log.every((e, i) => e.q === questions[i]) }));
+    const st = await page.evaluate(() => ({ qs: JSON.stringify(questions), log: log.length, current, linked: log.every((e, i) => e.q === questions[i]),
+      picks: log.map((e) => [questions.indexOf(e.q), e.chosen, e.isRight]), flags: quizFlags.slice() }));
     expect(st.qs).toBe(before);
+    expect(st.picks).toEqual(picks);
+    expect(st.flags.map((f, i) => (f ? i : -1)).filter((i) => i >= 0)).toEqual([2, 5]);
     expect(st.log).toBe(7);
     expect(st.current).toBe(7);
     expect(st.linked).toBe(true);
@@ -78,6 +84,8 @@ test.describe('Desktop: Finish your quiz', () => {
     await page.locator('#desk-resume [data-act="fresh"]').click();
     await expect(card(page)).toBeHidden();
     expect(await saved(page)).toBeNull();
+    // keyboard focus is handed on, not dropped to the page
+    expect(await page.evaluate(() => document.activeElement && document.activeElement.id)).toBe('primaryLaunch');
   });
 
   test('an expired (25h) save shows no card', async ({ page }) => {

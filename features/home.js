@@ -1788,8 +1788,6 @@
     }
   }
 
-  // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
-  // baked into markup). Meta nods to the weakest topic when readiness has one.
   // Desktop catch-up Task 2: the "Finish your quiz" card above the readiness hero, drawing home-resume.
   // Same save and same copy as the phone card (ios-home.js): the summary comes from _quizResumeSummary via
   // quizResumeState(), nothing is re-derived. It sits above the bento so it outranks Recommended next, as on the phone.
@@ -1822,7 +1820,10 @@
     host.onclick = function (ev) {
       const b = ev.target.closest && ev.target.closest('[data-act]');
       if (!b) return;
-      if (b.getAttribute('data-act') === 'fresh') { if (typeof quizResumeClear === 'function') quizResumeClear(); renderDeskResume(); return; }
+      if (b.getAttribute('data-act') === 'fresh') { if (typeof quizResumeClear === 'function') quizResumeClear(); renderDeskResume();
+        // the focused button is gone: hand focus to the next Home card's main control
+        const nxt = document.getElementById('primaryLaunch'); if (nxt && nxt.focus) nxt.focus({ preventScroll: true });
+        return; }
       if (typeof resumeQuiz === 'function') resumeQuiz();
     };
   }
@@ -1835,6 +1836,8 @@
     window.addEventListener('load', _drChange);
   }
 
+  // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
+  // baked into markup). Meta nods to the weakest topic when readiness has one.
   function renderBentoRecommended() {
     const minEl = document.getElementById('pl-min');
     const titleEl = document.getElementById('pl-title');
