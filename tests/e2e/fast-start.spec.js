@@ -88,6 +88,70 @@ test.describe('Fast start: first question on the first checked batch', () => {
     await expect(page.locator('#q-wait')).toBeHidden();
   });
 
+  test('the fill settles while the person sits on the last question: Next goes to results', async ({ page }) => {
+    test.setTimeout(30000);
+    await boot(page);
+    await page.evaluate(() => {
+      window._fetchQuestionsBatch = (k, t, d, n) => {
+        const c = ++__calls;
+        if (c === 1) return new Promise((r) => setTimeout(() => r(__Q.slice(0, 3)), 50));
+        return new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('API error 500'), { apiError: true })), 1200));
+      };
+      window.__p = startQuiz();
+    });
+    await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 2000 });
+    // While batches are pending the dots match "of 12": 3 arrived, 9 still to come.
+    expect(await page.locator('#quiz-prog-dots .qpd-cell').count()).toBe(12);
+    expect(await page.locator('#quiz-prog-dots .qpd-cell[disabled]').count()).toBe(9);
+    for (let i = 0; i < 2; i++) {
+      await page.locator('#options .option').nth(1).click();
+      await page.locator('#btn-next').click();
+    }
+    await page.locator('#options .option').nth(1).click();   // answer the last one, don't tap Next yet
+    await page.evaluate(() => __p);                           // the fill settles short
+    await expect(page.locator('#btn-next')).toHaveText('See Results');
+    await expect(page.locator('#quiz-prog-dots .qpd-cell')).toHaveCount(3);
+    await page.locator('#btn-next').click();
+    await expect(page.locator('#page-results')).toHaveClass(/active/, { timeout: 5000 });
+    await expect(page.locator('#short-notice')).toHaveText('3 of 12');
+  });
+
+  test('leaving with the cross while waiting ends the fill: no results, no history, no AI calls', async ({ page }) => {
+    test.setTimeout(40000);
+    await boot(page);
+    page.on('dialog', (d) => d.accept());
+    await page.evaluate(() => {
+      window.__sigs = [];
+      window._fetchQuestionsBatch = (k, t, d, n) => {
+        const c = ++__calls; __sigs.push(window._genSignal ? _genSignal() : undefined);
+        if (c === 1) return new Promise((r) => setTimeout(() => r(__Q.slice(0, 2)), 50));
+        // Slow enough that the cross always comes first, even on a cold page.
+        return new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('API error 500'), { apiError: true })), 6000));
+      };
+      window.__hist0 = localStorage.getItem('nplus_history');
+      window.__p = startQuiz();
+    });
+    await expect(page.locator('#page-quiz')).toHaveClass(/active/, { timeout: 2000 });
+    for (let i = 0; i < 2; i++) {
+      await page.locator('#options .option').nth(1).click();
+      await page.locator('#btn-next').click();
+    }
+    await expect(page.locator('#q-wait')).toBeVisible();
+    await page.locator('#page-quiz .back-btn').click();
+    await expect(page.locator('#page-quiz')).not.toHaveClass(/active/);
+    const out = await page.evaluate(async () => {
+      const abortedNow = !!(__sigs[1] && __sigs[1].aborted);
+      await __p;
+      await new Promise((r) => setTimeout(r, 3000));   // past the slow batch and any top-up pause
+      return { abortedNow, calls: __calls,
+        results: document.getElementById('page-results').classList.contains('active'),
+        histSame: localStorage.getItem('nplus_history') === __hist0,
+        seen: (JSON.parse(localStorage.getItem('nplus_seen_q') || '{}')[CURRENT_CERT] || []).length,
+        fill: __tele.filter((r) => r.type === 'telemetry:quiz-fill').length };
+    });
+    expect(out).toEqual({ abortedNow: true, calls: 2, results: false, histSame: true, seen: 0, fill: 0 });
+  });
+
   test('telemetry carries firstQuestionMs', async ({ page }) => {
     await boot(page);
     const fill = await page.evaluate(async () => {

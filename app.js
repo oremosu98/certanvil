@@ -2778,7 +2778,7 @@ function goSetup() {
   // v4.54.0: hero v2 (display heading + dark readiness + mini cards)
   if (typeof renderHeroV2 === 'function') renderHeroV2();
   // v7.x audit 9: collapse Practice/Exam/Drill on phones only (≤620px)
-  _initHomeCollapse();
+  _initHomeCollapse(); if (window._ffAbandon) _ffAbandon();   // 31 Oct fast-start: leaving ends a live quiz fill
   showPage('setup');
 }
 

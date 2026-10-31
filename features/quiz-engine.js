@@ -306,6 +306,7 @@
     const el = document.getElementById('quiz-prog-dots');
     if (!el || !Array.isArray(questions)) return;
     const n = questions.length;
+    const shown = _ffTotal();   // 31 Oct fast-start: questions still on their way get a dot too
     // Build a quick lookup of question -> log index (log entries are in answered order;
     // we match on the question object identity since log.push({q, ...}) preserves refs).
     const logByQ = new Map();
@@ -327,6 +328,7 @@
       aria = `Question ${i + 1}, ${stateLabel}` + (i === current ? ' (current)' : '');
       cells.push(`<button type="button" class="${cls}" onclick="jumpToQuestion(${i})" title="${aria}" aria-label="${aria}">${i + 1}</button>`);
     }
+    for (let i = n; i < shown; i++) cells.push(`<button type="button" class="qpd-cell" disabled aria-label="Question ${i + 1}, pending">${i + 1}</button>`);
     el.innerHTML = cells.join('');
   }
   
@@ -482,7 +484,7 @@
     if (current < questions.length - 1) jumpToQuestion(current + 1);
     else if (current === questions.length - 1 && _findLogEntryFor(questions[current])) {
       // Last question + answered → show results (31 Oct fast-start: or wait for the next batch).
-      if (!_ffWaitAt()) finish();
+      _ffWaitAt();
     }
   }
 
@@ -494,10 +496,11 @@
   // is still the array it fills, so a new quiz, a resume or a drill ends it.
   let _ff = null;   // { pending, waiting, target, arr }
   function _ffPending() { return !!(_ff && _ff.pending && _ff.arr === questions); }
-  // On the last arrived question with more on the way: show "Next question coming…"
-  // instead of finishing. Returns true when it handled the step (caller stops).
+  // On the last arrived question: with more on the way show "Next question coming…",
+  // otherwise finish. Returns true when it handled the step (caller stops).
   function _ffWaitAt() {
-    if (!_ffPending() || current < questions.length - 1) return false;
+    if (current < questions.length - 1) return false;
+    if (!_ffPending()) { finish(); return true; }
     _ff.waiting = true;
     const w = document.getElementById('q-wait'), b = document.getElementById('btn-next');
     if (w) w.hidden = false;
@@ -511,9 +514,10 @@
     if (b) b.disabled = false;
   }
   // New questions arrived: move on if the person was waiting, else refresh the counters.
+  function _ffOnQuiz() { const p = document.getElementById('page-quiz'); return !!(p && p.classList.contains('active')); }
   function _ffAppended() {
     if (!_ff || _ff.arr !== questions) return;
-    if (_ff.waiting && current < questions.length - 1) { _ffWaitEnd(); advance(); return; }
+    if (_ff.waiting && current < questions.length - 1 && _ffOnQuiz()) { _ffWaitEnd(); advance(); return; }
     _ffRefresh();
   }
   function _ffRefresh() {
@@ -526,7 +530,7 @@
   // The fill is over (every batch and top-up settled). A waiting person moves on or finishes.
   function _ffSettle() {
     if (!_ff || _ff.arr !== questions) { _ff = null; return; }
-    const waiting = _ff.waiting;
+    const waiting = _ff.waiting && _ffOnQuiz();   // never jump to results from another page
     _ff.pending = false;
     if (waiting) { _ffWaitEnd(); if (current < questions.length - 1) advance(); else finish(); return; }
     _ffRefresh();
@@ -537,6 +541,14 @@
   }
   function _ffBegin(target) { _ff = { pending: true, waiting: false, target, arr: questions }; }
   function _ffClear() { if (_ff) _ffWaitEnd(); _ff = null; }
+  // Leaving the quiz (goSetup: ✕, Menu, Home) ends a live fill: no more AI calls, no late finish().
+  function _ffAbandon() {
+    if (!_ffPending()) return;
+    _gen.cancelled = true;
+    try { if (_gen.ctrl) _gen.ctrl.abort(); } catch (_) {}
+    _ffClear();
+  }
+  window._ffAbandon = _ffAbandon;
   
   // v4.82.0: surface/hide the revisit banner. Visible whenever the rendered
   // question has a log entry (i.e. user is looking at a question they've
