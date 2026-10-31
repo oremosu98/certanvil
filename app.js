@@ -533,9 +533,9 @@ async function _claudeFetch(init) {
     if (r.status === 429) {
       try {
         var detail = await r.clone().json();
-        if (typeof _showQuotaExceededUI === 'function') {
-          _showQuotaExceededUI(detail);
-        }
+        if (detail && detail.error !== 'rate_limited' && typeof _showQuotaExceededUI === 'function') _showQuotaExceededUI(detail);
+        else if (detail && detail.error === 'rate_limited') showToast("We're very busy right now. Your questions will be back shortly.", 'error');
+        // rate_limited is the app-wide cap: toast only, never the quota modal
       } catch (_) { /* intentionally silent: cosmetic */ }
     } else if (wasMetered && r.ok) {
       // Successful metered call — refresh the chip in the background

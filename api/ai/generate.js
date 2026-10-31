@@ -48,12 +48,25 @@ const MAX_PROMPT_BYTES = 100 * 1024;  // C2: cap serialized messages+system at 1
 // H1: abuse ceilings (separate from the product 20/day question quota).
 const USER_DAILY_LIMIT   = 500;    // ~20 full 90-Q exams/day — no human reaches it
 const IP_HOURLY_LIMIT    = 200;
-const GLOBAL_DAILY_LIMIT = 500;    // global kill-switch — matched to the $20/mo
-                                   // Anthropic workspace cap (founder decision
-                                   // 2026-06-11, testing phase). Equals one user's
-                                   // daily ceiling; raise at go-live alongside the
-                                   // workspace cap, after measuring per-session
-                                   // cost from the simulator E2E run.
+// App-wide daily cap on proxied calls (generation + checker + teacher), sized to a
+// $100/month Anthropic budget (spec 2026-10-30 section 1). AI_GLOBAL_DAILY_LIMIT overrides it.
+// PROVISIONAL: the proxy logged no token usage before this change, so this comes from a
+// conservative estimate, not measured data. Each call now writes one "ai_usage" log line;
+// re-size from those once a week of real traffic exists.
+// Arithmetic (prices from the claude-api skill, 2026-10-31, $ per 1M tokens in/out:
+//   claude-haiku-5-5 0.10/0.50, claude-sonnet-4-6 3.00/15.00). Typical 10-question quiz:
+//   - generation, Haiku 5.5: 8,000 in (prompt + exemplars) + 12,000 out (A/B averaged ~10.2k,
+//     MAX_TOKENS_GENERATION 16,000) = $0.0068
+//   - checker pass, Sonnet 4.6: 5,500 in (~1,750 instructions + 10 questions) + 1,000 out
+//     (MAX_TOKENS_VALIDATION) = $0.0315
+//   - teacher calls, Sonnet 4.6, 0.3 per quiz: 2,500 in + 1,500 out = $0.030 each = $0.0090
+//   quiz = $0.0473 over 2.3 calls -> $0.02057 per call
+//   100 / 30 = $3.333 a day / $0.02057 = 162.1 calls -> 162, rounded down to 160.
+const GLOBAL_DAILY_LIMIT_DEFAULT = 160;
+function globalDailyLimit() {
+  const n = parseInt(process.env.AI_GLOBAL_DAILY_LIMIT, 10);
+  return n > 0 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;
+}
 const RL_SALT = process.env.RL_SALT || 'certanvil-ai-rl-v1';
 
 // ── Supabase helpers (REST, no SDK) ─────────────────────────────────────
@@ -129,6 +142,40 @@ function badJson(res, status, body) {
   res.send(JSON.stringify(body));
 }
 
+// 80% alert. Fire-and-forget: never awaited by the handler, never throws, skips silently
+// when RESEND_API_KEY / FOUNDER_EMAIL are unset. Deduped to once a day by a 1-per-day counter.
+function maybeAlertFounder(token, count, limit) {
+  const key = process.env.RESEND_API_KEY, to = process.env.FOUNDER_EMAIL;
+  if (!key || !to) return;
+  (async () => {
+    try {
+      const gate = await rlCheck(token, 'alert:global80', 1, '1 day');
+      if (!gate || gate.allowed === false) return;
+      const from = 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>';
+      const text = 'The app-wide AI limit is at ' + count + ' of ' + limit + ' calls today (80% or more). ' +
+        'Once it is reached, everyone sees the "very busy" message until the day resets (midnight UTC). ' +
+        'Raise AI_GLOBAL_DAILY_LIMIT in the cert-app Vercel project if you want more headroom.';
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from, to: [to], subject: 'CertAnvil AI at 80% of today\'s limit', text })
+      });
+    } catch (e) { console.error('[ai-proxy] 80% alert failed:', e && e.message); }
+  })();
+}
+
+// One structured line per proxied call so real cost can be measured. No prompt text, no user ids.
+function logUsage(model, metered, maxTokens, ms, text) {
+  try {
+    const u = (JSON.parse(text) || {}).usage || {};
+    console.log(JSON.stringify({
+      evt: 'ai_usage', model, metered, max_tokens: maxTokens, ms,
+      input_tokens: u.input_tokens, output_tokens: u.output_tokens,
+      cache_creation_input_tokens: u.cache_creation_input_tokens, cache_read_input_tokens: u.cache_read_input_tokens
+    }));
+  } catch (_) { /* usage logging must never affect the response */ }
+}
+
 // ── Handler ─────────────────────────────────────────────────────────────
 
 module.exports = async function handler(req, res) {
@@ -180,17 +227,26 @@ module.exports = async function handler(req, res) {
   // Fail OPEN on RL infra error so a not-yet-applied migration can't take the
   // proxy down — C2 input allowlisting still closes the relay exploit regardless.
   const ipHash = _hashIp((((req.headers && req.headers['x-forwarded-for']) || '').split(',')[0] || '').trim());
+  const globalLimit = globalDailyLimit();
   try {
     const checks = await Promise.all([
       rlCheck(token, `user:${userId}`, USER_DAILY_LIMIT, '1 day'),
       rlCheck(token, `ip:${ipHash}`, IP_HOURLY_LIMIT, '1 hour'),
-      rlCheck(token, 'global:daily', GLOBAL_DAILY_LIMIT, '1 day')
+      rlCheck(token, 'global:daily', globalLimit, '1 day')
     ]);
-    if (checks.some(c => c && c.allowed === false)) {
+    const scopes = ['user', 'ip', 'global'];
+    const blocked = checks.findIndex(c => c && c.allowed === false);
+    if (blocked !== -1) {
       return badJson(res, 429, {
         error: 'rate_limited',
-        message: 'Too many requests. Please slow down and try again shortly.'
+        scope: scopes[blocked],
+        message: 'We\'re very busy right now. Your questions will be back shortly.'
       });
+    }
+    // 80% warning: once a day, the first call at or past the threshold emails the founder.
+    const g = checks[2];
+    if (g && Number(g.current_count) >= Math.ceil(0.8 * globalLimit)) {
+      maybeAlertFounder(token, Number(g.current_count), globalLimit);
     }
   } catch (e) {
     console.error('[ai-proxy] rate-limit check failed (failing open):', e && e.message);
@@ -253,6 +309,7 @@ module.exports = async function handler(req, res) {
   }
 
   let upstreamRes;
+  const t0 = Date.now();
   const upstreamCtrl = new AbortController();
   const upstreamTimer = setTimeout(() => upstreamCtrl.abort(), 75000);
   try {
@@ -296,7 +353,9 @@ module.exports = async function handler(req, res) {
       error_id: errId
     });
   }
+  logUsage(model, isMetered, maxTokens, Date.now() - t0, text);
   res.status(upstreamRes.status);
   res.setHeader('Content-Type', 'application/json');
   res.send(text);
 };
+module.exports._internal = { globalDailyLimit, GLOBAL_DAILY_LIMIT_DEFAULT };
