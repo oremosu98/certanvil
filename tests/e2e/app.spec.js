@@ -1653,9 +1653,9 @@ test.describe('SR Review — v4.81.31 legacy-card scrub', () => {
   });
 });
 
-test.describe('bug-report drawer', () => {
+test.describe('bug-report form (desktop top bar)', () => {
   test.beforeEach(async ({ page }) => {
-    // The drawer opens from the desktop topbar, which phones hide (Lift A) — no phone entry.
+    // The top-bar button is desktop only (phones hide the top bar, Lift A); phones reach the form from Settings.
     await pinDesktop({ page });
     // Seed a fake GH token so the form is unlocked
     await page.addInitScript(() => {
@@ -1665,73 +1665,65 @@ test.describe('bug-report drawer', () => {
     await page.waitForLoadState('domcontentloaded');
   });
 
+  // Admin in the app Task 3: the drawer is gone; the top bar opens the one Report a problem form as a desktop dialog
+  // (full coverage in tests/e2e/report-sheet.spec.js).
   test('01: opens from topbar bug icon', async ({ page }) => {
     await page.click('#topbar-bug-report');
-    const drawer = page.locator('#bug-report-drawer');
-    await expect(drawer).toBeVisible();
-    await expect(drawer).toHaveAttribute('role', 'dialog');
-    await expect(drawer).toHaveAttribute('aria-modal', 'true');
-    await expect(page.locator('#br-input-title')).toBeFocused();
+    const dlg = page.locator('#ios-report');
+    await expect(dlg).toBeVisible();
+    await expect(dlg).toHaveAttribute('role', 'dialog');
+    await expect(dlg).toHaveAttribute('aria-modal', 'true');
+    await expect(page.locator('#irp-desc')).toBeFocused();
+    await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
   });
 
   test('02: closes via ESC, ×, Cancel, and backdrop click', async ({ page }) => {
-    // ESC — wait for drawer to be visible (forces lazy-load + ESC listener
-    // registration) before pressing Escape; then wait for the full portal
-    // teardown (240ms transition) before re-opening
+    const dlg = page.locator('#ios-report');
     await page.click('#topbar-bug-report');
-    await expect(page.locator('#bug-report-drawer')).toBeVisible();
+    await expect(dlg).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
-    await expect(page.locator('#br-portal')).toHaveCount(0);
-    // ×
+    await expect(dlg).toHaveCount(0);
     await page.click('#topbar-bug-report');
-    await page.click('#br-close');
-    await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
-    await expect(page.locator('#br-portal')).toHaveCount(0);
-    // Cancel
+    await dlg.locator('[data-act="close"]').click();
+    await expect(dlg).toHaveCount(0);
     await page.click('#topbar-bug-report');
-    await page.click('#br-cancel');
-    await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
-    await expect(page.locator('#br-portal')).toHaveCount(0);
-    // Backdrop
+    await dlg.locator('[data-act="cancel"]').click();
+    await expect(dlg).toHaveCount(0);
     await page.click('#topbar-bug-report');
-    await page.locator('#br-backdrop').click({ position: { x: 10, y: 10 } });
-    await expect(page.locator('#bug-report-drawer')).toHaveCount(0);
-    await expect(page.locator('#br-portal')).toHaveCount(0);
+    await expect(dlg).toBeVisible();
+    await page.locator('.ca-dlg-scrim').click({ position: { x: 10, y: 10 } });
+    await expect(dlg).toHaveCount(0);
   });
 
-  test('03: Send disabled until both required fields filled', async ({ page }) => {
+  test('03: Send disabled until the description has text', async ({ page }) => {
     await page.click('#topbar-bug-report');
-    const send = page.locator('#br-send');
+    const send = page.locator('#ios-report [data-act="send"]');
     await expect(send).toBeDisabled();
-    await page.fill('#br-input-title', 'a');
-    await expect(send).toBeDisabled();
-    await page.fill('#br-input-desc', 'b');
+    await page.fill('#irp-desc', 'b');
     await expect(send).toBeEnabled();
-    await page.fill('#br-input-title', '');
+    await page.fill('#irp-desc', '');
     await expect(send).toBeDisabled();
   });
 
-  test('04: char counter activates at 4,000 and hard-caps at 5,000', async ({ page }) => {
+  test('04: char counter tracks the text and hard-caps at 5,000', async ({ page }) => {
     await page.click('#topbar-bug-report');
-    const counter = page.locator('#br-desc-counter');
-    await expect(counter).toBeHidden();
-    await page.fill('#br-input-desc', 'a'.repeat(3999));
-    await expect(counter).toBeHidden();
-    await page.fill('#br-input-desc', 'a'.repeat(4000));
-    await expect(counter).toBeVisible();
-    await page.fill('#br-input-desc', 'a'.repeat(5500));
-    const actualLen = await page.inputValue('#br-input-desc').then(s => s.length);
+    const counter = page.locator('#ios-report .irp-count').first();
+    await expect(counter).toHaveText('0 / 5,000');
+    await page.fill('#irp-desc', 'a'.repeat(4000));
+    await expect(counter).toHaveText('4,000 / 5,000');
+    await page.fill('#irp-desc', 'a'.repeat(5500));
+    const actualLen = await page.inputValue('#irp-desc').then(s => s.length);
     expect(actualLen).toBe(5000);
   });
 
-  test('05: steps expander inserts textarea and hides link', async ({ page }) => {
+  test('05: steps expander shows the textarea and hides the link', async ({ page }) => {
     await page.click('#topbar-bug-report');
-    await expect(page.locator('#br-steps-toggle')).toBeVisible();
-    await expect(page.locator('#br-input-steps')).toHaveCount(0);
-    await page.click('#br-steps-toggle');
-    await expect(page.locator('#br-input-steps')).toBeVisible();
-    await expect(page.locator('#br-steps-toggle')).toBeHidden();
+    const link = page.locator('#ios-report [data-act="steps"]');
+    await expect(link).toBeVisible();
+    await expect(page.locator('#irp-steps')).toBeHidden();
+    await link.click();
+    await expect(page.locator('#irp-steps')).toBeVisible();
+    await expect(link).toBeHidden();
   });
 
   test('06: queue drain seed → drains on page load', async ({ page }) => {
@@ -1751,8 +1743,8 @@ test.describe('bug-report drawer', () => {
     // v7.79.2: submitReport() now upserts to Supabase (PostgREST) instead
     // of calling the GitHub REST API. Intercept the real endpoint so
     // drainQueue()'s retry actually "lands" and clears the seeded entry.
-    await page.route('**/rest/v1/user_bug_reports*', route =>
-      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' }));
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: '7' }));
     await page.goto('/');
     await page.waitForTimeout(3500); // 2s delay + buffer
     // After a successful drain, the queue should be empty.
@@ -1775,7 +1767,7 @@ test.describe('bug-report drawer', () => {
         }]));
       } catch (e) {}
     });
-    await page.route('**/rest/v1/user_bug_reports*', route =>
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route =>
       route.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"simulated failure"}' }));
     await page.goto('/');
     await page.waitForTimeout(3500);
@@ -1790,16 +1782,12 @@ test.describe('bug-report drawer', () => {
   });
 
   test('07: Send enables on valid input with no setup step required', async ({ page }) => {
-    // v7.79.2: the drawer used to gate Send on a founder-configured GitHub
-    // token (the "Setup needed" banner) — a token no real user's browser
-    // ever had. submitReport() now posts to Supabase directly; there is no
-    // per-user setup step, so Send should enable purely on valid input.
+    // v7.79.2: no per-user GitHub token step; Send enables purely on valid input.
     await page.goto('/');
     await page.click('#topbar-bug-report');
     await expect(page.locator('#br-no-token')).toHaveCount(0);
-    await page.fill('#br-input-title', 'a');
-    await page.fill('#br-input-desc', 'b');
-    await expect(page.locator('#br-send')).toBeEnabled();
+    await page.fill('#irp-desc', 'b');
+    await expect(page.locator('#ios-report [data-act="send"]')).toBeEnabled();
   });
 
   test('08: cross-cert leak filter — Sec+ active files secplus context, not netplus', async ({ page }) => {
@@ -1814,15 +1802,14 @@ test.describe('bug-report drawer', () => {
       try { localStorage.setItem('nplus_dev_cert', 'secplus'); } catch (e) {}
     });
     let postData = null;
-    await page.route('**/rest/v1/user_bug_reports*', route => {
+    await page.route('**/rest/v1/rpc/submit_bug_report*', route => {
       if (route.request().method() === 'POST') postData = route.request().postData();
-      route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
+      route.fulfill({ status: 200, contentType: 'application/json', body: '7' });
     });
     await page.goto('/');
     await page.click('#topbar-bug-report');
-    await page.fill('#br-input-title', 'cross-cert leak check');
-    await page.fill('#br-input-desc', 'verifying the filed context reflects the active cert');
-    await page.click('#br-send');
+    await page.fill('#irp-desc', 'verifying the filed context reflects the active cert');
+    await page.click('#ios-report [data-act="send"]');
     await expect.poll(() => postData, { timeout: 8000 }).toBeTruthy();
     expect(postData).toContain('secplus');
     expect(postData).not.toContain('netplus');
@@ -1838,9 +1825,9 @@ test.describe('bug-report drawer', () => {
       } catch (e) {}
     });
     await page.goto('/');
-    // Open the drawer (which triggers _updateTopbarDot)
+    // Open and close the form; the dot comes from the queue drain on load
     await page.click('#topbar-bug-report');
-    await page.click('#br-close');
+    await page.click('#ios-report [data-act="close"]');
     await expect(page.locator('#topbar-bug-report')).toHaveClass(/has-queue/);
   });
 });

@@ -17,6 +17,15 @@
   var HUB_SCALE_1000 = { az900: 1, ai900: 1, sc900: 1, clfc02: 1 };   // the Microsoft and AWS certs score out of 1000
 
   // "CompTIA A+ Core 1" -> "A+ Core 1"; "Microsoft Azure Fundamentals" -> "Azure Fundamentals". AWS stays: it is the brand.
+  // The first name from a profile name, or '' when there is no real one: auth falls back to the email's local part, so
+  // drop anything that matches it or carries a digit. Shared with the report sheet's thanks (window._hubFirstName).
+  function _hubFirstName(rawName, email) {
+    rawName = String(rawName || '').trim(); var nl = rawName.toLowerCase();
+    var loc = String(email || '').split('@')[0].toLowerCase(), locFirst = loc.split(/[._+\-]+/)[0];
+    var first = rawName.split(/[\s._]+/)[0];
+    if (!first || nl === 'tester' || rawName.indexOf('@') !== -1 || /\d/.test(rawName) || (loc && (nl === loc || nl === locFirst))) return '';
+    return first.charAt(0).toUpperCase() + first.slice(1);
+  }
   function _hubShort(name) { return String(name || '').replace(/^(CompTIA|Microsoft)\s+/, ''); }
 
   // whole days from today to a YYYY-MM-DD exam date (local midnight to local midnight); null when there is no usable date
@@ -103,11 +112,7 @@
     // greeting: time of day from the local hour; the name only when we have one; the cards clause only when something is due
     var hr = now.getHours(), part = hr < 12 ? 'Morning' : (hr < 17 ? 'Afternoon' : 'Evening');
     // only a real profile name: auth falls back to the email's local part, so drop anything that matches it or carries a digit
-    var rawName = String(o.name || '').trim(), nl = rawName.toLowerCase();
-    var loc = String(o.email || '').split('@')[0].toLowerCase(), locFirst = loc.split(/[._+\-]+/)[0];
-    var first = rawName.split(/[\s._]+/)[0];
-    if (!first || nl === 'tester' || rawName.indexOf('@') !== -1 || /\d/.test(rawName) || (loc && (nl === loc || nl === locFirst))) first = '';
-    else first = first.charAt(0).toUpperCase() + first.slice(1);
+    var first = _hubFirstName(o.name, o.email);
     var due = typeof o.due === 'number' && o.due > 0 ? Math.floor(o.due) : 0;
     var greeting = { lead: part + (first ? ', ' + first : '') + '.', bold: '', rest: '' };
     if (due && active) { greeting.bold = due + (due === 1 ? ' card' : ' cards'); greeting.rest = (due === 1 ? ' is' : ' are') + ' due on ' + active.name + '.'; }
@@ -258,7 +263,12 @@
     if (links) h += sect('More', '');
     var ACC = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>';
     function link(act, icon, t, sub) { return '<button class="ihb-link" type="button" data-act="' + act + '"><span class="ihb-li">' + icon + '</span><span class="ihb-lt"><b>' + t + '</b><span>' + sub + '</span></span><span class="ihb-lg">' + CHEV + '</span></button>'; }
-    if (links) h += '<div class="ihb-links' + rv() + '>' + link('settings', GEAR, 'Settings', 'Theme, notifications, daily review size') + link('account', ACC, 'Account', 'Sign-in, subscription, plan') + '</div>';
+    // Admin in the app Task 8: the admin account only (features/admin-screen.js fills the "N open" pill once the count lands)
+    var adm = window._certanvilIsAdmin === true && typeof window.openAdmin === 'function';
+    var SHIELD = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>';
+    var admLink = adm ? '<button class="ihb-link" type="button" data-act="admin" aria-label="Admin"><span class="ihb-li">' + SHIELD + '</span><span class="ihb-lt"><b>Admin</b><span>Requests, bug reports, errors</span></span>'
+      + '<span class="ihb-count-pill" aria-hidden="true" hidden></span><span class="ihb-lg">' + CHEV + '</span></button>' : '';
+    if (links) h += '<div class="ihb-links' + rv() + '>' + link('settings', GEAR, 'Settings', 'Theme, notifications, daily review size') + link('account', ACC, 'Account', 'Sign-in, subscription, plan') + admLink + '</div>';
     return h + '</div>';
   }
 
@@ -283,6 +293,8 @@
     if (ev.key !== 'Escape' || ev.defaultPrevented || document.getElementById('pro-only-modal')) return;   // a layer above already took this Escape
     var lr = document.getElementById('ios-log-result');
     if (lr && !lr.hidden) return;   // the log screen sits on top and closes itself
+    var ad = document.getElementById('ios-admin');
+    if (ad && !ad.hidden) return;   // Admin sits on top and closes itself
     _close();
   }
   function _close() {
@@ -423,6 +435,7 @@
       else if (act === 'theme') { if (typeof toggleTheme === 'function') toggleTheme(); }
       else if (act === 'log') { b.focus(); if (typeof openLogResult === 'function') openLogResult({ preselect: null }); }
       else if (act === 'settings' || act === 'account') { _close(); _tab('settings'); }
+      else if (act === 'admin') { b.focus(); if (typeof window.openAdmin === 'function') window.openAdmin('admin'); }   // over the hub: Back returns here
       else if (act === 'suggest') { b.focus(); if (typeof openSuggestCert === 'function') openSuggestCert(); }
       else if (act === 'unlock') {
         if (typeof _showProOnlyUI === 'function') _showProOnlyUI({ feature: 'Every cert', title: 'Every cert comes with Pro',
@@ -436,10 +449,12 @@
     };
     if (!wasOpen) document.addEventListener('keydown', _onKey);   // on document: focus can sit on body after a sheet closes
     if (!wasOpen) { var h1 = root.querySelector('.ihb-h1'); if (h1) h1.focus(); }
+    if (window._certanvilIsAdmin === true && window.adminScreen) window.adminScreen.refreshCount();   // the Admin row's "N open", fetched when the hub opens
     return true;
   }
 
   window._iosHubModel = _iosHubModel;
+  window._hubFirstName = _hubFirstName;
   window.openHub = openHub;
   // The plan (Free/Pro) can land after the hub is drawn, right after launch: redraw in place so a Pro user never sees the Free view.
   window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); else if (_deskDrawn()) _renderDesk(true); });

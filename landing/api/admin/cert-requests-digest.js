@@ -13,7 +13,44 @@ export const config = { runtime: 'edge' };
 const ADMIN_URL = 'https://certanvil.com/admin';
 
 // Subject, HTML and plain text from tally rows (already ordered). Pure, so it is tested directly.
-export function buildDigest(rows) {
+// Same rule as the app's topErrors (features/admin-data.js): group by message, count desc, then newest first.
+export function topErrors(rows, k) {
+  const map = {}, list = [];
+  (rows || []).forEach(function (r) {
+    const key = r.message;
+    let e = map[key];
+    if (!e) { e = map[key] = { message: key, count: 0, _t: '' }; list.push(e); }
+    e.count++;
+    if (String(r.created_at) >= e._t) e._t = String(r.created_at);
+  });
+  list.sort(function (a, b) { return b.count - a.count || b._t.localeCompare(a._t); });
+  return list.slice(0, k == null ? 5 : k).map(function (e) { return { message: e.message, count: e.count }; });
+}
+
+const H = 'margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a8178';
+
+// The bug and error sections. Returns { html, text } fragments, empty when the reads failed (extra is null).
+function extraParts(extra) {
+  if (!extra) return { html: '', text: '' };
+  const titles = (extra.newestTitles || []).slice(0, 3);
+  const errs = (extra.topErrors || []).slice(0, 3);
+  const open = Number(extra.open) || 0;
+  let html = '', text = '';
+  if (extra.open != null) {
+    html += '<p style="' + H + '">Open bug reports: ' + open + '</p>'
+      + (titles.length ? '<ul style="margin:4px 0 14px;padding-left:20px">' + titles.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '<p style="margin:4px 0 14px">Nothing waiting.</p>');
+    text += 'Open bug reports: ' + open + '\n' + (titles.length ? titles.map(function (t) { return '- ' + t; }).join('\n') : 'Nothing waiting.') + '\n\n';
+  }
+  if (extra.topErrors) {
+    html += '<p style="' + H + '">Top errors this week</p>'
+      + (errs.length ? '<ul style="margin:4px 0 14px;padding-left:20px">' + errs.map(function (e) { return '<li>' + e.count + '× ' + esc(e.message) + '</li>'; }).join('') + '</ul>' : '<p style="margin:4px 0 14px">None this week.</p>');
+    text += 'Top errors this week\n' + (errs.length ? errs.map(function (e) { return e.count + '× ' + e.message; }).join('\n') : 'None this week.') + '\n\n';
+  }
+  return { html, text };
+}
+
+export function buildDigest(rows, extra) {
+  const x = extraParts(extra);
   const list = (rows || []).map(function (r) {
     return { label: String(r.label || r.exam_key || ''), votes: Number(r.votes) || 0, new7: Number(r.new_7d) || 0, typed: !!r.typed };
   });
@@ -26,8 +63,8 @@ export function buildDigest(rows) {
   if (!list.length) {
     return {
       n, subject,
-      html: '<p>No new requests this week.</p><p><a href="' + ADMIN_URL + '">Open your dashboard</a></p>',
-      text: 'No new requests this week.\n\nOpen your dashboard: ' + ADMIN_URL + '\n'
+      html: '<p>No new requests this week.</p>' + x.html + '<p><a href="' + ADMIN_URL + '">Open your dashboard</a></p>',
+      text: 'No new requests this week.\n\n' + x.text + 'Open your dashboard: ' + ADMIN_URL + '\n'
     };
   }
   let html = '<div style="font-family:Inter,Arial,sans-serif;font-size:14px;line-height:1.6;color:#2a2622">'
@@ -39,11 +76,34 @@ export function buildDigest(rows) {
     html += '<p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a8178">New typed in</p>'
       + '<p style="margin:4px 0 14px">' + typedNew.map(esc).join(', ') + '</p>';
   }
-  html += '<p style="margin:0">See them all on your <a href="' + ADMIN_URL + '">dashboard</a>.</p></div>';
+  html += x.html + '<p style="margin:0">See them all on your <a href="' + ADMIN_URL + '">dashboard</a>.</p></div>';
   let text = 'Most asked\n' + top.map(function (r, i) { return (i + 1) + '. ' + r.label + ' · ' + fmt(r); }).join('\n') + '\n\n';
   if (typedNew.length) text += 'New typed in\n' + typedNew.join(', ') + '\n\n';
-  text += 'See them all on your dashboard: ' + ADMIN_URL + '\n';
+  text += x.text + 'See them all on your dashboard: ' + ADMIN_URL + '\n';
   return { n, subject, html, text };
+}
+
+// Two extra service-role reads. Each degrades to null on any failure so the cert-request part still goes out.
+async function readExtra() {
+  const base = supabaseUrl() + '/rest/v1/';
+  const bugs = fetch(base + 'user_bug_reports?select=title&status=in.(open,triaged)&order=created_at.desc&limit=3',
+    { headers: svcHeaders({ Prefer: 'count=exact' }) }).then(async function (r) {
+    if (!r || (r.status !== 200 && r.status !== 206)) return null;
+    const rows = await r.json().catch(function () { return null; });
+    const m = /\/(\d+)$/.exec(r.headers.get('content-range') || '');
+    if (!Array.isArray(rows) || !m) return null;
+    return { open: Number(m[1]), newestTitles: rows.map(function (b) { return String(b.title || ''); }) };
+  }).catch(function () { return null; });
+  const since = new Date(Date.now() - 7 * 86400000).toISOString();
+  const errs = fetch(base + 'client_errors?select=message,version,created_at&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=500',
+    { headers: svcHeaders() }).then(async function (r) {
+    if (!r || r.status !== 200) return null;
+    const rows = await r.json().catch(function () { return null; });
+    return Array.isArray(rows) ? topErrors(rows, 3) : null;
+  }).catch(function () { return null; });
+  const got = await Promise.all([bugs, errs]);
+  if (!got[0] && !got[1]) return null;
+  return { open: got[0] ? got[0].open : null, newestTitles: got[0] ? got[0].newestTitles : [], topErrors: got[1] };
 }
 
 function founderEmail() { return process.env.FOUNDER_EMAIL || process.env.NOTIFY_ADMIN_EMAIL || ''; }
@@ -67,7 +127,7 @@ export default async function handler(req) {
   const rows = await res.json().catch(function () { return null; });
   if (!Array.isArray(rows)) return jsonResponse({ error: 'tally-read-failed' }, 502);
 
-  const d = buildDigest(rows);
+  const d = buildDigest(rows, await readExtra());
   const sent = await sendMail({ to: [founderEmail()], subject: d.subject, html: d.html, text: d.text });
   if (!sent.ok) {
     await logServerError({ endpoint: 'cert-requests-digest', status: 502, message: 'cert-requests-digest: send failed' });

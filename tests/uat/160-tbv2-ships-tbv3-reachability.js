@@ -253,10 +253,10 @@ test('reports.js exports all 4 pure functions',
 test('app.js drainQueue hook on DOMContentLoaded',
   /DOMContentLoaded[\s\S]{0,400}_loadFeature\('reports'\)[\s\S]{0,200}drainQueue/.test(appJs));
 
-// CSS — drawer + toast classes present
-test('drawer CSS scoped to #bug-report-drawer', dgCss.includes('#bug-report-drawer'));
+// CSS: the one report form (Admin in the app Task 3) + the drain toast
+test('report dialog CSS scoped to #ios-report', dgCss.includes('#ios-report.is-dialog'));
 test('toast CSS exists', dgCss.includes('.br-toast'));
-test('mobile bottom-sheet breakpoint present', dgCss.includes('@media (max-width: 767px)'));
+test('old drawer CSS is gone', !dgCss.includes('#bug-report-drawer') && !dgCss.includes('.br-backdrop'));
 test('reduced-motion gate present', dgCss.includes('prefers-reduced-motion'));
 
 // Tombstone — STORAGE.BUG_REPORTS must not collide with STORAGE.REPORTS string

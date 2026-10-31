@@ -1,11 +1,11 @@
-// features/reports.js — v5.6.x bug-report drawer + retry queue
-// Lazy-loaded via _loadFeature('reports') from the topbar bug iconbtn
-// and from DOMContentLoaded (queue drain). Self-contained: zero deps
-// on other feature modules.
+// features/reports.js — bug-report sending + retry queue
+// Lazy-loaded via _loadFeature('reports') from the topbar bug iconbtn,
+// the report form (features/report-sheet.js) and DOMContentLoaded (queue drain).
 //
 // No `enter` / `leave` lifecycle (the standard feature-module pattern)
-// because this is a drawer + queue feature, not a page. Entry points are
-// `openDrawer()` (UI from topbar) and `drainQueue()` (DOMContentLoaded).
+// because this is a queue feature, not a page. Entry points are
+// `openDrawer()` (the topbar: opens the one Report a problem form),
+// `submitReportNow()` (the form's Send) and `drainQueue()` (DOMContentLoaded).
 
 (function () {
   'use strict';
@@ -23,10 +23,15 @@
 
     function trim(s) { return (s == null ? '' : String(s)).trim(); }
 
+    var desc = trim(form && form.desc);
+    var title = trim(form && form.title);
+    if (!title) title = trim(desc.split('\n')[0]).slice(0, 80);
+
     return {
       id: id,
-      title: trim(form && form.title),
-      description: trim(form && form.desc),
+      title: title,
+      description: desc,
+      user_id: (ctx && ctx.user_id) || null,
       steps: form && form.steps ? trim(form.steps) : null,
       context: {
         version: (ctx && ctx.version) || 'unknown',
@@ -134,61 +139,6 @@
     return s;
   }
 
-  // ───────────────────────────────────────────────────────────
-  // DRAWER UI (TASK 2.x)
-  // ───────────────────────────────────────────────────────────
-
-  function _drawerHtml(ctx) {
-    // ctx is still consumed by the GitHub issue body (see buildIssueBody / the
-    // POST path); the in-drawer "Auto-attached" panel was removed in v7.13.3 —
-    // end users don't need to see the diagnostic line, but it still travels in
-    // the filed issue.
-    return (
-      '<div class="br-backdrop" id="br-backdrop"></div>' +
-      '<div class="br-drawer" id="bug-report-drawer" role="dialog" aria-modal="true" aria-labelledby="br-title">' +
-        '<div class="br-head">' +
-          '<div>' +
-            '<div class="br-eyebrow">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M5 4h12l-2 3 2 3H5"/></svg>' +
-              'Report' +
-            '</div>' +
-            '<h3 class="br-title" id="br-title">Report an issue</h3>' +
-            '<p class="br-sub">Tell us what went wrong and we&rsquo;ll take a look.</p>' +
-          '</div>' +
-          '<button type="button" class="br-close" id="br-close" aria-label="Close">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>' +
-          '</button>' +
-        '</div>' +
-        '<div class="br-body">' +
-          '<div class="br-field">' +
-            '<label class="br-label" for="br-input-title">Title <span class="br-req">*</span></label>' +
-            '<input class="br-input" id="br-input-title" type="text" maxlength="200" placeholder="What happened, in one line?">' +
-            '<div class="br-caption br-caption-err" id="br-title-err" hidden>Title is required</div>' +
-          '</div>' +
-          '<div class="br-field">' +
-            '<label class="br-label" for="br-input-desc">Description <span class="br-req">*</span><span class="br-counter" id="br-desc-counter" hidden></span></label>' +
-            '<textarea class="br-textarea" id="br-input-desc" maxlength="5000" placeholder="What you did &middot; what happened &middot; what you expected."></textarea>' +
-            '<div class="br-caption br-caption-err" id="br-desc-err" hidden>Description is required</div>' +
-          '</div>' +
-          '<button type="button" class="br-steps-link" id="br-steps-toggle">' +
-            '<span class="br-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span>Add steps to reproduce</span>' +
-          '</button>' +
-        '</div>' +
-        '<div class="br-foot">' +
-          '<button type="button" class="br-cancel" id="br-cancel">Cancel</button>' +
-          '<button type="button" class="br-send" id="br-send">Send report' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>'
-    );
-  }
-
-  var _drawerHost = null;
-  var _drawerOpenedAt = 0;
-  var _prevFocus = null;
-  var _escListener = null;
-
   function _getCtx() {
     function safeRead(fn) { try { return fn(); } catch (e) { return null; } }
     var theme = safeRead(function(){ return document.documentElement.getAttribute('data-theme') || 'dark'; });
@@ -225,55 +175,9 @@
     };
   }
 
-  function openDrawer() {
-    if (_drawerHost) return; // idempotent
-    _prevFocus = document.activeElement;
-
-    var ctx = _getCtx();
-    var host = document.createElement('div');
-    host.id = 'br-portal';
-    host.innerHTML = _drawerHtml(ctx);
-    document.body.appendChild(host);
-    _drawerHost = host;
-    _drawerOpenedAt = Date.now();
-
-    // Wire ESC + backdrop click + close × + cancel
-    _escListener = function (e) { if (e.key === 'Escape') closeDrawer(); };
-    document.addEventListener('keydown', _escListener);
-    host.querySelector('#br-backdrop').addEventListener('click', closeDrawer);
-    host.querySelector('#br-close').addEventListener('click', closeDrawer);
-    host.querySelector('#br-cancel').addEventListener('click', closeDrawer);
-
-    // Reveal with motion next frame (so transform transitions instead of snapping)
-    requestAnimationFrame(function(){
-      host.querySelector('#br-backdrop').classList.add('open');
-      host.querySelector('#bug-report-drawer').classList.add('open');
-      setTimeout(function(){
-        var titleInput = host.querySelector('#br-input-title');
-        if (titleInput) titleInput.focus();
-      }, 220);
-    });
-
-    _wireForm(host); // TASK 3.x
-    _wireSubmit(host); // TASK 5.x
-  }
-
-  function closeDrawer() {
-    if (!_drawerHost) return;
-    var host = _drawerHost;
-    host.querySelector('#br-backdrop').classList.remove('open');
-    var drawer = host.querySelector('#bug-report-drawer');
-    drawer.classList.remove('open');
-    document.removeEventListener('keydown', _escListener);
-    _escListener = null;
-
-    // Wait for transition before removing from DOM
-    setTimeout(function(){
-      if (host.parentNode) host.parentNode.removeChild(host);
-      _drawerHost = null;
-      if (_prevFocus && _prevFocus.focus) _prevFocus.focus();
-      _prevFocus = null;
-    }, 240);
+  // Admin in the app Task 3: the old desktop drawer is gone; every entry opens the one form (features/report-sheet.js).
+  function openDrawer(opts) {
+    if (typeof window.openReportSheet === 'function') window.openReportSheet(opts);
   }
 
   // ───────────────────────────────────────────────────────────
@@ -318,100 +222,6 @@
     btn.classList.toggle('has-queue', q.length > 0);
   }
 
-  // Stubs that later tasks will implement; provide empty bodies so openDrawer doesn't error
-  function _wireForm(host) {
-    var titleEl = host.querySelector('#br-input-title');
-    var descEl = host.querySelector('#br-input-desc');
-    var sendEl = host.querySelector('#br-send');
-    var stepsToggle = host.querySelector('#br-steps-toggle');
-    var counter = host.querySelector('#br-desc-counter');
-    var titleErr = host.querySelector('#br-title-err');
-    var descErr = host.querySelector('#br-desc-err');
-
-    function updateSend() {
-      var t = titleEl.value.trim();
-      var d = descEl.value.trim();
-      var ok = t.length > 0 && d.length > 0;
-      sendEl.disabled = !ok;
-    }
-
-    function updateCounter() {
-      var len = descEl.value.length;
-      if (len >= 4000) {
-        counter.hidden = false;
-        counter.textContent = len.toLocaleString() + ' / 5,000';
-        counter.classList.toggle('warn', len >= 4000);
-      } else {
-        counter.hidden = true;
-      }
-    }
-
-    titleEl.addEventListener('input', function(){
-      titleEl.classList.remove('err'); titleErr.hidden = true; updateSend();
-    });
-    descEl.addEventListener('input', function(){
-      descEl.classList.remove('err'); descErr.hidden = true;
-      updateCounter(); updateSend();
-    });
-
-    // Steps-to-reproduce expander
-    var stepsInserted = false;
-    stepsToggle.addEventListener('click', function(){
-      if (stepsInserted) return;
-      stepsInserted = true;
-      var field = document.createElement('div');
-      field.className = 'br-field';
-      field.innerHTML =
-        '<label class="br-label" for="br-input-steps">Steps to reproduce <span style="color:var(--text-dim);font-weight:400;font-size:9.5px">(optional)</span></label>' +
-        '<textarea class="br-textarea" id="br-input-steps" maxlength="2000" placeholder="1. ...&#10;2. ...&#10;3. ..."></textarea>';
-      stepsToggle.parentNode.insertBefore(field, stepsToggle);
-      stepsToggle.hidden = true;
-      var stepsEl = host.querySelector('#br-input-steps');
-      stepsEl.focus();
-    });
-
-    updateSend();
-  }
-  function _wireSubmit(host) {
-    host.querySelector('#br-send').addEventListener('click', async function(){
-      var sendBtn = host.querySelector('#br-send');
-      sendBtn.disabled = true;
-      var form = {
-        title: host.querySelector('#br-input-title').value,
-        desc: host.querySelector('#br-input-desc').value,
-        steps: (host.querySelector('#br-input-steps') || {}).value || null,
-      };
-      var payload = buildPayload(form, _getCtx());
-      var result = await submitReport(payload);
-
-      if (result.type === 'success') {
-        _showToast({ tone: 'ok', title: 'Report filed',
-          sub: 'Thanks — we’ll take a look.' });
-        // Clear from queue if this was a retry
-        var q = _loadQueue();
-        _saveQueue(q.filter(function(r){ return r.id !== payload.id; }));
-        closeDrawer();
-        _updateTopbarDot();
-        return;
-      }
-
-      // Failure paths
-      if (result.queueAction === 'enqueue' || result.queueAction === 'requeue') {
-        var q2 = _loadQueue();
-        var record = {
-          id: payload.id, payload: payload,
-          attempts: 1, last_try: payload.submitted_at,
-          next_try: result.next_try || null,
-          terminal: !!result.terminal,
-        };
-        _saveQueue(enqueueReport(record, q2));
-      }
-      _showToast({ tone: result.toast.tone, title: result.toast.title });
-      sendBtn.disabled = false;
-      _updateTopbarDot();
-    });
-  }
-
   // ───────────────────────────────────────────────────────────
   // SUBMIT + RETRY (TASK 5.x, 6.x)
   // ───────────────────────────────────────────────────────────
@@ -427,29 +237,64 @@
     if (!sb) return classifyError({ status: 0, network: true });
 
     var body = renderIssueBody(payload);
-    var uid = null;
     try {
-      if (sb.auth && sb.auth.getUser) {
-        var u = await sb.auth.getUser();
-        uid = (u && u.data && u.data.user && u.data.user.id) || null;
+      // p_user_id is the writer captured when the report was written, never the
+      // current session: a queued report sent after someone else signs in must
+      // not pick up the new person's id. Old queue entries have no user_id.
+      var res = await sb.rpc('submit_bug_report', {
+        p_report_id: payload.id,
+        p_title: payload.title,
+        p_description: payload.description,
+        p_steps: payload.steps,
+        p_body: body,
+        p_context: payload.context,
+        p_user_id: payload.user_id || null,
+      });
+      if (!res.error) {
+        var out = classifyError({ status: 201 });
+        var n = Number(res.data);
+        out.reportNo = (res.data != null && isFinite(n)) ? n : null;
+        return out;
       }
-    } catch (e) {}
-
-    try {
-      var res = await sb.from('user_bug_reports').upsert({
-        report_id: payload.id,
-        title: payload.title,
-        description: payload.description,
-        steps: payload.steps,
-        body: body,
-        context: payload.context,
-        user_id: uid,
-      }, { onConflict: 'report_id' });
-      if (!res.error) return classifyError({ status: 201 });
+      // supabase-js answers a failed fetch with status 0 rather than throwing: that is the network, not the server.
+      if (res.status === 0 || (typeof navigator !== 'undefined' && navigator.onLine === false)) return classifyError({ status: 0, network: true });
       return classifyError({ status: 500 });
     } catch (e) {
       return classifyError({ status: 0, network: true });
     }
+  }
+  async function _currentUserId() {
+    var sb = window.certanvilSupabase;
+    try {
+      if (sb && sb.auth && sb.auth.getUser) {
+        var u = await sb.auth.getUser();
+        return (u && u.data && u.data.user && u.data.user.id) || null;
+      }
+    } catch (e) {}
+    return null;
+  }
+  // Build, send and (on failure) queue one report. The report form's Send.
+  async function submitReportNow(form) {
+    var ctx = _getCtx();
+    ctx.user_id = await _currentUserId();
+    var payload = buildPayload(form, ctx);
+    var result = await submitReport(payload);
+    var queued = false;
+    if (result.type === 'success') {
+      _saveQueue(_loadQueue().filter(function(r){ return r.id !== payload.id; }));
+    } else if (result.type === 'offline' || result.type === 'ratelimit') {
+      // Only a network failure is queued from the form. A server rejection while online is a hard failure: the form
+      // stays open with what was typed, so a retry there cannot also send a queued copy later.
+      _saveQueue(enqueueReport({
+        id: payload.id, payload: payload,
+        attempts: 1, last_try: payload.submitted_at,
+        next_try: result.next_try || null,
+        terminal: !!result.terminal,
+      }, _loadQueue()));
+      queued = true;
+    }
+    _updateTopbarDot();
+    return { ok: result.type === 'success', queued: queued, reportNo: result.reportNo == null ? null : result.reportNo, result: result };
   }
   async function drainQueue() {
     var q = _loadQueue();
@@ -575,9 +420,9 @@
     enqueueReport: enqueueReport,
     // UI
     openDrawer: openDrawer,
-    closeDrawer: closeDrawer,
     // Pipeline
     submitReport: submitReport,
+    submitReportNow: submitReportNow,
     drainQueue: drainQueue,
     // Settings
     renderSettingsReportsPanel: renderSettingsReportsPanel,

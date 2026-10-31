@@ -136,6 +136,7 @@
       doc: '<path d="M7 3h7l4 4v14H7z"></path><path d="M14 3v4h4M10 12h5M10 16h5"></path>', shield: '<path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"></path>',
       bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path>',
       home: '<path d="M4 11l8-7 8 7"></path><path d="M6 10v9h12v-9"></path>',   // F3: the Home tab's own glyph
+      flag: '<path d="M5 21V4h11l-1.5 4L16 12H5"></path>',   // the report form's own eyebrow glyph
       theme: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>'
     };
     function row(act, icon, label, sub, val, o) {
@@ -204,6 +205,8 @@
     }
     h += '<div class="ist-sect reveal">About</div><div class="ist-group ist-legal reveal">'
       + legal('https://certanvil.com/privacy', 'shield', 'Privacy Policy') + legal('https://certanvil.com/terms', 'doc', 'Terms of Service') + '</div>';
+    h += '<div class="ist-sect reveal">Help</div><div class="ist-group reveal">'   // Admin in the app Task 3: signed in or out
+      + row('report', 'flag', 'Report a problem', 'Bugs, wrong answers, anything off', null) + '</div>';
     h += '<div class="ist-sect danger reveal">Danger zone</div><div class="ist-group reveal">'
       + row('clear', 'bin', 'Clear wrong answers bank', 'Drill Mistakes uses these', String(m.wrongCount), { cls: 'danger' })
       + (m.out ? '' : row('delete', 'trash', 'Delete account', 'Deleted 7 days after you confirm', null, { cls: 'danger' })) + '</div>';
@@ -476,6 +479,7 @@
     var t = document.querySelector('#lift-tabbar .lift-tab[data-page="setup"]');
     if (t) t.click(); else _call('showPage', 'setup');
   };
+  ON.report = function (b) { if (typeof window.openReportSheet === 'function') { if (b && b.focus) { try { b.focus({ preventScroll: true }); } catch (_) {} } window.openReportSheet(); } };   // Admin in the app Task 3
   ON.suggest = function (b) { if (typeof window.openSuggestCert === 'function') { if (b && b.focus) { try { b.focus({ preventScroll: true }); } catch (_) {} } window.openSuggestCert(); } };   // Task 14
   ON.gopro = function () { window.open('https://certanvil.com/pricing', '_blank', 'noopener'); };   // today's Settings Go Pro link
   ON['goal-pick'] = function (b) {

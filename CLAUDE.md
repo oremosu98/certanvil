@@ -26,10 +26,10 @@
 |---|---|---|
 | app.js | 8334 | 446 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2394 | 158 KB |
-| dg-system.css | 6120 | 587 KB |
-| tests/uat.js + tests/uat/ (90 modules) | 34873 | — |
-UAT checks: 6176 · E2E `test(` count: 755 · APP_VERSION: 8.204.1 · stamped-at: worktree
+| index.html | 2403 | 158 KB |
+| dg-system.css | 6235 | 612 KB |
+| tests/uat.js + tests/uat/ (96 modules) | 35415 | — |
+UAT checks: 6289 · E2E `test(` count: 807 · APP_VERSION: 8.205.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -37,7 +37,7 @@ UAT checks: 6176 · E2E `test(` count: 755 · APP_VERSION: 8.204.1 · stamped-at
 | `index.html` | All page structures (30+ pages: setup, quiz, exam, results, review, subnet, ports, drills launcher, topology, topology-builder-v3, analytics, progress, guided labs, …) + global chrome (sidebar + topbar incl. `#topbar-bug-report` iconbtn that lazy-loads `features/reports.js`) | ~115 KB |
 | `app.js` | All app logic — state, AI calls, rendering, game loops, analytics, 5 activity sub-systems, cloud-flush hooks. Exposes `window.CURRENT_CERT` + `window.CERT_PACK` for lazy-loaded feature modules. | **see FACTS block above** |
 | `styles.css` | Full dark/light theme styling + account pill + cert switcher + `@media (prefers-reduced-motion)` gate | see FACTS block above |
-| `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report drawer block (incl. scoped `[hidden]{display:none!important}` since component `display:flex` rules otherwise override the attribute) | growing |
+| `dg-system.css` | Editorial design-system overrides — forged-bronze tokens, scoped page reskins, `.br-*` bug-report toast + queued-reports panel, `.irp-*` Report a problem dialog (the phone sheet is in `lift-ios.css`) | growing |
 | `sw.js` | Service worker — stale-while-revalidate, shell-asset precache, 60-entry LRU cap, Supabase API pass-through, auto-update broadcast | ~120 lines |
 | **`lib/supabase.js`** | **Phase C′** — Supabase client init with cookie-backed storage adapter (cross-subdomain session sharing) | ~150 lines |
 | **`lib/supabase-umd.min.js`** | **v4.89.1** — vendored Supabase UMD bundle (was cdn.jsdelivr; vendored after intermittent 503 broke auth) | 197 KB |
@@ -95,7 +95,7 @@ Items tagged `saas-gated` on either board are **frozen until the paid-SaaS pivot
 
 ### Version bumps
 `node scripts/bump-version.js <new> "<desc>"` updates `APP_VERSION` (app.js) + `CACHE_NAME` (sw.js) + version badge (index.html) + `package.json` + **prepends a 1-line stub row to the Version History table below**. Do NOT hand-edit partial — UAT asserts consistency across all 4 code surfaces. **The stub STAYS a one-line stub here — never expand it inline; full ship detail goes in the commit message + CHANGELOG.md (expanding rows inline is exactly what bloated this file).** The script writes CLAUDE.md, so re-read it before any follow-up edit (any prior snapshot is stale).
-**The one thing it does NOT touch: `dg-system.css?v=` in index.html.** Hand-bump that yourself, in the same commit, on any `dg-system.css` change (`grep -o 'dg-system\.css?v=[0-9.]*' index.html` first). Nothing fails if you forget — UAT, CI and Deploy Verification all stay green while the service worker keeps serving the old stylesheet, so the change is simply invisible in prod. Full rule: [BRAND.md](design/brand/BRAND.md) §Versioning.
+**The one thing it does NOT touch: `dg-system.css?v=` in index.html.** Hand-bump that yourself, in the same commit, on any `dg-system.css` change (`grep -o 'dg-system\.css?v=[0-9.]*' index.html` first). Nothing fails if you forget — UAT, CI and Deploy Verification all stay green while the service worker keeps serving the old stylesheet, so the change is simply invisible in prod. Full rule: [BRAND.md](design/brand/BRAND.md) §Versioning. `lift-ios.css?v=` must stay plain numbers (UAT 470 reads `[0-9.]+`); on a merge, pick a stamp above both sides that is not a future app version (e.g. `8.204.1.2`), then `node scripts/stamp-css-versions.js`.
 
 ## Branching Strategy — Risk-Tiered (adopted 2026-05-12)
 
@@ -135,8 +135,8 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.205.0 | Admin in the app: Report a problem everywhere, the Admin screen, Fixed and tell them, Preview as Free |
 | v8.204.1 | Readiness says Pass level and what to do before booking, then Exam ready at 4 of 4 |
-| v8.204.0 | Desktop catch-up: resume, exam outcome, My certs, Suggest, Why this score, streak lines, goodbye on the web app |
 | v8.203.2 | My certs hub redraws when the plan loads, so Pro never sees the Free view |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._

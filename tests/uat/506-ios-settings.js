@@ -110,8 +110,9 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /CA_NATIVE/.test(so) && /_certanvilSignedIn === false/.test(so) && /250/.test(so) && /15000/.test(so) && /requireAccount\('signedout'\)/.test(so)
       && so.indexOf('l.click()') < so.indexOf('requireAccount'));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
+    // Re-pinned by Admin in the app Task 7 (Preview as Free: the admin-as-Pro check, the admin flag, sign-out clears it).
     test('auth-state.js (gated lane) is untouched by Lift B4',
-      require('crypto').createHash('sha256').update(auth).digest('hex') === '87af4f136c474b725d2144de8258597665cf6aacc0bd5b65761ffb0e0625a86d');
+      require('crypto').createHash('sha256').update(auth).digest('hex') === '09fd21eea496a9fa683efd25a288dd679f281bfe87bc8de17aa0d7f964e030a7');
   } catch (err) {
     test('Lift B4 Settings: block (threw)', false);
     results.errors.push('506 ios-settings block threw: ' + err.message);

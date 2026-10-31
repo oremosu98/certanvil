@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.204.1
+// Network+ AI Quiz — app.js  v8.205.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.204.1';
+const APP_VERSION = '8.205.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -568,7 +568,7 @@ async function _refreshQuotaChip() {
     if (!session || !session.user) return;
     var resp = await window.certanvilSupabase.rpc('get_daily_quota_usage', { uid: session.user.id });
     if (resp && resp.data && resp.data.length) {
-      _quotaState = resp.data[0];
+      _quotaState = (window._adminPreview ? window._adminPreview.wrap(resp.data[0]) : resp.data[0]);
       _renderQuotaChip(); try { window.dispatchEvent(new Event('ca:quota-ready')); } catch (_) {}   // the hub redraws a Free/Pro view drawn before this landed
     }
   } catch (_) { /* intentionally silent: cosmetic — chip stays at last-known state */ }

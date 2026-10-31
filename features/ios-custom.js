@@ -186,7 +186,8 @@
     h += '</div>';
     if (m.capNote) h += '<p class="ic-cap-note ic-reveal">Free covers <b>15 questions a day</b>. 20 needs Pro.</p>';
     if (m.err) h += '<div class="ic-err" role="alert">' + e(m.err)
-      + (m.signIn ? '<button class="ic-err-signin" type="button" data-act="signin">Sign in</button>' : '') + '</div>';
+      + (m.signIn ? '<button class="ic-err-signin" type="button" data-act="signin">Sign in</button>' : '')
+      + (typeof window !== 'undefined' && window.iosReport && typeof window.iosReport.isFailure === 'function' && window.iosReport.isFailure(m.err) ? '<button class="ic-err-tell" type="button" data-act="report">Something wrong? Tell us</button>' : '') + '</div>';
     h += '</div>';
 
     h += '<div class="ic-foot"><button class="ic-btn-primary" type="button" data-act="start">' + svg('play')
@@ -198,6 +199,8 @@
   // ── DOM: scrape the hidden panel, render, bind ──
   function _icPhone() { return !!(window.matchMedia && matchMedia('(max-width: 899px)').matches); }
   function _icText(el) { return el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : ''; }
+  // the error without the report link features/report-sheet.js adds under it (this screen draws its own)
+  function _icErrText(el) { var c = el.cloneNode(true); [].forEach.call(c.querySelectorAll('[data-irp-tell]'), function (n) { n.remove(); }); return _icText(c); }
 
   // The cert strip's identity (mark, short name, exam code). Shared with the Sim Lab start screen (B3b1).
   function iosCertIdentity() {
@@ -235,7 +238,7 @@
       cert: iosCertIdentity(),
       domains: domains, modes: modes, diffs: pick('#diff-group .chip[data-v]'), counts: pick('#count-group .chip[data-v]'),
       history: history.map(function (r) { return { topic: r && r.topic, date: r && r.date }; }),
-      err: (errBox && !errBox.classList.contains('is-hidden')) ? _icText(errBox) : '',
+      err: (errBox && !errBox.classList.contains('is-hidden')) ? _icErrText(errBox) : '',
       freeTier: !!(typeof window._srIsFreeTier === 'function' && window._srIsFreeTier()),
       signIn: window._certanvilSignedIn !== true && !!document.querySelector('a.topbar-signin-pill'),
       loneTopic: _icLoneTopic(MIXED, CATCH)
@@ -309,6 +312,7 @@
     if (act === 'close') { closeIosCustom(); window.scrollTo(0, 0); return; }
     // Start: leaving Setup closes the screen (observer); a start that fails validation keeps it, with the error (review I1)
     if (act === 'start') { if (typeof window.startQuiz === 'function') window.startQuiz(); return; }
+    if (act === 'report') { if (typeof window.openReportSheet === 'function') window.openReportSheet({ from: 'Custom quiz' }); return; }
     if (act === 'signin') { if (window.iosSignIn && window.iosSignIn.go) { window.iosSignIn.go('custom'); return; } var a = document.querySelector('a.topbar-signin-pill'); if (a && a.href) location.href = a.href; return; }
     if (act === 'acc') {
       var dom = b.closest('.ic-dom');
