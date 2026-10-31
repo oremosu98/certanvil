@@ -29,7 +29,7 @@
 | index.html | 2393 | 158 KB |
 | dg-system.css | 6104 | 585 KB |
 | tests/uat.js + tests/uat/ (89 modules) | 34776 | — |
-UAT checks: 6154 · E2E `test(` count: 748 · APP_VERSION: 8.203.2 · stamped-at: worktree
+UAT checks: 6154 · E2E `test(` count: 748 · APP_VERSION: 8.204.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.204.0 | Desktop catch-up: resume, exam outcome, My certs, Suggest, Why this score, streak lines, goodbye on the web app |
 | v8.203.2 | My certs hub redraws when the plan loads, so Pro never sees the Free view |
 | v8.203.1 | My certs hub shows the current cert's live readiness, as Home does |
-| v8.203.0 | Persona bundle: honest streak + 9 pm last call, quiz resume, My certs hub, Suggest a cert, exam outcome, fast start, AI budget, goodbye/welcome back |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
