@@ -75,4 +75,8 @@ const { test, vm } = require('./_context');
     notify.includes("req.method !== 'POST'") && notify.includes('requireAdmin(req)') && notify.includes('validExamKey(examKey)') && notify.includes('to: [lk.email]') && !/['"]?b?cc['"]?\s*:/i.test(notify) && notify.includes("notified_at=is.null"));
   test('shared lib: constant-time compare folds every byte, no secrets in the source', lib.includes('diff |= x[i] ^ y[i]') && !/re_[A-Za-z0-9]{10,}/.test(lib + digest + notify));
   test('copy: no em dashes in the new endpoints or admin additions', !/—/.test(digest + notify + lib));
+  // The migration itself, in PGlite: privacy, write rules, re-paste, ROLLBACK and re-apply (tests/cert-requests-db.test.mjs).
+  const rv = require('child_process').spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/cert-requests-db.test.mjs')], { encoding: 'utf8', timeout: 120000 });
+  test('cert requests database suite passes (' + ((rv.stdout || '').match(/cert-requests-db: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
+    rv.status === 0 && /cert-requests-db: (\d+)\/\1 passed/.test(rv.stdout || ''));
 })();
