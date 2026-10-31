@@ -89,7 +89,7 @@ const { _fnBody, js, html, test, vm } = require('./_context');
   test('startQuiz: _fill is declared before the try, so a starved fill still logs its repeats round',
     /const _fill = \{ rounds: \[\] \};\s*\n\s*try \{/.test(sq));
   test('startQuiz: filter runs after validateQuestions and in every top-up round',
-    /if \(questions\.length === 0\) throw[^\n]*\n\s*questions = _dropSeen\(questions\);/.test(sq)
+    /const local = validateQuestions\(checked\);[\s\S]{0,80}_qAppend\(_dropSeen\(local\)\)/.test(sq)   // 31 Oct fast-start: per batch
       && /const fresh = _dropSeen\(extraValidated\.filter\(q => !have\.has\(/.test(sq));
   test('startQuiz: repeats counted into _fill.rounds as {label:\'repeats\', dropped}',
     /_fill\.rounds\.push\(\{ label: 'repeats', dropped: _repeats \}\)/.test(sq));

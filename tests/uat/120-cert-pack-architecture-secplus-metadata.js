@@ -1138,7 +1138,7 @@ test('v8.139.0 SR: review cards can be removed as broken (two-step, stays remove
       && /saveReport\(card\.question \|\| '', 'Removed from review cards as broken'\)/.test(sr)
       && /window\.srRemoveConfirm\s*=\s*srRemoveConfirm/.test(sr)
       && /#page-sr-review \.sr-remove-btn\{[^}]*min-height:44px/.test(css)
-      && /dg-system\.css\?v=8\.(139|1[4-9]\d)\.0/.test(html);  // ≥ 8.139.0
+      && /dg-system\.css\?v=8\.(139|1[4-9]\d|2\d\d)\.0/.test(html);  // ≥ 8.139.0 (31 Oct fast-start: 8.2xx allowed)
   })());
 test('v8.138.0 Validators: real objective sets (Sec+ 4.9, A+ 2.11, Core 1 5.0 topic), money answers need figures, exam date local',
   (() => {

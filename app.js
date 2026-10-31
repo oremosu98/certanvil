@@ -4513,7 +4513,7 @@ function _normalizeStemForDedup(stem) {
     .slice(0, 200);             // cap to avoid weird unicode tail issues
 }
 
-async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
+async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx, onBatch) {   // 31 Oct fast-start: onBatch(qs) as each batch lands
   // v4.81.15: optional staleSliceIdx threads through to the per-batch
   // prompt builder for stale-topic rotation. Callers who fire fetchQuestions
   // multiple times (startExam's 5 sequential calls) pass i=0..4 so each
@@ -4522,7 +4522,7 @@ async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
   // cache semantics identical to pre-v4.56.1 behaviour.
   if (n <= QUIZ_BATCH_THRESHOLD) {
     const result = await _fetchQuestionsBatch(key, qTopic, difficulty, n, undefined, staleSliceIdx);
-    cacheQuestions(qTopic, difficulty, n, result);
+    cacheQuestions(qTopic, difficulty, n, result); if (onBatch) onBatch(result);
     return result;
   }
 
@@ -4550,7 +4550,7 @@ async function fetchQuestions(key, qTopic, difficulty, n, staleSliceIdx) {
   // latency ends up close to a single batch's latency (~3-5s) instead of
   // n×batch-latency sequential.
   const settled = await Promise.allSettled(
-    batchSizes.map((size, i) => _fetchQuestionsBatch(key, qTopic, difficulty, size, pbqBudgets[i], outerIdx + i))
+    batchSizes.map((size, i) => _fetchQuestionsBatch(key, qTopic, difficulty, size, pbqBudgets[i], outerIdx + i).then(qs => { if (onBatch) onBatch(qs); return qs; }))
   );
 
   const merged = _mergeBatchedFetchResults(settled, numBatches, n);
