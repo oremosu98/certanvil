@@ -3278,6 +3278,12 @@ html[data-theme] body #page-setup .tile-momentum{background:linear-gradient(150d
 #page-setup .mo-stat .n{font:600 22px/1 'Roboto Mono',monospace;color:var(--text)}
 #page-setup .mo-stat .k{font-size:11.5px;color:var(--text-dim)}
 #page-setup .mo-resume{margin-top:14px;padding-top:13px;border-top:1px solid var(--hairline);font-size:12px;color:var(--text-dim);line-height:1.5}
+#page-setup .mo-line{margin-top:12px;font-size:12.5px;font-weight:500;color:var(--text-mid);line-height:1.45}
+html[data-theme] body .sb-streak-ended{color:var(--text-dim)!important}
+html[data-theme] body .sb-streak-ended .sb-streak-ico{color:var(--text-dim)!important;opacity:0.55!important}
+html[data-theme] body .sb-streak-ended .sb-streak-core{fill:none!important;stroke:currentColor!important;opacity:0.6!important}
+html[data-theme] body .sb-streak-ended .sb-streak-empty-t{font-size:12.5px!important;font-weight:700!important;color:var(--text-mid)!important}
+html[data-theme] body .sb-streak-ended .sb-streak-empty-s{font-size:11px!important;color:var(--text-dim)!important;margin-top:2px!important}
 #page-setup .mo-resume b{color:var(--text-mid);font-weight:600}
 /* v8.171.0 + v8.172.0: "Pick up" -> one tap into a 10-question Mixed quiz on that topic.
    Styled exactly like the custom quiz tile's "Configure ->" link (.cu-foot): bronze 600/12px text

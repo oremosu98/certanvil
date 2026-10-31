@@ -149,6 +149,18 @@
     }
   }
 
+  // Task 7: one streak reading for every desktop surface, so Home, the sidebar, the top-bar chip and the
+  // Daily Challenge cannot disagree. The line is the phone's own (features/ios-home.js momentum model).
+  function _streakView() {
+    let s = { current: 0, best: 0, ended: false };
+    try { s = (typeof getStreak === 'function' ? getStreak() : s) || s; } catch (_) {}
+    let m = null;
+    try { m = (typeof window._iosHomeModel === 'function') ? window._iosHomeModel().momentum : null; } catch (_) { m = null; }
+    return { cur: s.current || 0, best: s.best || 0, ended: !!s.ended, endedFrom: s.endedFrom || 0,
+      line: m && m.streakLine ? m.streakLine : '', studiedToday: !!(m && m.studiedToday) };
+  }
+  function _dcSub(ended) { return '1 question, about a minute. ' + (ended ? 'Starts a new streak.' : 'Keeps the streak, +1.'); }
+
   function renderDailyChallengeCard() {
     const card = document.getElementById('daily-challenge-card');
     if (!card) return;
@@ -160,7 +172,8 @@
     }
     const dc = getDailyChallenge();
     const topicToday = getDailyChallengeTopic();
-    const streakText = dc.currentStreak > 0
+    const _sv = _streakView();
+    const streakText = _sv.ended ? 'Starts a new streak.' : dc.currentStreak > 0
       ? `${dc.currentStreak}-day streak${dc.bestStreak > dc.currentStreak ? ' · Best ' + dc.bestStreak : ''}`
       : 'Start your streak today';
     card.innerHTML = `
@@ -1024,9 +1037,18 @@
     const streakFlameSvg = '<svg viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="sbStreakFlame" x1="22" y1="18" x2="106" y2="110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E27822"/><stop offset="1" stop-color="#C95500"/></linearGradient></defs><path d="M67 19c12 18-2 29 13 41 5 4 11 10 11 22 0 18-13 31-28 31S35 100 35 82c0-14 8-25 19-34 8-7 11-15 13-29z" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path class="sb-streak-core" d="M66 57c8 10-1 17 8 25 3 3 5 6 5 11 0 9-7 16-16 16s-16-7-16-16c0-8 5-14 11-19 5-5 7-9 8-17z" fill="url(#sbStreakFlame)" stroke="#C95500" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     try {
       const s = (typeof getStreak === 'function') ? getStreak() : { current: 0, best: 0 };
-      if (s && s.current >= 1) {
-        const _best = (s && typeof s.best === 'number') ? s.best : 0;
-        const _streakSub = (_best > s.current) ? `Longest <b>${_best} days</b>` : 'Your best run yet';
+      if (s && s.ended) {
+        // Task 7 (drawing home-streak-ended): an ended streak says so, instead of looking brand new.
+        streakHtml = `<button type="button" class="sb-streak sb-streak-ended" onclick="goSetup()">
+          <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
+          <span class="sb-streak-text">
+            <span class="sb-streak-empty-t">Streak ended \u00b7 best ${s.best || s.endedFrom || 0}</span>
+            <span class="sb-streak-empty-s">A quick set starts a new one.</span>
+          </span>
+        </button>`;
+      } else if (s && s.current >= 1) {
+        const _sv = _streakView();
+        const _streakSub = _sv.studiedToday ? "Today's done." : 'Study today to keep it.';
         streakHtml = `<button type="button" class="sb-streak sb-streak-active" onclick="goSetup()" title="View full streak history">
           <span class="sb-streak-ico" aria-hidden="true">${streakFlameSvg}</span>
           <span class="sb-streak-text">
@@ -2056,6 +2078,10 @@
     const best = (s && s.best) ? s.best : 0;
     const pct = goal > 0 ? Math.min(100, Math.round((done / goal) * 100)) : 0;
 
+    const lineEl = document.getElementById('moLine');
+    if (lineEl) lineEl.textContent = _streakView().line;
+    const dcEl = document.getElementById('bento-dc-sub');
+    if (dcEl) dcEl.textContent = _dcSub(!!(s && s.ended));
     const goalEl = document.getElementById('moGoal'); if (goalEl) goalEl.textContent = goal;
     const bestEl = document.getElementById('moBest'); if (bestEl) bestEl.textContent = best;
 
