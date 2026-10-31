@@ -116,6 +116,14 @@ const { _fnBody, js, html, test, vm } = require('./_context');
   const wdr = sandbox(); const wdrSeen = spy(wdr); wdr.ev('wrongDrillMode = true'); played(wdr); wdr.ev('quizResumeClear()');
   test('Seen (M1): a mistakes drill is never recorded (same rule as finish)', wdrSeen.length === 0);
 
+  // ── final review M3: resuming stops a still-running fast-start fill ──
+  const ff = sandbox('netplus', Object.fromEntries(a.store));
+  ff.ctx.__live = QS(4);
+  ff.ev("questions = __live; var __ff = []; window._ffAbandon = () => { __ff.push(questions === __live); }");
+  test('Resume (M3): calls _ffAbandon once, while the live quiz is still on screen, then restores the save',
+    ff.ev('resumeQuiz()') === true && ff.ev('__ff.length') === 1 && ff.ev('__ff[0]') === true && ff.ev('questions.length') === 10);
+  test('Resume (M3): a missing save does not cancel anything', (() => { const s = sandbox(); s.ev('var __n = 0; window._ffAbandon = () => { __n++; }'); return s.ev('resumeQuiz()') === false && s.ev('__n') === 0; })());
+
   // ── wiring: when it saves and clears ──
   const qe = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'quiz-engine.js'), 'utf8');
   const saveAfterPush = (fn) => /log\.push\([^\n]*\n\s*if \(typeof quizResumeSave === 'function'\) quizResumeSave\(\);/.test(_fnBody(qe, fn));

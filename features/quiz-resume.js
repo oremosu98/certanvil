@@ -126,6 +126,9 @@
   function resumeQuiz() {
     const st = _quizResumeRead();
     if (!st) return false;
+    // Final review M3: a fast-start fill still running for the quiz on screen stops here (no more AI calls,
+    // no late finish), before the saved quiz replaces it. Must run while `questions` is still that quiz's.
+    if (typeof window._ffAbandon === 'function') window._ffAbandon();
     if (typeof _resetDrillModes === 'function') _resetDrillModes();
     gauntletMode = false; whyNotMode = false; examMode = false; sessionMode = false;
     questions = st.questions;
