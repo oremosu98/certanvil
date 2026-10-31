@@ -1409,8 +1409,9 @@
   }
 
   // ── Deletion moments (persona bundle T18) ───────────────────────────────
-  // Phones get a full-screen goodbye (mockups/onboarding-account-deletion.html ?v=goodbye) and a full-screen welcome
-  // back (mockups/cert-ios-home.html #wb); desktop keeps the card and the toast. Spec: 2026-10-30-deletion-moments-design.md
+  // A full-frame goodbye (mockups/onboarding-account-deletion.html ?v=goodbye) and welcome back (mockups/cert-ios-home.html #wb)
+  // at every width; desktop centres them (mockups/desktop-catchup.html ?v=goodbye, ?v=welcome-back, styled in dg-system.css).
+  // Spec: 2026-10-30-deletion-moments-design.md
   function _dmPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
   // "Fri 6 Nov" in the person's own timezone. dayOnly gives "6 Nov". Pure: UAT runs its body in a vm.
   function _dmDate(d, dayOnly) {
@@ -1479,7 +1480,7 @@
     var when = _dmScheduled(stamp), full = _dmDate(when), short = _dmDate(when, true);
     var rot = [-90.0, -38.6, 12.9, 64.3, 115.7, 167.1, 218.6], ticks = '';
     rot.forEach(function (a, i) { ticks += '<g class="gb-tick" style="--i:' + i + '" transform="rotate(' + a + ' 32 32)"><circle cx="32" cy="7.5" r="2.4"></circle></g>'; });
-    var html = '<div class="dm-body"><span class="gb-clockwrap" aria-hidden="true"><svg class="gb-dial" viewBox="0 0 64 64">' + ticks
+    var html = '<span class="cover-brand" aria-hidden="true">CertAnvil</span><div class="dm-body"><span class="gb-clockwrap" aria-hidden="true"><svg class="gb-dial" viewBox="0 0 64 64">' + ticks
       + '<circle class="gb-face" cx="32" cy="32" r="15"></circle><g class="gb-hand"><line x1="32" y1="32" x2="32" y2="23"></line></g>'
       + '<line class="gb-hour" x1="32" y1="32" x2="37" y2="35"></line><circle class="gb-pin" cx="32" cy="32" r="1.6"></circle></svg></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Goodbye for now</h2>'
@@ -1572,15 +1573,9 @@
           '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
         var stay = document.getElementById('dla-done');
         if (stay) stay.addEventListener('click', function () { modal.remove(); });
-      } else if (card && _dmPhone()) {
-        _dmGoodbye(modal, stamp, wasPro);
       } else if (card) {
-        card.innerHTML =
-          '<h2 class="dlpb-title">Account scheduled for deletion</h2>' +
-          '<p class="dlpb-lede">You&rsquo;re signed out. Sign back in within <b>7 days</b> if you change your mind &mdash; after that, your data is permanently purged.</p>' +
-          '<div class="dlpb-actions"><button type="button" class="dlpb-ghost" id="dla-done">Done</button></div>';
-        var done = document.getElementById('dla-done');
-        if (done) done.addEventListener('click', function () { modal.remove(); window.location.reload(); });
+        modal.style.display = 'none';   // the goodbye replaces the card; on desktop its overlay would otherwise sit above the screen
+        _dmGoodbye(modal, stamp, wasPro);
       }
     }).catch(function () {
       if (card) {
@@ -1606,22 +1601,16 @@
       return sb.from('profiles').select('metadata').eq('id', uid).maybeSingle().then(function (pr) {
         var meta = pr && pr.data && pr.data.metadata;
         if (_noticeShown || !meta || !meta.deletion_cancelled_at) return null;
-        if (_dmPhone()) {
-          // The full moment. Wait (up to ~15s) for the cloud copy to land so the tiles show the real numbers, show it,
-          // and only then clear the flag, so a reload before it appeared still gets the moment.
-          _noticeShown = true;
-          var t0 = Date.now(), limit = window._dmHydrateWaitMs || 15000;
-          return new Promise(function (res) {
-            (function wait() {
-              var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
-              if (ok) res(true); else if (Date.now() - t0 > limit) res(false); else setTimeout(wait, 150);
-            })();
-          }).then(function (safe) { _dmWelcome(safe); return sb.rpc('clear_deletion_notice'); });
-        }
-        if (typeof window.showToast !== 'function') return null;
+        // The full moment. Wait (up to ~15s) for the cloud copy to land so the tiles show the real numbers, show it,
+        // and only then clear the flag, so a reload before it appeared still gets the moment.
         _noticeShown = true;
-        window.showToast("Welcome back. We've cancelled the deletion and your account is safe.", 'info');
-        return sb.rpc('clear_deletion_notice');
+        var t0 = Date.now(), limit = window._dmHydrateWaitMs || 15000;
+        return new Promise(function (res) {
+          (function wait() {
+            var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
+            if (ok) res(true); else if (Date.now() - t0 > limit) res(false); else setTimeout(wait, 150);
+          })();
+        }).then(function (safe) { _dmWelcome(safe); return sb.rpc('clear_deletion_notice'); });
       });
     }).catch(function (e) { console.error('[deletion-notice]', e); });
   }

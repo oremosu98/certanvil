@@ -38,4 +38,9 @@ const { test } = require('./_context');
   test('My certs: Settings shows one My certs row on desktop; the phone page keeps the Pass Plan html', /host\.innerHTML = _ppDesk\(\) \? _passPlanDeskHtml\(html\) : html;/.test(st) && /patch\(\{ passPlanHtml: html \}\)/.test(st));
   test('My certs: no em dash in its markup or styles', !new RegExp(dash).test(hub.slice(hub.indexOf('function _deskHtml'), hub.indexOf('function openHub'))) && !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 4'))));
   test('dg-system.css version bumped for My certs', /dg-system\.css\?v=8\.204\.0-d[4-9]/.test(html));
+
+  // Task 8: goodbye and welcome back on desktop
+  test('goodbye/welcome back: desktop layout lives in dg-system.css under min-width:900 with its own keyframes, and the brand mark is phone-hidden', /\.dm-screen \.cover-brand\{display:none;\}\s*@media \(min-width:900px\)\{\s*\.dm-screen\{/.test(css) && /@keyframes dmd-rise/.test(css) && /\.dm-screen \.dm-foot \[data-act="signin"\]\{order:-1;\}/.test(css));
+  test('goodbye/welcome back: no em dash in the desktop styles', !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 8'))));
+  test('dg-system.css version bumped for the goodbye', /dg-system\.css\?v=8\.204\.0-d[8-9]/.test(html));
 })();

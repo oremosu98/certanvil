@@ -47,7 +47,7 @@ function stubScript() {
 // opts: {fake: {...__FAKE_SB}, prefs, seed, query, native (default true)}
 async function boot(page, opts) {
   opts = opts || {};
-  await page.setViewportSize(PHONE);
+  await page.setViewportSize(opts.size || PHONE);
   const F = Object.assign({ role: 'user', noResults: true, signedOut: true, metaOverride: { tier: 'free', entitlements: {} } }, opts.fake || {});
   await page.route('**/lib/supabase.js*', (r) => r.fulfill({ contentType: 'application/javascript', body: 'window.__FAKE_SB=' + JSON.stringify(F) + ';' + FAKE }));
   await page.addInitScript(([prefs, seed]) => {
@@ -667,17 +667,6 @@ test.describe('Account deletion: app', () => {
     await expect(page.locator('#ios-goodbye')).toContainText('deleted on Thu 19 Nov.', { timeout: 8000 });
   });
 
-  test('on a desktop-width window the old card still appears, no goodbye', async ({ page }) => {
-    await boot(page, { fake: SIGNED, seed: SEED });
-    await openSettings(page);
-    await page.click('#ios-settings [data-act="delete"]');
-    await page.fill('#dla-email', 'simi.test@example.test');
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.click('#dla-confirm');
-    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
-    await expect(page.locator('#ios-goodbye')).toHaveCount(0);
-  });
-
   test('welcome back with the cloud copy not safe in time shows no tiles and still clears the notice once', async ({ page }) => {
     await page.addInitScript(() => { window._dmHydrateWaitMs = 1200; const iv = setInterval(() => { if (window.cloudStore) { window.cloudStore.isSafeToClear = () => false; clearInterval(iv); } }, 5); });
     await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
@@ -724,5 +713,79 @@ test.describe('Account deletion: phone website', () => {
     await deleteAccount(page);
     await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
     await expect(page.locator('#ios-goodbye')).not.toContainText('Apple');
+  });
+});
+
+// ── Desktop catch-up Task 8: the same goodbye and welcome back at desktop width (drawings goodbye, welcome-back) ──
+test.describe('Account deletion: desktop website', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  const SEED = { nplus_onb_skips: '{"at":1}' };
+  const DESK = { width: 1280, height: 800 };
+  // The delete flow starts from the phone Settings sheet; resize to desktop before confirming, as a window resize would.
+  async function deleteOnDesktop(page) {
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="delete"]');
+    await page.fill('#dla-email', 'simi.test@example.test');
+    await page.setViewportSize(DESK);
+    await page.click('#dla-confirm');
+  }
+  const centreX = (loc) => loc.evaluate((e) => { const r = e.getBoundingClientRect(); return r.left + r.width / 2; });
+
+  test('desktop: confirming deletion shows Goodbye for now with the scheduled date and no Apple line', async ({ page }) => {
+    await boot(page, { native: false, fake: Object.assign({}, SIGNED, { tier: 'pro' }), seed: SEED });
+    await page.evaluate(() => { window._quotaState = { tier: 'pro', daily_limit: -1 }; });
+    await page.clock.setFixedTime(new Date('2026-10-30T12:00:00Z'));
+    await deleteOnDesktop(page);
+    const gb = page.locator('#ios-goodbye');
+    await expect(gb).toContainText('Goodbye for now', { timeout: 8000 });
+    await expect(gb).toContainText('Your account will be deleted on Fri 6 Nov.');
+    await expect(gb).toContainText("Sign back in before 6 Nov and everything's kept");
+    await expect(gb).not.toContainText('Apple');
+    await expect(page.locator('#delete-account-modal')).toBeHidden();   // the old card never sits over the goodbye
+    expect(await page.evaluate(() => { const r = document.querySelector('#ios-goodbye h2').getBoundingClientRect(); const e = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!e.closest('#ios-goodbye'); })).toBe(true);
+    expect(Math.abs(await centreX(page.locator('#ios-goodbye h2')) - 640)).toBeLessThan(3);
+    expect(await page.locator('#ios-goodbye .cover-brand').isVisible()).toBe(true);
+    // Sign back in comes first, then Done, as drawn
+    const xs = await page.locator('#ios-goodbye .dm-foot button').evaluateAll((bs) => bs.map((b) => [b.textContent, b.getBoundingClientRect().left]).sort((a, c) => a[1] - c[1]).map((e) => e[0]));
+    expect(xs).toEqual(['Sign back in', 'Done']);
+    await page.click('#ios-goodbye [data-act="signin"]');
+    await expect(page.locator('#ios-goodbye')).toHaveCount(0);
+  });
+
+  test('desktop: resizing the goodbye across 900px leaves one copy and nothing stuck inert', async ({ page }) => {
+    await boot(page, { native: false, fake: SIGNED, seed: SEED });
+    await deleteOnDesktop(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
+    await page.setViewportSize(PHONE);
+    await expect(page.locator('#ios-goodbye')).toHaveCount(1);
+    await expect(page.locator('#ios-goodbye .cover-brand')).toBeHidden();
+    expect(await page.evaluate(() => document.querySelectorAll('.dm-screen').length)).toBe(1);
+    expect(await page.evaluate(() => document.getElementById('ios-goodbye').inert)).toBe(false);
+    await page.setViewportSize(DESK);
+    await expect(page.locator('#ios-goodbye .cover-brand')).toBeVisible();
+    expect(await page.evaluate(() => document.querySelectorAll('.dm-screen').length)).toBe(1);
+  });
+
+  test('desktop offline delete still shows the offline card, not the goodbye', async ({ page }) => {
+    await boot(page, { native: false, fake: Object.assign({ signOutOffline: true, removeSessionFails: true }, SIGNED), seed: SEED });
+    await deleteOnDesktop(page);
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#delete-account-modal')).toContainText('We couldn\u2019t sign you out on this device');
+    await expect(page.locator('#ios-goodbye')).toHaveCount(0);
+  });
+
+  test('desktop: signing back in shows the welcome back screen, not the toast', async ({ page }) => {
+    await boot(page, { native: false, size: DESK, fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: Object.assign({}, SEED, { nplus_streak: JSON.stringify({ current: 2, best: 11, last: '2026-10-02' }), nplus_readiness_snapshots: JSON.stringify({ netplus: { score: 553 } }) }) });
+    const wb = page.locator('#ios-welcomeback');
+    await expect(wb).toContainText("We've cancelled your account deletion", { timeout: 8000 });
+    await expect(wb.locator('h2')).toContainText('Welcome back');
+    await expect(page.getByText(NOTICE)).toHaveCount(0);
+    await expect.poll(() => wb.locator('.wb-kept b').allTextContents(), { timeout: 5000 }).toEqual(['553', '0', '11']);
+    expect(Math.abs(await centreX(wb.locator('h2')) - 640)).toBeLessThan(3);
+    await expect.poll(async () => (await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+    await page.click('#ios-welcomeback [data-act="go"]');
+    await expect(wb).toHaveCount(0);
+    await expect(page.locator('#page-setup')).toHaveClass(/\bactive\b/);
+    expect(await page.evaluate(() => [].filter.call(document.body.children, (c) => c.inert).length)).toBe(0);
   });
 });
