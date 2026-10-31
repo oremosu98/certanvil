@@ -124,6 +124,9 @@
         'Generating ' + qCount + ' ' + diff + ' questions on ' + _topicLabel + '\u2026';
       // v8.142.0: per-round fill diagnostics → telemetry:quiz-fill (see end of try).
       const _fill = { rounds: [] };
+      // Task 7: drop questions answered in the last 30 days; the top-up refills the gap.
+      let _repeats = 0;
+      const _dropSeen = (qs) => { if (typeof seenFilter !== 'function') return qs; const r = seenFilter(qs); _repeats += r.dropped; return r.kept; };
       let raw = await fetchQuestions(key, activeQuizTopic, diff, qCount + DROPOUT_BUFFER);
       const _r0 = { asked: qCount + DROPOUT_BUFFER, written: raw.length };
       _loadingProgressUpdate('Verifying quality\u2026', 45);
@@ -137,6 +140,7 @@
       questions = validateQuestions(raw);
       _r0.afterLocal = questions.length; _fill.rounds.push(_r0);
       if (questions.length === 0) throw new Error('All generated questions failed validation. Try again.');
+      questions = _dropSeen(questions);
   
       // Retry-to-fill. v8.141.0: up to MAX_TOPUP_ROUNDS rounds (was one), so a
       // 30-question request stops shipping ~21. Every extra question passes the
@@ -160,7 +164,7 @@
           const extraValidated = validateQuestions(extraChecked);
           _rn.afterLocal = extraValidated.length;
           const have = new Set(questions.map(q => String(q.question || '').trim().toLowerCase()));
-          const fresh = extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase()));
+          const fresh = _dropSeen(extraValidated.filter(q => !have.has(String(q.question || '').trim().toLowerCase())));
           _rn.added = fresh.length;
           questions = questions.concat(fresh);
         } catch (retryErr) {
@@ -173,6 +177,8 @@
         }
         _fill.rounds.push(_rn);
       }
+      if (_repeats) _fill.rounds.push({ label: 'repeats', dropped: _repeats });
+      if (questions.length === 0) throw new Error('Couldn\u2019t make new questions this time. Try again.');
   
       // Slice to exact count — truncates buffer overage from the initial over-request
       // and/or retry overage. If we're STILL short after retry (rare — both rounds
@@ -184,8 +190,10 @@
       _noteShortQuiz(qCount, questions.length, _fill.rounds);
     } catch(e) {
       if (!_genAlive(_g)) { window._mixedPickMode = 'random'; return; }   // cancelled: say nothing, serve nothing
-      _logQuizFill(qCount, 0, getCachedQuestions(activeQuizTopic, diff, qCount) ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
-      const cached = getCachedQuestions(activeQuizTopic, diff, qCount);
+      // Task 7: never silently re-serve a set answered in the last 7 days.
+      const _cachedRaw = getCachedQuestions(activeQuizTopic, diff, qCount);
+      const cached = _cachedRaw && !(typeof seenAnsweredWithin === 'function' && seenAnsweredWithin(_cachedRaw, 7)) ? _cachedRaw : null;
+      _logQuizFill(qCount, 0, cached ? 'cache' : 'error', [], String((e && e.message) || e).slice(0, 120));
       if (cached) {
         questions = cached.slice(0, qCount);
         showCacheNotice(true);
@@ -1917,6 +1925,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
     } catch (_) {}
   
     if (!wrongDrillMode) {
+      if (window.seenRecord) seenRecord(log.map(e => e.q), activeQuizTopic);   // Task 7
       const entryMode = dailyChallengeMode ? 'daily' : (sessionMode ? 'session' : 'quiz');
       // v8.149.0: each row records right/total per question difficulty (readiness v3 input).
       const _byDiff = (entries) => (typeof byDiffFromLog === 'function') ? byDiffFromLog(entries, diff, e => !!e.isRight) : undefined;
@@ -2454,7 +2463,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   function _logQuizFill(requested, served, source, rounds, error) {
     try {
       if (typeof _logValidatorTelemetry !== 'function') return;
-      const r = (rounds || []).map((x, i) => (x.label ? x.label + ' ' : (i === 0 ? 'r0 ' : 'top-up' + i + ' ')) + (x.error ? 'ERR ' + x.error
+      const r = (rounds || []).map((x, i) => x.label === 'repeats' ? 'repeats -' + x.dropped : (x.label ? x.label + ' ' : (i === 0 ? 'r0 ' : 'top-up' + i + ' ')) + (x.error ? 'ERR ' + x.error
         : x.asked + '→' + (x.written ?? '?') + '→' + (x.afterChecker ?? '?') + '→' + (x.afterLocal ?? '?') + (x.added !== undefined ? ' +' + x.added : ''))).join(' | ');
       _logValidatorTelemetry([{ type: 'telemetry:quiz-fill', fingerprint: 'quiz-fill:' + (typeof CURRENT_CERT !== 'undefined' ? CURRENT_CERT : ''),
         message: 'asked ' + requested + ' · served ' + served + ' · ' + source + (r ? ' · ' + r : '') + (error ? ' · error: ' + error : ''),

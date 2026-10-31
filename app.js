@@ -4758,7 +4758,7 @@ CRITICAL — MULTI-SELECT QUALITY CRITERIA (${_examVendor} exam style):
 
 ${topicStr}${mixedDistributionStr}
 Difficulty: ${diffStr}
-${exemplarBlock}${retentionBlock}${staleBlock}
+${exemplarBlock}${retentionBlock}${staleBlock}${typeof seenPromptBlock === 'function' ? seenPromptBlock(qTopic) : ''}
 Generate exactly ${n} multiple choice questions. Requirements:
 - 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)
 - One correct answer only (unless multi-select)
