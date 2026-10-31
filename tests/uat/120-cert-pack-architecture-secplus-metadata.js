@@ -1184,7 +1184,8 @@ test('v8.135.0 Readiness v2: predicted = expected accuracy on the exam scale; ef
       && /PRIOR_ACC = 0\.40/.test(body)
       && /_sig\(abilityFromBands\(bandMap\[t\], ownAcc, PRIOR_W\)\) : PRIOR_ACC/.test(body)  // v8.152.0 v3 estimate (was the v2 accuracy blend)
       && /Math\.sqrt\(_pE \* \(1 - _pE\) \/ Math\.max\(10, EXAM_QUESTION_COUNT\)\)/.test(body)
-      && /const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy/.test(body)
+      // Task 9 (persona bundle): examReady now comes from the book-it checklist (getBookItChecklist), not score + recent form
+      && /const examReady = getBookItChecklist\(\{ lowerBound, domainAccuracy, passAccuracy \}, loadHistory\(\)\)\.ready/.test(body)
       && /expectedAccuracy: Math\.round\(expectedAcc \* 100\), passAccuracy, recentAccuracy, recentAnswers: recentN, examReady/.test(body);
   })());
 test('v8.135.0 Readiness v2: home card + analytics gate "Exam ready" on recent accuracy too',

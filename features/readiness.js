@@ -196,6 +196,62 @@
   window.buildBandTopicMap = buildBandTopicMap;
   window.abilityFromBands = abilityFromBands;
 
+  // Persona bundle Task 9: the book-it checklist. "Pass ready" / "Exam ready" is true only when all four hold.
+  // Pure over (r, hist): r needs lowerBound, domainAccuracy, passAccuracy. The score itself is unchanged (#139).
+  // Spec: docs/superpowers/specs/2026-10-30-why-score-bookit-repeats-design.md §2.
+  function getBookItChecklist(r, hist, nowMs) {
+    r = r || {}; hist = Array.isArray(hist) ? hist : [];
+    const now = typeof nowMs === 'number' ? nowMs : Date.now();
+    const pass = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+    const labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
+    const exTopic = (typeof EXAM_TOPIC === 'string') ? EXAM_TOPIC : 'Exam Simulation';
+    const mixTopic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
+    // 1. range
+    const low = typeof r.lowerBound === 'number' ? r.lowerBound : null;
+    const range = { key: 'range', label: 'Score clears ' + pass + ', even at the low end', met: low !== null && low >= pass,
+      detail: low === null ? 'No score yet' : 'Low end is ' + low + ' today' };
+    // 2. volume: exam-level or harder answers (E + H), same rows the score reads
+    let vol = 0;
+    hist.forEach(e => {
+      if (!e || e.topic === mixTopic || e.topic === exTopic || e.mode === 'gauntlet' || e.mode === 'whynot') return;
+      if (typeof _isCurrentCertTopic === 'function' && !_isCurrentCertTopic(e.topic)) return;
+      if (!e.byDiff || typeof e.byDiff !== 'object') return;
+      ['E', 'H'].forEach(b => { const v = e.byDiff[b]; if (Array.isArray(v)) vol += (v[1] || 0); });
+    });
+    const volume = { key: 'volume', label: '300 exam-level or harder answers', met: vol >= 300, detail: vol + ' so far' };
+    // 3. areas
+    const pa = typeof r.passAccuracy === 'number' ? r.passAccuracy : 75;
+    const da = r.domainAccuracy || {};
+    const keys = Object.keys(da);
+    let weakKey = null;
+    keys.forEach(k => { if (weakKey === null || da[k] < da[weakKey]) weakKey = k; });
+    const areasMet = keys.length > 0 && keys.every(k => da[k] >= pa);
+    const weakName = weakKey ? (labels[weakKey] || weakKey) : null;
+    const areas = { key: 'areas', label: 'Every exam area at ' + pa + '% or better', met: areasMet,
+      detail: areasMet ? 'Every area is there' : (weakKey ? weakName + ' is at ' + Math.round(da[weakKey]) + '%' : 'No areas scored yet') };
+    // 4. mocks: full timed exams at a pass inside the last 14 days
+    const scoreOf = e => (typeof scaledExamScore === 'function') ? scaledExamScore(e.score || 0, e.total || 0) : 0;
+    const inWin = hist.filter(e => {
+      if (!e || e.mode !== 'exam' || e.topic !== exTopic) return false;
+      const t = new Date(e.date).getTime();
+      return !isNaN(t) && now - t <= 14 * 86400000 && now - t >= -86400000;
+    });
+    const passes = inWin.filter(e => scoreOf(e) >= pass);
+    const lastPass = passes.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    const mocks = { key: 'mocks', label: 'Two full timed exams at a pass in the last 14 days', met: passes.length >= 2,
+      detail: passes.length ? passes.length + ' so far, scored ' + scoreOf(lastPass) : 'None yet' };
+    const items = [range, volume, areas, mocks];
+    const met = items.filter(i => i.met).length;
+    const firstUnmet = items.find(i => !i.met);
+    if (firstUnmet) {
+      if (firstUnmet.key === 'mocks') firstUnmet.next = { label: 'Start a full exam', act: 'mocks' };
+      else if (firstUnmet.key === 'areas' && weakKey) firstUnmet.next = { label: 'Practise ' + weakName, act: 'areas', domain: weakKey };
+      else if (firstUnmet.key === 'volume') firstUnmet.next = { label: 'Start an exam-level set', act: 'volume' };
+    }
+    return { items, met, total: 4, ready: met === 4 };
+  }
+  window.getBookItChecklist = getBookItChecklist;
+
   function getReadinessScore() {
     // v8.128.0: topic universe from the cert pack. The #topic-group chips are
     // Network+'s static 50 until home.js re-renders them, so the first readiness
@@ -404,7 +460,8 @@
     let recentC = 0, recentN = 0;
     for (const e of h) { if (recentN >= 200) break; const take = Math.min(e.total, 200 - recentN); recentC += e.total ? e.score * take / e.total : 0; recentN += take; }
     const recentAccuracy = recentN ? Math.round((recentC / recentN) * 100) : null;
-    const examReady = predicted >= EXAM_PASS_SCORE && recentAccuracy !== null && recentAccuracy >= passAccuracy;
+    // Persona bundle Task 9: "ready" is the four-point book-it checklist, not score + recent form (formula untouched, #139).
+    const examReady = getBookItChecklist({ lowerBound, domainAccuracy, passAccuracy }, loadHistory()).ready;
 
     return {
       predicted, raw,

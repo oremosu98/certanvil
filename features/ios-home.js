@@ -316,6 +316,79 @@
   }
 
 
+  // ── "Why this score?" sheet (persona bundle Task 9). Pure: (readiness result, history, book-it checklist) in, plain object out.
+  // Spec: docs/superpowers/specs/2026-10-30-why-score-bookit-repeats-design.md §1-2. Self-contained for UAT (_fnBody).
+  function _iosWhyModel(r, hist, bookIt, now) {
+    r = r || {}; hist = Array.isArray(hist) ? hist : [];
+    var commas = function (n) { return String(Math.round(n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); };
+    var labels = (typeof DOMAIN_LABELS === 'object' && DOMAIN_LABELS) || {};
+    var weights = (typeof DOMAIN_WEIGHTS === 'object' && DOMAIN_WEIGHTS) || {};
+    var exTopic = (typeof EXAM_TOPIC === 'string') ? EXAM_TOPIC : 'Exam Simulation';
+    var mixTopic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
+    var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var lede = { bold: r.predicted + ', likely between ' + r.lowerBound + ' and ' + r.upperBound + '.',
+      rest: ' Pass chance ' + Math.round((r.passProbability || 0) * 100) + '%. Based on ' + commas(r.totalQs) + ' answers across ' + r.studiedCount + ' of ' + r.totalTopics + ' topics.' };
+    var da = r.domainAccuracy || {};
+    var keys = Object.keys(weights).filter(function (k) { return typeof da[k] === 'number'; });
+    var weakKey = null;
+    keys.forEach(function (k) { if (weakKey === null || da[k] < da[weakKey]) weakKey = k; });
+    var areas = keys.map(function (k) {
+      return { key: k, name: labels[k] || k, weightPct: Math.round((weights[k] || 0) * 100), accPct: Math.round(da[k]), weak: k === weakKey };
+    });
+    var hard = 0, all = 0, last = null;
+    hist.forEach(function (e) {
+      if (!e) return;
+      if (e.mode === 'exam' && e.topic === exTopic) { if (!last || new Date(e.date) > new Date(last.date)) last = e; return; }
+      if (e.topic === mixTopic || e.mode === 'gauntlet' || e.mode === 'whynot') return;
+      if (typeof _isCurrentCertTopic === 'function' && !_isCurrentCertTopic(e.topic)) return;
+      if (!e.byDiff || typeof e.byDiff !== 'object') return;
+      Object.keys(e.byDiff).forEach(function (b) { var v = e.byDiff[b]; if (Array.isArray(v)) { all += (v[1] || 0); if (b === 'E' || b === 'H') hard += (v[1] || 0); } });
+    });
+    var hardLine = all > 0 ? Math.round(hard / all * 100) + '% of your answers were exam-level or hard.' : null;
+    var lastLine = 'None yet';
+    if (last) {
+      var ld = new Date(last.date);
+      var sc = (typeof scaledExamScore === 'function') ? scaledExamScore(last.score || 0, last.total || 0) : null;
+      lastLine = (sc !== null ? sc : (last.pct + '%')) + ' on ' + ld.getDate() + ' ' + MONTHS[ld.getMonth()];
+    }
+    var items = (bookIt && bookIt.items) || [];
+    return { title: 'Why ' + r.predicted + '?', lede: lede,
+      verdict: bookIt && bookIt.ready ? 'Ready to book · 4 of 4' : 'Not yet · ' + ((bookIt && bookIt.met) || 0) + ' of 4',
+      items: items, areas: areas, hardLine: hardLine, lastLine: lastLine,
+      how: "How it works: we estimate your accuracy topic by topic, adjusted for how hard each question was, weight it like the real exam, and count topics you haven't studied as 40%." };
+  }
+  function _iosWhyHtml(m) {
+    var e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+    var tick = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>';
+    var h = '<div class="ist-grip"></div><div class="iw-body"><h3 id="ist-sheet-title">' + e(m.title) + '</h3>'
+      + '<p class="iw-lede"><b>' + e(m.lede.bold) + '</b>' + e(m.lede.rest) + '</p>'
+      + '<div class="iw-sect">Book it?<span>' + e(m.verdict) + '</span></div><ul class="iw-check">';
+    m.items.forEach(function (i) {
+      h += '<li' + (i.met ? ' class="ok"' : '') + '><i>' + tick + '</i><span>' + e(i.label) + '<small>' + e(i.detail) + '</small>'
+        + (i.next ? '<button class="iw-next" type="button" data-act="why-' + e(i.next.act) + '"' + (i.next.domain ? ' data-key="' + e(i.next.domain) + '"' : '') + '>' + e(i.next.label) + '</button>' : '')
+        + '</span></li>';
+    });
+    h += '</ul><div class="iw-sect">Exam areas</div><div class="iw-dom">';
+    m.areas.forEach(function (a) { h += '<div' + (a.weak ? ' class="weak"' : '') + '><span>' + e(a.name) + '</span><span class="wt">' + e(a.weightPct) + '%</span><span class="ac">' + e(a.accPct) + '%</span></div>'; });
+    h += '</div><div class="iw-sect">The evidence</div><p class="iw-facts">' + (m.hardLine ? e(m.hardLine) + '<br>' : '') + 'Last full exam: <b>' + e(m.lastLine) + '</b>.</p>'
+      + '<p class="iw-how">' + e(m.how) + '</p></div>';
+    return h;
+  }
+  function _openWhy() {
+    if (!(window.iosSettings && typeof window.iosSettings.openSheet === 'function')) return;
+    var r = null, hist = [];
+    try { r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null; hist = (typeof loadHistory === 'function') ? loadHistory() : []; } catch (_) { r = null; }
+    if (!r || typeof r.predicted !== 'number') return;
+    var bi = (typeof getBookItChecklist === 'function') ? getBookItChecklist(r, hist) : { items: [], met: 0, ready: false };
+    var close = function () { try { window.iosSettings.closeSheet(true); } catch (_) {} };
+    window.iosSettings.openSheet(_iosWhyHtml(_iosWhyModel(r, hist, bi, new Date())), function (b) {
+      var act = b.getAttribute('data-act');
+      if (act === 'why-mocks') { close(); if (typeof startExam === 'function') startExam(); }
+      else if (act === 'why-areas') { close(); if (typeof applyDomainPreset === 'function') applyDomainPreset(b.getAttribute('data-key')); }
+      else if (act === 'why-volume') { close(); if (typeof applyPreset === 'function') applyPreset('grind'); }
+    });
+  }
+
   // ── Mount: phone width only. Renders into #ios-home and binds each data-act to the
   // handler the desktop Home already uses, so behaviour (Pro gates, quotas) is identical.
   function renderIosHome() {
@@ -352,6 +425,7 @@
       bulk30: function () { applyPreset('bulk30'); },
       bulk45: function () { applyPreset('bulk45'); },
       bulk60: function () { applyPreset('bulk60'); },
+      readiness: function () { _openWhy(); },
       exam: function () { startExam(); },
       custom: function () { _jumpToCustomQuiz(); },
       settings: function () { tab('settings'); },
@@ -394,4 +468,6 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _iosHomeBoot);
   else _iosHomeBoot();
   window._iosHomeHtml = _iosHomeHtml;
+  window._iosWhyModel = _iosWhyModel;
+  window._iosWhyHtml = _iosWhyHtml;
 })();

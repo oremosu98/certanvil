@@ -3223,3 +3223,30 @@ html:not([data-theme="light"]) #ios-tour .tt-count { color: var(--accent-bright)
   #ios-tour .tour-tip, #ios-tour.stepping .tour-tip, #ios-tour.entering .tour-tip { transform: none; filter: none; }
   #ios-tour .tt-x:active, #ios-tour .tt-next:active { transform: none; }
 }
+
+/* Persona bundle Task 9: "Why this score?" sheet (in #ist-sheet; in .36s / out .2s come from the shared sheet rules) */
+#ist-sheet .iw-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+#ist-sheet .iw-body h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; margin: 2px 0 4px; color: var(--text); }
+#ist-sheet .iw-lede { font: 500 13px/1.5 Inter, sans-serif; color: var(--text-mid); margin: 0 0 14px; }
+#ist-sheet .iw-lede b { color: var(--text); font-weight: 650; }
+#ist-sheet .iw-sect { font: 800 9.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); margin: 16px 0 8px; display: flex; justify-content: space-between; }
+#ist-sheet .iw-sect span { letter-spacing: 0; text-transform: none; font: 700 11.5px/1 Inter, sans-serif; color: var(--accent-deep); }
+#ist-sheet .iw-check { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+#ist-sheet .iw-check li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; font: 500 12.5px/1.4 Inter, sans-serif; color: var(--text); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+#ist-sheet .iw-check li:first-child { border-top: 0; }
+#ist-sheet .iw-check li i { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 999px; display: grid; place-items: center; margin-top: 1px; border: 1.5px solid var(--border); }
+#ist-sheet .iw-check li i svg { width: 11px; height: 11px; stroke: var(--on-accent, #fff); fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+#ist-sheet .iw-check li.ok i { border-color: var(--accent); background: var(--accent); }
+#ist-sheet .iw-check li.ok i svg { opacity: 1; }
+#ist-sheet .iw-check li small { display: block; color: var(--text-dim); font-size: 11.5px; margin-top: 2px; }
+#ist-sheet .iw-next { display: inline-flex; align-items: center; min-height: 32px; margin-top: 6px; padding: 0 11px; border-radius: 9px; border: 1px solid color-mix(in oklab, var(--accent) 34%, var(--border)); background: transparent; color: var(--accent-deep); font: 650 12px/1 Inter, sans-serif; transition: transform .15s var(--ios-ease); }
+#ist-sheet .iw-next:active { transform: scale(.97); }
+#ist-sheet .iw-dom { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+#ist-sheet .iw-dom div { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; padding: 9px 12px; font: 500 12.5px/1.3 Inter, sans-serif; color: var(--text); border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent); }
+#ist-sheet .iw-dom div:first-child { border-top: 0; }
+#ist-sheet .iw-dom .wt { color: var(--text-dim); font: 600 11px/1.3 'Roboto Mono', monospace; }
+#ist-sheet .iw-dom .ac { font-weight: 700; min-width: 34px; text-align: right; }
+#ist-sheet .iw-dom .weak .ac { color: var(--accent-deep); }
+#ist-sheet .iw-facts { font: 500 12.5px/1.55 Inter, sans-serif; color: var(--text-mid); margin: 0; }
+#ist-sheet .iw-facts b { color: var(--text); font-weight: 650; }
+#ist-sheet .iw-how { font: 500 12px/1.5 Inter, sans-serif; color: var(--text-dim); margin: 14px 0 0; }
