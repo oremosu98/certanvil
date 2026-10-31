@@ -93,7 +93,7 @@
     };
     var tile = function (v, l, key, unit) { return '<div class="in-tile"><div class="in-tv">' + v + (unit || '') + '</div><span class="in-tl">' + l + '</span>' + spark(sp[key]) + '</div>'; };
     // Persona bundle T10: the honest forecast. Copy: reminders-forecast spec section 2, drawing cert-ios-analytics.html.
-    var fcp = getForecastCopy(r), hasDate = typeof r.daysToExam === 'number', line = fcp.line, fLbl = fcp.label, fVal = fcp.value, fRange = fcp.range, fDim = fcp.dim;
+    var fcp = getForecastCopy(r), hasDate = typeof r.daysToExam === 'number' && r.daysToExam >= 0, line = fcp.line, fLbl = fcp.label, fVal = fcp.value, fRange = fcp.range, fDim = fcp.dim;
     var pn = r.pbqNote, pbqLine = '';
     if (pn) pbqLine = '<p class="in-rd-pbq">Readiness counts multiple-choice only. ' + (pn.n > 0
       ? '<b>PBQs: ' + pn.right + ' of ' + pn.count + ' fully right</b> in your last ' + (pn.n === 1 ? 'full exam' : pn.n + ' full exams') + '.'

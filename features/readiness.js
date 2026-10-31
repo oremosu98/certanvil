@@ -652,7 +652,7 @@
   function getForecastCopy(r) {
     const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayLabel = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return mm ? (+mm[3]) + ' ' + MON[+mm[2] - 1] : ''; };
-    const pc = r.pace, hasDate = typeof r.daysToExam === 'number';
+    const pc = r.pace, hasDate = typeof r.daysToExam === 'number' && r.daysToExam >= 0;   // a past date reads as no date (final review M5)
     const togo = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.');
     if (pc) {
       const pw = Math.round(Math.abs(pc.pointsPerWeek)), when = dayLabel(pc.examDate);

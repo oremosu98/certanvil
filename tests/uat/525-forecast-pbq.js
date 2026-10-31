@@ -84,6 +84,11 @@ const { _fnBody, test, vm } = require('./_context');
   const nod = H({ ...base, daysToExam: null, pace: null });
   test('Copy, no date: "Set your exam date to see where you\'ll be on the day." and a dim "Set a date" tile',
     nod.includes('<b>120 points</b> to the pass mark. Set your exam date to see where you\'ll be on the day.') && nod.includes('Set a date'));
+  const past = H({ ...base, daysToExam: -12, pace: null });
+  test('Copy, past date (M5): a date that has passed reads as no date (set-a-date copy and tile, not the five-sessions line; exam tile "Not set")',
+    past.includes('Set your exam date to see where you\'ll be on the day.') && past.includes('Set a date') && !past.includes('five sessions')
+    && !/>Today</.test(past) && past.includes('Not set'));
+  test('Copy, exam day (0 days) still counts as a date', H({ ...base, daysToExam: 0, pace: null }).includes('five sessions'));
   test('Copy: "Hold your pace" is gone from the phone and the desktop card', !/Hold your pace/.test(onp + falling + nod + an + ia));
   const pb = H({ ...base, daysToExam: 33, pace: pace(40, 745, false), pbqNote: { n: 3, right: 6, count: 9 } });
   test('Copy, PBQ note: "Readiness counts multiple-choice only. PBQs: 6 of 9 fully right in your last 3 full exams."',
