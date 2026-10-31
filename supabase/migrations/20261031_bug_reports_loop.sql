@@ -14,12 +14,14 @@
 -- only when it matches the caller, so nobody can file a report as someone
 -- else. The table's own length CHECKs still apply.
 --
--- Direct client INSERT stays allowed: older clients in the wild still upsert.
--- But the insert policy is tightened: a client may only insert an open,
--- unstamped report, with user_id empty or equal to its own id. So nobody can
--- file as someone else or pre-set the "told them" stamp.
--- With UPDATE gone, their retry of an existing row errors, which their queue
--- already treats as a retryable failure. Acceptable until they update.
+-- Older clients in the wild send an upsert (INSERT ... ON CONFLICT DO
+-- UPDATE). That needs UPDATE, which is revoked, so every upsert from them is
+-- denied, new report or not. Their queue keeps the report as a retryable
+-- failure; once the app updates, the new client drains that same queue
+-- through submit_bug_report(), so nothing is lost, only delayed.
+-- A plain direct INSERT stays allowed, under a tightened policy: a client may
+-- only insert an open, unstamped report, with user_id empty or equal to its
+-- own id. So nobody can file as someone else or pre-set the "told them" stamp.
 --
 -- fixed_notified_at: stamped by the server when the reporter has been told
 -- the fix shipped. Clients cannot set it: UPDATE is revoked and the insert

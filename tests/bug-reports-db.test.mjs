@@ -93,8 +93,20 @@ await t('admin can read, nobody can update fixed_notified_at from a client', asy
   await rejects(as('authenticated', ADM, 'update public.user_bug_reports set fixed_notified_at = now()'));
   await rejects(as('authenticated', A, 'update public.user_bug_reports set fixed_notified_at = now()'));
 });
-await t('a direct client insert still works for older clients', async () => {
-  await as('anon', null, "insert into public.user_bug_reports (report_id, title) values ('rpt_old', 'old client')");
+await t('an older client\'s upsert is denied, then the updated client drains it through the RPC', async () => {
+  // what supabase-js upsert({...}, { onConflict: 'report_id' }) sends: it needs UPDATE, which is revoked
+  const upsert = (role, uid) => as(role, uid, "insert into public.user_bug_reports (report_id, title) values ('rpt_old', 'old client') "
+    + 'on conflict (report_id) do update set title = excluded.title');
+  await rejects(upsert('anon', null));
+  await rejects(upsert('authenticated', A));
+  assert.equal((await rows()).length, 0);
+  // the old queue still holds rpt_old; the updated client sends it with submit_bug_report, once
+  await submit('anon', null, 'rpt_old', 'old client', null);
+  await submit('anon', null, 'rpt_old', 'old client', null);
+  assert.deepEqual((await rows()).map((r) => r.report_id), ['rpt_old']);
+});
+await t('a plain direct insert still works', async () => {
+  await as('anon', null, "insert into public.user_bug_reports (report_id, title) values ('rpt_plain', 'plain insert')");
   assert.equal((await rows()).length, 1);
 });
 const direct = (role, uid, rid, cols = '', vals = '') => as(role, uid,
@@ -116,6 +128,9 @@ await t('a re-paste of the whole file is safe and keeps the rows', async () => {
   await db.exec(read(FILE));
   assert.equal((await rows()).length, 1);
   await rejects(as('anon', null, "update public.user_bug_reports set title = 'x'"));
+  // the two migration-audit.sql rows for this file
+  const p = (await db.query("select has_table_privilege('anon','public.user_bug_reports','UPDATE') a, has_table_privilege('authenticated','public.user_bug_reports','UPDATE') u")).rows[0];
+  assert.deepEqual([p.a, p.u], [false, false]);
 });
 await t('the ROLLBACK line restores the old policy and drops the function and column, then the file applies again', async () => {
   await db.exec(rollbackSql());
