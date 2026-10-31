@@ -5877,6 +5877,8 @@ html[data-theme="light"] #page-mycerts,html[data-theme="light"] #passplan-sectio
   #desk-mycerts .dmc-prow{display:flex;align-items:center;gap:14px;}
   #desk-mycerts .dmc-prow span{font:500 12px/1.35 Inter,sans-serif;color:var(--text-dim);}
   #desk-mycerts :is(button,a):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  #desk-mycerts.dmc-still :is(.dmc-rv,.dmc-bar>span){animation:none;}   /* in-place redraws: first paint only animates */
+  #desk-mycerts .dmc-wait p{margin:0;color:var(--text-dim);}
 
   #passplan-section .pp-mycerts{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;margin-top:12px;padding:10px 14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text);font:inherit;text-align:left;cursor:pointer;transition:background-color .16s cubic-bezier(0.16,1,0.3,1),transform .15s cubic-bezier(0.16,1,0.3,1);}
   #passplan-section .pp-mycerts:active{transform:scale(.99);}
@@ -5899,6 +5901,7 @@ html[data-theme="light"] #page-mycerts,html[data-theme="light"] #passplan-sectio
 }
 @media (min-width:900px) and (prefers-reduced-motion:reduce){
   #desk-mycerts .dmc-rv{animation:drFade .3s ease backwards;}
+  #desk-mycerts.dmc-still .dmc-rv{animation:none;}
   #desk-mycerts .dmc-bar>span{animation:none;}
   #desk-mycerts :is(.dmc-btn,.dmc-link,.dmc-locked,.dmc-cg,.dmc-ln),#passplan-section .pp-mycerts{transition:none;}
 }

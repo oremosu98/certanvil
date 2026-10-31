@@ -115,11 +115,27 @@ test.describe('Desktop: My certs', () => {
     await expect(h.locator('.dmc-sect b').first()).toHaveText('My certs');
     await expect(h.locator('.dmc-locked')).toHaveCount(0);
     await expect(page.locator('#page-mycerts')).toHaveClass(/active/);
+    // the redraw does not replay the first paint's rise or bar fill
+    await expect(h).toHaveClass(/dmc-still/);
+    expect(await page.evaluate(() => [].every.call(document.querySelectorAll('#desk-mycerts .dmc-rv, #desk-mycerts .dmc-bar > span'), (e) => getComputedStyle(e).animationName === 'none'))).toBe(true);
     // a redraw while another page is showing leaves that page alone
     await page.evaluate(() => showPage('setup'));
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
     await page.evaluate(() => { window.dispatchEvent(new Event('ca:quota-ready')); });
     await expect(page.locator('#page-setup')).toHaveClass(/active/);
+  });
+
+  test('the cert list arriving late fills the page in place (never an empty column)', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { window.__gac = window.getAvailableCerts; window.getAvailableCerts = undefined; });
+    await openAs(page, 'free');
+    const h = host(page);
+    await expect(h.locator('.dmc-wait')).toHaveText('Loading your certs…');
+    await expect(h.locator('.dmc-locked')).toHaveCount(0);
+    await page.evaluate(() => { window.getAvailableCerts = window.__gac; });
+    await expect(h.locator('.dmc-ac .dmc-nm')).toHaveText('Network+');
+    await expect(h.locator('.dmc-wait')).toHaveCount(0);
+    await expect(h.locator('.dmc-locked')).toContainText('Unlock every cert with Pro');
   });
 
   test('Settings shows a My certs row instead of the Pass Plans list', async ({ page }) => {
@@ -131,8 +147,19 @@ test.describe('Desktop: My certs', () => {
     await expect(pp.locator('[data-act="pp-mycerts"]')).toContainText('My certs');
     await expect(pp).not.toContainText('Your Pass Plans');
     await expect(pp.locator('.plan-list')).toHaveCount(0);
+    await expect(pp.locator('[data-act="pp-mycerts"]')).toContainText('Switch cert and see where each one stands');
     await pp.locator('[data-act="pp-mycerts"]').click();
     await expect(page.locator('#page-mycerts')).toHaveClass(/active/);
+  });
+
+  test('Free: the Settings My certs row makes no switching promise', async ({ page }) => {
+    await boot(page);
+    await page.evaluate(() => { _quotaState = { tier: 'free', daily_limit: 15 }; document.querySelector('.sb-item[data-sb-page="settings"]').click(); });
+    await expect(page.locator('#page-settings')).toHaveClass(/active/);
+    const row = page.locator('#passplan-section [data-act="pp-mycerts"]');
+    await expect(row).toContainText('My certs');
+    await expect(row).toContainText('See where your cert stands');
+    await expect(row).not.toContainText(/switch/i);
   });
 
   test('resizing across 900px moves between the page and the phone hub, never both', async ({ page }) => {

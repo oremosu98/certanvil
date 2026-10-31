@@ -303,7 +303,8 @@
   // The same model in a desktop layout on #page-mycerts: greeting + three numbers, your cert on the left, the other
   // certs as a grid (Pro) or one folded Pro row plus the Go Pro card (Free) on the right. Free never gets a switch.
   var STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 6.9H22l-6 4.6 2.3 7L12 16.9 5.7 20.5l2.3-7-6-4.6h7.6L12 2z"></path></svg>';
-  function _deskHtml(m, suggest) {
+  // wait: the cert registry (auth-state.js) has not loaded yet, so the left column says so instead of sitting empty
+  function _deskHtml(m, suggest, wait) {
     var s = m.stats, a = m.active;
     function sect(label, sub, gap) { return '<div class="dmc-sect' + (gap ? ' dmc-gap' : '') + '"><b>' + _esc(label) + '</b>' + (sub ? '<span>' + _esc(sub) + '</span>' : '') + '</div>'; }
     function stat(v, label, cls) { return '<div class="dmc-stat' + (cls ? ' ' + cls : '') + '"><b>' + v + '</b><span>' + _esc(label) + '</span></div>'; }
@@ -337,8 +338,9 @@
       } else h += '<p>No readiness yet. Your first quiz sets the baseline.</p>';
       h += '<button class="dmc-btn dmc-pri" type="button" data-act="continue">' + (a.passed ? 'Review ' : 'Continue ') + _esc(a.name) + '</button>'
         + (a.passed ? '' : '<button class="dmc-link" type="button" data-act="log">Took your exam? Log your result</button>') + '</div>';
-    }
+    } else if (wait) h += '<div class="dmc-card dmc-ac dmc-wait" role="status"><p>Loading your certs…</p></div>';
     h += '</div><div class="dmc-col dmc-rv" style="--d:2">';
+    if (wait) return h + '</div></div>';
     if (m.freeRow) {
       h += sect('Other certs', 'Pro') + '<button class="dmc-card dmc-locked" type="button" data-act="unlock"><span class="dmc-mark dmc-dim">' + LOCK + '</span>'
         + '<span><span class="dmc-nm">' + _esc(m.freeRow.title) + '</span><span class="dmc-cd">' + _esc(m.freeRow.list) + '</span></span><span class="dmc-pill">Pro</span></button>';
@@ -361,13 +363,20 @@
   // drawn = filled once; it may still be mid page switch (showPage's 300ms exit), so redraws key on this, never on .active.
   // Redrawing hidden content is harmless and never switches page.
   function _deskDrawn() { var h = document.getElementById('desk-mycerts'); return !!(h && h.firstChild); }
-  function _renderDesk() {
+  // still: an in-place redraw (plan, result, cert list or email landing) shows the new content without replaying the
+  // first paint's rise and bar fill; a fresh visit to the page animates.
+  var _waitTries = 0;
+  function _renderDesk(still) {
     var host = document.getElementById('desk-mycerts'); if (!host) return false;
     var m = _iosHubModel(_input());
+    var wait = !m.active && typeof window.getAvailableCerts !== 'function';
+    if (wait && _waitTries < 60) { _waitTries++; setTimeout(function () { if (_deskDrawn()) _renderDesk(true); }, 150); }   // up to ~9s, then give up quietly
+    else if (!wait) _waitTries = 0;
+    host.classList.toggle('dmc-still', !!still);
     var suggest = typeof openSuggestCert === 'function' && window._certanvilSignedIn === true;   // signed in only
     // an in-place redraw (the plan or a result arriving) keeps focus on the same control
     var ae = document.activeElement, key = ae && host.contains(ae) && ae.getAttribute ? (ae.getAttribute('data-act') || '') + '|' + (ae.getAttribute('data-id') || '') : null;
-    host.innerHTML = _deskHtml(m, suggest);
+    host.innerHTML = _deskHtml(m, suggest, wait);
     if (key) {
       var back = [].filter.call(host.querySelectorAll('[data-act]'), function (b) { return (b.getAttribute('data-act') || '') + '|' + (b.getAttribute('data-id') || '') === key; })[0];
       if (back) { try { back.focus({ preventScroll: true }); } catch (_) {} }
@@ -392,7 +401,7 @@
   function _openDesk() {
     if (!document.getElementById('page-mycerts') || typeof showPage !== 'function') return false;
     _askEmail();
-    _renderDesk();
+    _renderDesk(_deskShowing());   // already on the page (e.g. See it in your hub): refresh without replaying the entrance
     if (!_deskShowing()) showPage('mycerts');
     return true;
   }
@@ -433,7 +442,7 @@
   window._iosHubModel = _iosHubModel;
   window.openHub = openHub;
   // The plan (Free/Pro) can land after the hub is drawn, right after launch: redraw in place so a Pro user never sees the Free view.
-  window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); else if (_deskDrawn()) _renderDesk(); });
+  window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); else if (_deskDrawn()) _renderDesk(true); });
   // Crossing 900px swaps the two layouts so only one is ever up: the phone overlay becomes the page, and back.
   function _onBreak() {
     var root = document.getElementById('ios-hub');
@@ -442,5 +451,5 @@
   }
   if (MQ) { if (MQ.addEventListener) MQ.addEventListener('change', _onBreak); else if (MQ.addListener) MQ.addListener(_onBreak); }
   // refresh: a logged result redraws the desktop page in place when it is showing
-  window.iosHub = { close: _close, refresh: function () { if (_deskDrawn()) _renderDesk(); } };
+  window.iosHub = { close: _close, refresh: function () { if (_deskDrawn()) _renderDesk(true); } };
 })();
