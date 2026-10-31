@@ -645,6 +645,26 @@
     return { pointsPerWeek, projected, low: Math.max(band[0], projected - hw), high: Math.min(band[1], projected + hw),
       examDate, daysToExam: days, short: projected < pass, rows: n };
   }
+  // The forecast sentence and tile for Analytics (phone and desktop share it). Pure over r:
+  // { pace, daysToExam, pointsToPass, passScore }. Spec: reminders-forecast-pbq section 2.
+  function getForecastCopy(r) {
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayLabel = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return mm ? (+mm[3]) + ' ' + MON[+mm[2] - 1] : ''; };
+    const pc = r.pace, hasDate = typeof r.daysToExam === 'number';
+    const togo = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.');
+    if (pc) {
+      const pw = Math.round(Math.abs(pc.pointsPerWeek)), when = dayLabel(pc.examDate);
+      const lead = pw === 0 ? 'Holding <b>steady</b>.' : (pc.pointsPerWeek > 0 ? 'Up about <b>' + pw + ' points a week</b>.' : 'Down about <b>' + pw + ' points a week</b> lately.');
+      const around = ' you\'d be around <b>' + pc.projected + ' on ' + when + '</b>';
+      const line = (pc.pointsPerWeek < 0 && pw > 0)
+        ? lead + ' On this pace' + around + '. A few short sets a week turns it round.'
+        : lead + (pc.short ? ' At this pace' + around + ', short of the ' + r.passScore + ' pass mark. Study more each week, or move the date.'
+          : ' On this pace' + around + ', over the ' + r.passScore + ' pass mark.');
+      return { line, label: 'Forecast for ' + when, value: pc.projected, range: 'likely ' + pc.low + ' to ' + pc.high, dim: false };
+    }
+    if (!hasDate) return { line: togo + ' Set your exam date to see where you\'ll be on the day.', label: 'Forecast', value: 'Set a date', range: '', dim: true };
+    return { line: togo + ' Your forecast appears once you have five sessions in the last two weeks.', label: 'Forecast', value: 'Not yet', range: '', dim: true };
+  }
   // Does this cert's exam simulator have a PBQ budget? Same source the exam builder reads: exam.js asks the
   // Sim Lab for EXAM_PBQ_COUNT PBQs, and only certs with a seed bank have any (the _SL_SEED_FILES keys in
   // app.js; UAT 525 holds the two lists together). Net+ also keeps the older injectPBQs banks.
@@ -658,8 +678,8 @@
     const exTopic = (typeof EXAM_TOPIC === 'string') ? EXAM_TOPIC : 'Exam Simulation';
     const rows = (Array.isArray(hist) ? hist : []).filter(e => e && e.mode === 'exam' && e.topic === exTopic && e.pbq && e.pbq.count > 0)
       .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
-    if (!rows.length) return { n: 0, right: 0, count: 0 };
-    return { n: rows.length, right: rows.reduce((a, e) => a + (e.pbq.right || 0), 0), count: rows.reduce((a, e) => a + e.pbq.count, 0) };
+    if (!rows.length) return { n: 0, right: 0, count: 0, hasExams: (Array.isArray(hist) ? hist : []).some(e => e && e.mode === 'exam' && e.topic === exTopic) };
+    return { hasExams: true, n: rows.length, right: rows.reduce((a, e) => a + (e.pbq.right || 0), 0), count: rows.reduce((a, e) => a + e.pbq.count, 0) };
   }
 
   function getReadinessForecast() {
@@ -1562,6 +1582,7 @@
   window.getReadinessPace          = getReadinessPace;
   window.examHasPbqs               = examHasPbqs;
   window.getPbqNote                = getPbqNote;
+  window.getForecastCopy           = getForecastCopy;
   window.getTypeStats              = getTypeStats;
   window.updateTypeStat            = updateTypeStat;
   window.getMilestones             = getMilestones;

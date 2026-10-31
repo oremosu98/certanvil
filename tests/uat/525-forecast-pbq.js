@@ -19,6 +19,7 @@ const { _fnBody, test, vm } = require('./_context');
     window: { _localDay: (d) => d.toISOString().slice(0, 10), _SL_SEED_FILES: { secplus: 'x' }, CURRENT_CERT: 'secplus' } });
   vm.runInContext('function scaledExamScore(c, t) { return t > 0 ? Math.round(100 + (c / t) * 800) : 100; }\n'
     + _fnBody(rd, 'getReadinessPace') + '\n' + _fnBody(rd, 'examHasPbqs') + '\n' + _fnBody(rd, 'getPbqNote'), ctx);
+  const fcSrc = _fnBody(rd, 'getForecastCopy');
   const P = (hist, r, days, date) => { ctx.__h = hist; ctx.__r = r; ctx.__d = days; ctx.__e = date; return vm.runInContext('getReadinessPace(' + NOW + ', { hist: __h, r: __r, daysToExam: __d, examDate: __e })', ctx); };
   // one row a day for 7 days, accuracy moving by `step` points of percent a day
   const rows = (start, step, n) => Array.from({ length: n || 7 }, (_, i) => ({ date: new Date(NOW - ((n || 7) - 1 - i) * DAY).toISOString(), topic: 'T', score: Math.round(start + step * i), total: 100, mode: 'quiz' }));
@@ -35,7 +36,7 @@ const { _fnBody, test, vm } = require('./_context');
   test('Pace: short is true when the projection is under the pass mark, false at or over it', dn && dn.short === true && up.short === false);
   test('Pace: under 5 summary rows is null', P(rows(50, 2, 4), R, 14, '2026-11-14') === null);
   test('Pace: no exam date is null', P(rows(50, 2), R, null, null) === null);
-  test('Pace: rows older than 14 local days are ignored (5 recent + old rows still reads the recent ones)',
+  test('Pace: a row older than 14 local days does not count toward the 5 (4 recent + 1 old is null)',
     P(rows(50, 2, 4).concat([{ date: new Date(NOW - 20 * DAY).toISOString(), topic: 'T', score: 90, total: 100, mode: 'quiz' }]), R, 14, '2026-11-14') === null);
   test('Pace: an exam in the past is null', P(rows(50, 2), R, -1, '2026-10-01') === null);
   test('Pace: exam day is today projects from today\'s score only', (function () { var p = P(rows(50, 2), R, 0, '2026-10-31'); return p && p.projected === 600; })());
@@ -51,19 +52,21 @@ const { _fnBody, test, vm } = require('./_context');
   const three = N([exam(1, 2, 4), exam(5, 3, 4), exam(9, 1, 1), exam(30, 4, 4)], true);
   test('PBQ note: sums the last 3 exam rows (newest first)', three.n === 3 && three.right === 6 && three.count === 9);
   test('PBQ note: rows without a PBQ tally are skipped', N([exam(1, 0, 0), exam(2, 3, 4)], true).n === 1);
-  test('PBQ note: no exams is n 0', N([], true).n === 0);
+  test('PBQ note: no exams is n 0 and hasExams false', N([], true).n === 0 && N([], true).hasExams === false);
+  test('PBQ note: old untallied exams (and exams with no PBQs) have exams but no tally', (function () { var o = N([exam(1, 0, 0), exam(3, 0, 0)], true); return o.n === 0 && o.hasExams === true; })());
+  test('PBQ note: a quiz row is not an exam', N([{ date: new Date(NOW).toISOString(), topic: 'T', mode: 'quiz' }], true).hasExams === false);
   test('PBQ note: hidden (null) on a cert without PBQs', N([exam(1, 2, 4)], false) === null);
   test('PBQ note: a cert has PBQs only if it has a Sim Lab seed bank (same source as the exam builder)',
     vm.runInContext('examHasPbqs("secplus")', ctx) === true && vm.runInContext('examHasPbqs("az900")', ctx) === false);
   const appSrc = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8');
   const seedKeys = (/_SL_SEED_FILES = \{([^}]*)\}/.exec(appSrc) || [0, ''])[1].match(/'?([a-z0-9-]+)'?\s*:/g).map(k => k.replace(/['\s:]/g, ''));
-  test('PBQ note: the cert list matches the Sim Lab seed banks in app.js', seedKeys.length >= 4 && seedKeys.every(k => vm.runInContext('examHasPbqs("' + k + '")', ctx)));
+  test('PBQ note: the cert list matches the Sim Lab seed banks in app.js', seedKeys.length >= 4 && seedKeys.every(k => vm.runInContext('examHasPbqs("' + k + '")', ctx)) && /EXAM_PBQ_CERTS = \[([^\]]*)\]/.exec(rd)[1].match(/'[^']+'/g).map(k => k.slice(1, -1)).every(k => seedKeys.indexOf(k) !== -1));
 
   // ── Copy on the phone ──
   const cx = vm.createContext({ Math, String, Array, Object, JSON, Date, isFinite, Number });
   vm.runInContext(_fnBody(ia, '_iosAnalyticsHtml') || '', cx);
   const base = { predicted: 600, passScore: 720, maxScore: 900, forecast: 600, tier: 'Building', pointsToPass: 120, barPct: 50, passTickPct: 80, stats: {}, spark: {} };
-  vm.runInContext(_fnBody(ia, '_iosAnalyticsModel'), cx);
+  vm.runInContext(_fnBody(ia, '_iosAnalyticsModel') + '\n' + fcSrc, cx);
   const D0 = { passTrend: { passAcc: 72, yMin: 40, yMax: 100, data: { week: [], month: [], all: [] } }, difficulty: [], examVsQuiz: null, whyScore: {}, wrongPatterns: [], streak: { week: [] },
     heatmap: [], milestones: { unlocked: 0, total: 0, recent: [], locked: [] }, domains: [{ idx: 1, name: 'A', accuracy: 80, questions: 4, weight: 23 }], examHistory: [] };
   const MAP = { rows: [], weakest: [], studied: 0, total: 0, mastered: 0 };
@@ -81,12 +84,15 @@ const { _fnBody, test, vm } = require('./_context');
   const nod = H({ ...base, daysToExam: null, pace: null });
   test('Copy, no date: "Set your exam date to see where you\'ll be on the day." and a dim "Set a date" tile',
     nod.includes('<b>120 points</b> to the pass mark. Set your exam date to see where you\'ll be on the day.') && nod.includes('Set a date'));
-  test('Copy: "Hold your pace and you\'ll cross it" is gone', !/Hold your pace/.test(onp + falling + nod));
+  test('Copy: "Hold your pace" is gone from the phone and the desktop card', !/Hold your pace/.test(onp + falling + nod + an + ia));
   const pb = H({ ...base, daysToExam: 33, pace: pace(40, 745, false), pbqNote: { n: 3, right: 6, count: 9 } });
   test('Copy, PBQ note: "Readiness counts multiple-choice only. PBQs: 6 of 9 fully right in your last 3 full exams."',
     pb.includes('Readiness counts multiple-choice only. <b>PBQs: 6 of 9 fully right</b> in your last 3 full exams.'));
   test('Copy, PBQ note with no exams: "Take a full exam to practise PBQs too."',
-    H({ ...base, daysToExam: 33, pace: null, pbqNote: { n: 0, right: 0, count: 0 } }).includes('<b>Take a full exam</b> to practise PBQs too.'));
+    H({ ...base, daysToExam: 33, pace: null, pbqNote: { n: 0, right: 0, count: 0, hasExams: false } }).includes('<b>Take a full exam</b> to practise PBQs too.'));
+  test('Copy, PBQ note after old untallied exams: only "PBQ results show from your next full exam."', (function () {
+    var h = H({ ...base, daysToExam: 33, pace: null, pbqNote: { n: 0, right: 0, count: 0, hasExams: true } });
+    return h.includes('Readiness counts multiple-choice only. PBQ results show from your next full exam.') && !h.includes('Take a full exam'); })());
   test('Copy, PBQ note hidden on a cert without PBQs', !H({ ...base, daysToExam: 33, pace: null, pbqNote: null }).includes('Readiness counts multiple-choice only'));
   test('Copy: no em dashes in the forecast strings', !/—/.test(onp + falling + nod + pb));
 })();

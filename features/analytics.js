@@ -2316,6 +2316,7 @@
       const d = _anaBtSparkPath(sp[key] || [], 60, 18);
       return d ? `<svg viewBox="0 0 60 18" preserveAspectRatio="none"><path d="${d}"/></svg>` : '';
     };
+    const fc = getForecastCopy(r);
     return `<div class="tile s-read">
         <div>
           <div class="read-top">
@@ -2323,7 +2324,7 @@
             <span class="read-tier">${esc(r.tier)}</span>
           </div>
           <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ ${EXAM_MAX_SCORE}</span></div>
-          <p class="read-cap"><b>${r.pointsToPass} points</b> to the pass mark. Hold your pace and you cross it.</p>
+          <p class="read-cap">${fc.line}</p>
           <div class="read-bar-wrap">
             <div class="read-bar">
               <i data-w="${r.barPct.toFixed(1)}" style="width:0"></i>
@@ -2331,7 +2332,7 @@
             </div>
           </div>
           <div class="read-fore">
-            <span>Forecast on this pace <span class="fv fg">${r.forecast}</span></span>
+            <span>${fc.label} <span class="fv${fc.dim ? '' : ' fg'}">${fc.value}</span>${fc.range ? ' <span>' + fc.range + '</span>' : ''}</span>
             <span><span class="fv">${r.daysToExam != null && r.daysToExam >= 0 ? r.daysToExam : '—'}</span> days to exam</span>
           </div>
         </div>

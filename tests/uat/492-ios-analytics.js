@@ -59,6 +59,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
     test('Analytics model: no history is the empty state', AM(null).empty === true && am.empty === false);
 
     // ── View ──
+    vm.runInContext(_fnBody(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'features', 'readiness.js'), 'utf8'), 'getForecastCopy') || '', ctx);   // T10: the shared forecast sentence
     vm.runInContext((_fnBody(js, '_iosAnalyticsHtml') || ''), ctx);
     const CERT = { mark: 'N+', name: 'Network+', code: 'N10-009' };
     const FULL = Object.assign({}, D, {
