@@ -1393,7 +1393,8 @@
   function _dmScheduled(stamp, now) {
     var t = stamp ? new Date(stamp) : null;
     if (!t || isNaN(t.getTime())) t = now || new Date();
-    return new Date(t.getTime() + 7 * 86400000);
+    var d = new Date(t.getTime()); d.setDate(d.getDate() + 7);   // 7 calendar days, so a DST change cannot move the day
+    return d;
   }
   // Tiles for the welcome back: the cert's readiness snapshot (else the live score), answers asked, best streak. Never NaN.
   function _dmTiles() {
@@ -1416,16 +1417,24 @@
     return { readiness: score, answers: answers, best: best };
   }
   var _dmPrevFocus = null, _dmInerted = [];
-  function _dmOpen(id, html, onClick, onKey) {
+  function _dmOpen(id, html, onClick, onEsc) {
     var old = document.getElementById(id); if (old) old.remove();
     var el = document.createElement('section');
     el.id = id; el.className = 'dm-screen'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true');
     el.innerHTML = html;
+    var hh = el.querySelector('h2'); if (hh) { hh.id = id + '-t'; el.setAttribute('aria-labelledby', hh.id); }
     _dmPrevFocus = document.activeElement;
     [].forEach.call(document.body.children, function (c) { if (c !== el && !c.inert) { c.inert = true; _dmInerted.push(c); } });
     document.body.appendChild(el);
     el.addEventListener('click', onClick);
-    if (onKey) el.addEventListener('keydown', onKey);
+    if (onEsc) {
+      var key = function (ev) {
+        if (!document.body.contains(el)) { document.removeEventListener('keydown', key); return; }
+        if (ev.key !== 'Escape' || ev.defaultPrevented) return;   // a layer above already took this Escape
+        ev.preventDefault(); onEsc();
+      };
+      document.addEventListener('keydown', key);
+    }
     requestAnimationFrame(function () { el.classList.add('dm-open'); var h = el.querySelector('h2'); if (h) h.focus(); });
     return el;
   }
@@ -1446,7 +1455,7 @@
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Goodbye for now</h2>'
       + '<p class="dm-in" style="--d:2">Your account will be deleted on <b>' + full + '</b>. Thanks for studying with CertAnvil.</p>'
       + '<div class="gb-keep dm-in gb-last"><b>Changed your mind?</b> Sign back in before ' + short + ' and everything&#39;s kept: your progress, streak and readiness.</div>'
-      + (pro ? '<p class="gb-quiet dm-in" style="--d:4">It&#39;s billed by Apple. Cancel it in iPhone Settings so you&#39;re not charged again.</p>' : '')
+      + (pro && window.CA_NATIVE ? '<p class="gb-quiet dm-in" style="--d:4">It&#39;s billed by Apple. Cancel it in iPhone Settings so you&#39;re not charged again.</p>' : '')
       + '</div><div class="dm-foot dm-in" style="--d:5"><button type="button" class="dm-cta" data-act="done">Done</button>'
       + '<button type="button" class="dm-ghost" data-act="signin">Sign back in</button></div>';
     var el = _dmOpen('ios-goodbye', html, function (ev) {
@@ -1455,21 +1464,23 @@
       else _dmClose(el, function () { if (modal) modal.remove(); if (window.iosSignIn && window.iosSignIn.go) window.iosSignIn.go('signedout'); else window.location.reload(); });
     });
   }
-  function _dmWelcome() {
+  function _dmWelcome(withTiles) {
     var t = _dmTiles(), name = '', certName = '';
     try { name = String(window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || '').trim().split(/\s+/)[0] || ''; } catch (_) { name = ''; }
     try { certName = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || '').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''); } catch (_) { certName = ''; }
     var fmt = function (n) { return n.toLocaleString('en-GB'); };
     var vals = [t.readiness, t.answers, t.best], labels = ['Readiness', 'Answers', 'Best streak'], tiles = '';
-    vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"') + '>' + (v == null ? '&ndash;' : fmt(v)) + '</b><span>' + labels[i] + '</span></div>'; });
+    // Not safely loaded from the cloud yet: no tiles, and no claim that everything is there, rather than zeros.
+    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"') + '>' + (v == null ? '&ndash;' : fmt(v)) + '</b><span>' + labels[i] + '</span></div>'; });
     var html = '<div class="dm-body"><span class="wb-markwrap"><span class="wb-glow" aria-hidden="true"></span><span class="wb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="wb-arrow"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path></g></svg></span></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Welcome back' + (name ? ', ' + escHtml(name) : '') + '.</h2>'
-      + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion. Everything is right where you left it.</p>'
-      + '<div class="wb-kept">' + tiles + '</div></div>'
+      + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion.' + (withTiles === false ? '' : ' Everything is right where you left it.') + '</p>'
+      + (withTiles === false ? '' : '<div class="wb-kept">' + tiles + '</div>') + '</div>'
       + '<div class="dm-foot dm-in" style="--d:9"><button type="button" class="dm-cta" data-act="go">' + (certName ? 'Back to ' + escHtml(certName) : 'Back to Home') + '</button></div>';
     var leave = function () { _dmClose(el); };
-    var el = _dmOpen('ios-welcomeback', html, function (ev) { if (ev.target.closest && ev.target.closest('[data-act="go"]')) leave(); },
-      function (ev) { if (ev.key === 'Escape') { ev.preventDefault(); leave(); } });
+    // Back opens Home (the account may have been signed back into from Settings or another page).
+    var goHome = function () { _dmClose(el, function () { try { if (typeof showPage === 'function') showPage('setup'); if (typeof renderIosHome === 'function') renderIosHome(); } catch (e) { console.error('[welcome-back] home', e); } }); };
+    var el = _dmOpen('ios-welcomeback', html, function (ev) { if (ev.target.closest && ev.target.closest('[data-act="go"]')) goHome(); }, leave);
     // The tiles count up from zero once they have landed (900ms, data motion); final numbers at once under reduced motion.
     var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!still) [].forEach.call(el.querySelectorAll('[data-to]'), function (b, i) {
@@ -1566,23 +1577,23 @@
         var meta = pr && pr.data && pr.data.metadata;
         if (_noticeShown || !meta || !meta.deletion_cancelled_at) return null;
         if (_dmPhone()) {
-          // The full moment. Wait (at most 4s) for the cloud copy to land so the tiles show the real numbers, show it,
+          // The full moment. Wait (up to ~15s) for the cloud copy to land so the tiles show the real numbers, show it,
           // and only then clear the flag, so a reload before it appeared still gets the moment.
           _noticeShown = true;
-          var t0 = Date.now();
+          var t0 = Date.now(), limit = window._dmHydrateWaitMs || 15000;
           return new Promise(function (res) {
             (function wait() {
               var CS = window.cloudStore, ok = !CS || typeof CS.isSafeToClear !== 'function' || CS.isSafeToClear();
-              if (ok || Date.now() - t0 > 4000) res(); else setTimeout(wait, 150);
+              if (ok) res(true); else if (Date.now() - t0 > limit) res(false); else setTimeout(wait, 150);
             })();
-          }).then(function () { _dmWelcome(); return sb.rpc('clear_deletion_notice'); });
+          }).then(function (safe) { _dmWelcome(safe); return sb.rpc('clear_deletion_notice'); });
         }
         if (typeof window.showToast !== 'function') return null;
         _noticeShown = true;
         window.showToast("Welcome back. We've cancelled the deletion and your account is safe.", 'info');
         return sb.rpc('clear_deletion_notice');
       });
-    }).catch(function () {});
+    }).catch(function (e) { console.error('[deletion-notice]', e); });
   }
   function _wireDeletionNotice() {
     var sb = window.certanvilSupabase;

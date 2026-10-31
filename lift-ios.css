@@ -3498,8 +3498,10 @@ html[data-theme] body .dm-screen h2[tabindex="-1"]:focus, html[data-theme] body 
 @keyframes dm-tick { from { opacity: 0; } }
 @keyframes dm-rise { from { opacity: 0; transform: translateY(12px); } }
 @keyframes dm-fade-only { from { opacity: 0; } }
+html[data-theme] body .dm-cta:focus-visible { outline: 2px solid var(--on-accent) !important; outline-offset: -5px !important; box-shadow: 0 0 0 3px var(--accent) !important; }
+html[data-theme] body .dm-ghost:focus-visible { outline: 2px solid var(--accent) !important; outline-offset: 2px !important; box-shadow: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .dm-screen { transition: opacity .18s ease; }
-  .dm-open .gb-clockwrap, .dm-open .gb-hand, .dm-open .gb-tick circle, .dm-open .dm-in, .dm-open .wb-glow, .dm-open .wb-mark, .dm-open .wb-arrow { animation: dm-fade-only .3s ease backwards; animation-delay: 0s; }
+  .dm-open .gb-clockwrap, .dm-open .gb-hand, .dm-open .gb-tick circle, .dm-open .dm-in, .dm-open .wb-glow, .dm-open .wb-mark, .dm-open .wb-arrow, #ios-welcomeback.dm-open .dm-in { animation: dm-fade-only .3s ease backwards; animation-delay: 0s; }
   .dm-cta:active, .dm-ghost:active { transform: none; }
 }

@@ -613,6 +613,8 @@ test.describe('Account deletion: app', () => {
     const t = await page.evaluate(() => [].map.call(document.querySelectorAll('#ios-welcomeback .wb-arrow, #ios-welcomeback .wb-mark, #ios-welcomeback .dm-in, #ios-welcomeback .wb-glow'), (e) => getComputedStyle(e).transform));
     expect(t.length).toBeGreaterThan(4);
     t.forEach((x) => expect(x === 'none' || x === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true));
+    const d = await page.evaluate(() => [].map.call(document.querySelectorAll('#ios-welcomeback .wb-mark, #ios-welcomeback .dm-in'), (e) => getComputedStyle(e).animationDelay));
+    d.forEach((x) => expect(x).toBe('0s'));
   });
 
   test('the goodbye names the scheduled day for a fixed clock; Sign back in opens sign-in', async ({ page }) => {
@@ -649,10 +651,78 @@ test.describe('Account deletion: app', () => {
     t.forEach((x) => expect(x === 'none' || x === 'matrix(1, 0, 0, 1, 0, 0)').toBe(true));
   });
 
+  test('the goodbye shows the Apple billing line only in the iOS app, and the dialog is labelled', async ({ page }) => {
+    await boot(page, { fake: Object.assign({}, SIGNED, { tier: 'pro' }), seed: SEED });
+    await page.evaluate(() => { window._quotaState = { tier: 'pro', daily_limit: -1 }; });
+    await deleteAccount(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('billed by Apple', { timeout: 8000 });
+    expect(await page.locator('#ios-goodbye').getAttribute('aria-labelledby')).toBe('ios-goodbye-t');
+    expect(await page.locator('#ios-goodbye-t').textContent()).toBe('Goodbye for now');
+  });
+
+  test('the goodbye uses the server date, not the device clock', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ rpcStamp: '2026-11-12T12:00:00Z' }, SIGNED), seed: SEED });
+    await page.clock.setFixedTime(new Date('2026-10-30T12:00:00Z'));
+    await deleteAccount(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('deleted on Thu 19 Nov.', { timeout: 8000 });
+  });
+
+  test('on a desktop-width window the old card still appears, no goodbye', async ({ page }) => {
+    await boot(page, { fake: SIGNED, seed: SEED });
+    await openSettings(page);
+    await page.click('#ios-settings [data-act="delete"]');
+    await page.fill('#dla-email', 'simi.test@example.test');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.click('#dla-confirm');
+    await expect(page.locator('#delete-account-modal')).toContainText('Account scheduled for deletion', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).toHaveCount(0);
+  });
+
+  test('welcome back with the cloud copy not safe in time shows no tiles and still clears the notice once', async ({ page }) => {
+    await page.addInitScript(() => { window._dmHydrateWaitMs = 1200; const iv = setInterval(() => { if (window.cloudStore) { window.cloudStore.isSafeToClear = () => false; clearInterval(iv); } }, 5); });
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
+    await expect(page.locator('#ios-welcomeback h2')).toContainText('Welcome back', { timeout: 10000 });
+    await expect(page.locator('#ios-welcomeback')).toContainText("We've cancelled your account deletion.");
+    await expect(page.locator('#ios-welcomeback')).not.toContainText('Everything is right');
+    await expect(page.locator('#ios-welcomeback .wb-kept')).toHaveCount(0);
+    await expect.poll(async () => (await rpcCalls(page)).filter((n) => n === 'clear_deletion_notice').length).toBe(1);
+  });
+
+  test('welcome back: Back opens Home from another page; Escape also closes it', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
+    await expect(page.locator('#ios-welcomeback .wb-kept')).toHaveCount(1, { timeout: 8000 });
+    expect(await page.locator('#ios-welcomeback').getAttribute('aria-labelledby')).toBe('ios-welcomeback-t');
+    await page.evaluate(() => showPage('settings'));
+    await expect(page.locator('#page-settings')).toHaveClass(/\bactive\b/);
+    await page.click('#ios-welcomeback [data-act="go"]');
+    await expect(page.locator('#ios-welcomeback')).toHaveCount(0);
+    await expect(page.locator('#page-setup')).toHaveClass(/\bactive\b/);
+  });
+
+  test('welcome back closes on Escape', async ({ page }) => {
+    await boot(page, { fake: Object.assign({ deletionCancelled: true }, SIGNED), seed: SEED });
+    await expect(page.locator('#ios-welcomeback .wb-kept')).toHaveCount(1, { timeout: 8000 });
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#ios-welcomeback')).toHaveCount(0);
+  });
+
+
   test('no flag, no notice', async ({ page }) => {
     await boot(page, { fake: SIGNED, seed: SEED });
     await page.waitForTimeout(800);
     await expect(page.getByText(NOTICE)).toHaveCount(0);
     expect(await rpcCalls(page)).not.toContain('clear_deletion_notice');
+  });
+});
+
+test.describe('Account deletion: phone website', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  const SEED = { nplus_onb_skips: '{"at":1}' };
+  test('on mobile web the goodbye has no Apple billing line, even for Pro', async ({ page }) => {
+    await boot(page, { native: false, fake: SIGNED, seed: SEED });
+    await page.evaluate(() => { window._quotaState = { tier: 'pro', daily_limit: -1 }; });
+    await deleteAccount(page);
+    await expect(page.locator('#ios-goodbye')).toContainText('Goodbye for now', { timeout: 8000 });
+    await expect(page.locator('#ios-goodbye')).not.toContainText('Apple');
   });
 });
