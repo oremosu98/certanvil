@@ -149,7 +149,8 @@ test.describe('Fast start: first question on the first checked batch', () => {
         seen: (JSON.parse(localStorage.getItem('nplus_seen_q') || '{}')[CURRENT_CERT] || []).length,
         fill: __tele.filter((r) => r.type === 'telemetry:quiz-fill').length };
     });
-    expect(out).toEqual({ abortedNow: true, calls: 2, results: false, histSame: true, seen: 0, fill: 0 });
+    // seen 2: the two answered questions still count as seen when the quiz is left (final review M1)
+    expect(out).toEqual({ abortedNow: true, calls: 2, results: false, histSame: true, seen: 2, fill: 0 });
   });
 
   test('telemetry carries firstQuestionMs', async ({ page }) => {
