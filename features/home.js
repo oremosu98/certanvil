@@ -1494,6 +1494,15 @@
       if (b.getAttribute('data-act') === 'done') { if (modal) modal.remove(); window.location.reload(); }
       else _dmClose(el, function () { if (modal) modal.remove(); if (window.iosSignIn && window.iosSignIn.go) window.iosSignIn.go('signedout'); else window.location.reload(); });
     });
+    // Desktop draws Sign back in first; the phone draws Done first. Order the markup itself, so Tab follows what is drawn.
+    var mq = window.matchMedia ? window.matchMedia('(min-width: 900px)') : null;
+    var order = function () {
+      if (!document.body.contains(el)) { if (mq) { if (mq.removeEventListener) mq.removeEventListener('change', order); else if (mq.removeListener) mq.removeListener(order); } return; }
+      var f = el.querySelector('.dm-foot'), si = f && f.querySelector('[data-act="signin"]');
+      if (si) { if (mq && mq.matches) f.insertBefore(si, f.firstChild); else f.appendChild(si); }
+    };
+    order();
+    if (mq) { if (mq.addEventListener) mq.addEventListener('change', order); else if (mq.addListener) mq.addListener(order); }
   }
   function _dmWelcome(withTiles) {
     var t = _dmTiles(), name = '', certName = '';
@@ -1821,6 +1830,7 @@
     }
     host.hidden = true; host.innerHTML = '';
     if (!(typeof window.caIsDesk === 'function' && window.caIsDesk())) return;
+    if (_examSave()) return;   // the Home tile is already "Resume your exam": one ask, as on the phone
     let qs = null;
     try { qs = (typeof quizResumeState === 'function') ? quizResumeState() : null; } catch (_) { qs = null; }
     if (!qs) return;
@@ -1926,6 +1936,14 @@
 
   // RECOMMENDED-NEXT tile — the focused preset (onclick=applyPreset('focused')
   // baked into markup). Meta nods to the weakest topic when readiness has one.
+  // An unfinished full exam still worth resuming (exam.js's EXAM_STATE_KEY), or null. Shared by the Home tile and the
+  // desktop quiz card, so desktop ranks exam over quiz the way the phone does (ios-home.js).
+  function _examSave() {
+    let ex = null;
+    try { ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { ex = null; }
+    return (ex && Array.isArray(ex.questions) && ex.questions.length && typeof ex.endTime === 'number'
+      && (ex.paused ? (ex.savedAt || 0) > Date.now() - 7 * 86400000 : ex.endTime > Date.now() - 86400000)) ? ex : null;
+  }
   function renderBentoRecommended() {
     const minEl = document.getElementById('pl-min');
     const titleEl = document.getElementById('pl-title');
@@ -1936,10 +1954,8 @@
     // v8.162.0: an unfinished full exam outranks everything: resume it. Read
     // straight from storage (exam.js is lazy-loaded); the key is exam.js's
     // EXAM_STATE_KEY. Once its time is up, the tile submits what was answered.
-    let _ex = null;
-    try { _ex = JSON.parse(localStorage.getItem('nplus_exam_state') || 'null'); } catch (_) { _ex = null; }
-    if (_ex && Array.isArray(_ex.questions) && _ex.questions.length && typeof _ex.endTime === 'number'
-        && (_ex.paused ? (_ex.savedAt || 0) > Date.now() - 7 * 86400000 : _ex.endTime > Date.now() - 86400000)) {
+    const _ex = _examSave();
+    if (_ex) {
       // v8.164.0: a paused exam keeps its remaining time; a running one counts down.
       const left = _ex.paused ? Math.max(1, Math.round((_ex.timeLeft || 0) / 60))
         : Math.max(0, Math.round((_ex.endTime - Date.now()) / 60000));

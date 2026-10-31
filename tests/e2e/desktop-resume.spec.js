@@ -4,6 +4,7 @@ const { test, expect } = require('@playwright/test');
 
 const DESKTOP = { width: 1280, height: 800 };
 const KEY = 'nplus_quiz_resume';
+const EXAM_KEY = 'nplus_exam_state';   // exam.js's EXAM_STATE_KEY (localhost test context only)
 const SEED = { nplus_theme: 'dark', nplus_a2hs_dismissed: '1', ca_tour_seen: '1' };
 const QS = Array.from({ length: 10 }, (_, i) => ({
   question: 'Resume stem ' + (i + 1) + ': which port does service ' + i + ' use?',
@@ -110,5 +111,26 @@ test.describe('Desktop: Finish your quiz', () => {
     await expect(page.locator('#page-setup .cell-hero')).toBeVisible({ timeout: 8000 });
     await expect(card(page)).toBeHidden();
     expect(await saved(page)).toBeNull();
+  });
+  // Final review M1: with both a full-exam save and a quiz save, the phone shows only "Resume your exam" (ios-home.js
+  // ranks exam over quiz). Desktop does the same: the exam tile, and no second "Finish your quiz" ask.
+  test('desktop: an unfinished exam outranks a saved quiz, so only Resume your exam shows', async ({ page }) => {
+    await boot(page);
+    await play(page, 4);
+    await page.reload();
+    await page.waitForLoadState('load');
+    await expect(card(page)).toBeVisible({ timeout: 8000 });
+    await page.evaluate(([qs, k]) => {
+      localStorage.setItem(k, JSON.stringify({ v: 1, savedAt: Date.now(), endTime: Date.now() + 84 * 60000, current: 0,
+        questions: qs, answers: qs.map(() => ({ chosen: null })), answered: 0, paused: false, pausedAt: 0, timeLeft: 5040, pausedMs: 0, pauses: 0 }));
+      showPage('setup'); renderBentoRecommended(); renderDeskResume();
+    }, [QS, EXAM_KEY]);
+    await expect(page.locator('#pl-title')).toHaveText('Resume your exam');
+    await expect(page.locator('#desk-resume')).toBeHidden();
+    await expect(card(page)).toHaveCount(0);
+    expect(await saved(page)).not.toBeNull();   // the quiz save is kept; it shows again once the exam is done
+    await page.evaluate((k) => { localStorage.removeItem(k); renderBentoRecommended(); renderDeskResume(); }, EXAM_KEY);
+    await expect(card(page)).toBeVisible();
+    await expect(page.locator('#pl-title')).not.toHaveText('Resume your exam');
   });
 });

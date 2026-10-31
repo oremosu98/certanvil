@@ -731,7 +731,7 @@ test.describe('Account deletion: desktop website', () => {
   }
   const centreX = (loc) => loc.evaluate((e) => { const r = e.getBoundingClientRect(); return r.left + r.width / 2; });
 
-  test('desktop: confirming deletion shows Goodbye for now with the scheduled date and no Apple line', async ({ page }) => {
+  test('desktop: confirming deletion shows Goodbye for now with the scheduled date and no Apple line', async ({ page, browserName }) => {
     await boot(page, { native: false, fake: Object.assign({}, SIGNED, { tier: 'pro' }), seed: SEED });
     await page.evaluate(() => { window._quotaState = { tier: 'pro', daily_limit: -1 }; });
     await page.clock.setFixedTime(new Date('2026-10-30T12:00:00Z'));
@@ -748,8 +748,32 @@ test.describe('Account deletion: desktop website', () => {
     // Sign back in comes first, then Done, as drawn
     const xs = await page.locator('#ios-goodbye .dm-foot button').evaluateAll((bs) => bs.map((b) => [b.textContent, b.getBoundingClientRect().left]).sort((a, c) => a[1] - c[1]).map((e) => e[0]));
     expect(xs).toEqual(['Sign back in', 'Done']);
+    // and Tab follows what is drawn (WCAG 2.4.3): the markup itself is in that order
+    expect(await page.locator('#ios-goodbye .dm-foot button').allTextContents()).toEqual(['Sign back in', 'Done']);
+    await page.locator('#ios-goodbye h2').focus();
+    const tabbed = [];
+    for (let i = 0; i < 2; i++) { await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab'); tabbed.push(await page.evaluate(() => document.activeElement.textContent)); }
+    expect(tabbed).toEqual(['Sign back in', 'Done']);
     await page.click('#ios-goodbye [data-act="signin"]');
     await expect(page.locator('#ios-goodbye')).toHaveCount(0);
+  });
+
+  test('desktop: deleting from the Settings page button reaches the goodbye', async ({ page }) => {
+    await boot(page, { native: false, size: DESK, fake: SIGNED, seed: SEED });
+    await page.evaluate(() => document.querySelector('.sb-item[data-sb-page="settings"]').click());
+    await expect(page.locator('#page-settings')).toHaveClass(/\bactive\b/);
+    const btn = page.locator('#btn-app-delete-account');
+    await expect(btn).toBeVisible();
+    await btn.click();
+    await expect(page.locator('#delete-account-modal')).toBeVisible();
+    await page.fill('#dla-email', 'simi.test@example.test');
+    await page.click('#dla-confirm');
+    const gb = page.locator('#ios-goodbye');
+    await expect(gb).toContainText('Goodbye for now', { timeout: 8000 });
+    await expect(page.locator('#delete-account-modal')).toBeHidden();
+    expect(await page.evaluate(() => window.innerWidth)).toBe(1280);
+    expect(await page.locator('#ios-goodbye .dm-foot button').allTextContents()).toEqual(['Sign back in', 'Done']);
+    expect(await rpcCalls(page)).toContain('request_account_deletion');
   });
 
   test('desktop: resizing the goodbye across 900px leaves one copy and nothing stuck inert', async ({ page }) => {
@@ -759,10 +783,13 @@ test.describe('Account deletion: desktop website', () => {
     await page.setViewportSize(PHONE);
     await expect(page.locator('#ios-goodbye')).toHaveCount(1);
     await expect(page.locator('#ios-goodbye .cover-brand')).toBeHidden();
+    // the phone's order (Done, then Sign back in) in the markup too, so Tab still follows what is drawn
+    await expect(page.locator('#ios-goodbye .dm-foot button')).toHaveText(['Done', 'Sign back in']);
     expect(await page.evaluate(() => document.querySelectorAll('.dm-screen').length)).toBe(1);
     expect(await page.evaluate(() => document.getElementById('ios-goodbye').inert)).toBe(false);
     await page.setViewportSize(DESK);
     await expect(page.locator('#ios-goodbye .cover-brand')).toBeVisible();
+    await expect(page.locator('#ios-goodbye .dm-foot button')).toHaveText(['Sign back in', 'Done']);
     expect(await page.evaluate(() => document.querySelectorAll('.dm-screen').length)).toBe(1);
   });
 

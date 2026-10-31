@@ -6054,7 +6054,6 @@ html[data-theme="light"] #page-analytics .s-read,html[data-theme="light"] #ist-s
   .dm-screen p{font:500 14.5px/1.55 Inter,sans-serif;color:var(--text-mid);margin:0;max-width:36ch;}
   .dm-screen p b,.dm-screen .gb-keep b{color:var(--text);font-weight:650;}
   .dm-screen .dm-foot{flex:none;display:flex;gap:10px;width:100%;max-width:360px;padding:0;border:0;background:none;}
-  .dm-screen .dm-foot [data-act="signin"]{order:-1;}
   .dm-screen .dm-cta,.dm-screen .dm-ghost{flex:1 1 0;width:auto;min-height:48px;margin:0;border-radius:13px;cursor:pointer;font:700 14px/1 Inter,sans-serif;transition:transform .15s cubic-bezier(0.16,1,0.3,1),filter .16s cubic-bezier(0.16,1,0.3,1),background-color .16s cubic-bezier(0.16,1,0.3,1);}
   .dm-screen .dm-cta{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent,var(--bg));padding:0 18px;box-shadow:none;}
   .dm-screen .dm-ghost{border:1px solid var(--border);background:var(--surface);color:var(--text);padding:0 18px;}

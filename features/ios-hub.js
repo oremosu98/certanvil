@@ -444,11 +444,14 @@
   // The plan (Free/Pro) can land after the hub is drawn, right after launch: redraw in place so a Pro user never sees the Free view.
   window.addEventListener('ca:quota-ready', function () { var root = document.getElementById('ios-hub'); if (root && !root.hidden) openHub(); else if (_deskDrawn()) _renderDesk(true); });
   // Crossing 900px swaps the two layouts so only one is ever up: the phone overlay becomes the page, and back.
-  function _onBreak() {
+  // One tick late on purpose: a desktop dialog over the page (log result, suggest) watches the same breakpoint and
+  // must release first, or it un-inerts the page behind the phone hub after the hub inerted it.
+  function _swap() {
     var root = document.getElementById('ios-hub');
     if (isPhone()) { if (_deskShowing()) { if (typeof showPage === 'function') showPage('setup'); openHub(); } }
     else if (root && !root.hidden) { _close(); openHub(); }
   }
+  function _onBreak() { setTimeout(_swap, 0); }
   if (MQ) { if (MQ.addEventListener) MQ.addEventListener('change', _onBreak); else if (MQ.addListener) MQ.addListener(_onBreak); }
   // refresh: a logged result redraws the desktop page in place when it is showing
   window.iosHub = { close: _close, refresh: function () { if (_deskDrawn()) _renderDesk(true); } };

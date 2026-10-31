@@ -174,4 +174,29 @@ test.describe('Desktop: My certs', () => {
     await expect(page.locator('#ios-hub')).toBeHidden();
     expect(await page.evaluate(() => [].some.call(document.body.children, (el) => el.inert))).toBe(false);
   });
+  // Final review I1: a desktop dialog over My certs watches the same breakpoint as the page. It must let go before the
+  // phone hub takes over, or the page behind the hub is left live and focus falls to <body>.
+  const liveBehindHub = (page) => page.evaluate(() => [].filter.call(document.body.children, (el) =>
+    el.id !== 'ios-hub' && !el.inert && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'
+    && !el.classList.contains('il-toast') && el.tagName !== 'SCRIPT').map((el) => el.id || el.className));
+  for (const which of ['log', 'suggest']) {
+    test(`a ${which} dialog open over My certs, shrunk below 900px: the phone hub is over an inert page and has focus`, async ({ page }) => {
+      await boot(page);
+      if (which === 'suggest') {
+        await page.evaluate(() => { window._certanvilSignedIn = true;
+          window.certanvilSupabase = { auth: { getSession: () => Promise.resolve({ data: { session: { user: { id: 'u-test' } } } }) },
+            from: () => ({ upsert: () => Promise.resolve({ error: null }) }) }; });
+      }
+      await openAs(page, 'pro');
+      await expect(page.locator('#page-mycerts')).toHaveClass(/active/);
+      await host(page).locator(`[data-act="${which}"]`).click();
+      const dlg = page.locator(which === 'log' ? '#ios-log-result' : '#ios-suggest');
+      await expect(dlg).toHaveClass(/is-dialog/);
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.locator('#ios-hub')).toBeVisible();
+      await expect(page.locator('#page-mycerts')).not.toHaveClass(/active/);
+      await expect.poll(() => liveBehindHub(page)).toEqual([]);
+      await expect.poll(() => page.evaluate(() => !!document.getElementById('ios-hub').contains(document.activeElement))).toBe(true);
+    });
+  }
 });

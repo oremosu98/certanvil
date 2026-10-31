@@ -40,7 +40,9 @@ const { test } = require('./_context');
   test('dg-system.css version bumped for My certs', /dg-system\.css\?v=8\.204\.0-d[4-9]/.test(html));
 
   // Task 8: goodbye and welcome back on desktop
-  test('goodbye/welcome back: desktop layout lives in dg-system.css under min-width:900 with its own keyframes, and the brand mark is phone-hidden', /\.dm-screen \.cover-brand\{display:none;\}\s*@media \(min-width:900px\)\{\s*\.dm-screen\{/.test(css) && /@keyframes dmd-rise/.test(css) && /\.dm-screen \.dm-foot \[data-act="signin"\]\{order:-1;\}/.test(css));
+  test('goodbye/welcome back: desktop layout lives in dg-system.css under min-width:900 with its own keyframes, and the brand mark is phone-hidden', /\.dm-screen \.cover-brand\{display:none;\}\s*@media \(min-width:900px\)\{\s*\.dm-screen\{/.test(css) && /@keyframes dmd-rise/.test(css));
+  // Final review: Sign back in comes first on desktop in the markup itself (Tab follows what is drawn), never by CSS order
+  test('goodbye: the button order is set in the markup by width, not by CSS order', !/\.dm-foot \[data-act="signin"\]\{order:/.test(css) && /f\.insertBefore\(si, f\.firstChild\)/.test(home) && /else f\.appendChild\(si\)/.test(home));
   test('goodbye/welcome back: no em dash in the desktop styles', !new RegExp(dash).test(css.slice(css.indexOf('Desktop catch-up Task 8'))));
   test('dg-system.css version bumped for the goodbye', /dg-system\.css\?v=8\.204\.0-d[8-9]/.test(html));
 
