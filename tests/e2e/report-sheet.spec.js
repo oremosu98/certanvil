@@ -178,6 +178,37 @@ test.describe('Report a problem: phone', () => {
     await expect(sheet(page).locator('#irp-steps')).toHaveValue('1. Finish a quiz');
   });
 
+  test('Cancel after "That didn’t send" keeps what they typed for the next open; a later send leaves no draft', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'hold', name: 'Alex' });
+    await phoneSettings(page);
+    await sheet(page).locator('#irp-desc').fill('Lost my streak');
+    await sheet(page).locator('[data-act="steps"]').click();
+    await sheet(page).locator('#irp-steps').fill('1. Finish a quiz');
+    await sheet(page).locator('[data-act="send"]').click();
+    await page.evaluate(() => window.__settle('reject'));
+    await expect(sheet(page).locator('.irp-err')).toHaveText('That didn’t send. Try again in a moment.');
+    await sheet(page).locator('[data-act="cancel"]').click();
+    await expect(sheet(page)).toHaveCount(0);
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('Lost my streak');
+    await expect(sheet(page).locator('#irp-steps')).toHaveValue('1. Finish a quiz');
+    await sheet(page).locator('[data-act="send"]').click();   // this time it goes through
+    await page.evaluate(() => window.__settle('ok'));
+    await expect(sheet(page)).toHaveCount(0);
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('');
+  });
+
+  test('closing without a failed send saves nothing', async ({ page }) => {
+    await boot(page, PHONE); await stub(page, { mode: 'reject', name: 'Alex' });
+    await phoneSettings(page);
+    await sheet(page).locator('#irp-desc').fill('Just looking');
+    await sheet(page).locator('[data-act="cancel"]').click();
+    await expect(sheet(page)).toHaveCount(0);
+    await page.evaluate(() => window.openReportSheet());
+    await expect(sheet(page).locator('#irp-desc')).toHaveValue('');
+  });
+
   test('signed out shows the sign-in line and keeps the typed text after tapping Sign in', async ({ page }) => {
     await boot(page, PHONE); await stub(page, { mode: 'ok', signedIn: false });
     await page.evaluate(() => { window.iosSignIn = { go: (f) => { window.__signin = f; } }; });

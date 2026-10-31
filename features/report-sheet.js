@@ -112,7 +112,7 @@
   function _send(S) {
     var d = S.host.querySelector('#irp-desc'), st = S.host.querySelector('#irp-steps');
     if (S.sending || !d.value.trim()) return;
-    S.sending = true; _refresh(S); S.host.querySelector('.irp-err').textContent = '';
+    S.sending = true; S.failed = false; _refresh(S); S.host.querySelector('.irp-err').textContent = '';
     var form = { desc: d.value, steps: st.value.trim() ? st.value : null };
     Promise.all([_reports().then(function (m) { return m.submitReportNow(form); }), _first(S)]).then(function (r) {
       var out = r[0] || {};
@@ -126,7 +126,7 @@
         _toast('Not sent', 'Open Report a problem to try again. What you typed is saved.', true);
         return;
       }
-      S.sending = false; _refresh(S);
+      S.sending = false; S.failed = true; _refresh(S);
       S.host.querySelector('.irp-err').textContent = 'That didn’t send. Try again in a moment.';
     });
   }
@@ -154,6 +154,10 @@
   function close(instant) {
     var S = _cur; if (!S) return;
     _cur = null;
+    if (S.failed && !S.sending) {   // closed after "That didn't send": keep what they typed for the next open
+      var d = S.host.querySelector('#irp-desc'), st = S.host.querySelector('#irp-steps');
+      if (d && d.value.trim()) _saveDraft({ desc: d.value, steps: st && st.value.trim() ? st.value : null, from: S.fromOpt });
+    }
     if (S.keyFn) window.removeEventListener('keydown', S.keyFn, true);
     if (S.frame) S.frame.release(instant === true);
     S.inerted.forEach(function (el) { el.inert = false; });
