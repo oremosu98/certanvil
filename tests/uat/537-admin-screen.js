@@ -25,7 +25,7 @@ const { test } = require('./_context');
     /if \(typeof window\._adminSidebar === 'function'\) window\._adminSidebar\(\);/.test(home) && /'admin': 'Admin',/.test(home) && !/_adminSidebar/.test(read('app.js')));
   test('the sidebar item follows the admin flag (admin-preview fires ca:admin)', /dispatchEvent\(new Event\('ca:admin'\)\)/.test(ap) && /addEventListener\('ca:admin'/.test(as));
   test('every section is a labelled region', ['today', 'req', 'rep', 'err', 'prev'].every((k) => as.includes('aria-labelledby="adm-s-' + k + '"')));
-  test('each section loads on its own with Couldn’t load this. Retry.', /Couldn' \+ Q \+ 't load this\./.test(as) && /data-retry="' \+ key \+ '">Retry</.test(as) && /\['today', 'req', 'rep', 'err'\]\.forEach\(function \(k\) \{ load\(k, quiet\); \}\)/.test(as));
+  test('each section loads on its own with a named Couldn’t load … Retry.', /Couldn' \+ Q \+ 't load ' \+ ERR_WHAT\[key\] \+ '\./.test(as) && /var ERR_WHAT = \{ today: 'today' \+ Q \+ 's numbers', req: 'cert requests', rep: 'bug reports', err: 'errors', list: 'the list' \};/.test(as) && /data-retry="' \+ key \+ '">Retry</.test(as) && /\['today', 'req', 'rep', 'err'\]\.forEach\(function \(k\) \{ load\(k, quiet\); \}\)/.test(as));
   test('copy verbatim from the drawing', ['Preview as Free', 'See the locks and the 15-a-day counter. You can still study as much as you like.', 'Full dashboard on certanvil.com',
     'Users, cert packs and recent ships', 'Warning email at 80%', 'Based on the latest 500 errors.', 'Admin needs a connection. Your studying still works.',
     'Close, no email', 'Fixed, tell them', 'Send and close', 'What people said', 'Reports from the same screen, cert and version are grouped, so one action handles them all.',

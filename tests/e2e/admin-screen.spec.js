@@ -259,9 +259,10 @@ test.describe('Admin screen', () => {
   });
 
   test('bug reports failing shows Retry while Today and Requests still render', async ({ page }) => {
-    const adm = await openPhone(page, { fail: ['reports'] });
+    const adm = await openPhone(page, { fail: ['reports', 'errors'] });
     const rep = adm.locator('section[aria-labelledby="adm-s-rep"]');
-    await expect(rep.locator('.adm-state p')).toHaveText('Couldn’t load this.');
+    await expect(rep.locator('.adm-state p')).toHaveText('Couldn’t load bug reports.');
+    await expect(adm.locator('section[aria-labelledby="adm-s-err"] .adm-state p')).toHaveText('Couldn’t load errors.');
     await expect(rep.locator('.adm-state button')).toHaveText('Retry');
     await expect(adm.locator('section[aria-labelledby="adm-s-today"] .adm-stat b').first()).toHaveText('8');
     await expect(adm.locator('section[aria-labelledby="adm-s-req"] [data-req]')).toHaveCount(5);
@@ -359,7 +360,7 @@ test.describe('Admin screen', () => {
 
   test('paused: the sheet says email is busy, and the retry sends the ids past the cursor', async ({ page }) => {
     const sh = await openTwelve(page, { ok: true, data: { closed: 3, sent: 3, skipped: 0, failed: 0, remaining: 9, next: 191, paused: true } });
-    await expect(sh.locator('.adm-err')).toHaveText('Email is busy, try again in a minute. 3 closed so far.');
+    await expect(sh.locator('.adm-err')).toHaveText('Email is busy. Try again in a minute. 3 closed so far.');
     await page.waitForTimeout(1700);   // the list behind has reloaded and re-sorted
     await sh.locator('[data-act="g-send"]').click();
     await expect(sh).toBeHidden();
@@ -375,6 +376,85 @@ test.describe('Admin screen', () => {
     expect((await acts(page))[1].ids).toEqual([191, 192, 193, 194, 195, 196, 197, 198, 199, 200]);
   });
 
+  test('one report whose reporter cannot be emailed: no Email sent, it offers Close without email', async ({ page }) => {
+    const adm = await openPhone(page);
+    await page.evaluate(() => {
+      const d = window.adminData;
+      d.act = async (action, ids) => { window.__adminCalls.push({ name: 'act', args: { action, ids } });
+        return { ok: true, data: action === 'fixed' ? { closed: 0, sent: 0, skipped: 1, failed: 0, remaining: 0, next: ids[0], paused: false } : { closed: 1, sent: 0, skipped: 0, failed: 0, remaining: 0, next: ids[0], paused: false } }; };
+    });
+    await adm.locator('section[aria-labelledby="adm-s-rep"] [data-rep="200"]').click();
+    const sh = page.locator('#adm-sheet');
+    await sh.locator('[data-act="r-tell"]').click();
+    await sh.locator('[data-act="r-send"]').click();
+    await expect(sh.locator('.adm-err')).toHaveText('Couldn’t email them. Close without email?');
+    await expect(sh).toBeVisible();
+    await expect(sh.locator('.adm-sh-foot button')).toHaveText(['Close without email', 'Cancel']);
+    await expect(page.locator('#adm-toast')).toHaveCount(0);
+    await sh.locator('[data-act="r-close"]').click();
+    await expect(sh).toBeHidden();
+    expect(await page.evaluate(() => window.__adminCalls.filter((x) => x.name === 'act').map((x) => x.args))).toEqual([{ action: 'fixed', ids: [200] }, { action: 'close', ids: [200] }]);
+    await expect(page.locator('#adm-toast')).toContainText('Report #200 closed');
+    await expect(page.locator('#adm-toast')).not.toContainText('Email sent');
+  });
+
+  test('group: when the follow-up close fails, the toast counts only what closed and says some are still open', async ({ page }) => {
+    const adm = await openPhone(page);
+    await page.evaluate(() => {
+      const d = window.adminData;
+      d.act = async (action, ids) => { window.__adminCalls.push({ name: 'act', args: { action, ids } });
+        if (action === 'fixed') return { ok: true, data: { closed: 9, sent: 9, skipped: 3, failed: 0, remaining: 0, next: 200, paused: false } };
+        return { ok: false, error: 'Request failed (500)', partial: { closed: 1, sent: 0, skipped: 0, failed: 0, remaining: 2, next: 190, paused: false } }; };
+    });
+    await adm.locator('[data-act="all-reports"]').click();
+    await adm.locator('[data-grp]').first().click();
+    const sh = page.locator('#adm-sheet');
+    await sh.locator('[data-act="g-tell"]').click();
+    await sh.locator('[data-act="g-send"]').click();
+    await expect(sh).toBeHidden();
+    await expect(page.locator('#adm-toast .adm-toast-b')).toHaveText('Sent 9 emails. 10 reports closed.');
+    await expect(page.locator('#adm-toast .adm-toast-s')).toHaveText('Some couldn’t be closed. They’re still in Bug reports.');
+  });
+
+  test('group confirm counts people, not reports; the list shows Show 8 more', async ({ page }) => {
+    const adm = await openPhone(page);
+    await page.evaluate(() => {   // one person sent three of the twelve
+      const d = window.adminData, real = d.reports;
+      d.reports = async (q) => { const r = await real(q); r.data.rows.forEach((x) => { if (x.id >= 198) x.user_id = 'u0'; }); return r; };
+    });
+    await adm.locator('[data-act="all-reports"]').click();
+    await adm.locator('[data-grp]').first().click();
+    const sh = page.locator('#adm-sheet');
+    await expect(sh.locator('.adm-sh-more')).toHaveText('Show 8 more');
+    await sh.locator('[data-act="g-tell"]').click();
+    await expect(sh.locator('.adm-sh-confirm b')).toHaveText('7 people');
+    await expect(sh.locator('[data-act="g-send"]')).toHaveText('Send 9 emails and close');
+  });
+
+  test('a group narrowed to one reads in the singular', async ({ page }) => {
+    const sh = await openTwelve(page, { ok: true, data: { closed: 11, sent: 8, skipped: 3, failed: 0, remaining: 1, next: 199, paused: true } });
+    await expect(sh.locator('.adm-sh-eyebrow')).toHaveText('1 report');
+    await expect(sh.locator('.adm-sh-confirm')).toContainText('Emails 1 person');
+    await expect(sh.locator('.adm-sh-confirm')).toContainText('and closes it.');
+    await expect(sh.locator('[data-act="g-send"]')).toHaveText('Send 1 email and close');
+    await sh.locator('[data-act="g-cancel"]').click();
+    await expect(sh.locator('[data-act="g-tell"]')).toHaveText('Fixed, tell them');
+    await expect(sh.locator('[data-act="g-close"]')).toHaveText('Close it, no email');
+  });
+
+  test('the Preview as Free switch flips at once; switching off fades the Free bar out first', async ({ page }) => {
+    const adm = await openPhone(page);
+    const sw = adm.locator('#adm-free-sw'), bar = page.locator('#ap-freebar');
+    await sw.click();
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
+    await expect(bar).toBeVisible();
+    await sw.click();
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
+    await expect(bar).toHaveClass(/leaving/);
+    await expect(bar).toBeHidden();
+    expect(await page.evaluate(() => window._adminPreview.on())).toBe(false);
+  });
+
   test('desktop: the admin flag dropping closes an open dialog and leaves the Admin page', async ({ page }) => {
     await boot(page, DESKTOP);
     await stub(page);
@@ -388,6 +468,7 @@ test.describe('Admin screen', () => {
     await expect(page.locator('.ca-dlg-scrim')).toHaveCount(0);
     await expect(page.locator('#page-admin')).not.toHaveClass(/active/);
     expect(await page.evaluate(() => document.getElementById('app-topbar').inert)).toBe(false);
+    expect(await page.evaluate(() => document.getElementById('desk-admin').innerHTML)).toBe('');   // nothing of Admin stays in the page
   });
 
   test('desktop: offline shows "You\'re offline" and loads nothing', async ({ page, context }) => {

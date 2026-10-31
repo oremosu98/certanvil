@@ -76,7 +76,8 @@
   }
   function rv(d) { return ' adm-rv" style="--d:' + d + '"'; }
   function skel() { return '<div class="adm-skel" aria-hidden="true"></div>'; }
-  function stateErr(key, d) { return '<div class="adm-state' + rv(d) + '><p>Couldn' + Q + 't load this.</p><button type="button" data-retry="' + key + '">Retry</button></div>'; }
+  var ERR_WHAT = { today: 'today' + Q + 's numbers', req: 'cert requests', rep: 'bug reports', err: 'errors', list: 'the list' };
+  function stateErr(key, d) { return '<div class="adm-state' + rv(d) + '><p>Couldn' + Q + 't load ' + ERR_WHAT[key] + '.</p><button type="button" data-retry="' + key + '">Retry</button></div>'; }
   function stateMsg(msg, d) { return '<div class="adm-state' + rv(d) + '><p>' + msg + '</p></div>'; }
 
   function todayHtml(st) {
@@ -338,7 +339,7 @@
       h += L.rows.length ? '<div class="adm-list">' + L.rows.map(reqRow).join('') + '</div>' : stateMsg('Nothing matches.', 0);
       if (L.more) h += '<button class="adm-more" type="button" data-act="more"' + (L.st === 'loading' ? ' disabled' : '') + '>' + (L.st === 'loading' ? 'Loading…' : 'Show 20 more') + '</button>';
     }
-    if (L.st === 'error' && L.rows.length) h += '<div class="adm-state"><p>Couldn' + Q + 't load this.</p><button type="button" data-retry="list">Retry</button></div>';
+    if (L.st === 'error' && L.rows.length) h += '<div class="adm-state"><p>Couldn' + Q + 't load ' + ERR_WHAT.list + '.</p><button type="button" data-retry="list">Retry</button></div>';
     el.innerHTML = h;
     _refocus(el, keep);
   }
@@ -399,8 +400,8 @@
         tot.sent += Number(b.sent) || 0; tot.failed += Number(b.failed) || 0; tot.skipped += Number(b.skipped) || 0;
         var rem = Number(b.remaining) || 0, lost = tot.failed + tot.skipped;
         var sum = 'Sent to ' + people(tot.sent) + '.' + (lost ? ' ' + lost + ' couldn' + Q + 't be reached.' : '');
-        if (b.paused) return stop(sum + ' Email is busy, try again in a minute.');
-        if (rem > 0) { if (b.next && b.next !== after) return step(b.next); return stop(sum + ' Stopped early, try again.'); }
+        if (b.paused) return stop(sum + ' Email is busy. Try again in a minute.');
+        if (rem > 0) { if (b.next && b.next !== after) return step(b.next); return stop(sum + ' Stopped early. Try again.'); }
         if (lost) return stop(sum);
         S.send = null; S.confirmFor = null; redrawReq();
         toast('Sent ' + emails(tot.sent), 'Everyone who asked for ' + label + ' now knows it' + Q + 's live.');
@@ -408,7 +409,7 @@
       });
     }
     step('').catch(function (e) {
-      var why = e && e.message === 'auth' ? 'Sign in again, then retry.' : e && e.status === 503 ? 'Email is not set up yet.' : e && e.status === 409 ? 'That exam changed. Reload and try again.' : 'Couldn' + Q + 't finish. Try again.';
+      var why = e && e.message === 'auth' ? 'Sign in again, then retry.' : e && e.status === 503 ? 'Email isn' + Q + 't set up yet.' : e && e.status === 409 ? 'That exam changed. Reload and try again.' : 'Couldn' + Q + 't finish. Try again.';
       stop((tot.sent ? 'Sent to ' + people(tot.sent) + ' so far. ' : '') + why);
     });
   }
@@ -443,7 +444,9 @@
     else if (r.user_id) h += '<div class="adm-reach adm-anon">' + MAIL + '<span>Already told it' + Q + 's fixed.</span></div>';
     else h += '<div class="adm-reach adm-anon">' + PERSON + '<span>Sent while signed out, so there' + Q + 's no one to email.</span></div>';
     h += '</div><div class="adm-sh-foot">' + (SH.err ? '<p class="adm-err" role="alert">' + _esc(SH.err) + '</p>' : '');
-    if (SH.step === 'confirm' && hear) {
+    if (SH.step === 'noemail') {   // the fixed email could not go (reporter gone, or already told or closed): offer the close alone
+      h += _btn('adm-btn-pri', 'r-close', 'Close without email', 'Closing…') + _btn('adm-btn-sec', 'r-cancel', 'Cancel');
+    } else if (SH.step === 'confirm' && hear) {
       h += '<div class="adm-fade"><p class="adm-sh-confirm">Emails <b>' + (em ? _esc(em) : 'them') + '</b> “Fixed: ' + _esc(fixedTitle(r)) + '” and closes the report.</p></div>'
         + _btn('adm-btn-pri', 'r-send', 'Send and close', 'Sending…') + _btn('adm-btn-sec', 'r-cancel', 'Cancel');
     } else {
@@ -452,21 +455,23 @@
     return h + '</div>';
   }
   function groupHtml(g) {
-    var hear = g.rows.filter(canHear).length, n = g.ids.length;
+    var reach = g.rows.filter(canHear), hear = reach.length, n = g.ids.length;
+    var who = reach.map(function (r) { return r.user_id; }).filter(function (u, i, a) { return a.indexOf(u) === i; }).length;   // one person may have sent several
     var items = g.rows.map(function (r, k) {
       return '<li' + (k >= 4 && !SH.more ? ' hidden' : '') + '><button type="button" data-rep="' + _esc(r.id) + '">' + _esc(titleOf(r)) + '<span>#' + _esc(r.id) + ' · ' + _esc(ago(r.created_at)) + (canHear(r) ? ' · can hear back' : '') + '</span></button></li>';
     }).join('');
-    if (n > 4 && !SH.more) items += '<li><button type="button" class="adm-sh-more" data-act="g-more"><span>and ' + (n - 4) + ' more, tap one to read it in full</span></button></li>';
-    var h = _shHead(n + ' reports', [g.screen, g.cert].filter(known).map(_esc).join(' · ') || 'Reports', (known(g.ver) ? 'Version ' + _esc(g.ver) + ' · ' : '') + 'newest ' + _esc(ago(g.newest)))
+    if (n > 4 && !SH.more) items += '<li><button type="button" class="adm-sh-more" data-act="g-more"><span>Show ' + (n - 4) + ' more</span></button></li>';
+    var h = _shHead(n + (n === 1 ? ' report' : ' reports'), [g.screen, g.cert].filter(known).map(_esc).join(' · ') || 'Reports', (known(g.ver) ? 'Version ' + _esc(g.ver) + ' · ' : '') + 'newest ' + _esc(ago(g.newest)))
       + '<div class="adm-sh-k">What people said</div><ul class="adm-sh-list">' + items + '</ul>'
       + (hear ? '<div class="adm-reach">' + MAIL + '<span><b>' + hear + ' of ' + n + '</b> can hear back when it' + Q + 's fixed.</span></div>'
         : '<div class="adm-reach adm-anon">' + PERSON + '<span>No one here can hear back, so there' + Q + 's no one to email.</span></div>')
       + '</div><div class="adm-sh-foot">' + (SH.err ? '<p class="adm-err" role="alert">' + _esc(SH.err) + '</p>' : '');
     if (SH.step === 'confirm' && hear) {
-      h += '<div class="adm-fade"><p class="adm-sh-confirm">Emails <b>' + people(hear) + '</b> “Fixed: …” with their own report' + Q + 's title, and closes all ' + n + '.</p></div>'
+      h += '<div class="adm-fade"><p class="adm-sh-confirm">Emails <b>' + people(who) + '</b> “Fixed: …” with their own report' + Q + 's title, and closes ' + (n === 1 ? 'it' : 'all ' + n) + '.</p></div>'
         + _btn('adm-btn-pri', 'g-send', 'Send ' + emails(hear) + ' and close', 'Sending…') + _btn('adm-btn-sec', 'g-cancel', 'Cancel');
     } else {
-      h += (hear ? _btn('adm-btn-pri', 'g-tell', 'Fixed, tell all ' + hear) : '') + _btn('adm-btn-sec', 'g-close', 'Close all ' + n + ', no email', 'Closing…');
+      h += (hear ? _btn('adm-btn-pri', 'g-tell', hear === 1 ? 'Fixed, tell them' : 'Fixed, tell all ' + hear) : '')
+        + _btn('adm-btn-sec', 'g-close', (n === 1 ? 'Close it' : 'Close all ' + n) + ', no email', 'Closing…');
     }
     return h + '</div>';
   }
@@ -545,18 +550,21 @@
   }
 
   // Close or fixed-notify reports. The result shows only after the server answers (iOS can cut requests off in the background).
-  function runAct(action, ids, done, onPartial) {
+  // onSkipped(p): for a single report, a run that only skipped (nothing sent, nothing failed) is handed here instead of done.
+  function runAct(action, ids, done, onPartial, onSkipped) {
     if (SH.busy) return;
     SH.busy = true; SH.err = ''; renderSheet();
     D().then(function (d) { return d.act(action, ids); }).then(function (res) {
       SH.busy = false;
       var p = res && res.ok ? res.data : res && res.partial;
       var did = p ? (p.closed || 0) : 0;
-      if (res && res.ok && !p.paused && !(p.remaining > 0) && !p.failed) { closeSheet(); setTimeout(function () { done(p); }, 230); }
+      var whole = res && res.ok && !p.paused && !(p.remaining > 0) && !p.failed;
+      if (whole && onSkipped && p.skipped > 0) onSkipped(p);
+      else if (whole) { closeSheet(); setTimeout(function () { done(p); }, 230); }
       else {
         if (onPartial && p) onPartial(p);
         var tail = did ? ' ' + did + ' closed so far.' : '';
-        SH.err = res && res.ok ? (p.paused ? 'Email is busy, try again in a minute.' + tail : p.failed ? p.failed + ' couldn' + Q + 't be emailed.' + tail + ' Try again.' : 'Stopped early.' + tail + ' Try again.')
+        SH.err = res && res.ok ? (p.paused ? 'Email is busy. Try again in a minute.' + tail : p.failed ? p.failed + ' couldn' + Q + 't be emailed.' + tail + ' Try again.' : 'Stopped early.' + tail + ' Try again.')
           : 'That didn' + Q + 't go through.' + tail + ' Try again.';
         renderSheet();
       }
@@ -581,18 +589,22 @@
       if (!left.length) return;
       g.ids = left; g.rows = g.rows.filter(function (r) { return left.indexOf(r.id) >= 0; });
     }
-    function finish(p) {
+    function finish(p, stillOpen) {
       var closed = total.closed + (p.closed || 0), sent = total.sent + (p.sent || 0);
-      if (action === 'fixed') toast('Sent ' + emails(sent) + '. ' + closedTx(closed) + '.', 'Each person got their own report' + Q + 's title.');
-      else toast(closedTx(closed), 'No emails sent.');
+      var sub = stillOpen ? 'Some couldn' + Q + 't be closed. They' + Q + 're still in Bug reports.' : sent ? 'Each person got their own report' + Q + 's title.' : 'No emails sent.';
+      if (action === 'fixed' && sent) toast('Sent ' + emails(sent) + '. ' + closedTx(closed) + '.', sub);
+      else toast(closedTx(closed), sub);
     }
     runAct(action, g.ids.slice(), function (p) {
       // "fixed" skips reports nobody can hear about and leaves them open; the confirm promised to close all, so close those too.
       if (action !== 'fixed' || !(p.skipped > 0)) return finish(p);
       D().then(function (d) { return d.act('close', g.all.slice()); }).then(function (c) {
-        if (c && c.ok) p = { closed: (p.closed || 0) + (c.data.closed || 0), sent: p.sent };
-        finish(p); afterAct();
-      }).catch(function () { finish(p); });
+        // Count only what this close really closed (the partial on a failure), and say so when some stayed open.
+        var q = c && c.ok ? c.data : (c && c.partial) || {};
+        var whole = !!(c && c.ok && !q.failed && !(q.remaining > 0) && !q.paused);
+        finish({ closed: (p.closed || 0) + (q.closed || 0), sent: p.sent }, !whole);
+        afterAct();
+      }).catch(function () { finish(p, true); afterAct(); });
     }, narrow);
   }
 
@@ -604,10 +616,15 @@
     if (a === 'g-more') { SH.more = true; renderSheet('[data-rep]'); return; }
     var r = SH.kind === 'report' ? S.byId[SH.id] : null, g = SH.kind === 'group' ? SH.group : null;
     if (a === 'r-tell' || a === 'g-tell') { SH.step = 'confirm'; SH.err = ''; renderSheet('[data-act="' + (a === 'r-tell' ? 'r-send' : 'g-send') + '"]'); }
-    else if (a === 'r-cancel' || a === 'g-cancel') { SH.step = null; SH.err = ''; renderSheet('[data-act="' + (a === 'r-cancel' ? 'r-tell' : 'g-tell') + '"]'); }
+    else if (a === 'r-cancel' || a === 'g-cancel') { var wasNo = SH.step === 'noemail'; SH.step = null; SH.err = ''; renderSheet(wasNo ? '[data-act="r-close"]' : '[data-act="' + (a === 'r-cancel' ? 'r-tell' : 'g-tell') + '"]'); }
     else if (a === 'r-send' && r) {
       var em = S.emails[r.user_id];
-      runAct('fixed', [r.id], function () { toast('Email sent. Report #' + r.id + ' closed.', em ? 'Sent to ' + em + '.' : 'They' + Q + 'll get it in a minute.'); });
+      runAct('fixed', [r.id], function (p) {
+        if (p.sent > 0) toast('Email sent. Report #' + r.id + ' closed.', em ? 'Sent to ' + em + '.' : 'They' + Q + 'll get it in a minute.');
+        else toast('Report #' + r.id + ' closed', 'No email sent.');
+      }, null, function () {
+        SH.step = 'noemail'; SH.err = 'Couldn' + Q + 't email them. Close without email?'; renderSheet('[data-act="r-close"]');
+      });
     }
     else if (a === 'r-close' && r) runAct('close', [r.id], function () { toast('Report #' + r.id + ' closed', 'No email sent.'); });
     else if (a === 'g-send' && g) actGroup(g, 'fixed');
@@ -648,7 +665,9 @@
     }
     else if (b.hasAttribute('data-chip')) toggleChip(b.getAttribute('data-chip'));
     else if (a === 'more') loadList(true);
-    else if (a === 'free') { if (window._adminPreview) window._adminPreview.set(!window._adminPreview.on()); _syncSwitch(); }
+    else if (a === 'free') {   // the switch shows the new state at once; switching off fades the Free bar for 150ms first
+      if (window._adminPreview) { var want = !window._adminPreview.on(); window._adminPreview.set(want); b.setAttribute('aria-checked', String(want)); }
+    }
     else if (a === 'offline-retry') { if (navigator.onLine !== false) { draw(true); loadAll(false); } }
   }
   function onInput(ev) { if (ev.target && ev.target.matches && ev.target.matches('.adm-search input')) onSearch(ev.target.value.trim()); }
@@ -766,6 +785,8 @@
       close();
       var p = document.getElementById('page-admin');
       if (p && p.classList.contains('active') && typeof showPage === 'function') showPage('setup');
+      var dh = document.getElementById('desk-admin'); if (dh) dh.innerHTML = '';   // nothing of Admin stays in the page
+      if (S.layout === 'desk') { S.layout = null; S.root = null; }
       S.openN = null; S.sec = { today: {}, req: {}, rep: {}, err: {} }; S.totals = null; S.byId = {}; S.emails = {};
     }
   });
