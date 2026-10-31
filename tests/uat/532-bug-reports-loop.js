@@ -9,6 +9,10 @@ const { path, ROOT, test, results } = require('./_context');
     test('bug reports database suite passes (' + ((rv.stdout || '').match(/bug-reports-db: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
       rv.status === 0 && /bug-reports-db: (\d+)\/\1 passed/.test(rv.stdout || ''));
     if (rv.status !== 0) results.errors.push('bug-reports-db: ' + ((rv.stdout || '') + (rv.stderr || '')).split('\n').filter((l) => /FAIL|Error|error/.test(l)).slice(0, 5).join(' | '));
+    const rb = spawnSync(process.execPath, ['--experimental-detect-module', path.join(ROOT, 'tests/api/bug-report.test.mjs')], { encoding: 'utf8', timeout: 120000 });
+    test('bug-report endpoint suite passes (' + ((rb.stdout || '').match(/bug-report: (\d+\/\d+) passed/) || [, 'no result'])[1] + ')',
+      rb.status === 0 && /bug-report: (\d+)\/\1 passed/.test(rb.stdout || ''));
+    if (rb.status !== 0) results.errors.push('bug-report: ' + ((rb.stdout || '') + (rb.stderr || '')).split('\n').filter((l) => /FAIL|Error|error/.test(l)).slice(0, 5).join(' | '));
   } catch (err) {
     test('Bug report loop: block (threw)', false);
     results.errors.push('532 bug-reports-loop block threw: ' + err.message);
