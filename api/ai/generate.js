@@ -53,16 +53,28 @@ const IP_HOURLY_LIMIT    = 200;
 // PROVISIONAL: the proxy logged no token usage before this change, so this comes from a
 // conservative estimate, not measured data. Each call now writes one "ai_usage" log line;
 // re-size from those once a week of real traffic exists.
-// Arithmetic (prices from the claude-api skill, 2026-10-31, $ per 1M tokens in/out:
-//   claude-haiku-5-5 0.10/0.50, claude-sonnet-4-6 3.00/15.00). Typical 10-question quiz:
-//   - generation, Haiku 5.5: 8,000 in (prompt + exemplars) + 12,000 out (A/B averaged ~10.2k,
-//     MAX_TOKENS_GENERATION 16,000) = $0.0068
-//   - checker pass, Sonnet 4.6: 5,500 in (~1,750 instructions + 10 questions) + 1,000 out
-//     (MAX_TOKENS_VALIDATION) = $0.0315
-//   - teacher calls, Sonnet 4.6, 0.3 per quiz: 2,500 in + 1,500 out = $0.030 each = $0.0090
-//   quiz = $0.0473 over 2.3 calls -> $0.02057 per call
-//   100 / 30 = $3.333 a day / $0.02057 = 162.1 calls -> 162, rounded down to 160.
-const GLOBAL_DAILY_LIMIT_DEFAULT = 160;
+// Arithmetic (final review, 2026-10-31). Prices from the claude-api skill, $ per 1M tokens in/out:
+//   claude-haiku-5-5 0.10/0.50 (writer), claude-sonnet-4-6 3.00/15.00 (checker, teacher).
+// Call structure since fast start: a 10-question quiz asks 13 (buffer), written as two Haiku
+// batches (7 + 6); the checker takes 5 questions per Sonnet call per batch, so 7 -> 5+2 and
+// 6 -> 5+1: 2 writer + 4 checker = 6 calls before top-ups. A 60-question SIM asks 78:
+// 8 batches of ~10 -> 8 writer + 16 checker = 24 calls.
+// Per call:
+//   writer, ~6.5 questions: 8,000 in + 6,600 out (A/B ~1,020 out per question) = $0.0041
+//   writer, top-up of ~5: 8,000 in + 5,100 out = $0.0034; SIM batch of ~10: 8,000 + 10,000 = $0.0058
+//   checker, full chunk of 5: 3,625 in (~1,750 instructions + 375 a question) + 300 out
+//     (one ~35-token verdict line a question, with slack) = $0.0154
+//   checker, short chunk of 1-2: 2,313 in + 150 out = $0.0092
+//   teacher: 2,500 in + 1,500 out = $0.0300
+// Short quiz: 2 x 0.0041 + 2 x 0.0154 + 2 x 0.0092 = $0.0573 (6 calls)
+//   + half a top-up round (writer + checker) = $0.0094 (1 call) + 0.3 teacher calls = $0.0090
+//   = $0.0757 over 7.3 calls ($0.0104 a call).
+// SIM: 8 x 0.0058 + 16 x 0.0154 = $0.2924 over 24 calls ($0.0122 a call).
+// Mix of 9 short quizzes to 1 SIM: $0.9736 over 89.7 calls = $0.01085 a call.
+// 100 / 30 = $3.333 a day / $0.01085 = 307.1 -> 307 calls a day.
+// That is ≈ 42 short quizzes a day app-wide at the default (307 / 7.3), or about 31 short
+// quizzes plus 3 SIMs on the 9:1 mix. All short quizzes ≈ $95/month; all SIMs ≈ $112/month.
+const GLOBAL_DAILY_LIMIT_DEFAULT = 307;
 function globalDailyLimit() {
   const n = Number(process.env.AI_GLOBAL_DAILY_LIMIT);
   return Number.isInteger(n) && n > 0 && n <= 100000 ? n : GLOBAL_DAILY_LIMIT_DEFAULT;
@@ -142,17 +154,23 @@ function badJson(res, status, body) {
   res.send(JSON.stringify(body));
 }
 
-// 80% alert. Fire-and-forget: never awaited by the handler, never throws, skips silently
-// when RESEND_API_KEY / FOUNDER_EMAIL are unset. Deduped to once a day by a 1-per-day counter.
-function maybeAlertFounder(token, count, limit) {
+// 80% alert. Awaited by the handler (it fires at most once a day), capped at ALERT_TIMEOUT_MS so it
+// can't stall the response much; a serverless function may freeze un-awaited work after it responds.
+// Never throws; skips silently when RESEND_API_KEY / FOUNDER_EMAIL are unset. Deduped to once a day by
+// a 1-per-day counter.
+const ALERT_TIMEOUT_MS = 3000;
+async function maybeAlertFounder(token, count, limit) {
   const key = process.env.RESEND_API_KEY, to = process.env.FOUNDER_EMAIL;
   if (!key || !to) return;
-  (async () => {
+  const ctrl = new AbortController();
+  let timer;
+  const timeout = new Promise((resolve) => { timer = setTimeout(() => { ctrl.abort(); resolve('timeout'); }, ALERT_TIMEOUT_MS); });
+  const send = (async () => {
     try {
       // Gate keyed on the UTC date: the counter window starts at the first call, not at midnight, so a
       // plain key could block or double an alert across days. One alert per calendar day.
       const gate = await rlCheck(token, 'alert:global80:' + new Date().toISOString().slice(0, 10), 1, '1 day');
-      if (!gate || gate.allowed === false) return;
+      if (!gate || gate.allowed === false || ctrl.signal.aborted) return;
       const from = 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>';
       const text = 'The app-wide AI limit is at ' + count + ' of ' + limit + ' calls today (80% or more). ' +
         'Once it is reached, everyone sees the "very busy" message until the limit window clears (24 hours after the window started, not at midnight). ' +
@@ -160,11 +178,15 @@ function maybeAlertFounder(token, count, limit) {
       const r = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from, to: [to], subject: 'CertAnvil AI at 80% of today\'s limit', text })
+        body: JSON.stringify({ from, to: [to], subject: 'CertAnvil AI at 80% of today\'s limit', text }),
+        signal: ctrl.signal
       });
       if (!r.ok) console.error('[ai-proxy] 80% alert email failed: resend status ' + r.status);
     } catch (e) { console.error('[ai-proxy] 80% alert failed:', e && e.message); }
   })();
+  try {
+    if (await Promise.race([send, timeout]) === 'timeout') console.error('[ai-proxy] 80% alert timed out after ' + ALERT_TIMEOUT_MS + 'ms');
+  } finally { clearTimeout(timer); }
 }
 
 // One structured line per proxied call so real cost can be measured. No prompt text, no user ids.
@@ -250,7 +272,7 @@ module.exports = async function handler(req, res) {
     // sees count === threshold. user/ip 429s above also show the busy copy (scope is not shown to users).
     const g = checks[2];
     if (g && Number(g.current_count) === Math.ceil(0.8 * globalLimit)) {
-      maybeAlertFounder(token, Number(g.current_count), globalLimit);
+      await maybeAlertFounder(token, Number(g.current_count), globalLimit);   // once a day at most, ≤3s
     }
   } catch (e) {
     console.error('[ai-proxy] rate-limit check failed (failing open):', e && e.message);
@@ -362,4 +384,4 @@ module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   res.send(text);
 };
-module.exports._internal = { globalDailyLimit, GLOBAL_DAILY_LIMIT_DEFAULT };
+module.exports._internal = { globalDailyLimit, GLOBAL_DAILY_LIMIT_DEFAULT, ALERT_TIMEOUT_MS };

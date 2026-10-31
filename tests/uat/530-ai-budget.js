@@ -26,7 +26,10 @@ const { test } = require('./_context');
   test('proxy: env override read per call, default is a positive number with the arithmetic beside it',
     gen.includes('process.env.AI_GLOBAL_DAILY_LIMIT') && /GLOBAL_DAILY_LIMIT_DEFAULT = \d+/.test(gen) && gen.includes('PROVISIONAL') && gen.includes('100 / 30'));
   test('proxy: user and IP ceilings unchanged (500/day, 200/hour)', gen.includes('USER_DAILY_LIMIT   = 500') && gen.includes('IP_HOURLY_LIMIT    = 200'));
-  test('proxy: 80% alert is deduped by alert:global80 and never awaited', gen.includes("'alert:global80:'") && /\n\s+maybeAlertFounder\(token/.test(gen) && !/await maybeAlertFounder/.test(gen));
+  test('proxy: 80% alert is deduped by alert:global80, awaited (a serverless function can freeze un-awaited work) and time-capped',
+    gen.includes("'alert:global80:'") && /await maybeAlertFounder\(token/.test(gen) && /ALERT_TIMEOUT_MS = 3000/.test(gen) && gen.includes('signal: ctrl.signal'));
+  test('proxy: the default is re-derived from the fast-start call structure (6 calls a short quiz, 24 a SIM) and states quizzes a day',
+    gen.includes('2 writer + 4 checker = 6 calls') && gen.includes('8 writer + 16 checker = 24 calls') && /≈ \d+ short quizzes a day app-wide at the default/.test(gen));
   const dash = String.fromCharCode(0x2014);
   test('copy: no em dashes in the new tests, the busy toast or the alert email', !fs.readFileSync(path.join(ROOT, 'tests', 'api', 'generate-limits.test.mjs'), 'utf8').includes(dash) && !gen.slice(gen.indexOf('function maybeAlertFounder'), gen.indexOf('module.exports = async')).includes(dash));
 })();

@@ -10,7 +10,7 @@ const setEnv = (o) => { for (const k of OPT) delete process.env[k]; Object.assig
 setEnv({});
 const mod = require('../../api/ai/generate.js');
 const handler = mod;
-const { GLOBAL_DAILY_LIMIT_DEFAULT } = mod._internal;
+const { GLOBAL_DAILY_LIMIT_DEFAULT, ALERT_TIMEOUT_MS } = mod._internal;
 
 const _log = console.log; console.log = () => {};
 let n = 0;
@@ -55,17 +55,17 @@ const rlLimit = (prefix) => { const c = calls.find((x) => x.url.includes('ai_rl_
 const emails = () => calls.filter((c) => c.url === 'https://api.resend.com/emails');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 
-await t('default limit is 160 (budget-sized), and env unset uses it', async () => {
-  assert.equal(GLOBAL_DAILY_LIMIT_DEFAULT, 160);
+await t('default limit is 307 (budget-sized from the fast-start call structure), and env unset uses it', async () => {
+  assert.equal(GLOBAL_DAILY_LIMIT_DEFAULT, 307);
   setEnv({}); stub(); await call();
-  assert.equal(rlLimit('global'), 160);
+  assert.equal(rlLimit('global'), 307);
 });
 await t('env AI_GLOBAL_DAILY_LIMIT is honoured', async () => {
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '321' }); stub(); await call();
   assert.equal(rlLimit('global'), 321);
 });
 await t('invalid, zero or negative env falls back to the default', async () => {
-  for (const v of ['abc', '0', '-5', '']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 160, v); }
+  for (const v of ['abc', '0', '-5', '']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 307, v); }
 });
 await t('user and ip limits are untouched', async () => {
   setEnv({}); stub(); await call();
@@ -122,7 +122,7 @@ await t('Resend throwing, a non-ok Resend, or the gate RPC failing never touches
   } finally { console.error = oe; }
 });
 await t('env limit must be a positive integer up to 100000', async () => {
-  for (const v of ['1.5', '100001', '1e3x', ' ', 'Infinity']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 160, v); }
+  for (const v of ['1.5', '100001', '1e3x', ' ', 'Infinity']) { setEnv({ AI_GLOBAL_DAILY_LIMIT: v }); stub(); await call(); assert.equal(rlLimit('global'), 307, v); }
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '100000' }); stub(); await call(); assert.equal(rlLimit('global'), 100000);
 });
 await t('no email below the threshold', async () => {
@@ -138,11 +138,23 @@ await t('no email (and no alert counter) when RESEND_API_KEY or FOUNDER_EMAIL is
     assert.equal(r.code, 200); assert.equal(emails().length, 0);
   }
 });
-await t('a failing or hanging Resend never delays or fails the AI response', async () => {
+await t('the 80% alert is awaited: the email is sent before the handler returns', async () => {
   setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  stub({ counts: { global: 80 } });
+  const r = await call();   // no settle(): an un-awaited alert would not have fetched yet
+  assert.equal(r.code, 200); assert.equal(emails().length, 1);
+  assert.ok(emails()[0].init.signal, 'the Resend fetch carries an abort signal');
+});
+await t('a failing or hanging Resend delays the AI response by at most the alert timeout, never fails it', async () => {
+  assert.equal(ALERT_TIMEOUT_MS, 3000);
+  setEnv({ AI_GLOBAL_DAILY_LIMIT: '100', RESEND_API_KEY: 'rk', FOUNDER_EMAIL: 'f@example.com' });
+  const oe = console.error; console.error = () => {};
   stub({ counts: { global: 80 }, resendHangs: true });
-  const r = await Promise.race([call(), new Promise((res) => setTimeout(() => res('TIMEOUT'), 1500))]);
+  const t0 = Date.now();
+  let r;
+  try { r = await Promise.race([call(), new Promise((res) => setTimeout(() => res('TIMEOUT'), ALERT_TIMEOUT_MS + 1500))]); } finally { console.error = oe; }
   assert.notEqual(r, 'TIMEOUT'); assert.equal(r.code, 200); assert.ok(JSON.parse(r.body).content);
+  assert.ok(Date.now() - t0 >= ALERT_TIMEOUT_MS - 50, 'waited for the capped alert');
   stub({ counts: { global: 80 }, resendStatus: 500 });
   const r2 = await call(); assert.equal(r2.code, 200);
 });
