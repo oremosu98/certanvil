@@ -17,9 +17,9 @@ const { _fnBody, js, cloudStoreJs, test, vm } = require('./_context');
   // Behaviour: run the real readiness.js exam-date functions against a fake localStorage.
   function make(cert, init) {
     const store = new Map(Object.entries(init || {}));
-    const flushed = [], events = [];
+    const flushed = [], events = [], dirty = [];
     const ctx = vm.createContext({
-      window: { CURRENT_CERT: cert, dispatchEvent: (e) => events.push(e.type) },
+      window: { CURRENT_CERT: cert, dispatchEvent: (e) => events.push(e.type), cloudStore: { markCertDirty: (k, c) => dirty.push(k + ':' + c) } },
       Event: function (t) { this.type = t; },
       localStorage: { getItem: (k) => (store.has(k) ? store.get(k) : null), setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
       STORAGE: { EXAM_DATE: 'nplus_exam_date', EXAM_DATES: 'nplus_exam_dates' },
@@ -28,7 +28,7 @@ const { _fnBody, js, cloudStoreJs, test, vm } = require('./_context');
     });
     vm.runInContext(['_certKey', '_readExamDates', 'getExamDate', 'setExamDate', 'examDatesByCert', 'parseExamDate', 'getDaysToExam']
       .map((n) => _fnBody(js, n)).join('\n'), ctx);
-    return { run: (src) => vm.runInContext(src, ctx), store, flushed, events };
+    return { run: (src) => vm.runInContext(src, ctx), store, flushed, events, dirty };
   }
   const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 
@@ -40,6 +40,8 @@ const { _fnBody, js, cloudStoreJs, test, vm } = require('./_context');
     test("setExamDate('2026-12-03','secplus') leaves netplus untouched (map and the legacy single date)",
       map.netplus === '2026-11-17' && map.secplus === '2026-12-03' && a.store.get('nplus_exam_date') === '2026-11-17'
       && a.run('getExamDate()') === '2026-11-17' && a.run("getExamDate('secplus')") === '2026-12-03');
+    test('setExamDate for another cert marks that cert dirty for sync (and only that one)',
+      JSON.stringify(a.dirty) === JSON.stringify(['nplus_exam_dates:secplus']));
     test('setExamDate flushes the map and the legacy key, and fires ca:exam-date',
       a.flushed.indexOf('nplus_exam_dates') !== -1 && a.flushed.indexOf('nplus_exam_date') !== -1 && a.events.indexOf('ca:exam-date') !== -1);
     test('getExamDates() lists every cert with a date',

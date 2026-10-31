@@ -374,8 +374,9 @@ async function main() {
       await b.cs.flushNow();
       out.s9b = {
         siblingsIn: ed.secplus === '2026-12-03' && rs.secplus && rs.secplus.score === 612 && eo.secplus && eo.secplus.score === 790,
-        localWins: ed.netplus === '2026-11-17' && rs.netplus.score === 553 && ed.az900 === null,
-        cloudAfter: db.profile.metadata.exam_dates.netplus === '2026-11-17' && db.profile.metadata.exam_dates.az900 === null
+        localWins: ed.netplus === '2026-11-17' && rs.netplus.score === 553,
+        siblingFromCloud: ed.az900 === '2026-12-20',   // a sibling entry this device never wrote follows the cloud
+        cloudAfter: db.profile.metadata.exam_dates.netplus === '2026-11-17' && db.profile.metadata.exam_dates.az900 === '2026-12-20'
           && db.profile.metadata.exam_dates.secplus === '2026-12-03'
       };
     }
@@ -396,6 +397,61 @@ async function main() {
       await b3.cs.hydrate();
       out.s9c = { noLeak: b.ls.getItem('nplus_exam_date') === null && b2.ls.getItem('nplus_exam_date') === '2026-11-17'
         && b3.ls.getItem('nplus_exam_date') === '2026-11-17' };
+    }
+    // 9e. Fix round 1 regression: a stale sibling copy never goes back up. netplus holds secplus:A, the cloud
+    // moves to secplus:B (a secplus session), netplus flushes after its own quiz: the cloud keeps B, and a
+    // later netplus hydrate shows B.
+    {
+      const db = { profile: { metadata: { readiness_snapshots: { secplus: { score: 612 } }, exam_dates: { secplus: '2026-12-03' } } }, history: [] };
+      const b = boot({ nplus_readiness_snapshots: JSON.stringify({ netplus: { score: 553 } }) }, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      await b.cs.flushNow();
+      const pulledA = JSON.parse(b.ls.getItem('nplus_readiness_snapshots')).secplus.score === 612;
+      db.profile.metadata = Object.assign({}, db.profile.metadata, {   // the secplus subdomain flushes newer values
+        readiness_snapshots: Object.assign({}, db.profile.metadata.readiness_snapshots, { secplus: { score: 700 } }),
+        exam_dates: Object.assign({}, db.profile.metadata.exam_dates, { secplus: '2026-12-10' }) });
+      const rs = JSON.parse(b.ls.getItem('nplus_readiness_snapshots')); rs.netplus = { score: 560 };   // netplus quiz
+      b.ls.setItem('nplus_readiness_snapshots', JSON.stringify(rs));
+      b.cs.flush('nplus_readiness_snapshots'); b.cs.flush('nplus_exam_dates');
+      await b.cs.flushNow();
+      const m = db.profile.metadata;
+      const cloudKeepsB = m.readiness_snapshots.secplus.score === 700 && m.exam_dates.secplus === '2026-12-10' && m.readiness_snapshots.netplus.score === 560;
+      await b.cs.hydrate();
+      await b.cs.flushNow();
+      const local = JSON.parse(b.ls.getItem('nplus_readiness_snapshots'));
+      const ld = JSON.parse(b.ls.getItem('nplus_exam_dates') || '{}');
+      out.s9e = { pulledA, cloudKeepsB, hydrateShowsB: local.secplus.score === 700 && ld.secplus === '2026-12-10' && local.netplus.score === 560 };
+    }
+    // 9f. A sibling cert this device explicitly wrote (marked dirty) goes up once, then follows the cloud again;
+    // a cleared current-cert date (null) wins over the cloud on hydrate and goes up; the legacy date follows the map.
+    {
+      const db = { profile: { metadata: { exam_dates: { secplus: '2026-12-03', netplus: '2026-11-17' } }, exam_date: '2026-11-17' }, history: [] };
+      const b = boot({ nplus_exam_dates: JSON.stringify({ netplus: null }), nplus_exam_date: '2026-01-01' }, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      const legacyGone = b.ls.getItem('nplus_exam_date') === null;   // map entry null wins over the stale legacy date
+      await b.cs.flushNow();
+      const nullUp = db.profile.metadata.exam_dates.netplus === null;
+      const ed = JSON.parse(b.ls.getItem('nplus_exam_dates')); ed.secplus = '2027-01-15';   // setExamDate('2027-01-15','secplus')
+      b.ls.setItem('nplus_exam_dates', JSON.stringify(ed));
+      b.cs.markCertDirty('nplus_exam_dates', 'secplus');
+      b.cs.flush('nplus_exam_dates');
+      await b.cs.flushNow();
+      const dirtyUp = db.profile.metadata.exam_dates.secplus === '2027-01-15';
+      const dirtyCleared = b.ls.getItem('nplus_cert_dirty') === null;
+      db.profile.metadata = Object.assign({}, db.profile.metadata, { exam_dates: Object.assign({}, db.profile.metadata.exam_dates, { secplus: '2027-02-01' }) });
+      b.cs.flush('nplus_exam_dates');
+      await b.cs.flushNow();
+      out.s9f = { legacyGone, nullUp, dirtyUp, dirtyCleared, afterwardsCloudWins: db.profile.metadata.exam_dates.secplus === '2027-02-01' };
+    }
+    // 9g. hydrate: the legacy single date is synced from this cert's map entry.
+    {
+      const db = { profile: { metadata: {} , exam_date: '2026-09-09' }, history: [] };
+      const b = boot({ nplus_exam_dates: JSON.stringify({ netplus: '2026-11-17' }), nplus_exam_date: '2026-01-01' }, db, 'netplus');
+      b.cs.setSession(b.session);
+      await b.cs.hydrate();
+      out.s9g = { legacyFollowsMap: b.ls.getItem('nplus_exam_date') === '2026-11-17' };
     }
     // 9d. legacy exam date adopts the current cert (features/readiness.js getExamDate, run for real).
     {

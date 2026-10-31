@@ -1419,7 +1419,7 @@ test('cloud cert-keying: vm — buildJsonb cert-scopes sr_queue, leaves other ke
       if (!cc || !build) return false;
       const vm = require('vm');
       const store = { 'nplus_sr_queue': JSON.stringify([{ q: 'a' }]), 'nplus_streak': JSON.stringify({ current: 3 }) };
-      const ctx = { USER_DATA_KEYS: new Set(['nplus_sr_queue', 'nplus_streak']), TABLE_BACKED_KEYS: new Set(), localStorage: { getItem: (k) => (k in store ? store[k] : null) }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
+      const ctx = { USER_DATA_KEYS: new Set(['nplus_sr_queue', 'nplus_streak']), TABLE_BACKED_KEYS: new Set(), PER_CERT_MAPS: [], localStorage: { getItem: (k) => (k in store ? store[k] : null) }, window: { CURRENT_CERT: 'secplus' }, JSON: JSON, Object: Object };
       vm.createContext(ctx);
       const out = vm.runInContext(cc + '\n' + build + '\nbuildJsonbFromLocalStorage();', ctx);
       return out && out.sr && out.sr.secplus && Array.isArray(out.sr.secplus.queue) && out.sr.secplus.queue[0].q === 'a'

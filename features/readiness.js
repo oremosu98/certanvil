@@ -519,7 +519,7 @@
     if (cert === _certKey()) {   // the legacy single date follows the current cert only
       if (!isoDate) localStorage.removeItem(STORAGE.EXAM_DATE);
       else localStorage.setItem(STORAGE.EXAM_DATE, isoDate);
-    }
+    } else { try { window.cloudStore.markCertDirty(STORAGE.EXAM_DATES, cert); } catch (_) {} }   // sync sends a sibling cert only when marked
     _cloudFlush(STORAGE.EXAM_DATES); _cloudFlush(STORAGE.EXAM_DATE);
     try { window.dispatchEvent(new Event('ca:exam-date')); } catch (_) {}   // Stage 5d: the reminders re-plan the countdown
   }

@@ -66,8 +66,15 @@ const { authStateJs, test, vm, path } = require('./_context');
   const s9a = r.s9a || {}, s9b = r.s9b || {}, s9c = r.s9c || {}, s9d = r.s9d || {};
   test('persona sync: per-cert maps survive a sibling flush (exam dates and readiness snapshots of both certs kept)',
     s9a.bothKept === true);
-  test('persona sync: hydrate merges sibling certs into the local map, this device keeps its own entries (a cleared date too)',
-    s9b.siblingsIn === true && s9b.localWins === true && s9b.cloudAfter === true);
+  test('persona sync: hydrate merges sibling certs into the local map, this device keeps its own cert\'s entries',
+    s9b.siblingsIn === true && s9b.localWins === true && s9b.siblingFromCloud === true && s9b.cloudAfter === true);
+  const s9e = r.s9e || {}, s9f = r.s9f || {}, s9g = r.s9g || {};
+  test('persona sync: a stale sibling-cert copy never goes back up (cloud keeps the newer value; the next hydrate shows it)',
+    s9e.pulledA === true && s9e.cloudKeepsB === true && s9e.hydrateShowsB === true);
+  test('persona sync: a sibling cert this device wrote is marked dirty, goes up once, then follows the cloud again',
+    s9f.dirtyUp === true && s9f.dirtyCleared === true && s9f.afterwardsCloudWins === true);
+  test('persona sync: a cleared exam date (null) wins on hydrate and goes up; the legacy date follows this cert\'s map entry',
+    s9f.legacyGone === true && s9f.nullUp === true && s9g.legacyFollowsMap === true);
   test('persona sync: once the cloud has exam_dates, profiles.exam_date never seeds another cert\'s local date',
     s9c.noLeak === true);
   test('persona sync: a legacy single exam date is adopted into exam_dates for the current cert',
