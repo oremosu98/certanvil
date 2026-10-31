@@ -929,6 +929,8 @@ console.log('\n\x1b[1m── Security Phase 4 — XSS DEFENCE-IN-DEPTH (DOMPurif
   test('Sec-P4 M6: admin renderShips (GitHub commits) routed through sanitizeRows',
     /elShipsTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs));
 
+  test('Sec-P4 M6: admin renderCertRequests (typed labels are user input) routed through sanitizeRows',
+    /elRequestsTbody\.innerHTML\s*=\s*sanitizeRows\(/.test(adminjs) && /id="requests-tbody"/.test(adminht));
   // — L5 .gitignore secret-file guard —
   test('Sec-P4 L5: .gitignore guards .env / *.key / *.pem / secrets/',
     /^\.env$/m.test(gitig) && /^\*\.key$/m.test(gitig) && /^\*\.pem$/m.test(gitig) && /^secrets\/$/m.test(gitig));
