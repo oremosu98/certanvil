@@ -24,7 +24,7 @@ async function open(page, vp) {
   expect(await page.evaluate(() => [window.CURRENT_CERT, window.CERT_PACK && window.CERT_PACK.meta.id])).toEqual(['psm2', 'psm2']);
   await page.evaluate(() => { window._quotaState = { tier: 'pro' }; document.body.classList.add('is-state-resolved', 'is-pro-tier'); });
 }
-// Both options are on screen, side by side in the column (not clipped, not overlapping), and nothing scrolls sideways.
+// Both options are on screen, stacked one above the other in the column (not clipped, not overlapping), and nothing scrolls sideways.
 async function layoutOk(page, sel) {
   const r = await page.evaluate((s) => {
     const els = [...document.querySelectorAll(s)];

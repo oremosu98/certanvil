@@ -118,7 +118,7 @@
 
     var freeRow = null;
     if (!o.pro) {
-      var names = certs.filter(function (c) { return c.id !== cur; }).slice(0, 3).map(function (c) { return _hubShort(c.name); });
+      var names = certs.filter(function (c) { return c.id !== cur; }).slice(0, 3).map(function (c) { var e = typeof window !== 'undefined' && window.CertRegistry && window.CertRegistry.get(c.id); return (e && e.labels.hubName) || _hubShort(c.name); });   // same names as the rows
       var others = certs.filter(function (c) { return c.id !== cur; });
       freeRow = { title: 'Unlock every cert with Pro', list: names.join(', ') + (others.length > 3 ? ' and more' : '') };
     }

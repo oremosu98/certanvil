@@ -122,6 +122,12 @@ const { test, _fnBody } = require('./_context');
   test('553 My certs: SecAI+ reads "SecAI+ · CY0-001", "612 / 900"; the eight keep their names (Security+, Azure Fundamentals)',
     rowOf('secai').name === 'SecAI+' && rowOf('secai').code === 'CY0-001' && (hub.__q = rowOf('secai'), vm.runInContext('_hubRight(__q)', hub)) === '<b>612</b> / 900' && rowOf('secplus').name === 'Security+' && rowOf('az900').name === 'Azure Fundamentals' && rowOf('az900').code === 'AZ-900');
 
+  hub.__o.pro = false; hub.__o.current = 'netplus';
+  hub.__o.certs = ['netplus', 'psm1', 'prince2', 'clfc02'].map((id) => { const e = hub.window.CertRegistry.get(id); return { id: id, name: e.name, code: e.code, glyph: e.glyph }; });
+  const fr = vm.runInContext('_iosHubModel(__o)', hub).freeRow;
+  test('553 My certs (Free): the "Unlock every cert" list uses the same names as the rows (PSM I, PRINCE2 Foundation; AWS Cloud Practitioner unchanged)',
+    !!fr && fr.list === 'PSM I, PRINCE2 Foundation, AWS Cloud Practitioner');
+
   // ── 7. Packs: the new packs load through the same head loader; only Net+ and Sec+ are precached (unchanged) ──
   test('553 packs: index.html loads certs/<id>.js for any resolved id, and each new pack file exists',
     /window\._certPackSrc = 'certs\/' \+ cert \+ '\.js';/.test(html) && ['secai', 'prince2', 'psm1', 'psm2'].every((id) => fs.existsSync(path.join(ROOT, 'certs', id + '.js'))));
