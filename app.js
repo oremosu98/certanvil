@@ -32,130 +32,45 @@ if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 // load (defensive — production deploys always load the pack via <script>).
 
 function detectCert() {
-  // 1. ?cert=… URL query param — used by cross-origin entry points (e.g.
-  //    landing's "Resume Security+" tile sends users to
-  //    networkplus.certanvil.com?cert=secplus). When present, persist to
-  //    localStorage so subsequent navigations keep the cert active, then
-  //    strip the param from the address bar so refresh doesn't re-trigger.
+  // Reads window.CertRegistry (lib/cert-registry.js). Must agree with the head IIFE in index.html and
+  // getActiveCertId() in auth-state.js. Registry missing (stale cached page): netplus.
+  const R = (typeof window !== 'undefined' && window.CertRegistry) || null;
+  if (!R) return 'netplus';
+  // Override key matches cloud-store.js + auth-state.js; built via prefix-concat so the data-safety lint
+  // (which bans literal 'nplus_…' setItem calls outside the STORAGE namespace) doesn't flag it.
+  const certOverrideKey = 'nplus_' + 'dev_cert';
+  let dev = null;
+  try { dev = localStorage.getItem(certOverrideKey); } catch (e) {}
+  // 1. ?cert=<known id> (cross-origin entry points, e.g. landing's "Resume Security+") or ?exam=<examSlug>
+  //    (A+ landing tiles). Persist the choice so it survives a refresh, then strip the param from the address bar.
   try {
     if (typeof location !== 'undefined' && location.search) {
-      // Override key matches what cloud-store.js + auth-state.js use; built
-      // via local prefix-concat const so the data-safety lint (which bans
-      // literal 'nplus_…' setItem calls outside the STORAGE namespace)
-      // doesn't flag this. detectCert is one of two legitimate owners of
-      // the cert-override key (the other being auth-state.js tadSwitchCert).
-      const certOverrideKey = 'nplus_' + 'dev_cert';
       const url = new URL(location.href);
       const param = (url.searchParams.get('cert') || '').toLowerCase().trim();
-      if (param === 'netplus' || param === 'secplus' || param === 'az900' || param === 'ai900'
-          || param === 'aplus-core1' || param === 'aplus-core2' || param === 'sc900' || param === 'clfc02') {
-        try { localStorage.setItem(certOverrideKey, param); } catch (e) {}
-        try {
-          url.searchParams.delete('cert');
-          history.replaceState({}, '', url.toString());
-        } catch (e) {}
-        return param;
-      }
-      // v7.6.0 — the A+ landing tiles deep-link via ?exam=core1|core2 (the
-      // cert family shares aplus.certanvil.com). Map the friendly param to the
-      // cert ID + persist so the in-app Core 1 / Core 2 switcher state survives
-      // a refresh. Same certOverrideKey-via-prefix-concat data-safety dodge.
       const examParam = (url.searchParams.get('exam') || '').toLowerCase().trim();
-      if (examParam === 'core1' || examParam === 'core2') {
-        const aplusCert = 'aplus-' + examParam;
-        try { localStorage.setItem(certOverrideKey, aplusCert); } catch (e) {}
+      const hit = R.isKnown(param) ? param
+        : (examParam && (R.all().filter((e) => e.examSlug === examParam)[0] || {}).id) || null;
+      if (hit) {
+        try { localStorage.setItem(certOverrideKey, hit); } catch (e) {}
         try {
-          url.searchParams.delete('exam');
+          url.searchParams.delete(R.isKnown(param) ? 'cert' : 'exam');
           history.replaceState({}, '', url.toString());
         } catch (e) {}
-        return aplusCert;
+        return hit;
       }
     }
   } catch (e) {}
-
-  // 2. v7.2.1 Pattern A subdomain detection — hostname MUST win over any
-  //    session/profile-stored cert preference for known cert subdomains.
-  //    Pre-v7.2.1 the only host check was a `secplus-` prefix (Vercel preview
-  //    branches only); production `secplus.certanvil.com` fell through to the
-  //    localStorage override and rendered Net+ content when a stale override
-  //    was set (e.g. from a prior visit to networkplus.certanvil.com that
-  //    persisted `nplus_dev_cert='netplus'` via the ?cert= entry-point path).
-  //    Mirrors auth-state.js getActiveCertId() which already had the correct
-  //    subdomain check. Root certanvil.com + localhost have no hostname-cert
-  //    mapping here, so they correctly fall through to the localStorage path
-  //    below (preserving the session-stored preference + dev override).
-  //    v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-  //    (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-  //    same subdomain via internal cert-switcher, NOT new subdomains).
+  // 2. Hostname wins over a saved override on a cert host (v7.2.1). A family host (A+ now) uses the saved
+  //    override when it is a member, else the first member. Root certanvil.com + localhost fall through.
   try {
-    if (typeof location !== 'undefined' && location.hostname) {
-      const host = location.hostname;
-      if (host.indexOf('secplus.') === 0
-          || host.indexOf('secplus-') === 0
-          || host === 'secplus.certanvil.com') return 'secplus';
-      if (host.indexOf('networkplus.') === 0
-          || host.indexOf('networkplus-') === 0
-          || host === 'networkplus.certanvil.com') return 'netplus';
-      if (host.indexOf('azure.') === 0
-          || host.indexOf('azure-') === 0
-          || host === 'azure.certanvil.com') return 'az900';
-      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A; founder
-      // lock 2026-05-27 — AI/data role family gets its own subdomain,
-      // re-scoping the v7.3.0 azure.certanvil.com lock to "AZ-* infra certs
-      // only"). Future AI certs (AI-102, DP-100) share ai.certanvil.com.
-      if (host.indexOf('ai.') === 0
-          || host.indexOf('ai-') === 0
-          || host === 'ai.certanvil.com') return 'ai900';
-      // v7.7.0 — sixth cert SC-900 on sc900.certanvil.com (Pattern A; founder
-      // lock 2026-05-28). Microsoft Security/Compliance/Identity role family;
-      // cert-code-named to AVOID semantic collision with CompTIA Security+
-      // (secplus.certanvil.com). Single-exam (unlike A+), so a plain return —
-      // no in-app exam switch, standard cross-subdomain nav from the switcher.
-      if (host.indexOf('sc900.') === 0
-          || host.indexOf('sc900-') === 0
-          || host === 'sc900.certanvil.com') return 'sc900';
-      // v7.8.0 — seventh cert AWS Certified Cloud Practitioner CLF-C02 on
-      // clfc02.certanvil.com (Pattern A; founder lock 2026-05-29). Third
-      // VENDOR (AWS, alongside CompTIA + Microsoft). Single-exam — plain
-      // return, standard cross-subdomain nav from the switcher. Cert-id
-      // 'clfc02' matches the az900/ai900/sc900 no-hyphen single-vendor
-      // convention; the displayed exam code stays 'CLF-C02'.
-      if (host.indexOf('clfc02.') === 0
-          || host.indexOf('clfc02-') === 0
-          || host === 'clfc02.certanvil.com') return 'clfc02';
-      // v7.6.0 — fifth cert family CompTIA A+ on aplus.certanvil.com (Pattern
-      // A; founder lock 2026-05-27). A+ is ONE certification with TWO exams
-      // (Core 1 220-1201 + Core 2 220-1202) that SHARE one subdomain — the
-      // first cert family to do so. The hostname resolves the cert FAMILY; the
-      // localStorage override differentiates the active exam for the in-app
-      // Core 1 <-> Core 2 switcher (tadSwitchCert writes nplus_dev_cert +
-      // reloads — the first cert switch that does NOT change subdomain).
-      // Default to Core 1 on a cold subdomain entry (no override set yet).
-      if (host.indexOf('aplus.') === 0
-          || host.indexOf('aplus-') === 0
-          || host === 'aplus.certanvil.com') {
-        try {
-          const aplusDev = localStorage.getItem('nplus_dev_cert');
-          if (aplusDev === 'aplus-core1' || aplusDev === 'aplus-core2') return aplusDev;
-        } catch (e) {}
-        return 'aplus-core1';
-      }
+    const hostCert = (typeof location !== 'undefined' && location.hostname) ? R.byHost(location.hostname) : null;
+    if (hostCert) {
+      const fam = R.familyOf(hostCert);
+      return (fam && R.familyMembers(fam).indexOf(dev) !== -1) ? dev : hostCert;
     }
   } catch (e) { /* not in browser context */ }
-
-  // 3. localStorage dev override — switches cert without changing URL.
-  //    Only reached when on root certanvil.com or localhost (where the
-  //    Pattern A subdomain check above doesn't match any known cert host).
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const dev = localStorage.getItem('nplus_dev_cert');
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-          || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') return dev;
-    }
-  } catch (e) { /* localStorage may be blocked */ }
-
-  // 4. Default
-  return 'netplus';
+  // 3. Saved override switches cert without changing URL (root domain + localhost). Unknown ids are ignored.
+  return R.isKnown(dev) ? dev : 'netplus';
 }
 
 const CURRENT_CERT = detectCert();

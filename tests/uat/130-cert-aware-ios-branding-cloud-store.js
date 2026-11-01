@@ -185,7 +185,7 @@ test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "N+" sidebar mark removed (now
 test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "Network+" sidebar name removed (now "CertAnvil")',
   !/sb-brand-name[^>]*>Network\+</.test(js));
 test('v4.87.2 → v4.87.3 PageTitle: title now CertAnvil-prefixed, not "Security+ AI Quiz"',
-  /document\.title[\s\S]{0,300}CertAnvil · Security\+/.test(html));
+  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html));
 
 // ═══════════════════════════════════════════════════════════════════════
 // v4.87.3 — CertAnvil brand identity adopted. Domain certanvil.com +
@@ -200,7 +200,7 @@ test('v4.87.3 Brand: meta description leads with CertAnvil',
 test('v4.87.3 Brand: apple-mobile-web-app-title is CertAnvil',
   /<meta name="apple-mobile-web-app-title" content="CertAnvil"/.test(html));
 test('v4.87.3 Brand: inline <head> script sets CertAnvil-prefixed title for both certs',
-  /document\.title\s*=.*CertAnvil · Security\+.*CertAnvil · Network\+/s.test(html));
+  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html) && /CertRegistry\.get\(cert\)\.shortName/.test(html));
 test('v4.87.3 Brand: hardcoded "Network+ AI Quiz" page title removed',
   !/<title>Network\+ AI Quiz<\/title>/.test(html));
 

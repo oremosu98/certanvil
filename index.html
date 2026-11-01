@@ -163,70 +163,26 @@
 // window.CERT_PACKS.<cert> populated synchronously).
 (function() {
   var cert = null;
-  // v7.2.2 Pattern A subdomain detection — hostname WINS over any localStorage
-  // override for known cert subdomains. Mirrors detectCert() in app.js (v7.2.1).
-  // Pre-v7.2.2 the only host check was a `secplus-` prefix (Vercel preview only);
-  // production `secplus.certanvil.com` fell through to localStorage and
-  // document.wrote netplus.js when a stale `nplus_dev_cert='netplus'` was set
-  // (from a prior ?cert= entry-point handoff). The Sec+ cert pack therefore
-  // never loaded on its own subdomain — visible content rendered as Net+ + the
-  // domain-grid / Progress / Analytics surfaces broke once v7.2.1 fixed
-  // detectCert() (because CURRENT_CERT='secplus' but CERT_PACKS.secplus was
-  // never populated by the missing certs/secplus.js script).
-  // v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-  // (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-  // same subdomain via internal cert-switcher, NOT new subdomains).
+  // Cert resolution reads window.CertRegistry (lib/cert-registry.js, loaded just above) — no per-cert lists here.
+  // Must agree with detectCert() in app.js and getActiveCertId() in auth-state.js (the v7.2.2 lesson: if they
+  // drift, CERT_PACK is null). Priority: family host (?exam=<examSlug> -> ?cert=<member id> -> saved override if a
+  // member -> first member) -> any other cert host -> saved override if the registry knows it -> 'netplus'.
+  // Hostname wins over the saved override on a non-family cert host. Registry missing (stale cached page): netplus.
   try {
-    if (typeof location !== 'undefined' && location.hostname) {
-      var host = location.hostname;
-      if (host.indexOf('secplus.') === 0 || host.indexOf('secplus-') === 0 || host === 'secplus.certanvil.com') {
-        cert = 'secplus';
-      } else if (host.indexOf('networkplus.') === 0 || host.indexOf('networkplus-') === 0 || host === 'networkplus.certanvil.com') {
-        cert = 'netplus';
-      } else if (host.indexOf('azure.') === 0 || host.indexOf('azure-') === 0 || host === 'azure.certanvil.com') {
-        cert = 'az900';
-      } else if (host.indexOf('ai.') === 0 || host.indexOf('ai-') === 0 || host === 'ai.certanvil.com') {
-        cert = 'ai900'; // v7.5.0 — fourth cert AI-900 (Pattern A, founder lock 2026-05-27)
-      } else if (host.indexOf('sc900.') === 0 || host.indexOf('sc900-') === 0 || host === 'sc900.certanvil.com') {
-        cert = 'sc900'; // v7.7.0 — sixth cert SC-900 (Pattern A, founder lock 2026-05-28); single-exam, cert-code-named to avoid Security+ (secplus.) collision
-      } else if (host.indexOf('clfc02.') === 0 || host.indexOf('clfc02-') === 0 || host === 'clfc02.certanvil.com') {
-        cert = 'clfc02'; // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (Pattern A, founder lock 2026-05-29); single-exam, AWS vendor (third vendor)
-      } else if (host.indexOf('aplus.') === 0 || host.indexOf('aplus-') === 0 || host === 'aplus.certanvil.com') {
-        // v7.6.0 — fifth cert family CompTIA A+ (Core 1 220-1201 + Core 2
-        // 220-1202) SHARE aplus.certanvil.com. Resolve the active EXAM here so
-        // the CORRECT cert pack is document.written synchronously — the v7.2.2
-        // lesson: the inline IIFE + detectCert() MUST agree on the cert, else
-        // CERT_PACK is null. Priority: ?exam=/?cert= deep-link param →
-        // localStorage override (the in-app Core 1/Core 2 switcher) → Core 1.
-        cert = 'aplus-core1';
-        try {
-          var aq = new URL(location.href);
-          var ex = (aq.searchParams.get('exam') || '').toLowerCase().trim();
-          var cq = (aq.searchParams.get('cert') || '').toLowerCase().trim();
-          if (ex === 'core2' || cq === 'aplus-core2') {
-            cert = 'aplus-core2';
-          } else if (ex === 'core1' || cq === 'aplus-core1') {
-            cert = 'aplus-core1';
-          } else if (typeof localStorage !== 'undefined') {
-            var aDev = localStorage.getItem('nplus_dev_cert');
-            if (aDev === 'aplus-core2') cert = 'aplus-core2';
-            else if (aDev === 'aplus-core1') cert = 'aplus-core1';
-          }
-        } catch (e) {}
-      }
+    var R = window.CertRegistry, dev = null;
+    try { dev = localStorage.getItem('nplus_dev_cert'); } catch (e) { /* localStorage may be blocked */ }
+    var hostCert = (typeof location !== 'undefined' && location.hostname) ? R.byHost(location.hostname) : null;
+    var fam = hostCert ? R.familyOf(hostCert) : null;
+    if (fam) {
+      var members = R.familyMembers(fam), q = new URL(location.href).searchParams;
+      var ex = (q.get('exam') || '').toLowerCase().trim(), cq = (q.get('cert') || '').toLowerCase().trim();
+      for (var i = 0; i < members.length && !cert; i++) if (ex && R.get(members[i]).examSlug === ex) cert = members[i];
+      for (var j = 0; j < members.length && !cert; j++) if (members[j] === cq) cert = members[j];
+      cert = cert || (members.indexOf(dev) !== -1 ? dev : hostCert);
+    } else {
+      cert = hostCert || (R.isKnown(dev) ? dev : null);
     }
-  } catch (e) { /* not in browser */ }
-  // Only consult localStorage when Pattern A subdomain didn't match
-  // (root certanvil.com + localhost — preserves dev override).
-  if (!cert) {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        var dev = localStorage.getItem('nplus_dev_cert');
-        if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-            || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') cert = dev;
-      }
-    } catch (e) { /* localStorage may be blocked */ }
-  }
+  } catch (e) { cert = null; }
   if (!cert) cert = 'netplus';
   document.documentElement.setAttribute('data-cert', cert);
   // v7.89.0 (Lighthouse-90 TASK 1): #cb-cert (the bento command-bar cert
@@ -240,21 +196,14 @@
   // would be wrong on 6 of 7 domains, so compute the correct markup HERE
   // (cert is already resolved above) and let the tiny inline <script> next
   // to #cb-cert assign it synchronously at parse time — no network/deferred
-  // JS wait, no reflow. Table mirrors each certs/*.js meta.name (vendor
-  // prefix stripped, see renderBentoTopbar) + meta.code; keep in sync if a
-  // cert is added.
+  // JS wait, no reflow. Name + code come from the registry (shortName,
+  // code); the one-entry table below holds the exceptions.
   try {
     var CB_CERT_META = {
-      netplus:       ['Network+', 'N10-009'],
-      secplus:       ['Security+', 'SY0-701'],
-      az900:         ['Azure Fundamentals', 'AZ-900'],
-      ai900:         ['Azure AI Fundamentals', 'AI-901'],  // v8.120: AI-900 retired → AI-901 (id kept)
-      sc900:         ['SC-900', 'SC-900'],
-      clfc02:        ['Cloud Practitioner', 'CLF-C02'],
-      'aplus-core1': ['A+ Core 1', '220-1201'],
-      'aplus-core2': ['A+ Core 2', '220-1202']
+      sc900: ['SC-900', 'SC-900']  // topbar short name differs from the registry shortName
     };
-    var cbv = CB_CERT_META[cert] || CB_CERT_META.netplus;
+    var cbe = window.CertRegistry.get(cert);
+    var cbv = CB_CERT_META[cert] || [cbe.shortName, cbe.code];
     window._cbCertHtml = cbv[0] + ' <b>' + cbv[1] + '</b>';
   } catch (e) {}
   // v4.87.3: CertAnvil-prefixed cert-aware page title. Bookmarked tabs
@@ -262,21 +211,8 @@
   // brand is visible alongside the active cert pack.
   // v7.3.0: AZ-900 branch added for "CertAnvil — Azure Fundamentals".
   try {
-    document.title = (cert === 'secplus')
-      ? 'CertAnvil · Security+'
-      : (cert === 'az900')
-        ? 'CertAnvil · Azure Fundamentals'
-        : (cert === 'ai900')
-          ? 'CertAnvil · Azure AI Fundamentals'
-          : (cert === 'sc900')
-            ? 'CertAnvil · SC-900'
-            : (cert === 'clfc02')
-              ? 'CertAnvil · AWS Cloud Practitioner'
-            : (cert === 'aplus-core1')
-              ? 'CertAnvil · A+ Core 1'
-              : (cert === 'aplus-core2')
-                ? 'CertAnvil · A+ Core 2'
-                : 'CertAnvil · Network+';
+    var TITLE_NAMES = { sc900: 'SC-900', clfc02: 'AWS Cloud Practitioner' };  // differ from the registry shortName
+    document.title = 'CertAnvil · ' + (TITLE_NAMES[cert] || window.CertRegistry.get(cert).shortName);
   } catch (e) {}
   // v7.81.0 P0a: cert pack moved to end-of-body (no longer blocks <head>).
   // Save URL so the end-of-body injection script can reference it without

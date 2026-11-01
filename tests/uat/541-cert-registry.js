@@ -132,5 +132,5 @@ const { test } = require('./_context');
   const iDetect = dm ? dm.index : -1;
   test('index.html loads the registry after native-shell.js and before the inline detection IIFE', iNative > -1 && iReg > iNative && iDetect > iReg);
   test('sw.js precaches the registry', /'\.\/lib\/cert-registry\.js'/.test(read('sw.js')));
-  test('app.js does not read CertRegistry yet (consumers are later tasks)', !/CertRegistry/.test(read('app.js')));
+  test('app.js detectCert reads the registry (Task 1.3 consumer)', /CertRegistry/.test(read('app.js')));
 })();

@@ -59,17 +59,16 @@ function authSurfaces() {
       window: win,
       localStorage: { getItem: (k) => (k in ls ? ls[k] : null), setItem: (k, v) => { ls[k] = String(v); }, removeItem: (k) => { delete ls[k]; } }
     });
+    vm.runInContext(read('lib/cert-registry.js'), ctx);
     vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + fnSrc(src, 'getAvailableCerts', 'auth-state.js') + '\n' + fnSrc(src, 'getActiveCertId', 'auth-state.js') + '\n' + switchSrc + ';', ctx);
     return { win, ctx };
   };
   const certs = vm.runInContext('getAvailableCerts("user")', mk('example.com').ctx);
   const switchHost = (id) => { const e = mk('example.com'); e.win.tadSwitchCert(id); return e.win.location.href || null; };
   const detect = (host) => vm.runInContext('getActiveCertId()', mk(host).ctx);
-  // dev-override allow-list: every id compared against `dev` before the first host check in getActiveCertId
-  const gsrc = fnSrc(src, 'getActiveCertId', 'auth-state.js');
-  const lm = /dev\s*===\s*'[^']+'(?:\s*\|\|\s*dev\s*===\s*'[^']+')*/.exec(gsrc);
-  if (!lm) throw new Error('pattern dev-override allow-list not found in auth-state.js');
-  const allow = (lm[0].match(/'([^']+)'/g) || []).map((x) => x.slice(1, -1));
+  // dev-override allow-list: probe it. An id is allowed if a saved override of that id (on a host with no cert) wins.
+  const probe = (id) => { const e = mk('example.com', { nplus_dev_cert: id }); return vm.runInContext('getActiveCertId()', e.ctx) === id; };
+  const allow = { indexOf: (id) => (probe(id) ? 1 : -1) };
   return { certs, switchHost, detect, allow };
 }
 
@@ -90,6 +89,7 @@ function headSurfaces() {
       location: { hostname: host, href: 'https://' + host + '/', search: '' },
       localStorage: { getItem: (k) => (k in ls ? ls[k] : null) }
     });
+    vm.runInContext(read('lib/cert-registry.js'), ctx);
     vm.runInContext(code, ctx);
     return { cert: attrs['data-cert'] || null, title: doc.title || null, topbar: nz(win._cbCertHtml) };
   };

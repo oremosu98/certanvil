@@ -113,51 +113,14 @@
   window.buildSignInUrl = buildSignInUrl;
 
   function getActiveCertId() {
+    // Registry missing (stale cached page): netplus. Saved override first (any known id), then the host.
+    var R = window.CertRegistry;
+    if (!R) return 'netplus';
     try {
       var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-          || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') return dev;
+      if (R.isKnown(dev)) return dev;
     } catch (e) {}
-    try {
-      var host = window.location.hostname || '';
-      // v7.1.0 Pattern A subdomain detection — any host starting with
-      // 'secplus' or 'secplus.' (e.g. secplus.certanvil.com, secplus-*.vercel.app)
-      // routes to the Security+ cert pack.
-      // v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-      // (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-      // same subdomain via internal cert-switcher, NOT new subdomains).
-      if (host.indexOf('secplus.') === 0
-          || host.indexOf('secplus-') === 0
-          || host === 'secplus.certanvil.com') return 'secplus';
-      if (host.indexOf('azure.') === 0
-          || host.indexOf('azure-') === 0
-          || host === 'azure.certanvil.com') return 'az900';
-      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A;
-      // founder lock 2026-05-27 — AI/data role family separation).
-      if (host.indexOf('ai.') === 0
-          || host.indexOf('ai-') === 0
-          || host === 'ai.certanvil.com') return 'ai900';
-      // v7.7.0 — sixth cert SC-900 on sc900.certanvil.com (Pattern A; founder
-      // lock 2026-05-28). Single-exam Microsoft Security/Compliance/Identity
-      // cert; cert-code-named to avoid Security+ (secplus.) collision.
-      if (host.indexOf('sc900.') === 0
-          || host.indexOf('sc900-') === 0
-          || host === 'sc900.certanvil.com') return 'sc900';
-      // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 on
-      // clfc02.certanvil.com (Pattern A; founder lock 2026-05-29). Single-exam,
-      // AWS vendor (third vendor). Standard cross-subdomain switcher nav.
-      if (host.indexOf('clfc02.') === 0
-          || host.indexOf('clfc02-') === 0
-          || host === 'clfc02.certanvil.com') return 'clfc02';
-      // v7.6.0 — fifth cert family CompTIA A+ on aplus.certanvil.com (Pattern
-      // A; founder lock 2026-05-27). Core 1 + Core 2 share the subdomain; the
-      // localStorage override above (checked FIRST) differentiates the active
-      // exam for the in-app switcher, so a cold subdomain entry defaults here
-      // to Core 1.
-      if (host.indexOf('aplus.') === 0
-          || host.indexOf('aplus-') === 0
-          || host === 'aplus.certanvil.com') return 'aplus-core1';
-    } catch (e) {}
+    try { return R.byHost(window.location.hostname || '') || 'netplus'; } catch (e) {}
     return 'netplus';
   }
 
@@ -179,8 +142,7 @@
   // override. localhost still uses the override fallback for local dev
   // where subdomain hosts aren't available.
   window.tadSwitchCert = function (certId) {
-    if (certId !== 'netplus' && certId !== 'secplus' && certId !== 'az900' && certId !== 'ai900'
-        && certId !== 'aplus-core1' && certId !== 'aplus-core2' && certId !== 'sc900' && certId !== 'clfc02') return false;
+    if (!window.CertRegistry || !window.CertRegistry.isKnown(certId)) return false;
     // Pro gate for Sec+ + AZ-900 + AI-900: delegate to canonical _gateProOnly.
     // Returns true if Pro/admin (proceed) OR false if Free (modal already shown, abort).
     // v7.3.0: az900 joins secplus on the Pro tier.

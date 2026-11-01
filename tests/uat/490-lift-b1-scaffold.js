@@ -21,7 +21,7 @@ const { fs, html, path, ROOT, results, test } = require('./_context');
       ios.includes('body:has(#page-progress.active #ios-progress:not(:empty)) #app-topbar') &&
       ios.includes('body:has(#page-analytics.active #ios-analytics:not(:empty)) #app-topbar'));
     const appLines = fs.readFileSync(path.join(ROOT, 'app.js'), 'utf8').split('\n').length;
-    test('app.js stays at its 8301-line ratchet (B1 adds nothing there)', appLines === 8334);  // 8301 + 33 for persona-bundle T3 (local-day streak helpers in app.js)
+    test('app.js stays at its 8301-line ratchet (B1 adds nothing there)', appLines === 8249);  // was 8334 (8301 + 33 persona-bundle T3); -85 for cert-registry Task 1.3 (detectCert reads the registry)
   } catch (err) {
     test('Lift B1 scaffold: block (threw)', false);
     results.errors.push('490 lift-b1-scaffold block threw: ' + err.message);
