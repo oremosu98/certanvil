@@ -66,13 +66,13 @@ const { test } = require('./_context');
   // 2. iOS first-run picker
   surfaces.push({
     name: 'ios-firstrun pickCerts',
-    ids: (sb) => run(sb, fn('features/ios-firstrun.js', 'pickCerts') + '\npickCerts()').map((c) => c.id),
+    ids: (sb) => run(sb, fn('features/ios-firstrun.js', 'pickRow') + '\n' + fn('features/ios-firstrun.js', 'pickCerts') + '\npickCerts()').map((c) => c.id),
     order: (r) => r.visible().map((e) => e.id)
   });
   // 3 + 4. onboarding first-run and onboarding home
   ['lib/onboarding-firstrun.js', 'lib/onboarding-home.js'].forEach((f) => surfaces.push({
     name: f + ' certs',
-    ids: (sb) => run(sb, fn(f, 'certs') + '\ncerts()').map((c) => c.id),
+    ids: (sb) => run(sb, fn(f, 'row') + '\n' + fn(f, 'certs') + '\ncerts()').map((c) => c.id),
     order: (r) => r.visible().map((e) => e.id)
   }));
   surfaces.forEach((s) => {
@@ -88,6 +88,36 @@ const { test } = require('./_context');
     try { safe = s.ids(sbC); } catch (e) { threw = true; }
     test(s.name + ': no registry on the page fails safe (no throw, never more than the Network+ default)', !threw && Array.isArray(safe) && safe.length <= 1 && safe.every((i) => i === 'netplus'));
   });
+
+  // The literal order of the eight current certs on each list. New certs may be interleaved or appended later, so filter to these ids first.
+  const EIGHT = ['netplus', 'secplus', 'az900', 'ai900', 'sc900', 'clfc02', 'aplus-core1', 'aplus-core2'];
+  const EIGHT_PICK = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2', 'az900', 'ai900', 'sc900', 'clfc02'];
+  const rel = (list, want) => list.filter((i) => want.indexOf(i) !== -1).join();
+  const sbO = box({});
+  test('Literal order, switcher/hub/settings: netplus, secplus, az900, ai900, sc900, clfc02, aplus-core1, aplus-core2',
+    rel(surfaces[0].ids(sbO), EIGHT) === EIGHT.join());
+  test('Literal order, picker + both onboarding lists: netplus, secplus, aplus-core1, aplus-core2, az900, ai900, sc900, clfc02',
+    surfaces.slice(1).every((s) => rel(s.ids(sbO), EIGHT_PICK) === EIGHT_PICK.join()));
+
+  // ── the ACTIVE cert resolves from its own entry, not the filtered list: a non-admin on a hidden cert's host sees its own name ──
+  (() => {
+    const sb = box({ window: {} });
+    sb.window.CURRENT_CERT = 'zz';
+    test('Active hidden cert: onboarding-home certById and onboarding-firstrun certById return its own label (not Network+)',
+      run(sb, fn('lib/onboarding-home.js', 'row') + fn('lib/onboarding-home.js', 'certs') + '\n' + fn('lib/onboarding-home.js', 'certById') + '\ncertById("zz").name + "|" + certById("zz").vendor + "|" + certs().length') === 'ZZ Onb|ZZ Sub|8'
+      && run(sb, fn('lib/onboarding-firstrun.js', 'row') + fn('lib/onboarding-firstrun.js', 'certs') + '\n' + fn('lib/onboarding-firstrun.js', 'certById') + '\ncertById("zz").name') === 'ZZ Onb');
+    test('Active hidden cert: first-run picker pickName resolves it although pickCerts() excludes it',
+      run(sb, fn('features/ios-firstrun.js', 'pickRow') + fn('features/ios-firstrun.js', 'pickCerts') + '\n' + fn('features/ios-firstrun.js', 'pickName') + '\npickName("zz") + "|" + pickCerts().some(function(c){return c.id==="zz";})') === 'Zed Short|false');
+    // auth-state: the "Free tier . <name> active" label. Run the real renderSignedIn line pair by source: it must read get(activeCertId).
+    const src = read('auth-state.js');
+    test('Active hidden cert: auth-state tier label reads CertRegistry.get(activeCertId), not the filtered list',
+      /var activeCert = \(window\.CertRegistry && window\.CertRegistry\.get\(activeCertId\)\)/.test(src) && !/getAvailableCerts\(role\)\.filter/.test(src)
+      && run(sb, 'var activeCertId = "zz"; var activeCert = (window.CertRegistry && window.CertRegistry.get(activeCertId)) || { name: "Network+" }; activeCert.name') === 'Zed Hidden Cert');
+    // ios-hub: the active hidden cert is added to the hub's certs so its card still renders
+    test('Active hidden cert: the hub adds the current cert when the visible list lacks it', /ce && !certs\.some\(function \(c\) \{ return c\.id === current; \}\)/.test(read('features/ios-hub.js')));
+  })();
+  test('mockups/onboarding-sandbox.html loads the registry before the consumers',
+    (() => { const h = read('mockups/onboarding-sandbox.html'); const i = h.indexOf('../lib/cert-registry.js'); return i > -1 && i < h.indexOf('../lib/router.js') && i < h.indexOf('../lib/onboarding-firstrun.js'); })());
 
   // ── per-id label surfaces: a registry-only fake cert shows its registry labels ──
   const sb1 = box({});
@@ -139,13 +169,13 @@ const { test } = require('./_context');
   // First-run picker names/codes: labels.firstrun and the one code (A+ approved at 220-1201 / 220-1202).
   (() => {
     const sb = box({});
-    const rows = run(sb, fn('features/ios-firstrun.js', 'pickCerts') + '\npickCerts()');
+    const rows = run(sb, fn('features/ios-firstrun.js', 'pickRow') + '\n' + fn('features/ios-firstrun.js', 'pickCerts') + '\npickCerts()');
     const byId = {}; rows.forEach((r) => { byId[r.id] = r; });
     test('ios-firstrun picker rows: glyph = mark, name = labels.firstrun, code = entry.code',
       byId['aplus-core1'].code === '220-1201' && byId['aplus-core2'].code === '220-1202' && byId.clfc02.glyph === 'CLF' && byId.az900.name === 'Azure Fundamentals' && byId.netplus.code === 'N10-009');
     const src = read('features/ios-firstrun.js');
     test('ios-firstrun: PICK_IDS / PICK_NAMES / PICK_CODES are gone', !/PICK_(IDS|NAMES|CODES)/.test(src));
-    const o1 = run(sb, fn('lib/onboarding-firstrun.js', 'certs') + '\ncerts()'), o2 = run(sb, fn('lib/onboarding-home.js', 'certs') + '\ncerts()');
+    const o1 = run(sb, fn('lib/onboarding-firstrun.js', 'row') + fn('lib/onboarding-firstrun.js', 'certs') + '\ncerts()'), o2 = run(sb, fn('lib/onboarding-home.js', 'row') + fn('lib/onboarding-home.js', 'certs') + '\ncerts()');
     const a1 = o1.filter((c) => c.id === 'aplus-core1')[0], c2 = o2.filter((c) => c.id === 'clfc02')[0], z2 = o2.filter((c) => c.id === 'az900')[0];
     test('onboarding rows: names/vendors/marks from labels (first-run A+ vendor says 220-1201; home sub-lines as today)',
       a1.name === 'A+ Core 1' && a1.vendor === 'CompTIA · 220-1201' && a1.mark === 'A+' && c2.vendor === 'CLF-C02' && z2.vendor === 'Azure Fundamentals');

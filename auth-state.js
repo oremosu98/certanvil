@@ -222,8 +222,8 @@
     var role = (profile && profile.role) || 'user';
     if (role === 'admin') { try { window._certanvilIsAdmin = true; } catch (_) {} }   // Preview as Free is admin-only; the {role:'user'} first paint never turns it off
     var activeCertId = getActiveCertId();
-    var activeCert = getAvailableCerts(role).filter(function (c) { return c.id === activeCertId; })[0]
-      || { name: 'Network+', code: 'N10-009' };
+    // The active cert's own entry (not the filtered list): a non-admin on a hidden cert's host still sees that cert's name.
+    var activeCert = (window.CertRegistry && window.CertRegistry.get(activeCertId)) || { name: 'Network+', code: 'N10-009' };
     var tierLabel = '● Free tier · ' + activeCert.name + ' active';
     var certSwitcherHtml = buildCertSwitcherHtml(activeCertId, role);
 

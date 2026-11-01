@@ -435,12 +435,13 @@
 
   // ── Behind the onboarding switch: June's picker in #onb-firstrun, the lock-in sheet in B4's #ist-sheet. ──
   // The picker rows are the registry's visible certs (no registry on the page: the Network+ default alone).
+  function pickRow(e) { return { id: e.id, glyph: e.mark, name: e.labels.firstrun, code: e.code }; }
   function pickCerts() {
     var R = window.CertRegistry;
-    if (!R) return [{ id: 'netplus', glyph: 'N+', name: 'Network+', code: 'N10-009' }];
-    return R.visible().map(function (e) { return { id: e.id, glyph: e.mark, name: e.labels.firstrun, code: e.code }; });
+    return R ? R.visible().map(pickRow) : [{ id: 'netplus', glyph: 'N+', name: 'Network+', code: 'N10-009' }];
   }
-  function pickName(id) { var l = pickCerts(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].name; return ''; }
+  // Name of any registry cert (hidden too), so the active cert always resolves; pickCerts() is only the pickable list.
+  function pickName(id) { var R = window.CertRegistry, e = R && R.get(id); if (e) return e.labels.firstrun; var l = pickCerts(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].name; return ''; }
   var pick = null;   // {selected, pro}
   function pickHost() { return document.getElementById('onb-firstrun'); }
   function drawPicker() {

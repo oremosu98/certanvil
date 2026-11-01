@@ -131,10 +131,10 @@ function extract() {
   const head = headSurfaces();
   const byId = {}; auth.certs.forEach((c) => { byId[c.id] = c; });
 
-  const pickRows = {}; surface('features/ios-firstrun.js', ['pickCerts'], 'pickCerts()').forEach((r) => { pickRows[r.id] = r; });
+  const pickRows = {}; surface('features/ios-firstrun.js', ['pickRow', 'pickCerts'], 'pickCerts()').forEach((r) => { pickRows[r.id] = r; });
   const signinName = (id) => surface('features/ios-signin.js', ['certName'], 'certName(' + JSON.stringify(id) + ')');
   const lockName = (id) => surface('lib/cert-lock.js', ['certLabel'], 'certLabel(' + JSON.stringify(id) + ')');
-  const rowsOf = (file) => { const o = {}; surface(file, ['certs'], 'certs()').forEach((c) => { o[c.id] = c; }); return o; };
+  const rowsOf = (file) => { const o = {}; surface(file, ['row', 'certs'], 'certs()').forEach((c) => { o[c.id] = c; }); return o; };
   const onbRows = rowsOf('lib/onboarding-firstrun.js'), onbHomeRows = rowsOf('lib/onboarding-home.js');
   const hubMax = (id) => surface('features/ios-hub.js', ['_hubMax'], '_hubMax(' + JSON.stringify(id) + ')');
 
