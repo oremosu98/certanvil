@@ -34,6 +34,8 @@ const SHELL_ASSETS = [
   // Sec-P4/M6: vendored DOMPurify (XSS defence-in-depth). Loaded before app.js
   // in index.html; precached for offline so sanitizeHTML() never silently no-ops.
   './lib/dompurify.min.js',
+  // Cert registry (window.CertRegistry): loaded in <head> before cert detection, so precache it for offline boot.
+  './lib/cert-registry.js',
   './lib/supabase.js',
   './cloud-store.js',
   './auth-state.js',
