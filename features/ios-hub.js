@@ -187,7 +187,8 @@
     try { certs = typeof getAvailableCerts === 'function' ? getAvailableCerts() : []; } catch (_) { certs = []; }
     var current = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus', now = new Date(), live = null;
     // The active cert always gets its card: a non-admin on a hidden cert's host is not in the visible list, so add its own entry.
-    try { var ce = window.CertRegistry && window.CertRegistry.get(current); if (ce && !certs.some(function (c) { return c.id === current; })) certs = certs.concat([{ id: ce.id, name: ce.name, code: ce.code, tier: ce.tier, glyph: ce.glyph }]); } catch (_) {}
+    // (Only once the cert list exists: before it arrives the page must show its loading state, not a lone card.)
+    try { var ce = typeof getAvailableCerts === 'function' && window.CertRegistry && window.CertRegistry.get(current); if (ce && !certs.some(function (c) { return c.id === current; })) certs = certs.concat([{ id: ce.id, name: ce.name, code: ce.code, tier: ce.tier, glyph: ce.glyph }]); } catch (_) {}
     try { live = typeof getReadinessScore === 'function' ? getReadinessScore() : null; } catch (_) { live = null; }
     return {
       certs: certs, snaps: _hubLiveSnaps(_readMap(STORAGE.READINESS_SNAPSHOTS), current, live, now.toISOString()), dates: dates, outcomes: _readMap(STORAGE.EXAM_OUTCOMES),
