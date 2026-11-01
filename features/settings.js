@@ -92,7 +92,7 @@
     return {
       signedIn: signedIn, email: _istEmail || (signedIn ? '' : null), pro: pro,
       methodsRow: signedIn && !!window.CA_NATIVE, methods: signedIn && window.CA_NATIVE && window.iosSettings && window.iosSettings._methods ? window.iosSettings._methods() : ['email'],   // Stage 5c
-      cert: { name: (c && c.name) || meta.name || '', code: (c && c.code) || meta.code || '' },
+      cert: { name: (c && c.name) || meta.name || '', code: (c && c.code) || meta.code || '', legal: _certLegal() },
       passPlanHtml: _passPlanHtml(),
       glance: { sync: !!_quotaState, exam: exam ? { date: exam, days: typeof getDaysToExam === 'function' ? getDaysToExam() : null } : null,
         goal: goal, today: typeof getTodayQuestionCount === 'function' ? getTodayQuestionCount() : 0 },
@@ -150,10 +150,11 @@
       if (when) bits.push(when);
       if (s.weak_domain) bits.push('weakest: ' + escHtml(s.weak_domain));
       var ringPct = (score !== null) ? score : 0;
+      var _rs = (window.CertRegistry && window.CertRegistry.scale(id)) || null;   // a percent cert's ring reads '72%'
       var name = escHtml(meta.name) + (meta.code ? ' ' + escHtml(meta.code) : '');
       return '<div class="plan-item" data-act="pp-open-cert" data-cert="' + escHtml(id) + '" role="button" tabindex="0">' +
         '<span class="pi-ring" style="background:conic-gradient(var(--accent) 0 ' + ringPct + '%, var(--surface3) ' + ringPct + '% 100%)">' +
-          '<span class="pi-ring-inner">' + (score !== null ? score : '&ndash;') + '</span></span>' +
+          '<span class="pi-ring-inner">' + (score !== null ? score + (_rs && _rs.format === 'percent' ? '%' : '') : '--') + '</span></span>' +
         '<span class="pi-body"><span class="pi-cert">' + name + '</span>' +
           '<div class="pi-meta">' + (bits.length ? bits.join(' &middot; ') : 'Open this cert') + '</div></span>' +
         '<span class="pi-go" aria-hidden="true">&rsaquo;</span></div>';
@@ -647,6 +648,7 @@
     // v7.45.0 GAP-6: show the Delete-my-account row for signed-in users
     if (typeof _syncDeleteAccountRow === 'function') _syncDeleteAccountRow();
     _syncSuggestRow();
+    _syncCertLegal();
     // v4.81.2: refresh the auto-backup list every time Settings opens so the
     // user sees what's available + can restore/download from any snapshot.
     if (typeof renderAutoBackupList === 'function') renderAutoBackupList();
@@ -876,6 +878,18 @@
       tog.classList.toggle('is-on', !!prefs.topUp);
       tog.setAttribute('aria-checked', prefs.topUp ? 'true' : 'false');
     }
+  }
+
+  // The active cert's trademark + not-affiliated line (CertRegistry entry.legal: PRINCE2, PSM), under Exam Date. Phones: ios-settings.js.
+  function _certLegal() {
+    var R = window.CertRegistry, e = R && R.get(window.CURRENT_CERT || '');
+    return (e && e.legal) || '';
+  }
+  function _syncCertLegal() {
+    var p = document.getElementById('settings-cert-legal'); if (!p) return;
+    var t = _certLegal();
+    p.textContent = t;
+    if (t) p.removeAttribute('hidden'); else p.setAttribute('hidden', '');
   }
 
   // Desktop catch-up Task 5: the Suggest a cert row (signed in only; CSS hides it below 900px)

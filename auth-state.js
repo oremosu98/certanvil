@@ -90,21 +90,15 @@
   // as Sec+). Future Azure certs (AZ-104, AZ-204, AZ-305) co-exist on the
   // same azure.certanvil.com subdomain via in-app cert switcher rather
   // than new subdomains (founder lock 2026-05-26).
+  // Now CertRegistry.visible() (hidden certs only for admins). Single exams grouped by vendor (CertRegistry.vendorGroups,
+  // vendors in registry order), then the family pairs (A+, PSM), which have sat last since v7.6.0. For the eight
+  // launch certs that is exactly registry order with A+ last. Registry missing (stale cached page): an empty list.
   function getAvailableCerts(role) {
-    return [
-      { id: 'netplus', name: 'Network+',                       code: 'N10-009', tier: 'free', glyph: 'N+' },
-      { id: 'secplus', name: 'Security+',                      code: 'SY0-701', tier: 'pro',  glyph: 'S+' },
-      { id: 'az900',   name: 'Microsoft Azure Fundamentals',   code: 'AZ-900',  tier: 'pro',  glyph: 'AZ' },
-      { id: 'ai900',   name: 'Microsoft Azure AI Fundamentals',code: 'AI-901',  tier: 'pro',  glyph: 'AI' },
-      // v7.7.0 — sixth cert SC-900 (single-exam, Microsoft Security/Compliance/Identity)
-      { id: 'sc900',   name: 'Microsoft SC-900',                code: 'SC-900',  tier: 'pro',  glyph: 'SC' },
-      // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (single-exam, AWS — third vendor)
-      { id: 'clfc02',  name: 'AWS Cloud Practitioner',          code: 'CLF-C02', tier: 'pro',  glyph: 'AWS' },
-      // v7.6.0 — fifth cert family CompTIA A+ (dual-exam): both Core 1 + Core 2
-      // are selectable rows on the shared aplus.certanvil.com subdomain.
-      { id: 'aplus-core1', name: 'CompTIA A+ Core 1', code: '220-1201', tier: 'pro', glyph: 'A+' },
-      { id: 'aplus-core2', name: 'CompTIA A+ Core 2', code: '220-1202', tier: 'pro', glyph: 'A+' }
-    ];
+    var R = window.CertRegistry;
+    var g = R ? R.vendorGroups(R.visible()) : [], v = [];
+    g.forEach(function (x) { v = v.concat(x.entries.filter(function (e) { return !e.family; })); });
+    g.forEach(function (x) { v = v.concat(x.entries.filter(function (e) { return e.family; })); });
+    return v.map(function (e) { return { id: e.id, name: e.name, code: e.code, tier: e.tier, glyph: e.glyph }; });
   }
 
   // v7.52.0: expose the cert registry so app.js can render the Pass Plan account section.
@@ -113,51 +107,15 @@
   window.buildSignInUrl = buildSignInUrl;
 
   function getActiveCertId() {
-    try {
-      var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-          || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') return dev;
-    } catch (e) {}
-    try {
-      var host = window.location.hostname || '';
-      // v7.1.0 Pattern A subdomain detection — any host starting with
-      // 'secplus' or 'secplus.' (e.g. secplus.certanvil.com, secplus-*.vercel.app)
-      // routes to the Security+ cert pack.
-      // v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-      // (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-      // same subdomain via internal cert-switcher, NOT new subdomains).
-      if (host.indexOf('secplus.') === 0
-          || host.indexOf('secplus-') === 0
-          || host === 'secplus.certanvil.com') return 'secplus';
-      if (host.indexOf('azure.') === 0
-          || host.indexOf('azure-') === 0
-          || host === 'azure.certanvil.com') return 'az900';
-      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A;
-      // founder lock 2026-05-27 — AI/data role family separation).
-      if (host.indexOf('ai.') === 0
-          || host.indexOf('ai-') === 0
-          || host === 'ai.certanvil.com') return 'ai900';
-      // v7.7.0 — sixth cert SC-900 on sc900.certanvil.com (Pattern A; founder
-      // lock 2026-05-28). Single-exam Microsoft Security/Compliance/Identity
-      // cert; cert-code-named to avoid Security+ (secplus.) collision.
-      if (host.indexOf('sc900.') === 0
-          || host.indexOf('sc900-') === 0
-          || host === 'sc900.certanvil.com') return 'sc900';
-      // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 on
-      // clfc02.certanvil.com (Pattern A; founder lock 2026-05-29). Single-exam,
-      // AWS vendor (third vendor). Standard cross-subdomain switcher nav.
-      if (host.indexOf('clfc02.') === 0
-          || host.indexOf('clfc02-') === 0
-          || host === 'clfc02.certanvil.com') return 'clfc02';
-      // v7.6.0 — fifth cert family CompTIA A+ on aplus.certanvil.com (Pattern
-      // A; founder lock 2026-05-27). Core 1 + Core 2 share the subdomain; the
-      // localStorage override above (checked FIRST) differentiates the active
-      // exam for the in-app switcher, so a cold subdomain entry defaults here
-      // to Core 1.
-      if (host.indexOf('aplus.') === 0
-          || host.indexOf('aplus-') === 0
-          || host === 'aplus.certanvil.com') return 'aplus-core1';
-    } catch (e) {}
+    // CertRegistry.resolve(), the same call the head IIFE and detectCert() make. detectCert() has already run and
+    // stripped a ?cert= from the URL by now, so its answer (window.CURRENT_CERT) wins when set. Registry missing
+    // (stale cached page): use what the head already resolved.
+    var R = window.CertRegistry;
+    if (!R) return (typeof document !== 'undefined' && document.documentElement.getAttribute('data-cert')) || 'netplus';
+    if (R.isKnown(window.CURRENT_CERT)) return window.CURRENT_CERT;
+    var dev = null;
+    try { dev = localStorage.getItem(CERT_OVERRIDE_KEY); } catch (e) {}
+    try { return R.resolve({ hostname: window.location.hostname, search: window.location.search, override: dev }); } catch (e) {}
     return 'netplus';
   }
 
@@ -179,83 +137,33 @@
   // override. localhost still uses the override fallback for local dev
   // where subdomain hosts aren't available.
   window.tadSwitchCert = function (certId) {
-    if (certId !== 'netplus' && certId !== 'secplus' && certId !== 'az900' && certId !== 'ai900'
-        && certId !== 'aplus-core1' && certId !== 'aplus-core2' && certId !== 'sc900' && certId !== 'clfc02') return false;
-    // Pro gate for Sec+ + AZ-900 + AI-900: delegate to canonical _gateProOnly.
+    var R = window.CertRegistry;
+    if (!R || !R.isKnown(certId)) return false;
+    var entry = R.get(certId);
+    // Pro gate: every cert whose tier is 'pro' goes through the canonical _gateProOnly with its registry label.
     // Returns true if Pro/admin (proceed) OR false if Free (modal already shown, abort).
-    // v7.3.0: az900 joins secplus on the Pro tier.
-    // v7.5.0: ai900 joins as the fourth Pro-tier cert (founder lock 2026-05-27).
-    if (certId === 'secplus' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('Security+ (SY0-701)')) return false;
-    }
-    if (certId === 'az900' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('Azure Fundamentals (AZ-900)')) return false;
-    }
-    if (certId === 'ai900' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('Azure AI Fundamentals (AI-901)')) return false;
-    }
-    // v7.7.0: sc900 joins as the sixth Pro-tier cert (founder lock 2026-05-28).
-    if (certId === 'sc900' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('Microsoft SC-900 Security, Compliance & Identity Fundamentals')) return false;
-    }
-    // v7.8.0: clfc02 joins as the seventh Pro-tier cert (founder lock 2026-05-29).
-    if (certId === 'clfc02' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('AWS Certified Cloud Practitioner (CLF-C02)')) return false;
-    }
-    // v7.6.0: both A+ exams are Pro-tier.
-    if (certId === 'aplus-core1' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('CompTIA A+ Core 1')) return false;
-    }
-    if (certId === 'aplus-core2' && typeof window._gateProOnly === 'function') {
-      if (!window._gateProOnly('CompTIA A+ Core 2')) return false;
+    if (entry.tier === 'pro' && typeof window._gateProOnly === 'function') {
+      if (!window._gateProOnly(entry.labels.gate || entry.name)) return false;
     }
     var host = '';
     try { host = window.location.hostname || ''; } catch (e) {}
     var isLocalhost = host === 'localhost' || host === '127.0.0.1' || host.indexOf('192.168.') === 0;
+    var onFamilyHost = false;
+    if (entry.family) { var here = R.byHost(host); onFamilyHost = !!here && R.familyOf(here) === entry.family; }
     if (isLocalhost) {
-      // Local dev — keep override + reload (no subdomain alias on localhost).
-      // Handles all certs incl. both A+ exams (override = certId, reload).
+      // Local dev: keep override + reload (no subdomain alias on localhost).
       try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
       try { window.location.reload(); } catch (e) {}
-    } else if (certId === 'aplus-core1' || certId === 'aplus-core2') {
-      // v7.6.0 WITHIN-SUBDOMAIN SWITCHING — the FIRST cert switch that may NOT
-      // change subdomain. Core 1 + Core 2 share aplus.certanvil.com.
-      var onAplus = host.indexOf('aplus.') === 0
-        || host.indexOf('aplus-') === 0
-        || host === 'aplus.certanvil.com';
-      if (onAplus) {
-        // Same subdomain (Core 1 <-> Core 2 toggle): write the exam override +
-        // reload. The reload re-fires the inline IIFE + detectCert() +
-        // getActiveCertId(), all of which read this override FIRST for aplus,
-        // so the correct pack loads + content + dropdown all agree.
-        try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
-        try { window.location.reload(); } catch (e) {}
-      } else {
-        // Coming from a DIFFERENT cert subdomain — navigate to aplus carrying
-        // the exam via ?exam= so the inline IIFE document.writes the right pack
-        // on arrival. Clear the stale override first (the deep-link param wins
-        // + re-persists on arrival).
-        try { localStorage.removeItem(CERT_OVERRIDE_KEY); } catch (e) {}
-        var examSlug = (certId === 'aplus-core2') ? 'core2' : 'core1';
-        try { window.location.href = 'https://aplus.certanvil.com/?exam=' + examSlug; } catch (e) {}
-      }
+    } else if (onFamilyHost) {
+      // Within-subdomain switch (A+ Core 1 <-> Core 2): write the exam override + reload; the reload re-runs detection,
+      // which reads the override first for a family host.
+      try { localStorage.setItem(CERT_OVERRIDE_KEY, certId); } catch (e) {}
+      try { window.location.reload(); } catch (e) {}
     } else {
-      // Pattern A: navigate to the cert's subdomain. Clear any stale override
-      // so getActiveCertId() trusts the subdomain on arrival.
-      // v7.3.0: az900 → azure.certanvil.com (the third Pattern A subdomain).
+      // Navigate to the cert's own host. Clear any stale override first so detection trusts the host on arrival.
+      // A family cert also carries ?exam= so the right member loads.
       try { localStorage.removeItem(CERT_OVERRIDE_KEY); } catch (e) {}
-      var targetHost = (certId === 'secplus')
-        ? 'secplus.certanvil.com'
-        : (certId === 'az900')
-          ? 'azure.certanvil.com'
-          : (certId === 'ai900')
-            ? 'ai.certanvil.com'
-            : (certId === 'sc900')
-              ? 'sc900.certanvil.com'
-              : (certId === 'clfc02')
-                ? 'clfc02.certanvil.com'
-                : 'networkplus.certanvil.com';
-      try { window.location.href = 'https://' + targetHost + '/'; } catch (e) {}
+      try { window.location.href = 'https://' + R.hostFor(certId) + '/' + (entry.family && entry.examSlug ? '?exam=' + entry.examSlug : ''); } catch (e) {}
     }
     return false;
   };
@@ -316,8 +224,8 @@
     var role = (profile && profile.role) || 'user';
     if (role === 'admin') { try { window._certanvilIsAdmin = true; } catch (_) {} }   // Preview as Free is admin-only; the {role:'user'} first paint never turns it off
     var activeCertId = getActiveCertId();
-    var activeCert = getAvailableCerts(role).filter(function (c) { return c.id === activeCertId; })[0]
-      || { name: 'Network+', code: 'N10-009' };
+    // The active cert's own entry (not the filtered list): a non-admin on a hidden cert's host still sees that cert's name.
+    var activeCert = (window.CertRegistry && window.CertRegistry.get(activeCertId)) || { name: 'Network+', code: 'N10-009' };
     var tierLabel = '● Free tier · ' + activeCert.name + ' active';
     var certSwitcherHtml = buildCertSwitcherHtml(activeCertId, role);
 
@@ -653,12 +561,17 @@
       .replace(/'/g, '&#39;');
   }
 
+  // Fraunces lettermark: one bronze letter (the registry's glyphAccent: the last, or the first for SecAI+ 'SAI') and
+  // an optional bronze numeral (glyphSup: A+ 1/2, PSM I/II). Three-letter glyphs (AWS, SAI, PSM) drop a size (.cg-3) to fit the tile.
   function certGlyphHTML(glyph, certId) {
     var g = String(glyph || '');
     if (!g) return '';
-    var sup = certId === 'aplus-core1' ? '1' : certId === 'aplus-core2' ? '2' : '';
-    var head = escapeHtml(g.slice(0, -1)), last = escapeHtml(g.slice(-1));
-    return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
+    var e = window.CertRegistry && window.CertRegistry.get(certId);
+    var sup = escapeHtml((e && e.glyphSup) || '');
+    var parts = e && e.glyphAccent === 'first'
+      ? ['', escapeHtml(g.charAt(0)), escapeHtml(g.slice(1))]
+      : [escapeHtml(g.slice(0, -1)), escapeHtml(g.slice(-1)), ''];
+    return '<span class="cg' + (g.length >= 3 ? ' cg-3' : '') + '">' + parts[0] + '<span class="cg-ac">' + parts[1] + '</span>' + parts[2] + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }
 
   if (document.readyState === 'loading') {

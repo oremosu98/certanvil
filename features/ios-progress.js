@@ -165,9 +165,9 @@
   function _ipIsPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 899px)').matches); }
   function _ipCert() {
     var id = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
-    var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+    var re = window.CertRegistry && window.CertRegistry.get(id);
     var raw = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
-    return { mark: MARKS[id] || 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009',
+    return { mark: re ? re.mark : 'CA', name: String(raw).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009',
       light: document.documentElement.getAttribute('data-theme') === 'light' };
   }
   function _ipDomains() {

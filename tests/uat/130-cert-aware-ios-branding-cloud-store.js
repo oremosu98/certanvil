@@ -185,7 +185,7 @@ test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "N+" sidebar mark removed (now
 test('v4.87.2 → v4.87.3 SidebarBrand: hardcoded "Network+" sidebar name removed (now "CertAnvil")',
   !/sb-brand-name[^>]*>Network\+</.test(js));
 test('v4.87.2 → v4.87.3 PageTitle: title now CertAnvil-prefixed, not "Security+ AI Quiz"',
-  /document\.title[\s\S]{0,300}CertAnvil · Security\+/.test(html));
+  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html));
 
 // ═══════════════════════════════════════════════════════════════════════
 // v4.87.3 — CertAnvil brand identity adopted. Domain certanvil.com +
@@ -200,7 +200,7 @@ test('v4.87.3 Brand: meta description leads with CertAnvil',
 test('v4.87.3 Brand: apple-mobile-web-app-title is CertAnvil',
   /<meta name="apple-mobile-web-app-title" content="CertAnvil"/.test(html));
 test('v4.87.3 Brand: inline <head> script sets CertAnvil-prefixed title for both certs',
-  /document\.title\s*=.*CertAnvil · Security\+.*CertAnvil · Network\+/s.test(html));
+  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html) && /CertRegistry\.get\(cert\)\.name/.test(html));
 test('v4.87.3 Brand: hardcoded "Network+ AI Quiz" page title removed',
   !/<title>Network\+ AI Quiz<\/title>/.test(html));
 
@@ -313,8 +313,10 @@ test('v7.2.0 ObjBadge: _progressRowHtml does NOT emit a topic-obj-badge (v2 name
 // domain-order derivation from DOMAIN_WEIGHTS and Sec+ canonical topics.
 test('v4.88.1 → v4.99.80 Security+: renderSetupDomainGrid reads domainOrder from DOMAIN_WEIGHTS',
   /renderSetupDomainGrid[\s\S]{0,2000}DOMAIN_WEIGHTS[\s\S]{0,200}Object\.keys\(DOMAIN_WEIGHTS\)/.test(js));
-test('v4.88.1 → v4.99.80 Security+: renderSetupDomainGrid uses _CANONICAL_SECPLUS for Sec+ topics',
-  js.includes('_CANONICAL_SECPLUS'));
+// registry Task 1.5: Sec+ topics now live in the pack; the grid reads CERT_PACK.canonicalDomainTopics.
+test('v4.88.1 → v4.99.80 Security+ (retargeted): renderSetupDomainGrid reads the active pack\'s canonicalDomainTopics; Sec+ pack carries them',
+  /renderSetupDomainGrid[\s\S]{0,4000}CERT_PACK\.canonicalDomainTopics/.test(read('features/home.js'))
+    && /canonicalDomainTopics:\s*\{\s*concepts:\s*\[\s*\{ label: 'Security Controls'/.test(certSecplus));
 
 // ── v4.88.4: URL action handler ──
 // External surfaces (landing CTA, share links) can route to specific app

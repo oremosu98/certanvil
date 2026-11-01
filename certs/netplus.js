@@ -124,6 +124,46 @@ window.CERT_PACKS.netplus = {
     troubleshooting: 'Network Troubleshooting'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      concepts: [
+        { label: 'OSI Model',       key: 'Network Models & OSI' },
+        { label: 'TCP/IP Basics',   key: 'TCP/IP Basics' },
+        { label: 'Subnetting',      key: 'Subnetting & IP Addressing' },
+        { label: 'DNS & DHCP',      key: 'Network Naming (DNS & DHCP)' },
+        { label: 'IPv6',            key: 'IPv6' },
+      ],
+      implementation: [
+        { label: 'Routing',         key: 'Routing Protocols' },
+        { label: 'OSPF',            key: 'OSPF' },
+        { label: 'BGP',             key: 'BGP' },
+        { label: 'VLANs',           key: 'Switch Features & VLANs' },
+        { label: 'STP',             key: 'STP/RSTP' },
+      ],
+      operations: [
+        { label: 'Monitoring',      key: 'Network Monitoring & Observability' },
+        { label: 'Data Centres',    key: 'Data Centres' },
+        { label: 'WAN',             key: 'WAN Connectivity' },
+        { label: 'SD-WAN',          key: 'SD-WAN & SASE' },
+        { label: 'BCDR',            key: 'Business Continuity & Disaster Recovery' },
+      ],
+      security: [
+        { label: 'TCP/IP Security', key: 'Securing TCP/IP' },
+        { label: 'AAA',             key: 'AAA & Authentication' },
+        { label: 'IPsec',           key: 'IPsec VPN' },
+        { label: 'PKI',             key: 'PKI & Certificate Management' },
+        { label: 'Firewalls',       key: 'Firewalls, DMZ & Security Zones' },
+      ],
+      troubleshooting: [
+        { label: '7-Step Method',   key: 'CompTIA Troubleshooting Methodology' },
+        { label: 'Cable Issues',    key: 'Cable Issues' },
+        { label: 'Service Issues',  key: 'Service Issues' },
+        { label: 'Perf Issues',     key: 'Perf Issues' },
+        { label: 'Connection Issues', key: 'Connection Issues' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (50 topics) ────────────────────────────────────
   // Drives weak-spot routing, exemplar bank picker, lottery, readiness
   // domain attribution. Topic name = primary key everywhere; domain key

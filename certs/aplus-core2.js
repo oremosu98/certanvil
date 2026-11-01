@@ -99,6 +99,39 @@ window.CERT_PACKS['aplus-core2'] = {
     'operational-procedures':    'Operational Procedures'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'operating-systems': [
+        { label: 'Windows Editions',      key: 'Windows Editions Features' },
+        { label: 'Command-Line',          key: 'Windows Command-Line Tools' },
+        { label: 'Windows Tools',         key: 'Windows Tools & MMC Snap-ins' },
+        { label: 'Linux Commands',        key: 'Linux Features & Commands' },
+        { label: 'macOS',                 key: 'macOS Features & Tools' },
+      ],
+      'security': [
+        { label: 'Social Engineering',    key: 'Social Engineering Attacks' },
+        { label: 'Malware Types',         key: 'Malware Types & Tools' },
+        { label: 'Logical Security & MFA', key: 'Logical Security & MFA' },
+        { label: 'Windows Security',      key: 'Windows OS Security Settings' },
+        { label: 'Malware Removal',       key: 'SOHO Malware Removal Procedure' },
+      ],
+      'software-troubleshooting': [
+        { label: 'Windows OS Issues',     key: 'Troubleshoot Windows OS Issues' },
+        { label: 'Malware Symptoms',      key: 'Malware Symptom Diagnosis' },
+        { label: 'Mobile OS Issues',      key: 'Troubleshoot Mobile OS & App Issues' },
+        { label: 'PC Security Issues',    key: 'Troubleshoot PC Security Issues' },
+        { label: 'Browser Symptoms',      key: 'Browser Symptom Troubleshooting' },
+      ],
+      'operational-procedures': [
+        { label: 'Change Management',     key: 'Change Management Procedures' },
+        { label: 'Backup & Recovery',     key: 'Backup & Recovery Methods' },
+        { label: 'Documentation',         key: 'Documentation & Ticketing' },
+        { label: 'Scripting',             key: 'Scripting Basics' },
+        { label: 'Remote Access',         key: 'Remote Access Technologies' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (46 topics across 4 Core 2 domains) ────────────────
   // Topic name = primary key everywhere; domain key is one of:
   // operating-systems / security / software-troubleshooting / operational-procedures.

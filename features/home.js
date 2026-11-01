@@ -438,7 +438,9 @@
       // → AZ-900 700) AND the vendor word for AZ-900.
       const threshold = document.querySelector('.exam-results-v2-threshold');
       if (threshold) {
-        threshold.innerHTML = 'Pass mark: ' + passMark + ' / ' + maxScore + ' &middot; ' + vendor + ' ' + code + ' scaled score';
+        threshold.innerHTML = EXAM_SCORE_FORMAT !== 'percent'
+          ? 'Pass mark: ' + passMark + ' / ' + maxScore + ' &middot; ' + vendor + ' ' + code + ' scaled score'
+          : 'Pass mark: ' + examPassText() + ' &middot; ' + vendor + ' ' + code + ' scored as a percentage';
       }
 
       // 6. Domain breakdown sub
@@ -464,7 +466,9 @@
       // 10. v8.128.0: score scale + exam format. Static HTML is CompTIA's
       // 100-900 / 90 questions / 90 min; each swap is a no-op when they match.
       const minS = EXAM_MIN_SCORE, maxS = EXAM_MAX_SCORE;
+      const pctCert = EXAM_SCORE_FORMAT === 'percent';
       const swapScale = function (el) {
+        if (el && pctCert) { el.innerHTML = el.innerHTML.replace(/scaled 100-900/g, 'scored as a percentage').replace(/scored 100-900/g, 'scored as a percentage').replace(/100-900/g, 'a percentage').replace(/\s*(\/|out of) 900\b/g, ''); return; }   // percent certs: no "/ 900" beside the number
         if (el) el.innerHTML = el.innerHTML.replace(/100-900/g, minS + '-' + maxS).replace(/(\/|out of) 900\b/g, '$1 ' + maxS);
       };
       ['.readiness-eyebrow', '#exam-note', '.readiness-denom', '.results-v2-big-score em'].forEach(function (s) {
@@ -473,7 +477,7 @@
       const rcNum = document.getElementById('rc-v2-num');
       if (rcNum && rcNum.parentNode) swapScale(rcNum.parentNode.nextElementSibling);
       const fullExamOd = document.querySelector('button[onclick="startExam()"] .od');
-      if (fullExamOd) fullExamOd.textContent = EXAM_QUESTION_COUNT + ' questions, ' + Math.round(EXAM_TIME_SECONDS / 60) + '-min timer, scored ' + minS + '-' + maxS;
+      if (fullExamOd) fullExamOd.textContent = EXAM_QUESTION_COUNT + ' questions, ' + Math.round(EXAM_TIME_SECONDS / 60) + '-min timer, scored ' + (pctCert ? 'as a percentage' : minS + '-' + maxS);
       document.querySelectorAll('#page-exam-results .ed-pagehead-eyebrow').forEach(function (el) {
         el.innerHTML = el.innerHTML.replace(/\b90 questions\b/, EXAM_QUESTION_COUNT + ' questions');
       });
@@ -1511,9 +1515,10 @@
     try { name = String(window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || '').trim().split(/\s+/)[0] || ''; } catch (_) { name = ''; }
     try { certName = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || '').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''); } catch (_) { certName = ''; }
     var fmt = function (n) { return n.toLocaleString('en-GB'); };
+    var _pcS = (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? '%' : '';   // readiness reads '72%' on a percent cert
     var vals = [t.readiness, t.answers, t.best], labels = ['Readiness', 'Answers', 'Best streak'], tiles = '';
     // Not safely loaded from the cloud yet: no tiles, and no claim that everything is there, rather than zeros.
-    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"') + '>' + (v == null ? '&ndash;' : fmt(v)) + '</b><span>' + labels[i] + '</span></div>'; });
+    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"' + (i === 0 && _pcS ? ' data-sfx="%"' : '')) + '>' + (v == null ? '--' : fmt(v) + (i === 0 ? _pcS : '')) + '</b><span>' + labels[i] + '</span></div>'; });
     var html = '<div class="dm-body"><span class="wb-markwrap"><span class="wb-glow" aria-hidden="true"></span><span class="wb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="wb-arrow"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path></g></svg></span></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Welcome back' + (name ? ', ' + escHtml(name) : '') + '.</h2>'
       + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion.' + (withTiles === false ? '' : ' Everything is right where you left it.') + '</p>'
@@ -1533,8 +1538,8 @@
           if (!b.isConnected) return;
           if (!t0) t0 = ts;
           var p = Math.min((ts - t0) / 900, 1);
-          b.textContent = fmt(Math.round(to * (1 - Math.pow(1 - p, 3))));
-          if (p < 1) requestAnimationFrame(step); else b.textContent = fmt(to);
+          b.textContent = fmt(Math.round(to * (1 - Math.pow(1 - p, 3)))) + (b.getAttribute('data-sfx') || '');
+          if (p < 1) requestAnimationFrame(step); else b.textContent = fmt(to) + (b.getAttribute('data-sfx') || '');
         })(performance.now());
       }, 480 + i * 60);
     });
@@ -1893,8 +1898,8 @@
     }
     const rec = _deskOcSaved();
     if (rec && rec.outcome === 'passed') {
-      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score : ''), title: 'Pick your next cert',
-        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') : ''), title: 'Pick your next cert',
+        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
     }
     return null;
   }
@@ -2314,288 +2319,9 @@
     // `label` is what renders to screen; `key` is the exact TOPIC_DOMAINS key used
     // for weak-spot matching. If the weak-spot key isn't in this canonical list,
     // it's still counted (the weakness scores used by other surfaces are unchanged).
-    // v4.99.80: cert-aware canonical topic maps. Network+ uses N10-009 domains;
-    // Security+ uses SY0-701 domains. Each array of 5 canonical topics per
-    // domain matches the locked home mockup (netplus-home-concept.html /
-    // secplus-home-concept.html). The key must be an exact TOPIC_DOMAINS key
-    // so weak-spot matching works.
-    const _CANONICAL_NETPLUS = {
-      concepts: [
-        { label: 'OSI Model',       key: 'Network Models & OSI' },
-        { label: 'TCP/IP Basics',   key: 'TCP/IP Basics' },
-        { label: 'Subnetting',      key: 'Subnetting & IP Addressing' },
-        { label: 'DNS & DHCP',      key: 'Network Naming (DNS & DHCP)' },
-        { label: 'IPv6',            key: 'IPv6' },
-      ],
-      implementation: [
-        { label: 'Routing',         key: 'Routing Protocols' },
-        { label: 'OSPF',            key: 'OSPF' },
-        { label: 'BGP',             key: 'BGP' },
-        { label: 'VLANs',           key: 'Switch Features & VLANs' },
-        { label: 'STP',             key: 'STP/RSTP' },
-      ],
-      operations: [
-        { label: 'Monitoring',      key: 'Network Monitoring & Observability' },
-        { label: 'Data Centres',    key: 'Data Centres' },
-        { label: 'WAN',             key: 'WAN Connectivity' },
-        { label: 'SD-WAN',          key: 'SD-WAN & SASE' },
-        { label: 'BCDR',            key: 'Business Continuity & Disaster Recovery' },
-      ],
-      security: [
-        { label: 'TCP/IP Security', key: 'Securing TCP/IP' },
-        { label: 'AAA',             key: 'AAA & Authentication' },
-        { label: 'IPsec',           key: 'IPsec VPN' },
-        { label: 'PKI',             key: 'PKI & Certificate Management' },
-        { label: 'Firewalls',       key: 'Firewalls, DMZ & Security Zones' },
-      ],
-      troubleshooting: [
-        { label: '7-Step Method',   key: 'CompTIA Troubleshooting Methodology' },
-        { label: 'Cable Issues',    key: 'Cable Issues' },
-        { label: 'Service Issues',  key: 'Service Issues' },
-        { label: 'Perf Issues',     key: 'Perf Issues' },
-        { label: 'Connection Issues', key: 'Connection Issues' },
-      ],
-    };
-    const _CANONICAL_SECPLUS = {
-      concepts: [
-        { label: 'Security Controls', key: 'Security Controls' },
-        { label: 'CIA Triad & AAA',   key: 'CIA Triad & AAA' },
-        { label: 'Change Mgmt',       key: 'Change Management' },
-        { label: 'Technical Change Mgmt', key: 'Technical Change Management' },
-        { label: 'Cryptography',      key: 'Cryptography Fundamentals' },
-        { label: 'PKI',               key: 'PKI & Certificate Management' },
-        { label: 'Obfuscation',  key: 'Obfuscation' },
-      ],
-      threats: [
-        { label: 'Threat Actors',     key: 'Threat Actors & Motivations' },
-        { label: 'Attack Vectors',    key: 'Attack Vectors & Surfaces' },
-        { label: 'Social Engineering', key: 'Social Engineering' },
-        { label: 'Malware Types',     key: 'Malware Types' },
-        { label: 'Mitigation',        key: 'Mitigation Techniques' },
-      ],
-      architecture: [
-        { label: 'Architecture Models', key: 'Architecture Models' },
-        { label: 'Zero Trust & SDN',   key: 'Zero Trust & SDN' },
-        { label: 'Cloud Security',     key: 'Cloud Security & Shared Responsibility' },
-        { label: 'Data Protection',    key: 'Data Protection' },
-        { label: 'Resilience',         key: 'Resilience & Recovery' },
-      ],
-      operations: [
-        { label: 'Hardening',         key: 'Endpoint & Server Hardening' },
-        { label: 'Vuln Mgmt',         key: 'Vulnerability Management' },
-        { label: 'Monitoring & SIEM', key: 'Security Monitoring & SIEM' },
-        { label: 'IAM',               key: 'Identity & Access Management' },
-        { label: 'Incident Response', key: 'Incident Response' },
-      ],
-      governance: [
-        { label: 'Governance',        key: 'Security Governance' },
-        { label: 'Risk Mgmt',         key: 'Risk Management' },
-        { label: 'Third-Party Risk',  key: 'Third-Party Risk Management' },
-        { label: 'Compliance',        key: 'Compliance Frameworks' },
-        { label: 'Audits',            key: 'Audits & Assessments' },
-      ],
-    };
-    // v7.3.0 — AZ-900 canonical topic shortlist (5 representative topics per
-    // domain) for the home-page domain grid. Mirrors the _CANONICAL_NETPLUS +
-    // _CANONICAL_SECPLUS shape verbatim — { domainKey: [{ label, key }, …] }
-    // where `key` matches CERT_PACK.topicDomains[key] for weak-spot routing.
-    const _CANONICAL_AZ900 = {
-      'cloud-concepts': [
-        { label: 'Cloud Basics',          key: 'Cloud Computing Basics' },
-        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
-        { label: 'Deployment Models',     key: 'Cloud Deployment Models' },
-        { label: 'Service Models',        key: 'Cloud Service Models' },
-        { label: 'Serverless',            key: 'Serverless Computing' },
-      ],
-      'azure-architecture': [
-        { label: 'Regions & Pairs',       key: 'Azure Regions & Region Pairs' },
-        { label: 'Resource Groups',       key: 'Resource Groups & Subscriptions' },
-        { label: 'Virtual Machines',      key: 'Azure Virtual Machines' },
-        { label: 'VNets & Subnets',       key: 'Virtual Networks & Subnets' },
-        { label: 'Entra ID',              key: 'Microsoft Entra ID & Authentication' },
-      ],
-      'azure-management': [
-        { label: 'Cost Management',       key: 'Azure Cost Management' },
-        { label: 'Tags',                  key: 'Tags & Resource Organization' },
-        { label: 'Azure Policy',          key: 'Azure Policy' },
-        { label: 'ARM & IaC',             key: 'ARM Templates & IaC' },
-        { label: 'Monitor & Logs',        key: 'Azure Monitor & Log Analytics' },
-      ],
-    };
-    // v8.120.0 — AI-901 (replaced AI-900; internal id stays 'ai900'). Two
-    // official domains, 5 representative topics each; `key` matches
-    // CERT_PACK.topicDomains in certs/ai900.js for weak-spot routing.
-    const _CANONICAL_AI900 = {
-      'concepts': [
-        { label: 'Responsible AI',        key: 'Responsible AI Principles' },
-        { label: 'How GenAI Works',       key: 'How Generative AI Models Work' },
-        { label: 'Deployment & Params',   key: 'Model Deployment & Parameters' },
-        { label: 'Agentic Scenarios',     key: 'Generative & Agentic AI Scenarios' },
-        { label: 'Text Analysis',         key: 'Text Analysis Techniques' },
-      ],
-      'foundry': [
-        { label: 'Prompts',               key: 'Prompt Engineering (System & User Prompts)' },
-        { label: 'SDK Chat Clients',      key: 'Foundry SDK Chat Clients' },
-        { label: 'Agents',                key: 'Building Single Agents in Foundry' },
-        { label: 'Multimodal Vision',     key: 'Visual Input with Multimodal Models' },
-        { label: 'Content Understanding', key: 'Content Understanding: Documents & Forms' },
-      ],
-    };
-    // v7.6.0 — fifth cert family CompTIA A+ (dual-exam). 5 canonical topics per
-    // domain for the home-page domain grid. Mirrors the _CANONICAL_* shape
-    // verbatim — { domainKey: [{ label, key }, …] } where key matches a
-    // topicDomains key in certs/aplus-core1.js exactly. 5 domains (matches Net+).
-    const _CANONICAL_APLUS_CORE1 = {
-      'mobile-devices': [
-        { label: 'Mobile Hardware',       key: 'Mobile Device Hardware & Replacement' },
-        { label: 'Connectivity',          key: 'Mobile Accessories & Connectivity' },
-        { label: 'Network Connectivity',  key: 'Mobile Network Connectivity' },
-        { label: 'MDM',                   key: 'Mobile Device Management (MDM)' },
-        { label: 'Synchronization',       key: 'Mobile Synchronization' },
-      ],
-      'networking': [
-        { label: 'Ports & Protocols',     key: 'Ports & Protocols' },
-        { label: 'Wireless Standards',    key: 'Wireless Networking Standards' },
-        { label: 'DNS Records',           key: 'DNS Records & Configuration' },
-        { label: 'Network Hardware',      key: 'Networking Hardware Devices' },
-        { label: 'SOHO Config',           key: 'SOHO Network Configuration' },
-      ],
-      'hardware': [
-        { label: 'RAID',                  key: 'RAID Configurations' },
-        { label: 'Storage Devices',       key: 'Storage Devices' },
-        { label: 'Motherboards',          key: 'Motherboards & Form Factors' },
-        { label: 'Printer Config',        key: 'Printers — Deploy & Configure' },
-        { label: 'Printer Maintenance',   key: 'Printer Maintenance' },
-      ],
-      'virt-cloud': [
-        { label: 'Virtualization',        key: 'Virtualization Concepts' },
-        { label: 'Service Models',        key: 'Cloud Service Models' },
-        { label: 'Deployment Models',     key: 'Cloud Deployment Models' },
-        { label: 'Cloud Characteristics', key: 'Cloud Characteristics' },
-        { label: 'Containers & VDI',      key: 'Containers & VDI' },
-      ],
-      'troubleshooting-hw-net': [
-        { label: 'Methodology',           key: 'Troubleshooting Methodology' },
-        { label: 'Drives & RAID',         key: 'Troubleshoot Drives & RAID' },
-        { label: 'Mobile Issues',         key: 'Troubleshoot Mobile Device Issues' },
-        { label: 'Network Issues',        key: 'Troubleshoot Network Issues' },
-        { label: 'Printer Issues',        key: 'Troubleshoot Printer Issues' },
-      ],
-    };
-    // v7.6.0 — A+ Core 2. 4 domains (fewer than the 5-domain certs).
-    const _CANONICAL_APLUS_CORE2 = {
-      'operating-systems': [
-        { label: 'Windows Editions',      key: 'Windows Editions Features' },
-        { label: 'Command-Line',          key: 'Windows Command-Line Tools' },
-        { label: 'Windows Tools',         key: 'Windows Tools & MMC Snap-ins' },
-        { label: 'Linux Commands',        key: 'Linux Features & Commands' },
-        { label: 'macOS',                 key: 'macOS Features & Tools' },
-      ],
-      'security': [
-        { label: 'Social Engineering',    key: 'Social Engineering Attacks' },
-        { label: 'Malware Types',         key: 'Malware Types & Tools' },
-        { label: 'Logical Security & MFA', key: 'Logical Security & MFA' },
-        { label: 'Windows Security',      key: 'Windows OS Security Settings' },
-        { label: 'Malware Removal',       key: 'SOHO Malware Removal Procedure' },
-      ],
-      'software-troubleshooting': [
-        { label: 'Windows OS Issues',     key: 'Troubleshoot Windows OS Issues' },
-        { label: 'Malware Symptoms',      key: 'Malware Symptom Diagnosis' },
-        { label: 'Mobile OS Issues',      key: 'Troubleshoot Mobile OS & App Issues' },
-        { label: 'PC Security Issues',    key: 'Troubleshoot PC Security Issues' },
-        { label: 'Browser Symptoms',      key: 'Browser Symptom Troubleshooting' },
-      ],
-      'operational-procedures': [
-        { label: 'Change Management',     key: 'Change Management Procedures' },
-        { label: 'Backup & Recovery',     key: 'Backup & Recovery Methods' },
-        { label: 'Documentation',         key: 'Documentation & Ticketing' },
-        { label: 'Scripting',             key: 'Scripting Basics' },
-        { label: 'Remote Access',         key: 'Remote Access Technologies' },
-      ],
-    };
-    // v7.7.0 — sixth cert SC-900. 4 domains (matches A+ Core 2's 4-domain shape).
-    // 5 canonical topics per domain for the home-page domain grid. Mirrors the
-    // _CANONICAL_* shape verbatim — { domainKey: [{ label, key }, …] } where key
-    // matches a topicDomains key in certs/sc900.js exactly.
-    const _CANONICAL_SC900 = {
-      'sci-concepts': [
-        { label: 'Zero Trust',            key: 'Zero Trust Model' },
-        { label: 'Defense in Depth',      key: 'Defense in Depth' },
-        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
-        { label: 'AuthN vs AuthZ',        key: 'Authentication vs Authorization' },
-        { label: 'Encryption & Hashing',  key: 'Encryption & Hashing' },
-      ],
-      'entra': [
-        { label: 'Entra ID',              key: 'Entra ID Function & Identity Types' },
-        { label: 'Conditional Access',    key: 'Conditional Access' },
-        { label: 'MFA',                   key: 'Multifactor Authentication (Entra)' },
-        { label: 'PIM',                   key: 'Privileged Identity Management (PIM)' },
-        { label: 'ID Protection',         key: 'Entra ID Protection' },
-      ],
-      'security-solutions': [
-        { label: 'Defender XDR',          key: 'Microsoft Defender XDR' },
-        { label: 'Defender for Cloud',    key: 'Microsoft Defender for Cloud' },
-        { label: 'Sentinel',              key: 'Microsoft Sentinel' },
-        { label: 'Azure Firewall',        key: 'Azure Firewall' },
-        { label: 'Key Vault',             key: 'Azure Key Vault' },
-      ],
-      'compliance-solutions': [
-        { label: 'Purview Portal',        key: 'Microsoft Purview Portal' },
-        { label: 'Compliance Manager',    key: 'Compliance Manager & Compliance Score' },
-        { label: 'Sensitivity Labels',    key: 'Sensitivity Labels & Policies' },
-        { label: 'DLP',                   key: 'Data Loss Prevention (DLP)' },
-        { label: 'Insider Risk',          key: 'Insider Risk Management' },
-      ],
-    };
-    // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (4 domains × 5 canon
-    // topics; keys match topicDomains in certs/clfc02.js exactly).
-    const _CANONICAL_CLFC02 = {
-      'cloud-concepts': [
-        { label: 'Cloud Benefits',        key: 'Benefits of the AWS Cloud' },
-        { label: 'Well-Architected',      key: 'Well-Architected Framework' },
-        { label: 'Sustainability',        key: 'Sustainability Pillar' },
-        { label: 'Migration (7 Rs)',      key: 'Cloud Migration Strategies (7 Rs)' },
-        { label: 'Cloud Economics',       key: 'Cloud Economics' },
-      ],
-      'security-compliance': [
-        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
-        { label: 'IAM',                   key: 'IAM Users, Groups & Roles' },
-        { label: 'Organizations',         key: 'AWS Organizations' },
-        { label: 'GuardDuty',             key: 'Amazon GuardDuty' },
-        { label: 'KMS & Encryption',      key: 'AWS KMS & Encryption' },
-      ],
-      'cloud-tech-services': [
-        { label: 'Global Infra',          key: 'AWS Global Infrastructure' },
-        { label: 'EC2',                   key: 'Amazon EC2 & Instance Types' },
-        { label: 'S3 Classes',            key: 'Amazon S3 Storage Classes' },
-        { label: 'RDS/Aurora',            key: 'Relational Databases (RDS/Aurora)' },
-        { label: 'VPC/Route 53/CDN',      key: 'Networking (VPC/Route 53/CloudFront)' },
-      ],
-      'billing-pricing-support': [
-        { label: 'Pricing Models',        key: 'EC2 Pricing Models' },
-        { label: 'Support Plans',         key: 'AWS Support Plans' },
-        { label: 'Trusted Advisor',       key: 'AWS Trusted Advisor & Compute Optimizer' },
-        { label: 'Billing & Budgets',     key: 'Consolidated Billing & Budgets' },
-        { label: 'Free Tier',             key: 'AWS Free Tier & Pricing Calculator' },
-      ],
-    };
-    // v7.8.0 — 8-way cert selector (was 7-way ternary). Falls through to Net+
-    // when CURRENT_CERT isn't recognised (defensive; preserves prior behavior).
-    const CANONICAL_DOMAIN_TOPICS = (typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'secplus')
-      ? _CANONICAL_SECPLUS
-      : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'az900')
-          ? _CANONICAL_AZ900
-          : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'ai900')
-              ? _CANONICAL_AI900
-              : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'sc900')
-                  ? _CANONICAL_SC900
-                  : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core1')
-                      ? _CANONICAL_APLUS_CORE1
-                      : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'aplus-core2')
-                          ? _CANONICAL_APLUS_CORE2
-                          : ((typeof CURRENT_CERT !== 'undefined' && CURRENT_CERT === 'clfc02')
-                              ? _CANONICAL_CLFC02
-                              : _CANONICAL_NETPLUS))))));
+    // Canonical topics per domain come from the active pack (CERT_PACK.canonicalDomainTopics, keys = its domainWeights keys;
+    // each `key` is an exact TOPIC_DOMAINS key so weak-spot matching works). A pack without one renders no topic list.
+    const CANONICAL_DOMAIN_TOPICS = (CERT_PACK && CERT_PACK.canonicalDomainTopics) || {};
     // Build a set of weak topic keys for quick lookup
     const weakSet = new Set();
     try {

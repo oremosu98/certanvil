@@ -9,9 +9,11 @@ const { _fnBody, test, vm } = require('./_context');
   console.log('\n\x1b[1m── My certs hub ──\x1b[0m');
   const ROOT = path.resolve(__dirname, '..', '..');
   const src = fs.readFileSync(path.join(ROOT, 'features', 'ios-hub.js'), 'utf8');
-  const ctx = vm.createContext({ Math, Date, Object, Array, String, Number, isFinite, JSON, Infinity });
-  const consts = "var HUB_DAY = 86400000; var HUB_STALE_DAYS = 14; var HUB_SCALE_1000 = { az900: 1, ai900: 1, sc900: 1, clfc02: 1 };";
-  vm.runInContext(consts + ['_hubFirstName', '_hubShort', '_hubDays', '_hubAgeDays', '_hubExamLine', '_iosHubModel'].map((n) => _fnBody(src, n)).join('\n'), ctx);
+  const ctx = vm.createContext({ Math, Date, Object, Array, String, Number, isFinite, JSON, Infinity, window: {} });
+  ctx.window.window = ctx.window;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cert-registry.js'), 'utf8'), ctx);   // the max score now comes from the registry
+  const consts = "var HUB_DAY = 86400000; var HUB_STALE_DAYS = 14;";
+  vm.runInContext(consts + ['_hubMax', '_hubFirstName', '_hubShort', '_hubDays', '_hubAgeDays', '_hubExamLine', '_iosHubModel'].map((n) => _fnBody(src, n)).join('\n'), ctx);
   const model = (o) => { ctx.__o = o; return vm.runInContext('_iosHubModel(__o)', ctx); };
 
   const NOW = new Date(2026, 9, 31, 12, 0, 0);

@@ -1020,4 +1020,8 @@
       callout: 'SC-900\'s Zero Trust + identity + compliance literacy gives you a head start on Sec+ Domains 3 + 4. The bulk of Sec+ — cryptography, threats, malware, IR/forensics, risk governance — is net-new study at far greater depth.'
     }
   ];
+  // The new exams' overlap rows: empty until lib/new-certs.js is revealed.
+  if (typeof window.certanvilNewOverlap === 'function') {
+    window.CROSS_CERT_OVERLAP = window.CROSS_CERT_OVERLAP.concat(window.certanvilNewOverlap());
+  }
 })();

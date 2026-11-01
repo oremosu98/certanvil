@@ -1199,7 +1199,7 @@ test('v8.127.0 Prompt: mixed lottery + vendor wording come from the cert pack, n
       && !body.includes('all 5 official CompTIA domains')
       && !body.includes('mirrors real CompTIA style')
       && !/with the CompTIA \$\{CERT_CODE\}/.test(body)
-      && body.includes("const _examVendor = String(");
+      && body.includes("_examPromptBits()");
   })());
 test('v4.85.8 Lottery: vm fixture — two consecutive samples produce different orderings',
   (() => {
@@ -1765,6 +1765,7 @@ test('v4.85.20 ExamSplitFilter: vm fixture — _renderAnaExams shows 2 entries w
         EXAM_TOPIC: 'Exam',
         EXAM_PASS_SCORE: 720,
         scaledExamScore: (c, t) => Math.round(100 + (c / t) * 800),  // v8.128.0: CompTIA scale stub
+        formatExamScore: (n) => String(Math.round(n)),  // percent scoring: the shared score formatter, scaled flavour
         _edCardhead: () => '',
         Math, Date, Array
       };

@@ -11,6 +11,7 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="favicon.svg">
 <script src="native-hide.js"></script>
+<script src="lib/new-certs.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="dg-system.css?v=8.197.0">
 
@@ -1526,8 +1527,14 @@
   [data-theme="dark"] #certs .pl-seal{fill:color-mix(in oklab,var(--accent) 8%,var(--surface-2))}
   #certs .pl-mark{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:30px;letter-spacing:-.02em}
   #certs .pl-mark .m{fill:var(--ink)}
+  #certs .pl-mark.three{font-size:24px}
   #certs .pl-mark .a{fill:var(--accent)}
   #certs .pl-mark .s{fill:var(--accent);font-size:16px;font-weight:700}
+  /* estimated weights (PRINCE2, PSM): grey number with ~, lighter bar */
+  #certs .pl-bar.est{opacity:.18}
+  #certs .pl-wt.est{fill:var(--muted)}
+  #certs .cl-legal{margin:18px 2px 0;font:500 12px/1.6 Inter,sans-serif;color:var(--muted);max-width:760px}
+  #certs .cl-legal p{margin:0 0 4px}
   #certs .pl-code{fill:var(--muted);font:600 8px Inter,sans-serif;letter-spacing:.06em}
   #certs .pl-branch{fill:none;stroke:var(--accent);stroke-width:1.1;opacity:.7}
   #certs .pl-node{fill:var(--accent)}
@@ -1599,7 +1606,7 @@
     <div class="cl-head">
       <span class="cl-eyebrow cl-r" data-d="1">Our cert library</span>
       <h2 class="cl-title cl-r" data-d="1">Pick your <span class="cl-em">cert</span>.</h2>
-      <p class="cl-sub cl-r" data-d="2">Eight certs live today, with more on the anvil. Get pinged the day each new one ships.</p>
+      <p class="cl-sub cl-r" data-d="2"><span data-new-certs-count>Eight</span> certs live today, with more on the anvil. Get pinged the day each new one ships.</p>
     </div>
 
     <div class="toolbar cl-r" data-d="2">
@@ -1612,6 +1619,8 @@
          below (buildPlate + draw-on IntersectionObserver). The PASSED stamp
          is data-driven via window.__cbApplyCertResults — anonymous = none. -->
     <div class="wall" id="cl-wall"></div>
+    <!-- Trademark lines for the new exams. Filled by the script below; stays hidden until lib/new-certs.js is revealed. -->
+    <div class="cl-legal" id="cl-legal" hidden></div>
 
     <div class="anvil-head">
       <span class="anvil-eyebrow">On the anvil</span>
@@ -1669,6 +1678,16 @@
           domains:[['Cloud Concepts',24],['Security & Compliance',30],['Cloud Technology & Services',34],['Billing & Support',12]] }
       ];
 
+      /* ── New exams (SecAI+, PRINCE2, Scrum) · from lib/new-certs.js, empty until that file is revealed.
+            One Scrum plate covers PSM I and II (it opens PSM I). ── */
+      var LIVE_BASE = CERTS.length; // live exams before the new ones (A+ counts as two tiles, so tiles = exams)
+      var NEW_TILES = (window.certanvilNewCerts ? window.certanvilNewCerts() : []).filter(function(c){return c.id!=='psm2';}).map(function(c){
+        var w=c.wall||{};
+        return { id:c.id, name:w.name||c.name, code:c.code, plateCode:w.code, vendor:c.vendor, mark:w.mark||c.mark, href:c.href,
+                 domains:c.domains, est:c.est, sub:w.sub||c.sub, legal:c.legal };
+      });
+      CERTS = CERTS.concat(NEW_TILES);
+
       /* ── 3 coming-soon certs · soon:true → un-forged treatment ── */
       var SOON = [
         { name:'Cisco CCNA', code:'200-301', vendor:'Cisco', mark:{m:'C',a:'C'}, soon:true,
@@ -1719,12 +1738,13 @@
 
         // seal + lettermark
         svg.appendChild(el('rect',{class:'pl-seal draw',x:18,y:46,width:74,height:74,rx:15,pathLength:1,style:'--d:200'}));
-        var mk=el('text',{class:'pl-mark pop','text-anchor':'middle',x:55,y:95,style:'--d:420'});
+        var mk=el('text',{class:'pl-mark pop'+(cert.mark.three?' three':''),'text-anchor':'middle',x:55,y:95,style:'--d:420'});
         mk.appendChild(el('tspan',{class:'m'},cert.mark.m));
         mk.appendChild(el('tspan',{class:'a'},cert.mark.a));
+        if(cert.mark.z)mk.appendChild(el('tspan',{class:'m'},cert.mark.z));
         if(cert.mark.s){var sup=el('tspan',{class:'s','baseline-shift':'super'},cert.mark.s);mk.appendChild(sup);}
         svg.appendChild(mk);
-        svg.appendChild(el('text',{class:'pl-code fade','text-anchor':'middle',x:55,y:135,style:'--d:520'},cert.code));
+        svg.appendChild(el('text',{class:'pl-code fade','text-anchor':'middle',x:55,y:135,style:'--d:520'},cert.plateCode||cert.code));
         // subtle green check on the seal's top-right notch (passed only)
         if(passed){
           svg.appendChild(el('path',{class:'pl-seal-check pop',d:'M83 50 l3 3 l5.5 -6',style:'--d:560'}));
@@ -1744,15 +1764,15 @@
           var nameMax = N>=6 ? 24 : 27;
           svg.appendChild(el('text',{class:'pl-dom fade',x:sx+27,y:y+3,style:'--d:'+(base+240)},trunc(d[0],nameMax)));
           // weight bar
-          svg.appendChild(el('rect',{class:'pl-bar fade',x:sx+27,y:y+6,width:Math.max(6,d[1]*1.35),height:2,rx:1,style:'--d:'+(base+260)}));
+          svg.appendChild(el('rect',{class:'pl-bar fade'+(cert.est?' est':''),x:sx+27,y:y+6,width:Math.max(6,d[1]*1.35),height:2,rx:1,style:'--d:'+(base+260)}));
           // weight %
-          svg.appendChild(el('text',{class:'pl-wt fade','text-anchor':'end',x:W-18,y:y+3.5,style:'--d:'+(base+240)},d[1]+'%'));
+          svg.appendChild(el('text',{class:'pl-wt fade'+(cert.est?' est':''),'text-anchor':'end',x:W-18,y:y+3.5,style:'--d:'+(base+240)},(cert.est?'~':'')+d[1]+'%'));
         });
 
         // footer
         svg.appendChild(el('line',{class:'pl-divider draw',x1:18,y1:166,x2:W-18,y2:166,pathLength:1,style:'--d:760'}));
         svg.appendChild(el('text',{class:'pl-name fade',x:18,y:188,style:'--d:820'},cert.name));
-        svg.appendChild(el('text',{class:'pl-sub fade',x:18,y:204,style:'--d:880'},cert.code+'  ·  '+N+' domains  ·  blueprint-weighted'));
+        svg.appendChild(el('text',{class:'pl-sub fade',x:18,y:204,style:'--d:880'},cert.sub||(cert.code+'  ·  '+N+' domains  ·  blueprint-weighted')));
         // footer CTA affordance — mirrors the live copy per result state
         var goText, goClass='pl-go';
         if(soon){
@@ -1867,6 +1887,22 @@
       }
 
       renderLiveWall(false);
+
+      // New-exam extras, only once lib/new-certs.js is revealed: the trademark lines under the wall (short
+      // not-affiliated line + trademark sentence, each once) and the live-exam count in the copy (8 -> 12).
+      (function(){
+        var fresh=(window.certanvilNewCerts?window.certanvilNewCerts():[]);
+        if(!fresh.length)return;
+        var seen={},legal=document.getElementById('cl-legal');
+        if(legal){
+          fresh.forEach(function(c){if(c.legal&&!seen[c.legal]){seen[c.legal]=1;var p=document.createElement('p');p.textContent=c.legal;legal.appendChild(p);}});
+          if(legal.firstChild)legal.removeAttribute('hidden');
+        }
+        var n=document.querySelectorAll('[data-new-certs-count]');
+        var words=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen'];
+        var total=LIVE_BASE+fresh.length; // 8 existing exams plus every revealed exam (PSM II shares the Scrum tile)
+        for(var i=0;i<n.length;i++)n[i].textContent=words[total]||String(total);
+      })();
       if(io){ soonPlates.forEach(function(p){io.observe(p);}); }
       else { soonPlates.forEach(function(p){p.classList.add('drawn');}); }
 
@@ -2174,7 +2210,7 @@
       </div>
 
       <div class="pp-certs pp-r" data-d="2">
-        <div class="pp-certs-h">Eight certs live, one engine</div>
+        <div class="pp-certs-h"><span data-new-certs-count>Eight</span> certs live, one engine</div>
         <div class="pp-cert-list">
           <span class="pp-cert-chip"><span class="pp-cert-dot"></span>Network+ (N10-009)</span>
           <span class="pp-cert-chip"><span class="pp-cert-dot"></span>Security+ (SY0-701)</span>
@@ -2876,7 +2912,7 @@
     </div>
 
     <div class="wyx-certs">
-      <p class="wyx-certs-cap">And the same engine sits behind every cert. <strong>Eight certs live today, with more on the anvil.</strong></p>
+      <p class="wyx-certs-cap">And the same engine sits behind every cert. <strong><span data-new-certs-count>Eight</span> certs live today, with more on the anvil.</strong></p>
       <div class="wyx-badges">
         <div class="wyx-badge" aria-label="Network+"><span class="cg">N<span class="cg-ac">+</span></span></div>
         <div class="wyx-badge" aria-label="Security+"><span class="cg">S<span class="cg-ac">+</span></span></div>
