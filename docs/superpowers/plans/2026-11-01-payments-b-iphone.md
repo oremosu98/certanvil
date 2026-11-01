@@ -476,7 +476,7 @@ Copy, verbatim (screen E):
 
 Copy, verbatim (screen G) except one sentence:
 - Header `Delete account` with Back.
-- Lead: `This removes your progress, history and Pass Plan from every device.` followed by the existing truth instead of the drawing's "It can't be undone.": `Sign in within 7 days to cancel. After that it can't be undone.` (interpretation: the deletion is scheduled with a 7-day window today; the founder confirms this sentence in the PR).
+- Lead: `This removes your progress, history and Pass Plan from every device.` followed by the existing truth instead of the drawing's "It can't be undone.": `Sign in within 7 days to cancel. After that it can't be undone.` (the deletion is scheduled with a 7-day window today; founder approved this sentence on 1 Nov).
 - Apple box (`source 'apple'`, Pro): `You're still billed by Apple. Deleting your account doesn't stop that. Cancel in your Apple ID.` + link `Open Apple subscriptions` (→ `openSubscriptions()`).
 - Web box (`source 'stripe'`, Pro): `Your Pro ends with your account` / `We cancel it when you delete, so there are no more charges.` (true only once Plan A's cancel-on-delete has shipped; Plan B runs after A).
 - No box for Free or owner.
