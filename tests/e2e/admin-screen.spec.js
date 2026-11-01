@@ -273,6 +273,19 @@ test.describe('Admin screen', () => {
     expect(await page.evaluate(() => window.__adminCalls.some((x) => x.name === 'today' || x.name === 'requests'))).toBe(false);
   });
 
+  test('no open reports still offers See past reports, which opens the list with Open off', async ({ page }) => {
+    const adm = await openPhone(page, { fail: ['reports'] });
+    const rep = adm.locator('section[aria-labelledby="adm-s-rep"]');
+    await page.evaluate(() => { const d = window.adminData; d.openCount = async () => ({ ok: true, data: 0 }); d.reports = async (q) => { window.__adminCalls.push({ name: 'reports', args: q }); const rows = q && q.open === false ? [{ id: 9, created_at: new Date().toISOString(), title: 'Old closed one', description: 'x', steps: null, status: 'closed', context: { page: 'Quiz', cert: 'Security+', version: '9' }, user_id: null, fixed_notified_at: null }] : []; return { ok: true, data: { rows, page: 0, more: false } }; }; });
+    await rep.locator('.adm-state button').click();
+    await expect(rep.locator('.adm-state p')).toHaveText('No open reports. New ones show up here and in Monday’s email.');
+    await page.evaluate(() => { window.__adminCalls.length = 0; });
+    await rep.locator('[data-act="past-reports"]').click();
+    await expect(adm.locator('.adm-chip[data-chip="open"]')).toHaveAttribute('aria-pressed', 'false');
+    await expect(adm.locator('[data-rep], [data-grp]').first()).toBeVisible();
+    expect(await page.evaluate(() => window.__adminCalls.filter((x) => x.name === 'reports').every((x) => x.args.open === false))).toBe(true);
+  });
+
   test('offline shows "You\'re offline"', async ({ page, context }) => {
     await boot(page, PHONE);
     await stub(page);

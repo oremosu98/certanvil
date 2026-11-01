@@ -2,10 +2,11 @@
 // the server-side admin check, and one Resend send. Edge runtime, ESM. Every env var is read at call time so a missing
 // one answers a clean 503 instead of a crash (ENVIRONMENT_STRATEGY.md: ship safely before the env is set).
 // The landing project has no SUPABASE_URL env (30 Oct): fall back to the project's public URL, as notify.js does.
+import { senderEmail } from './sender.js';
 
 export function supabaseUrl() { return process.env.SUPABASE_URL || 'https://appmuaqwuethndvalarl.supabase.co'; }
 export function serviceKey() { return process.env.SUPABASE_SERVICE_ROLE_KEY || ''; }
-export function fromAddress() { return 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>'; }
+export function fromAddress() { return 'CertAnvil <' + senderEmail() + '>'; }
 
 // Names of the required env vars that are not set.
 export function missingEnv(names) {
@@ -81,8 +82,14 @@ export async function sendMail({ to, subject, html, text, idempotencyKey }) {
       method: 'POST', headers,
       body: JSON.stringify({ from: fromAddress(), to: Array.isArray(to) ? to : [to], subject, html, text })
     });
+    if (!r.ok) {
+      // Resend's reason (name + message) goes to the server log so a failed send can be diagnosed; addresses are masked.
+      const b = await r.json().catch(function () { return null; });
+      const why = b ? (b.name || '') + ': ' + (b.message || '') : '';
+      console.error('[admin-mail] resend ' + r.status + ' ' + why.replace(/[^\s<>"']+@[^\s<>"']+/g, '[email]').slice(0, 300));
+    }
     return { ok: r.ok, status: r.status };
-  } catch (_) { return { ok: false, status: 0 }; }
+  } catch (e) { console.error('[admin-mail] resend call threw: ' + (e && e.name)); return { ok: false, status: 0 }; }
 }
 
 // A label that goes into an email: control characters (CR/LF included) and line separators become spaces, whitespace

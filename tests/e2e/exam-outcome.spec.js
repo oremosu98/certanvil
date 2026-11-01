@@ -116,6 +116,21 @@ test.describe('How did your exam go', () => {
     await expect(sheet.locator('[data-act="cal-save"]')).toBeEnabled();
   });
 
+  test('Set a new date after a past exam opens the calendar on this month, not the old one', async ({ page }) => {
+    await boot(page, dayOffset(-40));   // always a past month, so the old date's month has no day left to pick
+    await page.locator('#ios-home [data-act="cert"]').click();
+    await page.locator('#ios-hub [data-act="log"]').click();
+    const screen = page.locator('#ios-log-result');
+    await screen.locator('[data-v="failed"]').click();
+    await screen.locator('#il-save').click();
+    await screen.locator('#il-done-go').click();
+    const sheet = page.locator('#ist-sheet');
+    await expect(sheet).toHaveClass(/open/);
+    const now = await page.evaluate(() => { const d = new Date(); return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][d.getMonth()] + ' ' + d.getFullYear(); });
+    await expect(sheet.locator('.ist-cal-month')).toHaveText(now);
+    await expect(sheet.locator('.ist-day:not([disabled])').first()).toBeVisible();
+  });
+
   test('outcomeDue is false on the exam day and the card does not show', async ({ page }) => {
     await boot(page, dayOffset(0));
     expect(await page.evaluate(() => outcomeDue('netplus'))).toBe(false);

@@ -140,7 +140,9 @@
     if (!st.data) return h + skel();
     var rows = st.data.rows.slice(0, 3);
     rows.forEach(function (r) { S.byId[r.id] = r; });
-    if (!rows.length) return h + stateMsg('No open reports. New ones show up here and in Monday' + Q + 's email.', 6);
+    // Nothing open: the closed ones stay reachable through See all with the Open chip off.
+    if (!rows.length) return h + '<div class="adm-state' + rv(6) + '><p>No open reports. New ones show up here and in Monday' + Q + 's email.</p>'
+      + '<button type="button" data-act="past-reports">See past reports</button></div>';
     return h + '<div class="adm-list' + rv(6) + '>' + rows.map(repRow).join('')
       + '<button class="adm-seeall" type="button" data-act="all-reports">' + (n == null ? 'See all open' : 'See all ' + fmt(n) + ' open') + CHEV + '</button></div>';
   }
@@ -278,10 +280,10 @@
       if (!fresh) root.querySelector('#adm-sec-prev').setAttribute('data-still', '');
     } else { paintChips(); paintList(); }
   }
-  function go(view) {
+  function go(view, past) {
     S.view = view; S.confirmFor = null; S.send = null;
     if (view !== 'admin') S.list = view === 'reports'
-      ? { kind: 'reports', q: '', f: { open: true, canHear: false, thisWeek: false, cert: null }, page: 0, rows: [], more: false, st: 'loading', certs: [] }
+      ? { kind: 'reports', q: '', f: { open: !past, canHear: false, thisWeek: false, cert: null }, page: 0, rows: [], more: false, st: 'loading', certs: [] }
       : { kind: 'requests', q: '', f: { notTold: true, written: false, thisWeek: false }, page: 0, rows: [], more: false, st: 'loading' };
     draw(false);
     var body = S.root.querySelector('.adm-body'); if (body) body.scrollTop = 0;
@@ -653,6 +655,7 @@
     if (a === 'back') { if (S.view !== 'admin') go('admin'); else close(); }
     else if (b.hasAttribute('data-retry')) { var k = b.getAttribute('data-retry'); if (k === 'list') loadList(S.list && S.list.rows.length > 0); else load(k); }
     else if (a === 'all-reports') go('reports');
+    else if (a === 'past-reports') go('reports', true);
     else if (a === 'all-requests') go('requests');
     else if (b.hasAttribute('data-req')) { var key = b.getAttribute('data-req'); if (S.send && S.send.busy) return; S.confirmFor = S.confirmFor === key ? null : key; S.send = null; redrawReq(); }
     else if (a === 'cr-cancel') { if (S.send && S.send.busy) return; var was = S.confirmFor; S.confirmFor = null; S.send = null; redrawReq(); _refocus(S.root, '[data-req="' + was + '"]'); }

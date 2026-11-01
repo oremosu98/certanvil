@@ -105,7 +105,7 @@ export default async function handler(req) {
       const ur = await fetch(supabaseUrl() + '/auth/v1/admin/users/' + encodeURIComponent(row.user_id), { headers: svcHeaders() }).catch(function () { return null; });
       const u = ur && ur.status === 200 ? await ur.json().catch(function () { return null; }) : null;
       const email = u && typeof u.email === 'string' ? u.email.trim() : '';
-      if (!email || email.indexOf('@') < 1) { const rel = await release(); (rel && ur && ur.status === 404) ? skipped++ : failed++; processed++; next = row.id; continue; }
+      if (!email || email.indexOf('@') < 1) { console.error('bug-report: no reporter email for report ' + row.id + ' (lookup ' + (ur ? ur.status : 'threw') + ')'); const rel = await release(); (rel && ur && ur.status === 404) ? skipped++ : failed++; processed++; next = row.id; continue; }
 
       if (_tuning.gapMs && lastSend) { const wait = _tuning.gapMs - (Date.now() - lastSend); if (wait > 0) await sleep(wait); }
       const mail = buildFixedEmail(row.title);
