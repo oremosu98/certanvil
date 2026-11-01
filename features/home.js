@@ -1518,7 +1518,7 @@
     var _pcS = (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? '%' : '';   // readiness reads '72%' on a percent cert
     var vals = [t.readiness, t.answers, t.best], labels = ['Readiness', 'Answers', 'Best streak'], tiles = '';
     // Not safely loaded from the cloud yet: no tiles, and no claim that everything is there, rather than zeros.
-    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"' + (i === 0 && _pcS ? ' data-sfx="%"' : '')) + '>' + (v == null ? '&ndash;' : fmt(v) + (i === 0 ? _pcS : '')) + '</b><span>' + labels[i] + '</span></div>'; });
+    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"' + (i === 0 && _pcS ? ' data-sfx="%"' : '')) + '>' + (v == null ? '--' : fmt(v) + (i === 0 ? _pcS : '')) + '</b><span>' + labels[i] + '</span></div>'; });
     var html = '<div class="dm-body"><span class="wb-markwrap"><span class="wb-glow" aria-hidden="true"></span><span class="wb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="wb-arrow"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path></g></svg></span></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Welcome back' + (name ? ', ' + escHtml(name) : '') + '.</h2>'
       + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion.' + (withTiles === false ? '' : ' Everything is right where you left it.') + '</p>'

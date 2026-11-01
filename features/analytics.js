@@ -1635,7 +1635,7 @@
   const MILESTONE_PROGRESS = {
     hundred_qs: c => [c.totalQs, 100], five_hundred_qs: c => [c.totalQs, 500], thousand_qs: c => [c.totalQs, 1000],
     streak_7: c => [c.streak.currentStreak, 7], streak_30: c => [c.streak.currentStreak, 30],
-    ready_650: c => [Math.round(c.readiness.predicted), 650], ready_720: c => [Math.round(c.readiness.predicted), EXAM_PASS_SCORE],
+    ready_650: c => [Math.round(c.readiness.predicted), EXAM_SCORE_FORMAT === 'percent' ? READINESS_CLOSE : 650], ready_720: c => [Math.round(c.readiness.predicted), EXAM_PASS_SCORE],
     five_exams: c => [c.exams.length, 5], ten_exams: c => [c.exams.length, 10],
     subnet_50: c => [c.subStats.seen, 50], deep_dive_10: c => [c.ddUses, 10],
     daily_challenge_7: c => [c.dc.bestStreak, 7], daily_challenge_30: c => [c.dc.bestStreak, 30],

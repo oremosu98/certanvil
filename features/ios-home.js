@@ -117,7 +117,7 @@
     }
     if (!rec && passedCert) {
       rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score + (fmt === 'percent' ? '%' : '') : ''), title: 'Pick your next cert',
-        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + (fmt === 'percent' ? '%' : '') + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
     }
     if (!rec && isNew) rec = { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' };
     // days since the last study day (local midnights, so DST and time of day never matter)

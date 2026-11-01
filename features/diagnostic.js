@@ -484,7 +484,7 @@
     // Diagnostic is single-domain-spread so we apply a slight regression-to-
     // mean penalty (multiply by 0.95) — 20 questions can't out-predict 200.
     const _bandW = READINESS_BAND[1] - READINESS_BAND[0];
-    const predicted = Math.round(EXAM_MIN_SCORE + (accPct / 100) * 0.95 * (EXAM_MAX_SCORE - EXAM_MIN_SCORE));
+    const predicted = Math.round(EXAM_MIN_SCORE + (accPct / 100) * ((typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 1 : 0.95) * (EXAM_MAX_SCORE - EXAM_MIN_SCORE));
 
     // CI is wide for a 20-Q sample. Mirror the formula in getReadinessScore
     // but assume coverageFactor = 1 (we covered all domains) and recency = 1

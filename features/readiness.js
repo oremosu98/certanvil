@@ -43,8 +43,8 @@
   }
   function examScoreOf() { return EXAM_SCORE_FORMAT === 'percent' ? '' : '/ ' + EXAM_MAX_SCORE; }
   function examPassText() { return formatExamScore(EXAM_PASS_SCORE); }
-  // The empty-score placeholder: percent certs read '--' (never '0%'); scaled certs keep their em dash.
-  const NO_SCORE = EXAM_SCORE_FORMAT === 'percent' ? '--' : '\u2014';
+  // The empty-score placeholder: '--' (two hyphens) in both formats, never NaN and never '0%'.
+  const NO_SCORE = '--';
   // 'Readiness' plus the score and its max, or just 'Readiness 72%'; and how the exam's scale reads in copy ('100-900' | 'as a percentage').
   function readinessStrip(p) { return formatExamScore(p) + (EXAM_SCORE_FORMAT === 'percent' ? '' : '/' + EXAM_MAX_SCORE); }
   function examScoreRangeText() { return EXAM_SCORE_FORMAT === 'percent' ? 'as a percentage' : EXAM_MIN_SCORE + '-' + EXAM_MAX_SCORE; }
@@ -907,13 +907,13 @@
     { id: 'five_hundred_qs',  label: 'Grinder',             desc: 'Answer 500 questions' },
     { id: 'thousand_qs',      label: 'Iron will',           desc: 'Answer 1,000 questions' },
     { id: 'first_exam',       label: 'Exam rehearsal',      desc: 'Complete your first exam simulation' },
-    { id: 'exam_pass',        label: 'Passing grade',       desc: `Score ${EXAM_PASS_SCORE}+ on any exam simulation` },
+    { id: 'exam_pass',        label: 'Passing grade',       desc: `Score ${formatExamScore(EXAM_PASS_SCORE)}+ on any exam simulation` },
     { id: 'all_domains',      label: 'Full coverage',       desc: `Study at least one topic in all ${Object.keys(DOMAIN_WEIGHTS).length} domains` },
     { id: 'all_topics',       label: 'Completionist',       desc: 'Attempt every topic at least once' },
     { id: 'streak_7',         label: 'Week warrior',        desc: '7-day study streak' },
     { id: 'streak_30',        label: 'Month master',        desc: '30-day study streak' },
-    { id: 'ready_650',        label: 'Getting close',       desc: `Reach a readiness score of ${READINESS_CLOSE}` },
-    { id: 'ready_720',        label: 'Exam ready',          desc: `Reach a readiness score of ${EXAM_PASS_SCORE} (pass)` },
+    { id: 'ready_650',        label: 'Getting close',       desc: `Reach a readiness score of ${formatExamScore(READINESS_CLOSE)}` },
+    { id: 'ready_720',        label: 'Exam ready',          desc: `Reach a readiness score of ${formatExamScore(EXAM_PASS_SCORE)} (pass)` },
     { id: 'perfect_port',     label: 'Port master',         desc: 'Perfect round on Port Drill (40 correct)' },
     { id: 'streak_port_25',   label: 'Streak keeper',       desc: 'Reach a 25+ streak in Port Drill Endless mode' },
     // ── v4.10 expansion ──
@@ -1122,7 +1122,7 @@
     if (!numEl) return;
 
     if (!data) {
-      numEl.textContent    = '\u2014';
+      numEl.textContent    = NO_SCORE;
       numEl.style.color    = 'var(--text-dim)';
       badgeEl.textContent  = 'Not started';
       badgeEl.style.background = 'var(--surface3)';
@@ -1551,7 +1551,7 @@
       if (predEl) predEl.hidden = true;
       if (whatIfEl) whatIfEl.hidden = true;
       if (trajEl) trajEl.hidden = true;
-      if (_stripEl) _stripEl.textContent = 'Readiness \u2014/' + EXAM_MAX_SCORE + ' \u00b7 take a quiz to unlock';
+      if (_stripEl) _stripEl.textContent = 'Readiness ' + NO_SCORE + (EXAM_SCORE_FORMAT === 'percent' ? '' : '/' + EXAM_MAX_SCORE) + ' \u00b7 take a quiz to unlock';
       card.classList.add('is-pending');
       return;
     }

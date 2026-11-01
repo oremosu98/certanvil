@@ -210,9 +210,9 @@
           }).join('') + '</div>' + (pct > 0 ? '<div class="in-ho-bar"><span data-w="' + pct + '" style="width:0%"></span></div>' : '') + '</div>';
       }).join('') + '</div>';
     var ex = m.wins.exams || [];
-    wh += '<div class="in-card in-reveal">' + head('Full exams', 'Scaled scores') + (ex.length ? ex.map(function (x) {
+    wh += '<div class="in-card in-reveal">' + head('Full exams', (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 'Scores' : 'Scaled scores') + (ex.length ? ex.map(function (x) {
       return '<div class="in-exrow"><b>' + x.score + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') + '</b><span>' + e(x.date) + ' · ' + x.questions + ' questions</span></div>';
-    }).join('') : '<div class="in-empty"><span class="in-ei">' + ICON.empty + '</span><b>None yet</b><span>Run one to track scaled scores.</span></div>') + '</div>';
+    }).join('') : '<div class="in-empty"><span class="in-ei">' + ICON.empty + '</span><b>None yet</b><span>Run one to track ' + ((typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 'scores' : 'scaled scores') + '.</span></div>') + '</div>';
     h += page(5, 'Wins', wh);
 
     h += '</div><div class="in-map-scrim" data-act="close"></div>'

@@ -2953,7 +2953,7 @@ function renderStatsCard() {
     <div class="sstat"><div class="sv" style="color:${avgColor}">${stats.avgPct}%</div><div class="sl">Avg Score</div></div>
     <div class="sstat"><div class="sv">${streakIcon} ${streakData.currentStreak}</div><div class="sl">Day streak</div></div>
     <div class="sstat"><div class="sv">${todayQs}</div><div class="sl">Qs today</div></div>
-    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? formatExamScore(stats.bestExam) : (EXAM_SCORE_FORMAT === 'percent' ? '--' : '\u2014')}</div><div class="sl">Best exam</div></div>`;
+    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? formatExamScore(stats.bestExam) : '--'}</div><div class="sl">Best exam</div></div>`;
 }
 
 // ══════════════════════════════════════════

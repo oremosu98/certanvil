@@ -50,7 +50,7 @@
 
     return {
       passed: passed, gap: gap, over: over, headline: headline, sub: sub, label: (d.fmt === 'percent' ? 'Score · ' : 'Scaled score · ') + d.certLabel, fmt: d.fmt === 'percent' ? 'percent' : 'scaled', tags: tags, msg: msg,
-      note: "An estimate: the real exam's scaling isn't published.",
+      note: d.fmt === 'percent' ? 'Your score is the share you got right.' : "An estimate: the real exam's scaling isn't published.",
       meter: { fill: Math.max(0, Math.min(100, pctOf(d.scaled))), tick: pctOf(d.passScore), min: d.minScore, pass: d.passScore, max: d.maxScore },
       scaled: d.scaled, maxScore: d.maxScore, total: d.total,
       tiles: [{ n: d.correct, l: 'Correct', kind: 'good' }, { n: d.wrong, l: 'Wrong', kind: 'bad' }, { n: d.skipped, l: 'Skipped', kind: '' }, { n: d.pct + '%', l: 'Raw', kind: '' }],

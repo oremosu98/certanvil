@@ -154,7 +154,7 @@
       var name = escHtml(meta.name) + (meta.code ? ' ' + escHtml(meta.code) : '');
       return '<div class="plan-item" data-act="pp-open-cert" data-cert="' + escHtml(id) + '" role="button" tabindex="0">' +
         '<span class="pi-ring" style="background:conic-gradient(var(--accent) 0 ' + ringPct + '%, var(--surface3) ' + ringPct + '% 100%)">' +
-          '<span class="pi-ring-inner">' + (score !== null ? score + (_rs && _rs.format === 'percent' ? '%' : '') : '&ndash;') + '</span></span>' +
+          '<span class="pi-ring-inner">' + (score !== null ? score + (_rs && _rs.format === 'percent' ? '%' : '') : '--') + '</span></span>' +
         '<span class="pi-body"><span class="pi-cert">' + name + '</span>' +
           '<div class="pi-meta">' + (bits.length ? bits.join(' &middot; ') : 'Open this cert') + '</div></span>' +
         '<span class="pi-go" aria-hidden="true">&rsaquo;</span></div>';

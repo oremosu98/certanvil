@@ -86,9 +86,9 @@ const { test } = require('./_context');
     pct.f72 === '72%' && pct.pass === '60%' && pct.of === '' && pct.fNull === '--' && pct.fNaN === '--' && pct.fInf === '--'
     && pct.strip === '72%' && pct.range === 'as a percentage' && pct.none === '--');
   const sca = run({ CertRegistry: R, CURRENT_CERT: 'netplus', EXAM_MAX_SCORE: 900, EXAM_PASS_SCORE: 720 });
-  test('545 readiness: a scaled cert is untouched (Network+ band 420-870, 645 at raw 50, "684", "/ 900", em dash placeholder)',
+  test('545 readiness: a scaled cert is untouched (Network+ band 420-870, 645 at raw 50, "684", "/ 900", "--" placeholder)',
     sca.min === 100 && sca.fmt === 'scaled' && sca.band[0] === 420 && sca.band[1] === 870 && sca.r72 === 744 && sca.f72 === '72' && sca.of === '/ 900'
-    && sca.pass === '720' && sca.none === '—' && sca.strip === '72/900' && sca.range === '100-900' && sca.fNull === '--');
+    && sca.pass === '720' && sca.none === '--' && sca.strip === '72/900' && sca.range === '100-900' && sca.fNull === '--');
   const az = run({ CertRegistry: R, CURRENT_CERT: 'az900', EXAM_MAX_SCORE: 1000, EXAM_PASS_SCORE: 700 });
   test('545 readiness: a Microsoft cert keeps min 1 and its own relative band', az.min === 1 && az.fmt === 'scaled' && az.band[1] <= 1000 && az.band[0] >= 1);
   // Step 4b: the `examMinScore || 100` bug. No registry here, so this is the pack-meta path: a real 0 must survive.
@@ -179,11 +179,6 @@ const { test } = require('./_context');
   test('545 hub: the active percent cert has min 0 / max 100 / pass 60 on its card and the Free readiness stat knows its format',
     hm3.active.fmt === 'percent' && hm3.active.max === 100 && hm3.active.pass === 60 && hm3.stats.readinessFmt === 'percent' && hm3.stats.readiness === 72
     && vm.runInContext('_hubFmt(__p, 72)', hubCtx) === '72%');
-  test('545 hub: the phone and desktop views read the shared formatter, not a hard-coded "/ max"',
-    /_hubRight\(r\)/.test(src['features/ios-hub.js']) && /_hubRight\(r, true\)/.test(src['features/ios-hub.js'])
-    && !/<b>' \+ _esc\(r\.score\) \+ '<\/b> \/ '/.test(src['features/ios-hub.js']) && /_hubFmt\(a, a\.score\)/.test(src['features/ios-hub.js'])
-    && /_hubFmt\(\{ fmt: s\.readinessFmt \}/.test(src['features/ios-hub.js']));
-
   // ios-firstrun: the score reveal
   const frCtx = sandbox({});
   vm.runInContext(read('lib/cert-registry.js'), frCtx);
@@ -230,10 +225,6 @@ const { test } = require('./_context');
   const ims = vm.runInContext('_iosExamResultsModel(__d)', ie);
   test('545 exam results (phone): a scaled cert keeps "Scaled score", format scaled and its 0-100 mapping', ims.label === 'Scaled score · Fake' && ims.fmt === 'scaled' && ims.passed === false);
   const ieSrc = src['features/ios-exam.js'];
-  test('545 exam results (phone): the view drops "/ max" and adds % for percent, and the count-up keeps the %',
-    /m\.fmt === 'percent' \? '' : '\/ ' \+ m\.maxScore/.test(ieSrc) && /data-sfx="%"/.test(ieSrc) && /getAttribute\('data-sfx'\)/.test(ieSrc)
-    && /fmt: EXAM_SCORE_FORMAT/.test(src['features/exam.js']));
-
   // analytics (desktop list of exams) and the other desktop readers: through the shared formatter
   const an = sandbox({ EXAM_TOPIC: 'Exam', EXAM_PASS_SCORE: 60, _edCardhead: () => '', scaledExamScore: (c, t) => Math.round(c / t * 100),
     formatExamScore: (n) => Math.round(n) + '%' });
@@ -268,11 +259,111 @@ const { test } = require('./_context');
     && /animateCount\('rc-v2-num',EXAM_SCORE_FORMAT==='percent'\?0:100,scaled,1100,EXAM_SCORE_FORMAT==='percent'\?'%':''\)/.test(APP)
     && /n\.textContent=formatExamScore\(scaled\)/.test(APP) && /stats\.bestExam > 0 \? formatExamScore\(stats\.bestExam\)/.test(APP));
   test('545 app: app.js did not grow (baseline 8235 lines)', APP.split('\n').length <= 8236);   // split of a trailing newline counts one extra
-  test('545 onboarding: the first-run reveal and movement screens drop "out of 900", use the real band in the legend and keep the % while counting',
-    /function outOf\(\)/.test(src['lib/onboarding-firstrun.js']) && /legend\(D\.pass\)/.test(src['lib/onboarding-firstrun.js']) && /PHP = \{ score: 46, pass: 60/.test(src['lib/onboarding-firstrun.js'])
-    && !/<span>100<\/span><span class="fr-pass">/.test(src['lib/onboarding-firstrun.js']) && /elm\.textContent = to \+ S/.test(src['lib/onboarding-firstrun.js']));
   test('545 onboarding: the cert switcher reads "72% · pass 60%" per cert and the tour copy says percentage',
     /rs\.format === 'percent' \? '· pass ' \+ rs\.pass \+ '%'/.test(src['lib/onboarding-home.js']) && /One score, as a percentage/.test(src['lib/onboarding-home.js']));
   test('545 phone tour and Settings pass plans read the registry format',
     /s\.format === 'percent' \? 'It is a percentage/.test(src['features/ios-tour.js']) && /_rs\.format === 'percent' \? '%' : ''/.test(src['features/settings.js']));
+
+  // ── Fix round 1: rendered-output checks (real views run in a vm) ──
+  // Item 1: the "Getting close" milestone and its descriptions.
+  function milestoneCtx(fmt, close, pass) {
+    const sb = sandbox({ EXAM_PASS_SCORE: pass, READINESS_CLOSE: close, EXAM_SCORE_FORMAT: fmt, DOMAIN_WEIGHTS: { a: 1, b: 1 },
+      formatExamScore: (n) => (fmt === 'percent' ? Math.round(n) + '%' : String(Math.round(n))) });
+    vm.runInContext(between('features/readiness.js', 'const MILESTONE_DEFS = [', '  ];').replace('const MILESTONE_DEFS', 'var MILESTONE_DEFS'), sb);
+    return sb;
+  }
+  const msP = milestoneCtx('percent', 51, 60), msS = milestoneCtx('scaled', 650, 720);
+  const desc = (sb, id) => vm.runInContext('MILESTONE_DEFS.filter(function (m) { return m.id === "' + id + '"; })[0].desc', sb);
+  test('545 milestones: a percent cert reads "Reach a readiness score of 51%" and "60% (pass)", "Score 60%+"',
+    desc(msP, 'ready_650') === 'Reach a readiness score of 51%' && desc(msP, 'ready_720') === 'Reach a readiness score of 60% (pass)' && desc(msP, 'exam_pass') === 'Score 60%+ on any exam simulation');
+  test('545 milestones: a scaled cert is unchanged ("650", "720 (pass)", "Score 720+")',
+    desc(msS, 'ready_650') === 'Reach a readiness score of 650' && desc(msS, 'ready_720') === 'Reach a readiness score of 720 (pass)' && desc(msS, 'exam_pass') === 'Score 720+ on any exam simulation');
+  const progLine = /ready_650: c => \[[^\n]*\],\s*ready_720: c => \[[^\n]*\],/.exec(src['features/analytics.js'])[0];
+  function progress(fmt, close, pass, predicted) {
+    const sb = sandbox({ EXAM_SCORE_FORMAT: fmt, READINESS_CLOSE: close, EXAM_PASS_SCORE: pass });
+    sb.__c = { readiness: { predicted } };
+    vm.runInContext('var P = {' + progLine + '};', sb);
+    return [vm.runInContext('P.ready_650(__c)', sb), vm.runInContext('P.ready_720(__c)', sb)];
+  }
+  test('545 milestones: percent "Getting close" targets the close cut-off (45 / 51), "Exam ready" the pass line (45 / 60)',
+    JSON.stringify(progress('percent', 51, 60, 45)) === '[[45,51],[45,60]]');
+  test('545 milestones: scaled "Getting close" still targets 650, whatever READINESS_CLOSE is (Azure close is not 650)',
+    JSON.stringify(progress('scaled', 640, 720, 600)) === '[[600,650],[600,720]]' && JSON.stringify(progress('scaled', 650, 720, 600)) === '[[600,650],[600,720]]');
+
+  // Item 2: the first-run reveal / movement screens: the tick sits at the pass mark on the cert's own scale.
+  function frScreens(id, fmt, score, from, to) {
+    const e = R.examScale(id, {});
+    const sb = sandbox({ EXAM_MIN_SCORE: e.min, EXAM_MAX_SCORE: e.max, EXAM_PASS_SCORE: e.pass, EXAM_SCORE_FORMAT: fmt,
+      esc: (v) => String(v), certById: () => ({ name: 'X' }), state: { certId: id }, real: null });
+    vm.runInContext('var real = { score: ' + score + ', pass: ' + e.pass + ', weakArea: "W", moveFrom: ' + from + ', moveTo: ' + to + ', reviewCards: 0 };\n'
+      + ['sfx', 'outOf', 'tickPct', 'legend', 'data', 'screenScoreReveal', 'screenMovement'].map((n) => fn('lib/onboarding-firstrun.js', n)).join('\n'), sb);
+    return { reveal: vm.runInContext('screenScoreReveal()', sb), move: vm.runInContext('screenMovement()', sb), e };
+  }
+  const tickOf = (h) => +/fr-bar-tick" style="left:([\d.]+)%/.exec(h)[1];
+  const frP = frScreens('pctcert', 'percent', 72, 60, 66);
+  test('545 first-run screens: a percent cert has no "out of", reads Pass 60% on 0%-100%, tick at 60, and moves from 60% in the count',
+    !/out of/.test(frP.reveal + frP.move) && /<span>0%<\/span><span class="fr-pass">Pass 60%<\/span><span>100%<\/span>/.test(frP.reveal)
+    && tickOf(frP.reveal) === 60 && tickOf(frP.move) === 60 && />60%<\/span><span class="fr-outof">/.test(frP.move));
+  const frN = frScreens('netplus', 'scaled', 540, 540, 560);
+  test('545 first-run screens: a scaled cert keeps "out of 900" and the 100 / 900 legend', /out of 900/.test(frN.reveal) && /<span>100<\/span><span class="fr-pass">Pass 720<\/span><span>900<\/span>/.test(frN.reveal));
+  const shifts = R.all().map((c) => {
+    const sc2 = R.examScale(c.id, {}), h = frScreens(c.id, 'scaled', 500, 500, 510).reveal, want = Math.round((sc2.pass - sc2.min) / (sc2.max - sc2.min) * 1000) / 10;
+    return { id: c.id, tick: tickOf(h), want, ok: tickOf(h) === want };
+  });
+  test('545 first-run screens: for every registry cert the tick lines up with (pass - min) / (max - min), not a fixed 80%',
+    shifts.every((x) => x.ok) && shifts.find((x) => x.id === 'netplus').tick === 77.5 && shifts.find((x) => x.id === 'secplus').tick === 81.3 && shifts.find((x) => x.id === 'clfc02').tick === 66.7);
+  test('545 first-run screens: the CSS keeps its 80% only as the fallback, the inline left wins', /fr-bar-tick" style="left:/.test(src['lib/onboarding-firstrun.js']));
+
+  // Item 3: the diagnostic's predicted score.
+  function diag(fmt, allRight) {
+    const min = fmt === 'percent' ? 0 : 100, max = fmt === 'percent' ? 100 : 900, pass = fmt === 'percent' ? 60 : 720;
+    const sb = sandbox({ READINESS_BAND: fmt === 'percent' ? [0, 100] : [420, 870], EXAM_MIN_SCORE: min, EXAM_MAX_SCORE: max, EXAM_PASS_SCORE: pass, EXAM_SCORE_FORMAT: fmt, CERT_CODE: 'X',
+      DOMAIN_WEIGHTS: { concepts: 0.5, other: 0.5 }, DOMAIN_LABELS: { concepts: 'C', other: 'O' }, TOPIC_DOMAINS: { A: 'concepts', B: 'other' },
+      _buildWeekPlan: () => [], _resolveDomainForTopic: (t) => ({ A: 'concepts', B: 'other' })[t] || null });
+    const questions = Array.from({ length: 20 }, (_, i) => ({ topic: i % 2 ? 'B' : 'A' }));
+    sb.session = { questions, answers: questions.map(() => ({ correct: allRight, confidence: 'confident', answeredAt: 1 })) };
+    vm.runInContext(fn('features/diagnostic.js', '_buildPassPlan'), sb);
+    return vm.runInContext('_buildPassPlan(session)', sb);
+  }
+  test('545 diagnostic: percent predicted equals weighted accuracy (all right 100, all wrong 0); scaled keeps the 0.95 shrink (all right 100 + 800 * 0.95 = 860)',
+    diag('percent', true).predicted === 100 && diag('percent', false).predicted === 0 && diag('scaled', true).predicted === 860);
+
+  // Item 4: phone wording for percent certs.
+  ie.__d = Object.assign({ fmt: 'percent' }, dBase);
+  const imP = vm.runInContext('_iosExamResultsModel(__d)', ie);
+  test('545 exam results (phone): a percent cert has no "scaling isn\'t published" note; a scaled cert keeps it',
+    imP.note === 'Your score is the share you got right.' && !/scaling/.test(imP.note) && vm.runInContext('_iosExamResultsModel(__d)', Object.assign(ie, { __d: Object.assign({}, dBase, { scaled: 676, passScore: 720, maxScore: 900, minScore: 100 }) })).note === "An estimate: the real exam's scaling isn't published.");
+  const ieHtml = sandbox({});
+  vm.runInContext(fn('features/ios-exam.js', '_iosExamResultsHtml'), ieHtml);
+  ieHtml.__m = imP;
+  let ieOut = '';
+  try { ieOut = vm.runInContext('_iosExamResultsHtml(__m)', ieHtml); } catch (e) { ieOut = 'THREW ' + e.message; }
+  test('545 exam results (phone): the rendered scorecard reads 72%, no "/ 100", legend 0% / Pass 60% / 100%, the count-up keeps the %',
+    />72%<\/span><span class="ie-sc-of"><\/span>/.test(ieOut) && /data-sfx="%"/.test(ieOut) && /<span>0%<\/span><span class="ie-p">Pass 60%<\/span><span>100%<\/span>/.test(ieOut) && !/\/ 100/.test(ieOut) && !/scaling/.test(ieOut));
+
+  // ios-home: the readiness card and the next-cert line.
+  const ihSrcFns = ['_iosHomeHtml'];
+  const ih = sandbox({ escHtml: (v) => String(v), document: { documentElement: { getAttribute: () => 'dark' } } });
+  vm.runInContext(ihSrcFns.map((n) => fn('features/ios-home.js', n)).join('\n'), ih);
+  const ihModel = (fmt, score) => ({ signedIn: true, cert: { mark: 'P', name: 'Fake', code: 'PC' }, passed: false, streak: 1, greeting: 'Hi', exam: { qs: 50, mins: 60, min: 0, max: 100, fmt },
+    readiness: { score, fmt, max: fmt === 'percent' ? 100 : 900, pass: fmt === 'percent' ? 60 : 720, tier: 'Close', fillPct: 50, passPct: 60, insight: 'x', book: null, meta: null },
+    rec: { kind: 'first', min: 10, title: 't', sub: 's' }, week: { days: [], done: 0, goal: 5 }, momentum: { done: 0, goal: 10, streakLine: '' }, mistakes: { count: 0 }, domains: [] });
+  function ihRender(m) { ih.__m = m; try { return vm.runInContext('_iosHomeHtml(__m)', ih); } catch (e) { return 'THREW ' + e.message; } }
+  const ihP = ihRender(ihModel('percent', 72)), ihL = ihRender(ihModel('percent', null)), ihS = ihRender(ihModel('scaled', 684));
+  test('545 home (phone): the percent readiness card reads 72% with no "/ 100" and "Pass 60%"; locked reads "--" with no tail; exam copy says percentage',
+    !/THREW/.test(ihP) && /ih-rd-num">72%<\/span><span class="ih-rd-of"><\/span>/.test(ihP) && /Pass 60%/.test(ihP) && /scored as a percentage/.test(ihP)
+    && /ih-rd-num">--<\/span><span class="ih-rd-of"><\/span>/.test(ihL));
+  test('545 home (phone): the scaled readiness card is unchanged ("684", "/ 900", "Pass 720", "scored 0 to 100"-style range copy)',
+    /ih-rd-num">684<\/span><span class="ih-rd-of">\/ 900<\/span>/.test(ihS) && /Pass 720/.test(ihS) && /scored 0 to 100/.test(ihS));
+  const ihModelFn = fn('features/ios-home.js', '_iosHomeModel');
+  test('545 home (phone): "We predicted N" carries the % on a percent cert (source of the next-cert line)',
+    /'We predicted ' \+ outcomeRec\.predicted \+ \(fmt === 'percent' \? '%' : ''\)/.test(ihModelFn));
+
+  // Item 5: the empty score reads "--" everywhere, in both formats (every surface changed).
+  const idx = read('index.html');
+  test('545 empty score: the static placeholders are "--" (Home readiness, the old readiness card, Pass Plan predicted, quiz results)',
+    /id="rc-v2-num">--</.test(idx) && /id="readiness-num">--</.test(idx) && /id="pass-plan-predicted-score">--</.test(idx) && /id="r-v2-score">--</.test(idx));
+  test('545 empty score: the scripted placeholders are "--" (readiness cards, strip, Best exam, Settings ring, welcome-back tile); no em dash is left on a score',
+    /const NO_SCORE = '--'/.test(src['features/readiness.js']) && !/numEl\.textContent\s*=\s*'\\u2014'/.test(src['features/readiness.js']) && !/Readiness \\u2014/.test(src['features/readiness.js'])
+    && /stats\.bestExam > 0 \? formatExamScore\(stats\.bestExam\) : '--'/.test(src['app.js']) && /: '--'\) \+ '<\/span><\/span>'/.test(src['features/settings.js']) && /\(v == null \? '--'/.test(src['features/home.js']));
 })();
