@@ -14,7 +14,8 @@
   // ── Pure model (UAT vm-testable; no DOM, no storage) ──
   var HUB_DAY = 86400000;
   var HUB_STALE_DAYS = 14;          // a snapshot older than this says so
-  var HUB_SCALE_1000 = { az900: 1, ai900: 1, sc900: 1, clfc02: 1 };   // the Microsoft and AWS certs score out of 1000
+  // The top of a cert's score scale, from the registry (Microsoft and AWS certs: 1000). Unknown cert or no registry: 900.
+  function _hubMax(id) { var R = typeof window !== 'undefined' ? window.CertRegistry : null, s = R ? R.scale(id) : null; return s ? s.max : 900; }
 
   // "CompTIA A+ Core 1" -> "A+ Core 1"; "Microsoft Azure Fundamentals" -> "Azure Fundamentals". AWS stays: it is the brand.
   // The first name from a profile name, or '' when there is no real one: auth falls back to the email's local part, so
@@ -63,7 +64,7 @@
       var isPassed = !!(oc && oc.outcome === 'passed');
       var hasSnap = !!(snap && typeof snap.score === 'number' && isFinite(snap.score));
       var days = _hubDays(dates[id], now);
-      var max = HUB_SCALE_1000[id] ? 1000 : 900;
+      var max = _hubMax(id);
       if (id === cur && typeof scale.max === 'number') max = scale.max;
       var row = { id: id, name: _hubShort(c.name), code: c.code || '', glyph: c.glyph || '', max: max, score: hasSnap ? snap.score : null, days: days };
       if (isPassed) passedCount++;

@@ -5,7 +5,7 @@
 // Output is deterministic JSON (certs sorted by id, fixed field order) on stdout.
 // Used by tests/uat/540-cert-surfaces-snapshot.js to guard the cert-registry refactor.
 //   node scripts/snapshot-cert-surfaces.js > tests/fixtures/cert-surfaces-v1.json
-// If an anchor pattern is missing from source the extractor THROWS (never guesses, never silently nulls).
+// Since Task 1.4 it runs each surface's own function against the real registry. A missing function THROWS (never guesses, never silently nulls).
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -96,7 +96,33 @@ function headSurfaces() {
   return { run };
 }
 
-const MARK_FILES = ['features/ios-analytics.js', 'features/ios-custom.js', 'features/ios-firstrun.js', 'features/ios-home.js', 'features/ios-log-result.js', 'features/ios-progress.js'];
+// Since Task 1.4 the per-cert maps are gone: every surface reads window.CertRegistry. So instead of parsing map literals,
+// each surface's own function is cut out of the real source and run next to the real registry. A missing function throws.
+function surface(file, names, code, globals) {
+  const src = read(file);
+  const win = {}; win.window = win;
+  const ctx = vm.createContext(Object.assign({ window: win, console: { log() {}, warn() {}, error() {} } }, globals || {}));
+  vm.runInContext(read('lib/cert-registry.js'), ctx);
+  return vm.runInContext(names.map((n) => fnSrc(src, n, file)).join('\n') + '\n' + code, ctx);
+}
+const docStub = { documentElement: { getAttribute: () => 'dark' } };
+function certGlobals(id) { return { CURRENT_CERT: id, CERT_CODE: '', CERT_PACK: { meta: { name: id } }, document: docStub }; }
+const MARK_SURFACES = [
+  (id) => surface('features/ios-analytics.js', ['_inCert'], '_inCert().mark', certGlobals(id)),
+  (id) => surface('features/ios-custom.js', ['iosCertIdentity'], 'iosCertIdentity().mark', certGlobals(id)),
+  (id) => surface('features/ios-firstrun.js', ['certInfo'], 'function certId(){return CURRENT_CERT;} function packMeta(){return CERT_PACK.meta;} certInfo(CURRENT_CERT).glyph', certGlobals(id)),
+  (id) => surface('features/ios-home.js', ['_iosHomeModel'], '_iosHomeModel(new Date(0)).cert.mark', certGlobals(id)),
+  (id) => surface('features/ios-log-result.js', ['_certMark'], '_certMark(CURRENT_CERT)', certGlobals(id)),
+  (id) => surface('features/ios-progress.js', ['_ipCert'], '_ipCert().mark', certGlobals(id))
+];
+// Sim Lab / Decision Lab tiles: run the two real render functions against stub elements and read which one hides.
+function labTiles(id) {
+  const mk = () => { const c = new Set(); return { classList: { add: (x) => c.add(x), remove: (x) => c.delete(x), has: (x) => c.has(x) }, textContent: '' }; };
+  const els = { 'sl-home-opt': mk(), 'sl-home-sub': mk(), 'dl-home-opt': mk(), 'dl-home-sub': mk() };
+  surface('app.js', ['renderSimLabHomeEntry', 'renderDecisionLabHomeEntry'], 'window.CURRENT_CERT = CURRENT_CERT; renderSimLabHomeEntry(); renderDecisionLabHomeEntry();',
+    { CURRENT_CERT: id, document: { getElementById: (i) => els[i] || null }, _pbqFreeRunsToday: () => 0, PBQ_FREE_DAILY_CAP: 1, _dlFreeRunsToday: () => 0 });
+  return { simLab: !els['sl-home-opt'].classList.has('is-hidden'), decisionLab: !els['dl-home-opt'].classList.has('is-hidden') };
+}
 
 function extract() {
   const packs = loadPacks();
@@ -105,19 +131,12 @@ function extract() {
   const head = headSurfaces();
   const byId = {}; auth.certs.forEach((c) => { byId[c.id] = c; });
 
-  const marks = MARK_FILES.map((f) => literal(read(f), /var\s+MARKS\s*=\s*(\{[^}]*\})/, 'MARKS', f));
-  const scale1000 = literal(read('features/ios-hub.js'), /var\s+HUB_SCALE_1000\s*=\s*(\{[^}]*\})/, 'HUB_SCALE_1000', 'features/ios-hub.js');
-  const pickNames = literal(read('features/ios-firstrun.js'), /var\s+PICK_NAMES\s*=\s*(\{[^}]*\})/, 'PICK_NAMES', 'features/ios-firstrun.js');
-  const pickCodes = literal(read('features/ios-firstrun.js'), /var\s+PICK_CODES\s*=\s*(\{[^}]*\})/, 'PICK_CODES', 'features/ios-firstrun.js');
-  const signinNames = literal(read('features/ios-signin.js'), /var\s+NAMES\s*=\s*(\{[^}]*\})/, 'NAMES', 'features/ios-signin.js');
-  const lockSrc = read('lib/cert-lock.js');
-  const lockNames = literal(lockSrc, /function\s+certLabel\s*\([^)]*\)\s*\{\s*var\s+L\s*=\s*(\{[^}]*\})/, 'certLabel L map', 'lib/cert-lock.js');
-  const namesOf = (list) => { const o = {}; list.forEach((c) => { o[c.id] = c.name; }); return o; };
-  const onbNames = namesOf(literal(read('lib/onboarding-firstrun.js'), /var\s+CERTS\s*=\s*(\[[^\]]*\])/, 'CERTS', 'lib/onboarding-firstrun.js'));
-  const onbHomeNames = namesOf(literal(read('lib/onboarding-home.js'), /var\s+CERTS\s*=\s*(\[[^\]]*\])/, 'CERTS', 'lib/onboarding-home.js'));
-  const appSrc = read('app.js');
-  const simLabIds = literal(appSrc, /const\s+_SL_PBQ_CERTS_HOME\s*=\s*(\[[^\]]*\])/, '_SL_PBQ_CERTS_HOME', 'app.js');
-  const decisionLabIds = literal(appSrc, /const\s+_DL_CERTS\s*=\s*(\[[^\]]*\])/, '_DL_CERTS', 'app.js');
+  const pickRows = {}; surface('features/ios-firstrun.js', ['pickCerts'], 'pickCerts()').forEach((r) => { pickRows[r.id] = r; });
+  const signinName = (id) => surface('features/ios-signin.js', ['certName'], 'certName(' + JSON.stringify(id) + ')');
+  const lockName = (id) => surface('lib/cert-lock.js', ['certLabel'], 'certLabel(' + JSON.stringify(id) + ')');
+  const rowsOf = (file) => { const o = {}; surface(file, ['certs'], 'certs()').forEach((c) => { o[c.id] = c; }); return o; };
+  const onbRows = rowsOf('lib/onboarding-firstrun.js'), onbHomeRows = rowsOf('lib/onboarding-home.js');
+  const hubMax = (id) => surface('features/ios-hub.js', ['_hubMax'], '_hubMax(' + JSON.stringify(id) + ')');
 
   // Host aliases: subdomain prefix each cert answers on (probe input), then what both detectors say for the
   // canonical host and a Vercel preview host. Prefix list is the probe, the detected results are the capture.
@@ -133,7 +152,7 @@ function extract() {
     const pack = packs[id]; const meta = pack.meta || {}; const sw = auth.switchHost(id);
     if (!sw) throw new Error('tadSwitchCert produced no target for ' + id);
     const swHost = new URL(sw).hostname;
-    const perFileMarks = marks.map((m) => get(m, id));
+    const perFileMarks = MARK_SURFACES.map((f) => f(id));
     const mark = perFileMarks.every((m) => m === perFileMarks[0]) ? perFileMarks[0] : perFileMarks;
     const titled = head.run('localhost', { nplus_dev_cert: id });
     out[id] = {
@@ -146,16 +165,16 @@ function extract() {
       mark: nz(mark),
       names: {
         switcher: byId[id] ? nz(byId[id].name) : null,
-        signin: get(signinNames, id),
-        firstrun: get(pickNames, id),
-        onboarding: get(onbNames, id),
-        onboardingHome: get(onbHomeNames, id),
-        certLock: get(lockNames, id)
+        signin: signinName(id),
+        firstrun: get(pickRows[id], 'name'),
+        onboarding: get(onbRows[id], 'name'),
+        onboardingHome: get(onbHomeRows[id], 'name'),
+        certLock: lockName(id)
       },
-      codes: { switcher: byId[id] ? nz(byId[id].code) : null, firstrun: get(pickCodes, id) },
-      scale: { min: nz(meta.examMinScore), max: scale1000 ? (scale1000[id] ? 1000 : 900) : null, pass: nz(meta.examPassScore) },
-      simLab: simLabIds ? simLabIds.indexOf(id) !== -1 : null,
-      decisionLab: decisionLabIds ? decisionLabIds.indexOf(id) !== -1 : null,
+      codes: { switcher: byId[id] ? nz(byId[id].code) : null, firstrun: get(pickRows[id], 'code') },
+      scale: { min: nz(meta.examMinScore), max: hubMax(id), pass: nz(meta.examPassScore) },
+      simLab: labTiles(id).simLab,
+      decisionLab: labTiles(id).decisionLab,
       title: titled.title,
       topbar: titled.topbar,
       domainCount: pack.domainLabels ? Object.keys(pack.domainLabels).length : null

@@ -106,6 +106,7 @@
     var body = document.body.classList;
     var pro = body.contains('is-pro-tier') || !!(q && (q.tier === 'pro' || q.tier === 'admin'));
     var meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+    var reg = (typeof window !== 'undefined' && window.CertRegistry) ? window.CertRegistry.get(cert) : null;
     return {
       code: meta.code || meta.examCode || '', pro: pro, tierKnown: body.contains('is-state-resolved') || !!q,
       gauntletFree: !!(q && q.tier === 'free'), wrongCount: (bank || []).length,
@@ -113,8 +114,8 @@
       domains: Object.keys(weights).map(function (k) {
         var st = dom[k]; return { key: k, label: labels[k] || k, weight: Math.round((weights[k] || 0) * 100), mastery: st.t ? Math.round(st.s / st.t * 100) : 0, touched: !!st.t };
       }),
-      simLab: (typeof _SL_PBQ_CERTS_HOME !== 'undefined') && _SL_PBQ_CERTS_HOME.indexOf(cert) !== -1,
-      decisionLab: (typeof _DL_CERTS !== 'undefined') && _DL_CERTS.indexOf(cert) !== -1,
+      simLab: !!(reg && reg.simLab),
+      decisionLab: !!(reg && reg.decisionLab),
       gauntletUsed: (typeof _gauntletFreeRunsToday === 'function') ? _gauntletFreeRunsToday() : 0,
       gauntletCap: (typeof GAUNTLET_FREE_DAILY_CAP === 'number') ? GAUNTLET_FREE_DAILY_CAP : 1,
       pbqUsed: (typeof _pbqFreeRunsToday === 'function') ? _pbqFreeRunsToday() : 0,

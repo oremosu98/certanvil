@@ -104,7 +104,7 @@
     return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
   var _outcome = 'passed';
-  var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+  function _certMark(cert) { var e = window.CertRegistry && window.CertRegistry.get(cert); return e ? e.mark : 'CA'; }
 
   function _html(m) {
     var moon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>';
@@ -237,7 +237,7 @@
     var date = (prev && prev.date) || examDate || today;
     if (date > today) date = today;   // a result can't be from the future
     var name = _certName() || 'Your cert';
-    var m = { name: name, code: meta.code || '', mark: MARKS[cert] || 'CA',
+    var m = { name: name, code: meta.code || '', mark: _certMark(cert),
       min: sc.min, max: sc.max, pass: sc.pass, date: date, today: today, score: prev && typeof prev.score === 'number' ? prev.score : '' };
     var root = _ensureHost();
     _prevFocus = opts.from || document.activeElement;   // opts.from: the opener (WebKit does not focus a clicked button)

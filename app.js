@@ -1085,7 +1085,7 @@ const STORAGE = {
   // { netplus: { score, computed_at }, secplus: { ... } }. Written after
   // every quiz/exam completion by _writeReadinessSnapshot(); cloud-flushed
   // via Phase C′ pattern so landing's /analytics page can read live values.
-  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots', ONB_SKIPS: 'nplus_onb_skips', FREE_CERT_ID: 'nplus_freeCertId', ACTIVATED: 'nplus_activated',   // Lift C: first-run keys (lib/onboarding-firstrun.js)
+  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots', ONB_SKIPS: 'nplus_onb_skips', ONB_TOURS: 'nplus_onb_tours', FREE_CERT_ID: 'nplus_freeCertId', ACTIVATED: 'nplus_activated',   // Lift C: first-run keys (lib/onboarding-firstrun.js)
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -2125,15 +2125,9 @@ function _ensureSimLabLoaded(cb) {
 // Expose on window so tests can trigger the lazy-load directly.
 window._ensureSimLabLoaded = _ensureSimLabLoaded;
 
-const _DL_SEED_FILES = {
-  az900: 'features/decision-lab-seed-az900.js',
-  ai900: 'features/decision-lab-seed-ai900.js',
-  sc900: 'features/decision-lab-seed-sc900.js',
-  clfc02: 'features/decision-lab-seed-clfc02.js'
-};
 function _ensureDecisionLabLoaded(cb) {
   function _afterEngine() {
-    var seedFile = _DL_SEED_FILES[window.CURRENT_CERT];
+    var _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT), seedFile = _re && _re.decisionLabSeed;
     if (!seedFile || window.__dlSeedLoaded === window.CURRENT_CERT) { if (cb) cb(); return; }
     var s = document.createElement('script');
     s.src = seedFile;
@@ -4108,12 +4102,12 @@ window._dlGetWeakSpots = _dlGetWeakSpots;
 // where the other drills are, not only on the legacy #page-drills page. This
 // renders WITHOUT loading the feature module (cert/pro/daily-state all live
 // here); the module lazy-loads on click via startSimLabHome().
-const _SL_PBQ_CERTS_HOME = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
 function renderSimLabHomeEntry() {
   const btn = document.getElementById('sl-home-opt');
   if (!btn) return;
-  // Sim Lab (PBQs) only exists on CompTIA certs — hide everywhere else.
-  if (_SL_PBQ_CERTS_HOME.indexOf(window.CURRENT_CERT || 'netplus') === -1) { btn.classList.add('is-hidden'); return; }
+  // Sim Lab (PBQs): registry simLab flag (CompTIA certs) — hide everywhere else.
+  const _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT || 'netplus');
+  if (!_re || !_re.simLab) { btn.classList.add('is-hidden'); return; }
   btn.classList.remove('is-hidden');
   const sub = document.getElementById('sl-home-sub');
   if (sub) {
@@ -4140,11 +4134,11 @@ window.startSimLabHome = startSimLabHome;
 // Decision Lab Home entry (Home → Practice). Renders WITHOUT loading the module
 // (cert/pro/daily-state live here); the module lazy-loads on click.
 // v8.126.0: ai900 re-enabled with 55 scenarios rebuilt for AI-901 (hidden v8.121.0-v8.125.0).
-const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
 function renderDecisionLabHomeEntry() {
   const btn = document.getElementById('dl-home-opt');
   if (!btn) return;
-  if (_DL_CERTS.indexOf(window.CURRENT_CERT) === -1) { btn.classList.add('is-hidden'); return; }
+  const _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT);
+  if (!_re || !_re.decisionLab) { btn.classList.add('is-hidden'); return; }
   btn.classList.remove('is-hidden');
   const sub = document.getElementById('dl-home-sub');
   if (sub) {
@@ -4500,6 +4494,12 @@ function _mergeBatchedFetchResults(settled, numBatches, n) {
 // lets the outer coordinator parcel out PBQ budget across batches.
 // v4.81.15: staleSliceIdx threaded through from fetchQuestions for stale-
 // topic rotation in the prompt-injection layer. See _computeStaleTopics.
+// Exam vendor + "official " for the question prompt: vendor from the registry, then meta.vendor, then the pack name's first word;
+// no "official" when the pack's domain weights are estimates (PRINCE2, PSM).
+function _examPromptBits() {
+  const meta = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta) || {}, e = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT);
+  return { vendor: (e && e.vendor) || meta.vendor || String(meta.name || 'CompTIA').split(' ')[0], official: meta.weightsAreEstimates ? '' : 'official ' };
+}
 async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride, staleSliceIdx) {
   const topicHints = Object.assign({  // v8.143.0: + the active pack's topicHints (Sec+ official SY0-701 sub-topics)
     'Integrating Networked Devices': 'IoT devices, ICS/SCADA systems, OT/IT convergence, smart building tech, embedded systems, segmentation of IoT, industrial control risks.',
@@ -4563,9 +4563,9 @@ ${domainBlocks}
   // v4.87.0: cert-aware prompt voice. Substitutes CERT_NAME_FULL so Haiku
   // generates SY0-701 questions in Security+ mode + N10-009 in Network+ mode.
   // v8.127.0: exam vendor from the pack name ("CompTIA" / "Microsoft" / "AWS").
-  const _examVendor = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA').split(' ')[0];
+  const { vendor: _examVendor, official: _official } = _examPromptBits();
   const topicStr = qTopic === MIXED_TOPIC
-    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all ${Object.keys(DOMAIN_WEIGHTS).length} official ${_examVendor} domains.`
+    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all ${Object.keys(DOMAIN_WEIGHTS).length} ${_official}${_examVendor} domains.`
     : isMulti
       ? `Cover these ${multiTopicList.length} specific ${CERT_NAME_FULL} topics selected by the user: ${multiTopicList.map(t => '"' + t + '"').join(', ')}. See the mandatory distribution block below.`
       : `Focus only on: "${qTopic}" for the ${CERT_NAME_FULL} exam (primary objective ${expectedObj || 'N/A'}).${topicHints[qTopic] ? ' Specifically cover: ' + topicHints[qTopic] : ''}`;

@@ -14,10 +14,10 @@
     var rows = history.filter(function (e) { return e && !(typeof isHistorySplitRow === 'function' && isHistorySplitRow(e)); });
     var isNew = rows.length === 0;
     var certId = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
-    var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+    var re = (typeof window !== 'undefined' && window.CertRegistry) ? window.CertRegistry.get(certId) : null;
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
     var cert = {
-      mark: MARKS[certId] || 'CA',
+      mark: re ? re.mark : 'CA',
       name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
       code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009'
     };

@@ -38,6 +38,16 @@ test('v4.86.0 CertPack: detectCert handles localStorage dev override',
 const _regCtx = vm.createContext({ window: {} });
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cert-registry.js'), 'utf8'), _regCtx);
 const _byHost = (h) => _regCtx.window.CertRegistry.byHost(h);
+// Cert-registry Task 1.4: getAvailableCerts reads the registry, so "the switcher lists these certs" is checked by running it.
+const _switcherIds = (() => {
+  const src = authStateJs || '', m = /function\s+getAvailableCerts\s*\(/.exec(src);
+  let i = src.indexOf('{', m.index), d = 1; i++;
+  while (d > 0) { if (src[i] === '{') d++; else if (src[i] === '}') d--; i++; }
+  const c = vm.createContext({ window: {} }); c.window.window = c.window;
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cert-registry.js'), 'utf8') + '\n' + src.slice(m.index, i) + '\nwindow.__ids = getAvailableCerts("user").map(function (c) { return c.id; });', c);
+  return c.window.__ids;
+})();
+const _switcherHas = (ids) => ids.every((id) => _switcherIds.indexOf(id) !== -1);
 const _detectBody = (/function\s+detectCert\s*\(\s*\)\s*\{[\s\S]*?\n\}/.exec(js) || [''])[0];
 const _headBody = (/\(function\s*\(\s*\)\s*\{\s*var\s+cert\s*=\s*null\s*;[\s\S]*?\}\)\(\);/.exec(html) || [''])[0];
 test('v7.2.1 CertPack: detectCert handles Pattern A subdomain detection (secplus. + networkplus.)',
@@ -91,12 +101,7 @@ test('v7.3.0 CertPack: app.js detectCert handles azure. + azure- + azure.certanv
 test('v7.3.0 CertPack: index.html inline IIFE maps azure.certanvil.com to az900',
   _byHost('azure.certanvil.com') === 'az900' && /CertRegistry\.resolve\(/.test(_headBody));
 test('v7.3.0 CertPack: auth-state.js getAvailableCerts returns 3 certs (netplus + secplus + az900)',
-  (() => {
-    var src = authStateJs || '';
-    return /id:\s*['"]netplus['"]/.test(src)
-        && /id:\s*['"]secplus['"]/.test(src)
-        && /id:\s*['"]az900['"]/.test(src);
-  })());
+  _switcherHas(['netplus', 'secplus', 'az900']));
 test('v7.3.0 CertPack: AZ-900 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
   (() => {
     // vm-extract domainWeights block from cert pack source + sum the values.
@@ -172,13 +177,7 @@ test('v7.5.0 CertPack: app.js detectCert handles ai. + ai- + ai.certanvil.com',
 test('v7.5.0 CertPack: index.html inline IIFE maps ai.certanvil.com to ai900',
   _byHost('ai.certanvil.com') === 'ai900' && /CertRegistry\.resolve\(/.test(_headBody));
 test('v7.5.0 CertPack: auth-state.js getAvailableCerts returns 4 certs (netplus + secplus + az900 + ai900)',
-  (() => {
-    var src = authStateJs || '';
-    return /id:\s*['"]netplus['"]/.test(src)
-        && /id:\s*['"]secplus['"]/.test(src)
-        && /id:\s*['"]az900['"]/.test(src)
-        && /id:\s*['"]ai900['"]/.test(src);
-  })());
+  _switcherHas(['netplus', 'secplus', 'az900', 'ai900']));
 // v8.120.0: AI-900 was retired 2026-06-30; the ai900 pack now holds AI-901
 // (internal id kept). These replace the v7.5.0 AI-900 shape guards.
 const _ai901 = (() => {
@@ -233,23 +232,14 @@ test('v7.6.0 CertPack: app.js detectCert handles aplus. + aplus- + aplus.certanv
 test('v7.6.0 CertPack: index.html inline IIFE maps aplus.certanvil.com to aplus-core1 (default)',
   _byHost('aplus.certanvil.com') === 'aplus-core1' && /CertRegistry\.resolve\(/.test(_headBody));
 test('v7.6.0 CertPack: auth-state.js getAvailableCerts returns 6 certs (4 prior + 2 A+)',
-  (() => {
-    var src = authStateJs || '';
-    return /id:\s*['"]netplus['"]/.test(src)
-        && /id:\s*['"]secplus['"]/.test(src)
-        && /id:\s*['"]az900['"]/.test(src)
-        && /id:\s*['"]ai900['"]/.test(src)
-        && /id:\s*['"]aplus-core1['"]/.test(src)
-        && /id:\s*['"]aplus-core2['"]/.test(src);
-  })());
+  _switcherHas(['netplus', 'secplus', 'az900', 'ai900', 'aplus-core1', 'aplus-core2']));
 test('v7.6.0 CertPack: tadSwitchCert does within-subdomain Core 1 <-> Core 2 switching (no host change)',
   (() => {
-    // The NEW v7.6.0 pattern: switching between the two A+ exams stays on
-    // aplus.certanvil.com (write localStorage + reload), and a cross-subdomain
-    // arrival deep-links via ?exam=. Assert both halves exist in tadSwitchCert.
+    // Both halves still exist (now driven by the registry family): same-host switch writes the override + reloads,
+    // a cross-host arrival deep-links via ?exam=<examSlug>. 543-cert-lists.js runs both paths.
     var src = authStateJs || '';
-    return /certId\s*===\s*['"]aplus-core1['"]\s*\|\|\s*certId\s*===\s*['"]aplus-core2['"]/.test(src)
-        && /aplus\.certanvil\.com\/\?exam=/.test(src);
+    return /entry\.family/.test(src) && /R\.familyOf\(here\)\s*===\s*entry\.family/.test(src)
+        && /'\?exam='\s*\+\s*entry\.examSlug/.test(src);
   })());
 test('v7.6.0 CertPack: Core 1 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
   (() => {
@@ -344,16 +334,7 @@ test('v7.7.0 CertPack: app.js detectCert handles sc900. + sc900- + sc900.certanv
 test('v7.7.0 CertPack: index.html inline IIFE maps sc900.certanvil.com to sc900',
   _byHost('sc900.certanvil.com') === 'sc900' && /CertRegistry\.resolve\(/.test(_headBody));
 test('v7.7.0 CertPack: auth-state.js getAvailableCerts returns 7 certs (netplus + secplus + az900 + ai900 + sc900 + aplus-core1 + aplus-core2)',
-  (() => {
-    var src = authStateJs || '';
-    return /id:\s*['"]netplus['"]/.test(src)
-        && /id:\s*['"]secplus['"]/.test(src)
-        && /id:\s*['"]az900['"]/.test(src)
-        && /id:\s*['"]ai900['"]/.test(src)
-        && /id:\s*['"]sc900['"]/.test(src)
-        && /id:\s*['"]aplus-core1['"]/.test(src)
-        && /id:\s*['"]aplus-core2['"]/.test(src);
-  })());
+  _switcherHas(['netplus', 'secplus', 'az900', 'ai900', 'sc900', 'aplus-core1', 'aplus-core2']));
 test('v7.7.0 CertPack: SC-900 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
   (() => {
     // 4-domain weights (0.125/0.275/0.375/0.225 per the 2025-11-07 Skills
@@ -417,17 +398,7 @@ test('v7.8.0 CertPack: app.js detectCert handles clfc02. + clfc02- + clfc02.cert
 test('v7.8.0 CertPack: index.html inline IIFE maps clfc02.certanvil.com to clfc02',
   _byHost('clfc02.certanvil.com') === 'clfc02' && /CertRegistry\.resolve\(/.test(_headBody));
 test('v7.8.0 CertPack: auth-state.js getAvailableCerts returns 8 certs (netplus + secplus + az900 + ai900 + sc900 + clfc02 + aplus-core1 + aplus-core2)',
-  (() => {
-    var src = authStateJs || '';
-    return /id:\s*['"]netplus['"]/.test(src)
-        && /id:\s*['"]secplus['"]/.test(src)
-        && /id:\s*['"]az900['"]/.test(src)
-        && /id:\s*['"]ai900['"]/.test(src)
-        && /id:\s*['"]sc900['"]/.test(src)
-        && /id:\s*['"]clfc02['"]/.test(src)
-        && /id:\s*['"]aplus-core1['"]/.test(src)
-        && /id:\s*['"]aplus-core2['"]/.test(src);
-  })());
+  _switcherHas(['netplus', 'secplus', 'az900', 'ai900', 'sc900', 'clfc02', 'aplus-core1', 'aplus-core2']));
 test('v7.8.0 CertPack: CLF-C02 domain weights sum within tolerance (>= 0.95 && <= 1.05)',
   (() => {
     // 4-domain weights (0.24/0.30/0.34/0.12 — official CLF-C02 percentages).
@@ -917,16 +888,15 @@ test('v8.121.0 AI-901: app labels, cert lock and onboarding rows say AI-901',
   (() => {
     const r = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
     return _regCtx.window.CertRegistry.get('ai900').code === 'AI-901' && _regCtx.window.CertRegistry.get('ai900').shortName === 'Azure AI Fundamentals'
-      && /ai900: 'Azure AI-901'/.test(r('lib/cert-lock.js'))
-      && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-home.js'))
-      && /id: 'ai900',\s*name: 'AI-901'/.test(r('lib/onboarding-firstrun.js'));
+      && _regCtx.window.CertRegistry.get('ai900').labels.certLock === 'Azure AI-901'
+      && _regCtx.window.CertRegistry.get('ai900').labels.onboardingName === 'AI-901';   // lib/cert-lock.js and both onboarding files read these labels (543)
   })());
 test('v8.126.0 AI-901: Decision Lab re-enables ai900 in the app gate, seed loader and engine',
   (() => {
     const sl = fs.readFileSync(path.join(ROOT, 'features', 'sim-lab.js'), 'utf8');
-    return js.includes("const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];")
+    const RG = _regCtx.window.CertRegistry;
+    return RG.get('ai900').decisionLab === true && RG.get('ai900').decisionLabSeed === 'features/decision-lab-seed-ai900.js'   // app.js tile + seed loader read these (543)
       && sl.includes("var _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];")
-      && /ai900: 'features\/decision-lab-seed-ai900\.js'/.test(js)
       && /ai900: 'DECISION_LAB_SEED_AI900'/.test(sl);
   })());
 test('v8.126.0 AI-901: Decision Lab seed is the AI-901 rebuild (no retired AI-900 content)',
@@ -1243,8 +1213,8 @@ test('v8.121.0 copy: analytics + diagnostic no longer hard-code N10-009 domain t
 test('v8.121.0 AI-901: switcher + landing labels + diagnostic API say AI-901',
   (() => {
     const r = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
-    return /id: 'ai900',\s*name: 'Microsoft Azure AI Fundamentals',code: 'AI-901'/.test(r('auth-state.js'))
-      && /_gateProOnly\('Azure AI Fundamentals \(AI-901\)'\)/.test(r('auth-state.js'))
+    return _regCtx.window.CertRegistry.get('ai900').name === 'Microsoft Azure AI Fundamentals' && _regCtx.window.CertRegistry.get('ai900').code === 'AI-901'
+      && _regCtx.window.CertRegistry.get('ai900').labels.gate === 'Azure AI Fundamentals (AI-901)' && /labels\.gate/.test(r('auth-state.js'))
       && /id:'ai900', name:'Azure AI Fundamentals', code:'AI-901'/.test(r('landing/index.html'))
       && !/\(AI-900\)/.test(r('landing/index.html'))
       && /cert === 'azure-ai-fundamentals'[\s\S]{0,600}code: 'AI-901'/.test(r('landing/api/diagnostic/generate.js'))

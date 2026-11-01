@@ -205,9 +205,9 @@
   // The cert strip's identity (mark, short name, exam code). Shared with the Sim Lab start screen (B3b1).
   function iosCertIdentity() {
     var certId = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
-    var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+    var re = window.CertRegistry && window.CertRegistry.get(certId);
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
-    return { mark: MARKS[certId] || 'CA', name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
+    return { mark: re ? re.mark : 'CA', name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
       code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009' };
   }
   function _iosCustomSource() {

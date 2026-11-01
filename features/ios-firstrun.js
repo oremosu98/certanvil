@@ -242,13 +242,13 @@
   function html() { return document.documentElement; }
   function readJSON(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (_) { return d; } }
   function certId() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || window.CURRENT_CERT || 'netplus'; }
-  var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
   function packMeta() { var p = (typeof CERT_PACK === 'object' && CERT_PACK) || window.CERT_PACK; return (p && p.meta) || {}; }
   // Same labels as Home (ios-home.js): vendor prefix dropped, the pack's code.
   function certInfo(id) {
     id = id || certId();
     var packs = window.CERT_PACKS || {}, meta = (packs[id] && packs[id].meta) || (id === certId() ? packMeta() : {});
-    return { id: id, glyph: MARKS[id] || 'CA', name: String(meta.name || id).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: meta.code || '' };
+    var re = window.CertRegistry && window.CertRegistry.get(id);
+    return { id: id, glyph: re ? re.mark : 'CA', name: String(meta.name || id).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''), code: meta.code || '' };
   }
   function scale() { return _ifrScale(packMeta()); }
   function isPro() { var q = window._quotaState; return !!(q && q.tier === 'pro'); }
@@ -434,14 +434,18 @@
   };
 
   // ── Behind the onboarding switch: June's picker in #onb-firstrun, the lock-in sheet in B4's #ist-sheet. ──
-  var PICK_IDS = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2', 'az900', 'ai900', 'sc900', 'clfc02'];
-  var PICK_NAMES = { netplus: 'Network+', secplus: 'Security+', 'aplus-core1': 'A+ Core 1', 'aplus-core2': 'A+ Core 2', az900: 'Azure Fundamentals', ai900: 'Azure AI Fundamentals', sc900: 'Security Fundamentals', clfc02: 'Cloud Practitioner' };
-  var PICK_CODES = { netplus: 'N10-009', secplus: 'SY0-701', 'aplus-core1': '220-1101', 'aplus-core2': '220-1102', az900: 'AZ-900', ai900: 'AI-901', sc900: 'SC-900', clfc02: 'CLF-C02' };
+  // The picker rows are the registry's visible certs (no registry on the page: the Network+ default alone).
+  function pickCerts() {
+    var R = window.CertRegistry;
+    if (!R) return [{ id: 'netplus', glyph: 'N+', name: 'Network+', code: 'N10-009' }];
+    return R.visible().map(function (e) { return { id: e.id, glyph: e.mark, name: e.labels.firstrun, code: e.code }; });
+  }
+  function pickName(id) { var l = pickCerts(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].name; return ''; }
   var pick = null;   // {selected, pro}
   function pickHost() { return document.getElementById('onb-firstrun'); }
   function drawPicker() {
     var h = pickHost(); if (!h || !pick) return;
-    h.innerHTML = _ifrPickerHtml({ certs: PICK_IDS.map(function (id) { return { id: id, glyph: MARKS[id], name: PICK_NAMES[id], code: PICK_CODES[id] }; }), selected: pick.selected, pro: pick.pro, first: pick.first });
+    h.innerHTML = _ifrPickerHtml({ certs: pickCerts(), selected: pick.selected, pro: pick.pro, first: pick.first });
   }
   function closePicker() {
     var h = pickHost(); if (h) { h.hidden = true; h.innerHTML = ''; h.classList.remove('ifr-on'); }
@@ -482,13 +486,13 @@
       });
     } else if (a === 'lock' && window.iosSettings && window.iosSettings.openSheet) {
       var chosen = pick.selected;
-      window.iosSettings.openSheet(_ifrLockSheetHtml({ name: PICK_NAMES[chosen] }), function (btn) {
+      window.iosSettings.openSheet(_ifrLockSheetHtml({ name: pickName(chosen) }), function (btn) {
         var act = btn.getAttribute('data-act');
         if (act === 'lock-back' || act === 'last-back') { window.iosSettings.closeSheet(); return; }
         if (act === 'lock-go') {   // reminder 2 replaces reminder 1 in the same sheet (no second slide)
           var sh = document.getElementById('ist-sheet');
           if (sh) {
-            sh.innerHTML = _ifrLastCheckHtml({ name: PICK_NAMES[chosen] });
+            sh.innerHTML = _ifrLastCheckHtml({ name: pickName(chosen) });
             sh.classList.remove('ifr-step-in'); void sh.offsetWidth; sh.classList.add('ifr-step-in');
             var go = sh.querySelector('[data-act="last-go"]'); if (go) { try { go.focus({ preventScroll: true }); } catch (_) {} }
           }
@@ -506,7 +510,7 @@
   IFR.picker = function (decision) {
     var h = pickHost(); if (!h) return;
     decision = decision || {};
-    pick = { selected: (decision.certId && PICK_NAMES[decision.certId]) ? decision.certId : (PICK_NAMES[certId()] ? certId() : 'netplus'), pro: decision.tier === 'pro', first: !!decision.native };
+    pick = { selected: (decision.certId && pickName(decision.certId)) ? decision.certId : (pickName(certId()) ? certId() : 'netplus'), pro: decision.tier === 'pro', first: !!decision.native };
     if (!h.__ifrBound) { h.addEventListener('click', onPickTap); h.__ifrBound = true; }
     h.classList.add('ifr-on'); html().classList.add('ifr-picking'); h.hidden = false;
     drawPicker();

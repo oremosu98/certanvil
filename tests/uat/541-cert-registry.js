@@ -73,6 +73,23 @@ const { test } = require('./_context');
   });
   test('Registry entries carry the snapshot values (A+ first-run code as approved)' + (fx.length ? ' — ' + fx.slice(0, 5).join(' | ') : ''), fx.length === 0);
 
+  // Task 1.4 fields, values frozen from the surfaces they replaced (gate labels from auth-state tadSwitchCert, home sub-lines from
+  // onboarding-home CERTS; A+ home sub-line takes the approved 220-1201/1202; Decision Lab seed paths from app.js _DL_SEED_FILES).
+  const GATE = { netplus: 'Network+', secplus: 'Security+ (SY0-701)', 'aplus-core1': 'CompTIA A+ Core 1', 'aplus-core2': 'CompTIA A+ Core 2', az900: 'Azure Fundamentals (AZ-900)', ai900: 'Azure AI Fundamentals (AI-901)', sc900: 'Microsoft SC-900 Security, Compliance & Identity Fundamentals', clfc02: 'AWS Certified Cloud Practitioner (CLF-C02)' };
+  const HOMESUB = { netplus: 'N10-009', secplus: 'SY0-701', 'aplus-core1': '220-1201', 'aplus-core2': '220-1202', az900: 'Azure Fundamentals', ai900: 'Azure AI Fundamentals', sc900: 'Security Fundamentals', clfc02: 'CLF-C02' };
+  const SEED = { az900: 'features/decision-lab-seed-az900.js', ai900: 'features/decision-lab-seed-ai900.js', sc900: 'features/decision-lab-seed-sc900.js', clfc02: 'features/decision-lab-seed-clfc02.js' };
+  const f14 = [];
+  IDS.forEach((id) => {
+    const e = R.get(id);
+    if (e.labels.gate !== GATE[id]) f14.push(id + '.gate');
+    if (e.labels.onboardingHomeSub !== HOMESUB[id]) f14.push(id + '.homeSub');
+    if (e.decisionLabSeed !== (SEED[id] || null)) f14.push(id + '.decisionLabSeed');
+    if (!!e.decisionLabSeed !== e.decisionLab) f14.push(id + '.seed vs decisionLab');
+  });
+  test('Task 1.4 fields (labels.gate, labels.onboardingHomeSub, decisionLabSeed) carry the values of the maps they replaced' + (f14.length ? ' — ' + f14.join(', ') : ''), f14.length === 0);
+  test('visible(): hidden certs only once window._certanvilIsAdmin is set',
+    (() => { const w = { window: {} }; w.window.window = w.window; vm.createContext(w); vm.runInContext(read('lib/cert-registry.js'), w); const r = w.window.CertRegistry; r._add({ id: 'q', hidden: true }); const a = r.visible().length; w.window._certanvilIsAdmin = true; return a === 8 && r.visible().length === 9; })());
+
   const hostBad = [];
   IDS.forEach((id) => {
     const host = fixture[id].switchHost.replace(/^https:\/\//, '').replace(/[\/?].*$/, '');

@@ -1199,7 +1199,7 @@ test('v8.127.0 Prompt: mixed lottery + vendor wording come from the cert pack, n
       && !body.includes('all 5 official CompTIA domains')
       && !body.includes('mirrors real CompTIA style')
       && !/with the CompTIA \$\{CERT_CODE\}/.test(body)
-      && body.includes("const _examVendor = String(");
+      && body.includes("_examPromptBits()");
   })());
 test('v4.85.8 Lottery: vm fixture — two consecutive samples produce different orderings',
   (() => {
