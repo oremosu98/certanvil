@@ -38,6 +38,7 @@ window.CERT_PACKS.psm2 = {
     blueprintUrl: 'https://www.scrum.org/assessments/professional-scrum-master-ii-certification',
     objectiveRanges: '1.1–1.6 (framework), 2.1–2.7 (coaching), 3.1–3.5 (product-value), 4.1–4.4 (done-scaling) — PROVISIONAL: N.M is domain . topic index, not an official numbering',
     weightsAreEstimates: true,  // Scrum.org publishes no domain weights
+    allowTrueFalse: true,       // two-option {A:'True', B:'False'} MCQs pass validateQuestions for this pack only
     examPassScore: 85,          // official: 85% pass mark, percent scale
     examMaxScore: 100,
     examMinScore: 0,

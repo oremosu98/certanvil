@@ -39,6 +39,7 @@ window.CERT_PACKS.psm1 = {
     blueprintUrl: 'https://www.scrum.org/assessments/professional-scrum-master-i-certification',
     objectiveRanges: '1.1–1.15 (framework), 2.1–2.5 (people-teams), 3.1–3.5 (product) — PROVISIONAL: N.M is domain . topic index, not an official numbering',
     weightsAreEstimates: true,  // Scrum.org publishes no domain weights
+    allowTrueFalse: true,       // two-option {A:'True', B:'False'} MCQs pass validateQuestions for this pack only
     examPassScore: 85,          // official: 85% pass mark, percent scale
     examMaxScore: 100,
     examMinScore: 0,

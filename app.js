@@ -4662,7 +4662,7 @@ ${topicStr}${mixedDistributionStr}
 Difficulty: ${diffStr}
 ${exemplarBlock}${retentionBlock}${staleBlock}${typeof seenPromptBlock === 'function' ? seenPromptBlock(qTopic) : ''}
 Generate exactly ${n} multiple choice questions. Requirements:
-- 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)
+- 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)${typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse ? '. Exception: a True or False item (stem starts "True or False:") has exactly 2 options, A "True" and B "False", as in the examples above; keep these to about 1 in 10' : ''}
 - One correct answer only (unless multi-select)
 - Distractors must be plausible - never obviously wrong
 - Vary the correct answer letter across questions
@@ -6640,7 +6640,7 @@ function _stemHasInterrogative(stem) {
   if (typeof stem !== 'string') return false;
   const s = stem.trim();
   if (!s) return false;
-  if (s.includes('?')) return true;
+  if (s.includes('?') || (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse && /^true or false:/i.test(s))) return true;   // v8.205.0: a "True or False:" stem is a question on an allowTrueFalse pack (PSM)
   // Common interrogatives + imperative CompTIA-style stems ("Select the…",
   // "Identify the…", "Choose the…", "Arrange…", "Match…", "Place…", "Given…")
   const pattern = /\b(which|what|when|where|why|how|who|whose|select|identify|choose|pick|match|arrange|place|determine|complete|given|in which|under which)\b/i;
@@ -6902,7 +6902,7 @@ function validateQuestions(qs) {
       if (!q.options || !q.answer) return false;
       if (!['A','B','C','D'].includes(q.answer)) return false;
       if (!q.options[q.answer]) return false;
-      if (!q.options.A || !q.options.B || !q.options.C || !q.options.D) return false;
+      const _tf = typeof CERT_PACK !== 'undefined' && !!(CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse) && Object.keys(q.options).join() === 'A,B' && String(q.options.A).trim().toLowerCase() === 'true' && String(q.options.B).trim().toLowerCase() === 'false'; if (!q.options.A || !q.options.B || (!_tf && (!q.options.C || !q.options.D))) return false;   // v8.205.0: two options only for True/False on a pack with meta.allowTrueFalse (PSM)
 
       // Enhancement 4: Explanation-answer agreement check
       const expLower = q.explanation.toLowerCase();
@@ -6939,7 +6939,7 @@ function validateQuestions(qs) {
       // the check entirely because the explanation is expected to negate options.
       const isNegationQuestion = /\bNOT\b|\bEXCEPT\b/.test(q.question) ||
                                   /which .{0,30}\bnot\b/i.test(q.question);
-      if (!isNegationQuestion) {
+      if (!isNegationQuestion && !_tf) {   // True/False options carry no distinctive words to align on
         const STOPWORDS = new Set(['tier','layer','protocol','network','address','packet','frame','device','traffic','port','ports','cable','cables','interface','data','connection','between','through','which','their','would','there','these','those','other','level','value','field','using','based','type','types','mode','modes','area','list','used','uses','correct','answer','option','options','following','above','below','same','different','used','provides','standard']);
         const tokenize = (text) => {
           const words = String(text).toLowerCase().split(/[^a-z0-9]+/)
@@ -7495,7 +7495,7 @@ async function aiValidateQuestions(key, qs) {
       var opts = Object.keys(q.options).sort().map(function(l) { return l + ') ' + q.options[l]; }).join('\n');
       return 'Q' + (i+1) + ' [MULTI-SELECT]: "' + q.question + '"\n' + (q.scenario ? 'Scenario: ' + q.scenario + '\n' : '') + opts + '\nMarked answers: ' + q.answers.join(', ') + '\nExplanation: ' + q.explanation;
     }
-    return `Q${i+1}: "${q.question}"\n${q.scenario ? 'Scenario: ' + q.scenario + '\n' : ''}A) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
+    return `Q${i+1}: "${q.question}"\n${q.scenario ? 'Scenario: ' + q.scenario + '\n' : ''}${['A', 'B', 'C', 'D'].filter(l => q.options[l] != null).map(l => l + ') ' + q.options[l]).join('\n')}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
   };
 
   const buildPrompt = (chunk) => `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check NINE things:
@@ -7504,7 +7504,7 @@ async function aiValidateQuestions(key, qs) {
 3. Does the EXPLANATION actually support the MARKED answer letter, or does it champion a different option?
 4. CONCEPTUAL COHERENCE: Does the stem ask about one concept but the answer test a DIFFERENT concept? (e.g. stem asks for a "fundamental TCP/IP principle" but the answer is about deprecated classful addressing — those are distinct concepts.)
 5. FRAMING MATCH: Is the question's abstraction level aligned with the answer? (e.g. stem asks for a "principle" or "root cause," but the answer is a specific configuration detail; or stem asks what is "most likely" but only one option is even plausible.)
-6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.
+6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.${typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse ? ' A True or False item (options A True, B False) has one wrong option by design: judge only whether the statement is unambiguously true or false, never mark it weak for having two options.' : ''}
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
 8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS. Also mark AMBIGUOUS if the question refers to a scenario, case, exhibit or figures that are not included, or asks for a calculation without giving every number it needs.
 9. ANSWER ECHO: Does the question or scenario give the answer away by naming it? If the stem or scenario contains the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" with the answer "Organized crime"; "a phishing email" with the answer "Phishing"), a student can answer by matching words without knowing the concept — mark AMBIGUOUS. Shared topic vocabulary that also appears in the distractors is fine. Also mark AMBIGUOUS when the stem names the ingredient or condition that only the correct options have (e.g. "anyone without the key or token vault" with the answers Encryption and Tokenization): the student matches "key" to encryption and "vault" to tokenization without knowing either.
@@ -7680,7 +7680,7 @@ async function explainFurther() {
   } else if (qType === 'order') {
     questionContext = `Question: ${q.question}\nCorrect order: ${(q.correctOrder || []).map(i => q.items[i]).join(' -> ')}`;
   } else {
-    questionContext = `Question: ${q.question}\nOptions:\nA) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nCorrect: ${q.answer} - ${q.options[q.answer]}`;
+    questionContext = `Question: ${q.question}\nOptions:\n${['A', 'B', 'C', 'D'].filter(l => q.options[l] != null).map(l => l + ') ' + q.options[l]).join('\n')}\nCorrect: ${q.answer} - ${q.options[q.answer]}`;
   }
 
   // v4.38.5 — inject ground-truth facts so the teacher can't hallucinate
