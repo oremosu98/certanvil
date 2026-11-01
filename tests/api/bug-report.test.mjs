@@ -46,7 +46,7 @@ function stub({ userOk = true, failClose = false, failRelease = false, noRange =
     if (url === 'https://api.resend.com/emails') {
       const b = JSON.parse(init.body);
       if (b.to.some((e) => rate.includes(e))) return new Response('{}', { status: 429 });
-      return failSend ? new Response('{}', { status: 422 }) : new Response('{"id":"m"}', { status: 200 });
+      return failSend ? new Response(JSON.stringify({ statusCode: 403, name: 'validation_error', message: 'You can only send to a@x.com until certanvil.com is verified.' }), { status: 403 }) : new Response('{"id":"m"}', { status: 200 });
     }
     throw new Error('unexpected fetch ' + url);
   };
@@ -136,6 +136,23 @@ await t('a failed send whose un-stamp fails counts failed once and is logged', a
   console.error = err;
   assert.deepEqual([j.sent, j.failed, j.closed], [0, 1, 0]);
   assert.ok(logged.some((m) => /report 1/.test(m)));
+});
+await t('a rejected send logs Resend\'s status and reason, with addresses masked', async () => {
+  stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' }, failSend: true });
+  const err = console.error; const logged = []; console.error = (m) => logged.push(String(m));
+  await handler(post({ action: 'fixed', ids: [1] }));
+  console.error = err;
+  const line = logged.find((m) => /resend/i.test(m)) || '';
+  assert.ok(/403/.test(line) && /validation_error/.test(line) && /verified/.test(line), line);
+  assert.ok(!line.includes('a@x.com'), line);
+});
+await t('a reporter lookup failure logs the report and the status', async () => {
+  stub({ reports: [{ id: 7, user_id: 'u7' }], lookupBoom: ['u7'] });
+  const err = console.error; const logged = []; console.error = (m) => logged.push(String(m));
+  const j = await (await handler(post({ action: 'fixed', ids: [7] }))).json();
+  console.error = err;
+  assert.equal(j.failed, 1);
+  assert.ok(logged.some((m) => /report 7/.test(m) && /500/.test(m)), logged.join(' | '));
 });
 await t('buildFixedEmail escapes the title and cuts to 50 plus an ellipsis', async () => {
   const e = mod.buildFixedEmail('<b>"x"</b>');
