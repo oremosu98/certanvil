@@ -1,9 +1,9 @@
 // ══════════════════════════════════════════
-// Network+ AI Quiz — app.js  v8.205.2
+// Network+ AI Quiz — app.js  v8.206.0
 // ══════════════════════════════════════════
 
 // ── CONSTANTS ──
-const APP_VERSION = '8.205.2';
+const APP_VERSION = '8.206.0';
 // v4.99.45 (Phase 6b): expose APP_VERSION on window so the web-vitals
 // collector (lib/web-vitals-collector.js, loaded BEFORE app.js so its
 // PerformanceObservers attach earlier) can stamp this version onto every
@@ -17,10 +17,10 @@ if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 // Multi-cert engine. Network+ + Security+ packs live in certs/<cert>.js,
 // loaded before app.js via <script> tags in index.html. Each cert pack
 // populates window.CERT_PACKS.<id> with cert metadata + content. The
-// active cert is resolved by detectCert() at app boot:
-//   1. localStorage 'nplus_dev_cert' override (dev/testing only)
-//   2. URL host prefix ('secplus-' → secplus, else → netplus)
-//   3. Default 'netplus'
+// active cert is resolved by detectCert() at app boot, reading window.CertRegistry:
+//   1. ?cert=<known id>, or ?exam=<examSlug> on a family host (A+)
+//   2. hostname (a family host also honours the saved override)
+//   3. localStorage 'nplus_dev_cert' override (unmatched hosts only), then default 'netplus'
 //
 // Phase 1A scope (this ship): cert metadata + RETENTION_GAP_CONCEPTS only.
 // Phase 1B (next session): TOPIC_DOMAINS, DOMAIN_WEIGHTS, topicResources,
@@ -32,130 +32,32 @@ if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 // load (defensive — production deploys always load the pack via <script>).
 
 function detectCert() {
-  // 1. ?cert=… URL query param — used by cross-origin entry points (e.g.
-  //    landing's "Resume Security+" tile sends users to
-  //    networkplus.certanvil.com?cert=secplus). When present, persist to
-  //    localStorage so subsequent navigations keep the cert active, then
-  //    strip the param from the address bar so refresh doesn't re-trigger.
+  // CertRegistry.resolve(), the same call the head IIFE in index.html and getActiveCertId() in auth-state.js make.
+  // Registry missing (stale cached page): use what the head already resolved.
+  const R = (typeof window !== 'undefined' && window.CertRegistry) || null;
+  if (!R) return (typeof document !== 'undefined' && document.documentElement.getAttribute('data-cert')) || 'netplus';
+  // Override key matches cloud-store.js + auth-state.js; built via prefix-concat so the data-safety lint
+  // (which bans literal 'nplus_…' setItem calls outside the STORAGE namespace) doesn't flag it.
+  const certOverrideKey = 'nplus_' + 'dev_cert';
+  let dev = null;
+  try { dev = localStorage.getItem(certOverrideKey); } catch (e) {}
+  const loc = (typeof location !== 'undefined') ? location : { hostname: '', search: '', href: '' };
+  const id = R.resolve({ hostname: loc.hostname, search: loc.search, override: dev });
+  // A ?cert=<known id> (landing's "Resume Security+") or an A+ ?exam= that picked the member is persisted so a
+  // refresh keeps it, then stripped from the address bar.
   try {
-    if (typeof location !== 'undefined' && location.search) {
-      // Override key matches what cloud-store.js + auth-state.js use; built
-      // via local prefix-concat const so the data-safety lint (which bans
-      // literal 'nplus_…' setItem calls outside the STORAGE namespace)
-      // doesn't flag this. detectCert is one of two legitimate owners of
-      // the cert-override key (the other being auth-state.js tadSwitchCert).
-      const certOverrideKey = 'nplus_' + 'dev_cert';
-      const url = new URL(location.href);
-      const param = (url.searchParams.get('cert') || '').toLowerCase().trim();
-      if (param === 'netplus' || param === 'secplus' || param === 'az900' || param === 'ai900'
-          || param === 'aplus-core1' || param === 'aplus-core2' || param === 'sc900' || param === 'clfc02') {
-        try { localStorage.setItem(certOverrideKey, param); } catch (e) {}
-        try {
-          url.searchParams.delete('cert');
-          history.replaceState({}, '', url.toString());
-        } catch (e) {}
-        return param;
-      }
-      // v7.6.0 — the A+ landing tiles deep-link via ?exam=core1|core2 (the
-      // cert family shares aplus.certanvil.com). Map the friendly param to the
-      // cert ID + persist so the in-app Core 1 / Core 2 switcher state survives
-      // a refresh. Same certOverrideKey-via-prefix-concat data-safety dodge.
-      const examParam = (url.searchParams.get('exam') || '').toLowerCase().trim();
-      if (examParam === 'core1' || examParam === 'core2') {
-        const aplusCert = 'aplus-' + examParam;
-        try { localStorage.setItem(certOverrideKey, aplusCert); } catch (e) {}
-        try {
-          url.searchParams.delete('exam');
-          history.replaceState({}, '', url.toString());
-        } catch (e) {}
-        return aplusCert;
+    if (loc.search) {
+      const url = new URL(loc.href);
+      const cp = (url.searchParams.get('cert') || '').toLowerCase().trim();
+      const ep = (url.searchParams.get('exam') || '').toLowerCase().trim();
+      const key = R.isKnown(cp) ? 'cert' : (ep && R.familyOf(R.byHost(loc.hostname)) && R.get(id).examSlug === ep) ? 'exam' : null;
+      if (key) {
+        try { localStorage.setItem(certOverrideKey, id); } catch (e) {}
+        try { url.searchParams.delete(key); history.replaceState({}, '', url.toString()); } catch (e) {}
       }
     }
   } catch (e) {}
-
-  // 2. v7.2.1 Pattern A subdomain detection — hostname MUST win over any
-  //    session/profile-stored cert preference for known cert subdomains.
-  //    Pre-v7.2.1 the only host check was a `secplus-` prefix (Vercel preview
-  //    branches only); production `secplus.certanvil.com` fell through to the
-  //    localStorage override and rendered Net+ content when a stale override
-  //    was set (e.g. from a prior visit to networkplus.certanvil.com that
-  //    persisted `nplus_dev_cert='netplus'` via the ?cert= entry-point path).
-  //    Mirrors auth-state.js getActiveCertId() which already had the correct
-  //    subdomain check. Root certanvil.com + localhost have no hostname-cert
-  //    mapping here, so they correctly fall through to the localStorage path
-  //    below (preserving the session-stored preference + dev override).
-  //    v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-  //    (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-  //    same subdomain via internal cert-switcher, NOT new subdomains).
-  try {
-    if (typeof location !== 'undefined' && location.hostname) {
-      const host = location.hostname;
-      if (host.indexOf('secplus.') === 0
-          || host.indexOf('secplus-') === 0
-          || host === 'secplus.certanvil.com') return 'secplus';
-      if (host.indexOf('networkplus.') === 0
-          || host.indexOf('networkplus-') === 0
-          || host === 'networkplus.certanvil.com') return 'netplus';
-      if (host.indexOf('azure.') === 0
-          || host.indexOf('azure-') === 0
-          || host === 'azure.certanvil.com') return 'az900';
-      // v7.5.0 — fourth cert AI-900 on ai.certanvil.com (Pattern A; founder
-      // lock 2026-05-27 — AI/data role family gets its own subdomain,
-      // re-scoping the v7.3.0 azure.certanvil.com lock to "AZ-* infra certs
-      // only"). Future AI certs (AI-102, DP-100) share ai.certanvil.com.
-      if (host.indexOf('ai.') === 0
-          || host.indexOf('ai-') === 0
-          || host === 'ai.certanvil.com') return 'ai900';
-      // v7.7.0 — sixth cert SC-900 on sc900.certanvil.com (Pattern A; founder
-      // lock 2026-05-28). Microsoft Security/Compliance/Identity role family;
-      // cert-code-named to AVOID semantic collision with CompTIA Security+
-      // (secplus.certanvil.com). Single-exam (unlike A+), so a plain return —
-      // no in-app exam switch, standard cross-subdomain nav from the switcher.
-      if (host.indexOf('sc900.') === 0
-          || host.indexOf('sc900-') === 0
-          || host === 'sc900.certanvil.com') return 'sc900';
-      // v7.8.0 — seventh cert AWS Certified Cloud Practitioner CLF-C02 on
-      // clfc02.certanvil.com (Pattern A; founder lock 2026-05-29). Third
-      // VENDOR (AWS, alongside CompTIA + Microsoft). Single-exam — plain
-      // return, standard cross-subdomain nav from the switcher. Cert-id
-      // 'clfc02' matches the az900/ai900/sc900 no-hyphen single-vendor
-      // convention; the displayed exam code stays 'CLF-C02'.
-      if (host.indexOf('clfc02.') === 0
-          || host.indexOf('clfc02-') === 0
-          || host === 'clfc02.certanvil.com') return 'clfc02';
-      // v7.6.0 — fifth cert family CompTIA A+ on aplus.certanvil.com (Pattern
-      // A; founder lock 2026-05-27). A+ is ONE certification with TWO exams
-      // (Core 1 220-1201 + Core 2 220-1202) that SHARE one subdomain — the
-      // first cert family to do so. The hostname resolves the cert FAMILY; the
-      // localStorage override differentiates the active exam for the in-app
-      // Core 1 <-> Core 2 switcher (tadSwitchCert writes nplus_dev_cert +
-      // reloads — the first cert switch that does NOT change subdomain).
-      // Default to Core 1 on a cold subdomain entry (no override set yet).
-      if (host.indexOf('aplus.') === 0
-          || host.indexOf('aplus-') === 0
-          || host === 'aplus.certanvil.com') {
-        try {
-          const aplusDev = localStorage.getItem('nplus_dev_cert');
-          if (aplusDev === 'aplus-core1' || aplusDev === 'aplus-core2') return aplusDev;
-        } catch (e) {}
-        return 'aplus-core1';
-      }
-    }
-  } catch (e) { /* not in browser context */ }
-
-  // 3. localStorage dev override — switches cert without changing URL.
-  //    Only reached when on root certanvil.com or localhost (where the
-  //    Pattern A subdomain check above doesn't match any known cert host).
-  try {
-    if (typeof localStorage !== 'undefined') {
-      const dev = localStorage.getItem('nplus_dev_cert');
-      if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-          || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') return dev;
-    }
-  } catch (e) { /* localStorage may be blocked */ }
-
-  // 4. Default
-  return 'netplus';
+  return id;
 }
 
 const CURRENT_CERT = detectCert();
@@ -190,13 +92,13 @@ let _dailyGoalIntroArmed = true;
 // node-only context, or deploy-time race).
 const EXAM_TIME_SECONDS = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examTimeSeconds) || 5400;
 const EXAM_QUESTION_COUNT = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examQuestionCount) || 90;
-const EXAM_PASS_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examPassScore) || 720;
+const EXAM_PASS_SCORE = window.CertRegistry ? window.CertRegistry.examScale(CURRENT_CERT, CERT_PACK && CERT_PACK.meta).pass : ((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examPassScore) || 720);  // CertRegistry.scale (percent certs: pass 60)
 // v4.81.0: Baseline Diagnostic + Pass Plan (Codex r5 #1 / Issue #243)
 const DIAGNOSTIC_QUESTION_COUNT = 20;       // single sitting, ~30 min
 const DIAGNOSTIC_DURATION_MS = 30 * 60 * 1000;  // 30-min timer (no hard cutoff — informational only in MVP)
 const DIAGNOSTIC_RETAKE_COOLDOWN_DAYS = 7;  // user can retake after 7 days
 const DIAGNOSTIC_RETAKE_COOLDOWN_MS = DIAGNOSTIC_RETAKE_COOLDOWN_DAYS * 86400000;
-const EXAM_MAX_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900;
+const EXAM_MAX_SCORE = window.CertRegistry ? window.CertRegistry.examScale(CURRENT_CERT, CERT_PACK && CERT_PACK.meta).max : ((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900);
 // v8.128.0: per-cert score scale (EXAM_MIN_SCORE, READINESS_BAND, readinessFromRaw,
 // readinessBarPct, scaledExamScore) lives in features/readiness.js.
 // v4.87.0: cert-aware exam name string for prompt injection. Examples:
@@ -1183,7 +1085,7 @@ const STORAGE = {
   // { netplus: { score, computed_at }, secplus: { ... } }. Written after
   // every quiz/exam completion by _writeReadinessSnapshot(); cloud-flushed
   // via Phase C′ pattern so landing's /analytics page can read live values.
-  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots', ONB_SKIPS: 'nplus_onb_skips', FREE_CERT_ID: 'nplus_freeCertId', ACTIVATED: 'nplus_activated',   // Lift C: first-run keys (lib/onboarding-firstrun.js)
+  READINESS_SNAPSHOTS: 'nplus_readiness_snapshots', ONB_SKIPS: 'nplus_onb_skips', ONB_TOURS: 'nplus_onb_tours', FREE_CERT_ID: 'nplus_freeCertId', ACTIVATED: 'nplus_activated',   // Lift C: first-run keys (lib/onboarding-firstrun.js)
   OS_MASTERY: 'nplus_os_mastery',
   OS_LESSONS: 'nplus_os_lessons',
   CB_MASTERY: 'nplus_cb_mastery',
@@ -2223,15 +2125,9 @@ function _ensureSimLabLoaded(cb) {
 // Expose on window so tests can trigger the lazy-load directly.
 window._ensureSimLabLoaded = _ensureSimLabLoaded;
 
-const _DL_SEED_FILES = {
-  az900: 'features/decision-lab-seed-az900.js',
-  ai900: 'features/decision-lab-seed-ai900.js',
-  sc900: 'features/decision-lab-seed-sc900.js',
-  clfc02: 'features/decision-lab-seed-clfc02.js'
-};
 function _ensureDecisionLabLoaded(cb) {
   function _afterEngine() {
-    var seedFile = _DL_SEED_FILES[window.CURRENT_CERT];
+    var _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT), seedFile = _re && _re.decisionLabSeed;
     if (!seedFile || window.__dlSeedLoaded === window.CURRENT_CERT) { if (cb) cb(); return; }
     var s = document.createElement('script');
     s.src = seedFile;
@@ -3057,7 +2953,7 @@ function renderStatsCard() {
     <div class="sstat"><div class="sv" style="color:${avgColor}">${stats.avgPct}%</div><div class="sl">Avg Score</div></div>
     <div class="sstat"><div class="sv">${streakIcon} ${streakData.currentStreak}</div><div class="sl">Day streak</div></div>
     <div class="sstat"><div class="sv">${todayQs}</div><div class="sl">Qs today</div></div>
-    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? stats.bestExam : '\u2014'}</div><div class="sl">Best exam</div></div>`;
+    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? formatExamScore(stats.bestExam) : '--'}</div><div class="sl">Best exam</div></div>`;
 }
 
 // ══════════════════════════════════════════
@@ -4206,12 +4102,12 @@ window._dlGetWeakSpots = _dlGetWeakSpots;
 // where the other drills are, not only on the legacy #page-drills page. This
 // renders WITHOUT loading the feature module (cert/pro/daily-state all live
 // here); the module lazy-loads on click via startSimLabHome().
-const _SL_PBQ_CERTS_HOME = ['netplus', 'secplus', 'aplus-core1', 'aplus-core2'];
 function renderSimLabHomeEntry() {
   const btn = document.getElementById('sl-home-opt');
   if (!btn) return;
-  // Sim Lab (PBQs) only exists on CompTIA certs — hide everywhere else.
-  if (_SL_PBQ_CERTS_HOME.indexOf(window.CURRENT_CERT || 'netplus') === -1) { btn.classList.add('is-hidden'); return; }
+  // Sim Lab (PBQs): registry simLab flag (CompTIA certs) — hide everywhere else.
+  const _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT || 'netplus');
+  if (!_re || !_re.simLab) { btn.classList.add('is-hidden'); return; }
   btn.classList.remove('is-hidden');
   const sub = document.getElementById('sl-home-sub');
   if (sub) {
@@ -4238,11 +4134,11 @@ window.startSimLabHome = startSimLabHome;
 // Decision Lab Home entry (Home → Practice). Renders WITHOUT loading the module
 // (cert/pro/daily-state live here); the module lazy-loads on click.
 // v8.126.0: ai900 re-enabled with 55 scenarios rebuilt for AI-901 (hidden v8.121.0-v8.125.0).
-const _DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02'];
 function renderDecisionLabHomeEntry() {
   const btn = document.getElementById('dl-home-opt');
   if (!btn) return;
-  if (_DL_CERTS.indexOf(window.CURRENT_CERT) === -1) { btn.classList.add('is-hidden'); return; }
+  const _re = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT);
+  if (!_re || !_re.decisionLab) { btn.classList.add('is-hidden'); return; }
   btn.classList.remove('is-hidden');
   const sub = document.getElementById('dl-home-sub');
   if (sub) {
@@ -4598,6 +4494,12 @@ function _mergeBatchedFetchResults(settled, numBatches, n) {
 // lets the outer coordinator parcel out PBQ budget across batches.
 // v4.81.15: staleSliceIdx threaded through from fetchQuestions for stale-
 // topic rotation in the prompt-injection layer. See _computeStaleTopics.
+// Exam vendor + "official " for the question prompt: vendor from the registry, then meta.vendor, then the pack name's first word;
+// no "official" when the pack's domain weights are estimates (PRINCE2, PSM).
+function _examPromptBits() {
+  const meta = (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta) || {}, e = window.CertRegistry && window.CertRegistry.get(window.CURRENT_CERT);
+  return { vendor: (e && e.vendor) || meta.vendor || String(meta.name || 'CompTIA').split(' ')[0], official: meta.weightsAreEstimates ? '' : 'official ' };
+}
 async function _fetchQuestionsBatch(key, qTopic, difficulty, n, pbqCountOverride, staleSliceIdx) {
   const topicHints = Object.assign({  // v8.143.0: + the active pack's topicHints (Sec+ official SY0-701 sub-topics)
     'Integrating Networked Devices': 'IoT devices, ICS/SCADA systems, OT/IT convergence, smart building tech, embedded systems, segmentation of IoT, industrial control risks.',
@@ -4661,9 +4563,9 @@ ${domainBlocks}
   // v4.87.0: cert-aware prompt voice. Substitutes CERT_NAME_FULL so Haiku
   // generates SY0-701 questions in Security+ mode + N10-009 in Network+ mode.
   // v8.127.0: exam vendor from the pack name ("CompTIA" / "Microsoft" / "AWS").
-  const _examVendor = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA').split(' ')[0];
+  const { vendor: _examVendor, official: _official } = _examPromptBits();
   const topicStr = qTopic === MIXED_TOPIC
-    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all ${Object.keys(DOMAIN_WEIGHTS).length} official ${_examVendor} domains.`
+    ? `Cover a broad mix of ${CERT_NAME_FULL} exam topics across all ${Object.keys(DOMAIN_WEIGHTS).length} ${_official}${_examVendor} domains.`
     : isMulti
       ? `Cover these ${multiTopicList.length} specific ${CERT_NAME_FULL} topics selected by the user: ${multiTopicList.map(t => '"' + t + '"').join(', ')}. See the mandatory distribution block below.`
       : `Focus only on: "${qTopic}" for the ${CERT_NAME_FULL} exam (primary objective ${expectedObj || 'N/A'}).${topicHints[qTopic] ? ' Specifically cover: ' + topicHints[qTopic] : ''}`;
@@ -4760,7 +4662,7 @@ ${topicStr}${mixedDistributionStr}
 Difficulty: ${diffStr}
 ${exemplarBlock}${retentionBlock}${staleBlock}${typeof seenPromptBlock === 'function' ? seenPromptBlock(qTopic) : ''}
 Generate exactly ${n} multiple choice questions. Requirements:
-- 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)
+- 4 options each (or 5 for multi-select): A, B, C, D (E for multi-select)${typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse ? '. Exception: a True or False item (stem starts "True or False:") has exactly 2 options, A "True" and B "False", as in the examples above; keep these to about 1 in 10' : ''}
 - One correct answer only (unless multi-select)
 - Distractors must be plausible - never obviously wrong
 - Vary the correct answer letter across questions
@@ -5035,9 +4937,9 @@ function animateReadinessCardV2(pending){
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
     else { showReadinessStamp(card,scaled>=passLine?'Pass level':(passLine-scaled)+' pts to pass',scaled<passLine); } };  // Pass level: green, no ring or confetti; the Before you book row names the next step
-  if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
+  if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=formatExamScore(scaled); if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
-  animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);
+  animateCount('rc-v2-num',EXAM_SCORE_FORMAT==='percent'?0:100,scaled,1100,EXAM_SCORE_FORMAT==='percent'?'%':''); setTimeout(settle,1150);
 }
 function drawReadinessRing(card){
   const ring=card.querySelector('.rc-v2-ring'); const num=document.getElementById('rc-v2-num'); const path=ring&&ring.querySelector('path');
@@ -6738,7 +6640,7 @@ function _stemHasInterrogative(stem) {
   if (typeof stem !== 'string') return false;
   const s = stem.trim();
   if (!s) return false;
-  if (s.includes('?')) return true;
+  if (s.includes('?') || (typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse && /^true or false:/i.test(s))) return true;   // v8.205.0: a "True or False:" stem is a question on an allowTrueFalse pack (PSM)
   // Common interrogatives + imperative CompTIA-style stems ("Select the…",
   // "Identify the…", "Choose the…", "Arrange…", "Match…", "Place…", "Given…")
   const pattern = /\b(which|what|when|where|why|how|who|whose|select|identify|choose|pick|match|arrange|place|determine|complete|given|in which|under which)\b/i;
@@ -7000,7 +6902,7 @@ function validateQuestions(qs) {
       if (!q.options || !q.answer) return false;
       if (!['A','B','C','D'].includes(q.answer)) return false;
       if (!q.options[q.answer]) return false;
-      if (!q.options.A || !q.options.B || !q.options.C || !q.options.D) return false;
+      const _tf = typeof CERT_PACK !== 'undefined' && !!(CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse) && Object.keys(q.options).join() === 'A,B' && String(q.options.A).trim().toLowerCase() === 'true' && String(q.options.B).trim().toLowerCase() === 'false'; if (!q.options.A || !q.options.B || (!_tf && (!q.options.C || !q.options.D))) return false;   // v8.205.0: two options only for True/False on a pack with meta.allowTrueFalse (PSM)
 
       // Enhancement 4: Explanation-answer agreement check
       const expLower = q.explanation.toLowerCase();
@@ -7037,7 +6939,7 @@ function validateQuestions(qs) {
       // the check entirely because the explanation is expected to negate options.
       const isNegationQuestion = /\bNOT\b|\bEXCEPT\b/.test(q.question) ||
                                   /which .{0,30}\bnot\b/i.test(q.question);
-      if (!isNegationQuestion) {
+      if (!isNegationQuestion && !_tf) {   // True/False options carry no distinctive words to align on
         const STOPWORDS = new Set(['tier','layer','protocol','network','address','packet','frame','device','traffic','port','ports','cable','cables','interface','data','connection','between','through','which','their','would','there','these','those','other','level','value','field','using','based','type','types','mode','modes','area','list','used','uses','correct','answer','option','options','following','above','below','same','different','used','provides','standard']);
         const tokenize = (text) => {
           const words = String(text).toLowerCase().split(/[^a-z0-9]+/)
@@ -7593,7 +7495,7 @@ async function aiValidateQuestions(key, qs) {
       var opts = Object.keys(q.options).sort().map(function(l) { return l + ') ' + q.options[l]; }).join('\n');
       return 'Q' + (i+1) + ' [MULTI-SELECT]: "' + q.question + '"\n' + (q.scenario ? 'Scenario: ' + q.scenario + '\n' : '') + opts + '\nMarked answers: ' + q.answers.join(', ') + '\nExplanation: ' + q.explanation;
     }
-    return `Q${i+1}: "${q.question}"\n${q.scenario ? 'Scenario: ' + q.scenario + '\n' : ''}A) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
+    return `Q${i+1}: "${q.question}"\n${q.scenario ? 'Scenario: ' + q.scenario + '\n' : ''}${['A', 'B', 'C', 'D'].filter(l => q.options[l] != null).map(l => l + ') ' + q.options[l]).join('\n')}\nMarked answer: ${q.answer}\nExplanation: ${q.explanation}`;
   };
 
   const buildPrompt = (chunk) => `You are a ${CERT_NAME_FULL} expert verifier. Review each question below and check NINE things:
@@ -7602,7 +7504,7 @@ async function aiValidateQuestions(key, qs) {
 3. Does the EXPLANATION actually support the MARKED answer letter, or does it champion a different option?
 4. CONCEPTUAL COHERENCE: Does the stem ask about one concept but the answer test a DIFFERENT concept? (e.g. stem asks for a "fundamental TCP/IP principle" but the answer is about deprecated classful addressing — those are distinct concepts.)
 5. FRAMING MATCH: Is the question's abstraction level aligned with the answer? (e.g. stem asks for a "principle" or "root cause," but the answer is a specific configuration detail; or stem asks what is "most likely" but only one option is even plausible.)
-6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.
+6. DISTRACTOR QUALITY: Are the wrong options plausible alternatives a student might pick, or are 3/4 obviously wrong? A good MCQ has at least two tempting-looking distractors.${typeof CERT_PACK !== 'undefined' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.allowTrueFalse ? ' A True or False item (options A True, B False) has one wrong option by design: judge only whether the statement is unambiguously true or false, never mark it weak for having two options.' : ''}
 7. MULTI-SELECT ANSWER BALANCE (for [MULTI-SELECT] questions only): Are ALL marked correct answers at a SIMILAR level of prominence and familiarity? A well-formed multi-select tests BREADTH (knowing that multiple core facts apply), NOT obscurity. If one correct answer is an obvious well-known fact and the other is an obscure edge-case detail that only specialists would know, the question is UNBALANCED — mark AMBIGUOUS. Also check: are any of the DISTRACTORS actually factually correct answers to the stem? If so, mark AMBIGUOUS.
 8. UNSTATED SCENARIO: Is every marked correct answer correct for the stem AS WRITTEN? If a correct answer only applies under a specific scenario, attack variant or context the stem never states (e.g. stem asks generically about "phishing" but a marked answer is a control that only fits business email compromise / payment fraud), the student has to invent context to reach the key — mark AMBIGUOUS. Also mark AMBIGUOUS if the question refers to a scenario, case, exhibit or figures that are not included, or asks for a calculation without giving every number it needs.
 9. ANSWER ECHO: Does the question or scenario give the answer away by naming it? If the stem or scenario contains the correct option's name, a word from the same family, or a near-synonym that labels it (e.g. "a criminal group" with the answer "Organized crime"; "a phishing email" with the answer "Phishing"), a student can answer by matching words without knowing the concept — mark AMBIGUOUS. Shared topic vocabulary that also appears in the distractors is fine. Also mark AMBIGUOUS when the stem names the ingredient or condition that only the correct options have (e.g. "anyone without the key or token vault" with the answers Encryption and Tokenization): the student matches "key" to encryption and "vault" to tokenization without knowing either.
@@ -7778,7 +7680,7 @@ async function explainFurther() {
   } else if (qType === 'order') {
     questionContext = `Question: ${q.question}\nCorrect order: ${(q.correctOrder || []).map(i => q.items[i]).join(' -> ')}`;
   } else {
-    questionContext = `Question: ${q.question}\nOptions:\nA) ${q.options.A}\nB) ${q.options.B}\nC) ${q.options.C}\nD) ${q.options.D}\nCorrect: ${q.answer} - ${q.options[q.answer]}`;
+    questionContext = `Question: ${q.question}\nOptions:\n${['A', 'B', 'C', 'D'].filter(l => q.options[l] != null).map(l => l + ') ' + q.options[l]).join('\n')}\nCorrect: ${q.answer} - ${q.options[q.answer]}`;
   }
 
   // v4.38.5 — inject ground-truth facts so the teacher can't hallucinate

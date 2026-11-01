@@ -155,6 +155,10 @@
       { id: 'sc900',       name: 'Microsoft SC-900',  code: 'SC-900',   glyph: 'SC' },
       { id: 'clfc02',      name: 'AWS Cloud Practitioner', code: 'CLF-C02', glyph: 'AWS' }
     ];
+    // The four new exams: empty until lib/new-certs.js is revealed.
+    rest = rest.concat((window.certanvilNewCerts ? window.certanvilNewCerts() : []).map(function (c) {
+      return { id: c.id, name: c.name, code: c.code, glyph: c.glyph, fresh: true };
+    }));
     rest.forEach(function (c) {
       if (role === 'admin') {
         certs.push({
@@ -172,7 +176,8 @@
           id: c.id,
           name: c.name,
           code: c.code,
-          glyphClass: 'locked',
+          // The eight existing certs keep the generic locked chip; the new exams keep their own mark (SecAI+ S, PSM numeral).
+          glyphClass: c.fresh ? c.id : 'locked',
           glyph: c.glyph,
           meta: 'upgrade to Pro to unlock',
           status: 'locked',
@@ -395,6 +400,11 @@
     sc900:         { format: 'percent', maxScore: 1000, passScore: 700, examName: 'Microsoft SC-900' },
     clfc02:        { format: 'percent', maxScore: 1000, passScore: 700, examName: 'AWS Cloud Practitioner CLF-C02' }
   };
+
+  // The four new exams add their formats here once revealed (empty until then).
+  (window.certanvilNewCerts ? window.certanvilNewCerts() : []).forEach(function (c) {
+    EXAM_FORMATS[c.id] = { format: c.format, maxScore: c.maxScore, passScore: c.passScore, examName: c.examName };
+  });
 
   function renderExamResultsList(role, profile) {
     // GAP-5 (v7.44.0): logging real exam results is Pro-only per the
@@ -744,8 +754,10 @@
   function certGlyphHTML(glyph, glyphClass){
     var g = String(glyph || '');
     if (!g) return '';
-    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : '';
+    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : glyphClass === 'psm1' ? 'I' : glyphClass === 'psm2' ? 'II' : '';
     var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    // New exams (hidden until reveal): SecAI+ accents its S, PSM I / II carry a small numeral.
+    if (glyphClass === 'secai') return '<span class="cg"><span class="cg-ac">S</span>AI</span>';
     var head = esc(g.slice(0, -1)), last = esc(g.slice(-1));
     return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }

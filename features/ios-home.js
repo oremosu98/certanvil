@@ -14,15 +14,16 @@
     var rows = history.filter(function (e) { return e && !(typeof isHistorySplitRow === 'function' && isHistorySplitRow(e)); });
     var isNew = rows.length === 0;
     var certId = (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || 'netplus';
-    var MARKS = { netplus: 'N+', secplus: 'S+', 'aplus-core1': 'A+', 'aplus-core2': 'A+', az900: 'AZ', ai900: 'AI', sc900: 'SC', clfc02: 'CLF' };
+    var re = (typeof window !== 'undefined' && window.CertRegistry) ? window.CertRegistry.get(certId) : null;
     var rawName = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || 'CompTIA Network+';
     var cert = {
-      mark: MARKS[certId] || 'CA',
+      mark: re ? re.mark : 'CA',
       name: String(rawName).replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''),
       code: (typeof CERT_CODE === 'string' && CERT_CODE) || 'N10-009'
     };
     var max = (typeof EXAM_MAX_SCORE === 'number') ? EXAM_MAX_SCORE : 900;
     var pass = (typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720;
+    var fmt = (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 'percent' : 'scaled';   // percent certs read '72%'
     var days = null;
     try { days = (typeof getDaysToExam === 'function') ? getDaysToExam() : null; } catch (_) { days = null; }
 
@@ -34,7 +35,7 @@
       : (DAYS[now.getDay()] + ' ' + part + '. Pick up where you left off.');
 
     // ── readiness ──
-    var readiness = { score: null, max: max, pass: pass, tier: 'Locked', fillPct: 0, passPct: Math.round(pass / max * 1000) / 10,
+    var readiness = { score: null, fmt: fmt, max: max, pass: pass, tier: 'Locked', fillPct: 0, passPct: Math.round(pass / max * 1000) / 10,
       insight: 'Take a quiz to unlock your readiness score and a pass forecast.', meta: null };
     var r = null;
     if (!isNew) { try { r = (typeof getReadinessScore === 'function') ? getReadinessScore() : null; } catch (_) { r = null; } }
@@ -115,8 +116,8 @@
       }
     }
     if (!rec && passedCert) {
-      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score : ''), title: 'Pick your next cert',
-        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+      rec = { kind: 'nextcert', kick: cert.name + ' passed' + (typeof outcomeRec.score === 'number' ? ' · scored ' + outcomeRec.score + (fmt === 'percent' ? '%' : '') : ''), title: 'Pick your next cert',
+        sub: (typeof outcomeRec.predicted === 'number' ? 'We predicted ' + outcomeRec.predicted + (fmt === 'percent' ? '%' : '') + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
     }
     if (!rec && isNew) rec = { kind: 'first', min: 10, title: 'Start your first quiz', sub: '10 questions, easy mix, about 10 minutes.' };
     // days since the last study day (local midnights, so DST and time of day never matter)
@@ -193,7 +194,7 @@
 
     var exam = { qs: (typeof EXAM_QUESTION_COUNT === 'number') ? EXAM_QUESTION_COUNT : 90,
       mins: Math.round(((typeof EXAM_TIME_SECONDS === 'number') ? EXAM_TIME_SECONDS : 5400) / 60),
-      min: (typeof EXAM_MIN_SCORE === 'number') ? EXAM_MIN_SCORE : 100, max: max };
+      min: (typeof EXAM_MIN_SCORE === 'number') ? EXAM_MIN_SCORE : 100, max: max, fmt: fmt };
 
     return { state: isNew ? 'new' : 'returning', signedIn: signedIn, cert: cert, passed: passedCert, streak: cur, greeting: greeting, exam: exam,
       readiness: readiness, rec: rec, week: week, momentum: momentum, mistakes: mistakes, domains: domains };
@@ -250,15 +251,15 @@
     // readiness
     if (r.score === null) {
       h += '<div class="ih-rd ih-locked ih-reveal"><div class="ih-rd-top"><span class="ih-rd-eyebrow">Readiness</span><span class="ih-rd-tier ih-locked">Locked</span></div>'
-        + '<div class="ih-rd-score"><span class="ih-rd-num">--</span><span class="ih-rd-of">/ ' + e(r.max) + '</span></div><div class="ih-bar"></div>'
+        + '<div class="ih-rd-score"><span class="ih-rd-num">--</span><span class="ih-rd-of">' + (r.fmt === 'percent' ? '' : '/ ' + e(r.max)) + '</span></div><div class="ih-bar"></div>'
         + '<p class="ih-rd-insight">' + e(r.insight) + '</p>'
         + (m.signedIn ? '<button class="ih-rd-check" type="button" data-act="check">Or take the 30-second check' + svg('chev') + '</button>' : '') + '</div>';   // 30 Oct: the check after Skip
     } else {
       h += '<div class="ih-rd ih-reveal' + (r.tier === 'Exam ready' ? ' ih-passed' : '') + '" data-act="readiness" role="button" tabindex="0">'
         + '<div class="ih-rd-top"><span class="ih-rd-eyebrow">Readiness</span><span class="ih-rd-tier' + (r.tier === 'Close' ? ' ih-close' : (r.tier === 'Behind' ? ' ih-behind' : '')) + '">' + e(r.tier) + '</span></div>'
-        + '<div class="ih-rd-score"><span class="ih-rd-num">' + e(r.score) + '</span><span class="ih-rd-of">/ ' + e(r.max) + '</span></div>'
+        + '<div class="ih-rd-score"><span class="ih-rd-num">' + e(r.score) + (r.fmt === 'percent' ? '%' : '') + '</span><span class="ih-rd-of">' + (r.fmt === 'percent' ? '' : '/ ' + e(r.max)) + '</span></div>'
         + '<div class="ih-bar"><span style="width:' + r.fillPct + '%"></span><span class="ih-tick" style="left:' + r.passPct + '%"></span></div>'
-        + '<div class="ih-rd-legend"><span>Now</span><span class="ih-p">Pass ' + e(r.pass) + '</span></div>'
+        + '<div class="ih-rd-legend"><span>Now</span><span class="ih-p">Pass ' + e(r.pass) + (r.fmt === 'percent' ? '%' : '') + '</span></div>'
         + (r.book ? '<div class="ih-rd-book"><span class="ih-rd-book-k">' + e(r.book.label) + '</span><p class="ih-rd-book-s">' + e(r.book.step) + '</p></div>'
           : '<p class="ih-rd-insight">' + e(r.insight) + '</p>')
         + (r.meta ? '<p class="ih-rd-meta">' + e(r.meta) + '</p>' : '') + '</div>';
@@ -307,9 +308,9 @@
       opt('grind', 'search', '20-min Deep Scan', '20 questions, exam level, mixed topics.', '20 Q')
       + opt('bulk30', 'lines3', '30 Questions', 'Marathon, mixed. Around 25 minutes.', '30 Q')
       + opt('bulk45', 'lines4', '45 Questions', 'Marathon, mixed. Around 38 minutes.', '45 Q'));
-    h += acc('check', 'Exam simulation', 'Pressure-test readiness, scored ' + ex.min + ' to ' + ex.max + '.',
+    h += acc('check', 'Exam simulation', 'Pressure-test readiness, scored ' + (ex.fmt === 'percent' ? 'as a percentage' : ex.min + ' to ' + ex.max) + '.',
       opt('bulk60', 'check', '60-Question SIM', 'A long set at exam level. No timer.', '60 Q', ' ih-exam-lead')
-      + opt('exam', 'clock', 'Full Exam Simulator', ex.qs + ' questions, ' + ex.mins + '-min timer, scored ' + ex.min + ' to ' + ex.max + '.', ex.qs + ' Q'));
+      + opt('exam', 'clock', 'Full Exam Simulator', ex.qs + ' questions, ' + ex.mins + '-min timer, scored ' + (ex.fmt === 'percent' ? 'as a percentage' : ex.min + ' to ' + ex.max) + '.', ex.qs + ' Q'));
     h += acc('chart', 'Drill by domain', m.domains.length + ' domains by exam weighting, 10 questions each.',
       m.domains.map(function (d) {
         return '<div class="ih-domain" role="button" tabindex="0" data-act="domain" data-key="' + e(d.key) + '"><div class="ih-domain-top"><b>' + e(d.name) + '</b><span class="ih-domain-wt">' + e(d.weightPct) + '% of exam</span></div>'

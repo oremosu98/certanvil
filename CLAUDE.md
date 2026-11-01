@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8334 | 446 KB |
+| app.js | 8236 | 443 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2403 | 158 KB |
-| dg-system.css | 6235 | 612 KB |
-| tests/uat.js + tests/uat/ (96 modules) | 35415 | — |
-UAT checks: 6289 · E2E `test(` count: 811 · APP_VERSION: 8.205.2 · stamped-at: worktree
+| index.html | 2329 | 154 KB |
+| dg-system.css | 6188 | 609 KB |
+| tests/uat.js + tests/uat/ (108 modules) | 37649 | — |
+UAT checks: 6827 · E2E `test(` count: 813 · APP_VERSION: 8.206.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,10 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
-| v8.205.2 | Admin: See past reports when nothing is open |
+| v8.206.0 | Four new exams live: CompTIA SecAI+, PRINCE2 7 Foundation, PSM I and PSM II (cert registry) |
 | v8.205.1 | Report a problem keeps your text if you cancel after a failed send |
 | v8.205.0 | Admin in the app: Report a problem everywhere, the Admin screen, Fixed and tell them, Preview as Free |
+| v8.204.1 | Readiness says Pass level and what to do before booking, then Exam ready at 4 of 4 |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
@@ -155,6 +156,7 @@ The Sim Lab faceplate/wiremap/slots (`.faceplate*`/`.wm*`/`.slots*`) tokens live
 - `hasAnswer` checks must include `Object.keys(a.topoState || {}).length > 0`
 - **Page switches go through `showPage` only, and it must finish each switch exactly once** (v8.148.0). The exit completes on the page's OWN `animationend` (`e.target === current`; child animations bubble) or a 300ms timer, whichever first, and both clear the other. Never add a bare `animationend` listener to a `.page`: when the timer wins (busy thread, background tab) it stays attached and re-runs a stale switch on a later animation, which made a new quiz's loading screen jump to the previous quiz. `tests/uat/300-page-switch-integrity.js` replays it.
 - **Counting questions or sessions from history must skip split rows (`isHistorySplitRow`).** A Mixed quiz or an exam saves a summary row AND per-topic rows for the same questions; summing every row counts them twice (v8.176.0: 15 answered, Momentum said 30). Per-topic stats do the reverse and skip the summaries.
+- **Per-cert values live in `lib/cert-registry.js`, never in an `if (cert === …)` branch** — names, codes, scale, glyph accent/numeral, trademark `legal` line, My certs labels. A new cert = pack + registry entry (+ `canonicalDomainTopics`); 540/541/543/544 flag anything missed.
 - **Constants inside a `features/*.js` IIFE are invisible to app.js and other modules.** A `typeof X === 'number'` guard silently falls back and a bare reference throws inside a `try` (v8.160.0: the lost `SR_SESSION_CAP` showed "Review 62 cards" on Home and dropped reviews from next-best-move). Export a function (`window.getSrTodayPlan`) and read that.
 - **WebKit (Safari, the iOS app) misses `:has(#host:not(:empty))` when a host fills IN PLACE on an already-shown page** (Custom quiz over Home: tab bar and top bar stayed). Hosts filled while their page enters are fine (the display change restyles). For an in-place overlay, toggle a class from JS (`html.ic-open`) and key the CSS on it.
 - **Entrance reveals must rest VISIBLE and animate from hidden** (`animation: x .5s … backwards`, `@keyframes x { from { opacity: 0 } }`). WebKit never starts a CSS animation on content drawn while its page is `display:none` (Home re-renders just before `showPage` marks it active), so a rule resting at `opacity: 0` with `forwards` left Home blank after a tab round-trip in the iOS app. UAT 481 guards it.

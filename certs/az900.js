@@ -105,6 +105,32 @@ window.CERT_PACKS.az900 = {
     'azure-management':   'Azure Management & Governance'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'cloud-concepts': [
+        { label: 'Cloud Basics',          key: 'Cloud Computing Basics' },
+        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
+        { label: 'Deployment Models',     key: 'Cloud Deployment Models' },
+        { label: 'Service Models',        key: 'Cloud Service Models' },
+        { label: 'Serverless',            key: 'Serverless Computing' },
+      ],
+      'azure-architecture': [
+        { label: 'Regions & Pairs',       key: 'Azure Regions & Region Pairs' },
+        { label: 'Resource Groups',       key: 'Resource Groups & Subscriptions' },
+        { label: 'Virtual Machines',      key: 'Azure Virtual Machines' },
+        { label: 'VNets & Subnets',       key: 'Virtual Networks & Subnets' },
+        { label: 'Entra ID',              key: 'Microsoft Entra ID & Authentication' },
+      ],
+      'azure-management': [
+        { label: 'Cost Management',       key: 'Azure Cost Management' },
+        { label: 'Tags',                  key: 'Tags & Resource Organization' },
+        { label: 'Azure Policy',          key: 'Azure Policy' },
+        { label: 'ARM & IaC',             key: 'ARM Templates & IaC' },
+        { label: 'Monitor & Logs',        key: 'Azure Monitor & Log Analytics' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (41 topics across 3 AZ-900 domains) ────────────
   // Drives weak-spot routing, exemplar bank picker, lottery, readiness
   // domain attribution. Topic name = primary key everywhere; domain key

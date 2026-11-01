@@ -300,10 +300,8 @@
   };
   function restore(y) { try { if (y && y.local && !localFree()) localStorage.setItem(freeKey(), y.local); } catch (_) {} }
   IS._verifyFailed = function (y) { if (y && y.off) y.off(); restore(y); };
-  // Same names as auth-state's cert switcher (it may not have loaded when the toast shows).
-  var NAMES = { netplus: 'Network+', secplus: 'Security+', az900: 'Microsoft Azure Fundamentals', ai900: 'Microsoft Azure AI Fundamentals',
-    sc900: 'Microsoft SC-900', clfc02: 'AWS Cloud Practitioner', 'aplus-core1': 'CompTIA A+ Core 1', 'aplus-core2': 'CompTIA A+ Core 2' };
-  function certName(id) { return NAMES[id] || id; }
+  // The registry's sign-in label (the registry is loaded in <head>, so it is there when the toast shows).
+  function certName(id) { var e = window.CertRegistry && window.CertRegistry.get(id); return e ? e.labels.signin : id; }
   function here() { return (typeof CURRENT_CERT === 'string' && CURRENT_CERT) || window.CURRENT_CERT || 'netplus'; }
   function hasData() { try { var h = JSON.parse(localStorage.getItem((typeof STORAGE === 'object' && STORAGE.HISTORY) || '') || '[]'); return Array.isArray(h) && h.length > 0; } catch (_) { return false; } }
   function open(id) { var F = window.iosFirstRun; document.documentElement.classList.add('isi-switching'); close(); if (F && F.goToCert) F.goToCert(id); }

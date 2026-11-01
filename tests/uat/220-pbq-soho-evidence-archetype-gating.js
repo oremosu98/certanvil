@@ -595,7 +595,7 @@ const {
 // for netplus/secplus and correctly ABSENT for non-PBQ certs (A+/Microsoft/
 // AWS), using the REAL cert-availability mechanisms already in the codebase
 // — no new allowlist/hook is introduced:
-//   1. `_SL_PBQ_CERTS_HOME` (app.js) is the Sim Lab entry-point allowlist
+//   1. The registry `simLab` flag (formerly `_SL_PBQ_CERTS_HOME` in app.js) is the Sim Lab entry-point allowlist
 //      consulted by `renderSimLabHomeEntry()` (called from `showPage('setup')`)
 //      to show/hide the Sim Lab tile. It includes netplus/secplus (PBQ certs)
 //      and correctly EXCLUDES the non-PBQ Decision Lab certs (az900/ai900/
@@ -615,21 +615,21 @@ const {
   console.log('\n\x1b[1m── Sim Lab: cert-aware PBQ archetype entry (Task 16) ──\x1b[0m');
   try {
     // ── 1. Entry-point allowlist: PBQ certs in, non-PBQ certs out ──
-    var pbqCertsMatch = js.match(/_SL_PBQ_CERTS_HOME\s*=\s*\[([^\]]*)\]/);
-    test('Task 16: _SL_PBQ_CERTS_HOME allowlist exists', !!pbqCertsMatch);
-    if (pbqCertsMatch) {
-      var pbqCertsHome = pbqCertsMatch[1].split(',').map(function (s) { return s.replace(/['"\s]/g, ''); }).filter(Boolean);
-      test('Task 16: Sim Lab entry allowlist includes netplus', pbqCertsHome.indexOf('netplus') !== -1);
-      test('Task 16: Sim Lab entry allowlist includes secplus', pbqCertsHome.indexOf('secplus') !== -1);
-      test('Task 16: Sim Lab entry allowlist excludes az900/ai900/sc900/clfc02 (Decision Lab certs, not Sim Lab)',
-        ['az900', 'ai900', 'sc900', 'clfc02'].every(function (c) { return pbqCertsHome.indexOf(c) === -1; }));
-    }
+    // Cert-registry Task 1.4: the allowlist is the registry's simLab flag (543-cert-lists.js runs the tile for every cert).
+    var regCtx = require('vm').createContext({ window: {} }); regCtx.window.window = regCtx.window;
+    require('vm').runInContext(require('fs').readFileSync(require('path').join(ROOT, 'lib', 'cert-registry.js'), 'utf8'), regCtx);
+    var pbqCertsHome = regCtx.window.CertRegistry.all().filter(function (e) { return e.simLab; }).map(function (e) { return e.id; });
+    test('Task 16: Sim Lab entry allowlist is the registry simLab flag', pbqCertsHome.length > 0 && !/_SL_PBQ_CERTS_HOME/.test(js));
+    test('Task 16: Sim Lab entry allowlist includes netplus', pbqCertsHome.indexOf('netplus') !== -1);
+    test('Task 16: Sim Lab entry allowlist includes secplus', pbqCertsHome.indexOf('secplus') !== -1);
+    test('Task 16: Sim Lab entry allowlist excludes az900/ai900/sc900/clfc02 (Decision Lab certs, not Sim Lab)',
+      ['az900', 'ai900', 'sc900', 'clfc02'].every(function (c) { return pbqCertsHome.indexOf(c) === -1; }));
 
-    // renderSimLabHomeEntry() must actually consult the allowlist to gate the
+    // renderSimLabHomeEntry() must actually consult the registry flag to gate the
     // tile, and must be wired into the setup-page render path (not orphaned).
     var renderEntrySrc = (js.match(/function renderSimLabHomeEntry\(\) \{[\s\S]*?\n\}/) || [''])[0];
-    test('Task 16: renderSimLabHomeEntry() checks _SL_PBQ_CERTS_HOME before showing the tile',
-      !!renderEntrySrc && /_SL_PBQ_CERTS_HOME\.indexOf\(/.test(renderEntrySrc) && /is-hidden/.test(renderEntrySrc));
+    test('Task 16: renderSimLabHomeEntry() checks the registry simLab flag before showing the tile',
+      !!renderEntrySrc && /_re\.simLab/.test(renderEntrySrc) && /is-hidden/.test(renderEntrySrc));
     test('Task 16: renderSimLabHomeEntry() is called on setup-page render (real entry hook, not dead code)',
       /if \(name === 'setup'[\s\S]{0,80}renderSimLabHomeEntry\(\)/.test(js));
 

@@ -384,7 +384,7 @@
     const W = 960, H = 220, PAD = 50;
     const innerW = W - 2 * PAD, innerH = H - 2 * PAD;
     const passPct = readinessBarPct(EXAM_PASS_SCORE); // v8.128.0: position on the cert's readiness band
-    const passYRaw = 72; // 72% raw accuracy ~= pass mark heuristic used in prototype
+    const passYRaw = EXAM_SCORE_FORMAT === 'percent' ? EXAM_PASS_SCORE : 72; // 72% raw accuracy ~= pass mark heuristic used in prototype
     const yOf = (p) => PAD + (1 - p / 100) * innerH;
     const xOf = (i, n) => PAD + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
     const plot = (seriesKey) => {
@@ -677,15 +677,15 @@
       <div class="ana-ready-head">
         <div class="ana-ready-head-left">
           <h3 class="ana-ready-title">EXAM READINESS</h3>
-          <div class="ana-subtitle">CompTIA-domain-weighted · ${EXAM_PASS_SCORE} = pass</div>
+          <div class="ana-subtitle">CompTIA-domain-weighted · ${examPassText()} = pass</div>
         </div>
         ${dateChip}
       </div>
       <div class="ana-ready-hero-row">
         <div class="ana-ready-score-block">
           <div class="ana-ready-num-wrap">
-            <span class="ana-ready-num" style="color:${tierColor}">${predicted}</span>
-            <span class="ana-ready-denom">/ ${EXAM_MAX_SCORE}</span>
+            <span class="ana-ready-num" style="color:${tierColor}">${formatExamScore(predicted)}</span>
+            <span class="ana-ready-denom">${examScoreOf()}</span>
           </div>
           <div class="ana-ready-badge" style="background:${tierBg};color:${tierColor}">${tier}</div>
         </div>
@@ -693,11 +693,11 @@
           <div class="ana-ready-bar">
             <div class="ana-ready-bar-fill" style="width:${barPct}%;background:${tierColor}"></div>
             <div class="ana-ready-bar-passtick" style="left:${passTickPct}%" aria-hidden="true"></div>
-            <div class="ana-ready-bar-passlabel" style="left:${passTickPct}%" aria-hidden="true">${EXAM_PASS_SCORE} PASS</div>
+            <div class="ana-ready-bar-passlabel" style="left:${passTickPct}%" aria-hidden="true">${examPassText()} PASS</div>
           </div>
           <div class="ana-ready-bar-scale" aria-hidden="true">
-            <span>${READINESS_BAND[0]}</span>
-            <span>${READINESS_BAND[1]}</span>
+            <span>${formatExamScore(READINESS_BAND[0])}</span>
+            <span>${formatExamScore(READINESS_BAND[1])}</span>
           </div>
         </div>
       </div>
@@ -934,7 +934,7 @@
           const pass = scaled >= EXAM_PASS_SCORE;
           const date = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
           return `<div class="ana-exam-row">
-            <div class="ana-exam-score" style="color:${pass ? 'var(--green)' : 'var(--red)'}">${scaled}</div>
+            <div class="ana-exam-score" style="color:${pass ? 'var(--green)' : 'var(--red)'}">${formatExamScore(scaled)}</div>
             <div class="ana-exam-badge" style="background:${pass ? 'rgba(var(--green-rgb),.1)' : 'rgba(var(--red-rgb),.1)'};color:${pass ? 'var(--green)' : 'var(--red)'}">${pass ? 'PASS' : 'FAIL'}</div>
             <div class="ana-exam-details">${e.score}/${e.total} correct (${e.pct}%)</div>
             <div class="ana-exam-date">${date}</div>
@@ -1635,7 +1635,7 @@
   const MILESTONE_PROGRESS = {
     hundred_qs: c => [c.totalQs, 100], five_hundred_qs: c => [c.totalQs, 500], thousand_qs: c => [c.totalQs, 1000],
     streak_7: c => [c.streak.currentStreak, 7], streak_30: c => [c.streak.currentStreak, 30],
-    ready_650: c => [Math.round(c.readiness.predicted), 650], ready_720: c => [Math.round(c.readiness.predicted), EXAM_PASS_SCORE],
+    ready_650: c => [Math.round(c.readiness.predicted), EXAM_SCORE_FORMAT === 'percent' ? READINESS_CLOSE : 650], ready_720: c => [Math.round(c.readiness.predicted), EXAM_PASS_SCORE],
     five_exams: c => [c.exams.length, 5], ten_exams: c => [c.exams.length, 10],
     subnet_50: c => [c.subStats.seen, 50], deep_dive_10: c => [c.ddUses, 10],
     daily_challenge_7: c => [c.dc.bestStreak, 7], daily_challenge_30: c => [c.dc.bestStreak, 30],
@@ -2204,7 +2204,7 @@
             <div class="tile-eyebrow" style="margin:0">Readiness</div>
             <span class="read-tier${passCls}">${esc(r.tier)}</span>
           </div>
-          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ ${EXAM_MAX_SCORE}</span></div>
+          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}"${EXAM_SCORE_FORMAT === 'percent' ? ' data-suffix="%"' : ''}>0</span><span class="of">${examScoreOf()}</span></div>
           <p class="read-cap">${fc.line}</p>
           <div class="read-bar-wrap">
             <div class="read-bar">
@@ -2283,16 +2283,20 @@
 
   function _anaBtDomains(D) {
     const esc = _anaBtEsc;
+    // PRINCE2 / PSM: the pack's weights are CertAnvil estimates (meta.weightsAreEstimates), so say so once.
+    const meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+    const re = meta.weightsAreEstimates && window.CertRegistry ? window.CertRegistry.get(typeof CURRENT_CERT === 'string' ? CURRENT_CERT : '') : null;
+    const est = meta.weightsAreEstimates ? ((re && re.vendor) || 'The exam body') : '';
     const rows = D.domains.slice().sort((a, b) => a.accuracy - b.accuracy).map(d => {
       const weak = d.accuracy > 0 && d.accuracy < 60;
       return `<div class="dom-row">
           <div class="dl"><span class="obj mono">${d.num}</span><span class="txt">${esc(d.name)}</span></div>
           <div class="dm mono">${d.accuracy > 0 ? d.accuracy + '%' : '—'}</div>
           <div class="dom-bar"><i data-d="${d.idx}" data-w="${d.accuracy}" style="width:0"></i></div>
-          <div class="dom-meta">${d.questions} questions · ${d.weight}% of exam${weak ? ' · <span class="flag">weakest, drill here</span>' : ''}</div>
+          <div class="dom-meta">${d.questions} questions · ${est ? 'about ' : ''}${d.weight}% of exam${weak ? ' · <span class="flag">weakest, drill here</span>' : ''}</div>
         </div>`;
     }).join('');
-    return `<div class="tile s-domains"><div class="tile-eyebrow">Mastery by domain <span class="count">${D.domains.length} domains · worst first</span></div><div class="dom-list">${rows}</div></div>`;
+    return `<div class="tile s-domains"><div class="tile-eyebrow">Mastery by domain <span class="count">${D.domains.length} domains · ${est ? 'estimated weights' : 'worst first'}</span></div><div class="dom-list">${rows}</div>${est ? `<p class="dom-meta dom-note">${esc(est)} doesn’t publish how the exam splits across topics. These weights are our estimate.</p>` : ''}</div>`;
   }
 
   function _anaBtStreak(D) {
@@ -2509,7 +2513,7 @@
       const pass = e.score >= PASS;
       return `<div class="exam-row">
           <div><div class="el">${esc(e.label)} #${D.examHistory.length - i}</div><div class="ed mono">${esc(e.date)} · ${e.questions}q</div></div>
-          <div class="es ${pass ? 'pass' : ''} mono">${e.score}</div>
+          <div class="es ${pass ? 'pass' : ''} mono">${formatExamScore(e.score)}</div>
           <div class="exam-bar"><i class="${pass ? 'pass' : ''}" data-w="${(e.pct).toFixed(0)}" style="width:0"></i></div>
         </div>`;
     }).join('');

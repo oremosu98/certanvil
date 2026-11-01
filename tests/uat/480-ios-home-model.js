@@ -21,7 +21,7 @@ const { _fnBody, js, results, test, vm } = require('./_context');
         DOMAIN_LABELS: { concepts: 'Networking Concepts', implementation: 'Network Implementation' },
         TOPIC_DOMAINS: { 'Ethernet Basics': 'concepts', 'VLANs': 'implementation' },
         localStorage: { getItem: k => (k in store ? store[k] : null) },
-        window: { _certanvilSignedIn: o.signedIn !== false },
+        window: (() => { const w = { _certanvilSignedIn: o.signedIn !== false }; w.window = w; vm.runInContext(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'lib', 'cert-registry.js'), 'utf8'), vm.createContext(w)); return w; })(),
         document: { documentElement: { classList: { contains: c => c === 'is-native' && !!o.native } } },
         loadHistory: () => o.history || [],
         isHistorySplitRow: e => !!(e && e.via),

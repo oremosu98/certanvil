@@ -49,6 +49,25 @@ window.CERT_PACKS.ai900 = {
     'foundry': 'Implement AI Solutions with Microsoft Foundry'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'concepts': [
+        { label: 'Responsible AI',        key: 'Responsible AI Principles' },
+        { label: 'How GenAI Works',       key: 'How Generative AI Models Work' },
+        { label: 'Deployment & Params',   key: 'Model Deployment & Parameters' },
+        { label: 'Agentic Scenarios',     key: 'Generative & Agentic AI Scenarios' },
+        { label: 'Text Analysis',         key: 'Text Analysis Techniques' },
+      ],
+      'foundry': [
+        { label: 'Prompts',               key: 'Prompt Engineering (System & User Prompts)' },
+        { label: 'SDK Chat Clients',      key: 'Foundry SDK Chat Clients' },
+        { label: 'Agents',                key: 'Building Single Agents in Foundry' },
+        { label: 'Multimodal Vision',     key: 'Visual Input with Multimodal Models' },
+        { label: 'Content Understanding', key: 'Content Understanding: Documents & Forms' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (24 topics across the 7 official skill groups) ─────
   topicDomains: {
     'Responsible AI Principles': 'concepts',

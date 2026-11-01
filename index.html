@@ -32,6 +32,8 @@
 <link rel="preload" as="style" href="styles.css">
 <!-- ADR-004: inside the iOS app this marks html.is-native and wires native links/haptics; a no-op on the website -->
 <script src="native-shell.js"></script>
+<!-- Cert registry: the one shared cert list (window.CertRegistry). Must load before the inline cert-detection IIFE below. -->
+<script src="lib/cert-registry.js"></script>
 <!-- v7.81.0 P0b: Fraunces self-hosted. Preload latin subset (covers all
      English content); latin-ext and vietnamese load on-demand by the
      @font-face unicode-range rules. Kills the 794ms Google Fonts render-
@@ -108,8 +110,8 @@
      cascade + de-card primitives + bento home layout) extracted to
      dg-critical.css (~63KB vs 450KB). dg-system.css loads after first paint
      for analytics/progress/quiz/sim-lab reskins. -->
-<link rel="stylesheet" href="dg-system.css?v=8.204.0-d15" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d15"></noscript>
+<link rel="stylesheet" href="dg-system.css?v=8.204.0-d17" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="dg-system.css?v=8.204.0-d17"></noscript>
 <!-- v7.81.0 P1a: dg-depurple.css demoted to non-blocking. It is supplemental
      purple-reduction theming layered on top of dg-system.css tokens; zero
      layout rules. The media=print swap pattern defers it off the critical
@@ -142,7 +144,7 @@
 <link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="print" onload="this.media='(max-width: 899px)'">
 <noscript><link rel="stylesheet" href="lift-screens.css?v=8.182.0" media="(max-width: 899px)"></noscript>
 <!-- v8.183.0 Lift A: E2E tokens + phone-only containers (iOS June design). Phone width only. -->
-<link rel="stylesheet" href="lift-ios.css?v=8.204.1.2" media="(max-width: 899px)">
+<link rel="stylesheet" href="lift-ios.css?v=8.204.1.3" media="(max-width: 899px)">
 <script>
 // v4.87.0: Inline cert detection — runs synchronously before <body>
 // renders so the right banner shows on first paint (no Network+ → Security+
@@ -161,70 +163,14 @@
 // window.CERT_PACKS.<cert> populated synchronously).
 (function() {
   var cert = null;
-  // v7.2.2 Pattern A subdomain detection — hostname WINS over any localStorage
-  // override for known cert subdomains. Mirrors detectCert() in app.js (v7.2.1).
-  // Pre-v7.2.2 the only host check was a `secplus-` prefix (Vercel preview only);
-  // production `secplus.certanvil.com` fell through to localStorage and
-  // document.wrote netplus.js when a stale `nplus_dev_cert='netplus'` was set
-  // (from a prior ?cert= entry-point handoff). The Sec+ cert pack therefore
-  // never loaded on its own subdomain — visible content rendered as Net+ + the
-  // domain-grid / Progress / Analytics surfaces broke once v7.2.1 fixed
-  // detectCert() (because CURRENT_CERT='secplus' but CERT_PACKS.secplus was
-  // never populated by the missing certs/secplus.js script).
-  // v7.3.0 — extended with the third cert AZ-900 on azure.certanvil.com
-  // (Pattern A; founder lock 2026-05-26 — future Azure certs share this
-  // same subdomain via internal cert-switcher, NOT new subdomains).
+  // Cert resolution is CertRegistry.resolve() (lib/cert-registry.js, loaded just above): the same call detectCert()
+  // in app.js and getActiveCertId() in auth-state.js make, so the three cannot drift (the v7.2.2 lesson).
+  // Registry missing (stale cached page): netplus.
   try {
-    if (typeof location !== 'undefined' && location.hostname) {
-      var host = location.hostname;
-      if (host.indexOf('secplus.') === 0 || host.indexOf('secplus-') === 0 || host === 'secplus.certanvil.com') {
-        cert = 'secplus';
-      } else if (host.indexOf('networkplus.') === 0 || host.indexOf('networkplus-') === 0 || host === 'networkplus.certanvil.com') {
-        cert = 'netplus';
-      } else if (host.indexOf('azure.') === 0 || host.indexOf('azure-') === 0 || host === 'azure.certanvil.com') {
-        cert = 'az900';
-      } else if (host.indexOf('ai.') === 0 || host.indexOf('ai-') === 0 || host === 'ai.certanvil.com') {
-        cert = 'ai900'; // v7.5.0 — fourth cert AI-900 (Pattern A, founder lock 2026-05-27)
-      } else if (host.indexOf('sc900.') === 0 || host.indexOf('sc900-') === 0 || host === 'sc900.certanvil.com') {
-        cert = 'sc900'; // v7.7.0 — sixth cert SC-900 (Pattern A, founder lock 2026-05-28); single-exam, cert-code-named to avoid Security+ (secplus.) collision
-      } else if (host.indexOf('clfc02.') === 0 || host.indexOf('clfc02-') === 0 || host === 'clfc02.certanvil.com') {
-        cert = 'clfc02'; // v7.8.0 — seventh cert AWS Cloud Practitioner CLF-C02 (Pattern A, founder lock 2026-05-29); single-exam, AWS vendor (third vendor)
-      } else if (host.indexOf('aplus.') === 0 || host.indexOf('aplus-') === 0 || host === 'aplus.certanvil.com') {
-        // v7.6.0 — fifth cert family CompTIA A+ (Core 1 220-1201 + Core 2
-        // 220-1202) SHARE aplus.certanvil.com. Resolve the active EXAM here so
-        // the CORRECT cert pack is document.written synchronously — the v7.2.2
-        // lesson: the inline IIFE + detectCert() MUST agree on the cert, else
-        // CERT_PACK is null. Priority: ?exam=/?cert= deep-link param →
-        // localStorage override (the in-app Core 1/Core 2 switcher) → Core 1.
-        cert = 'aplus-core1';
-        try {
-          var aq = new URL(location.href);
-          var ex = (aq.searchParams.get('exam') || '').toLowerCase().trim();
-          var cq = (aq.searchParams.get('cert') || '').toLowerCase().trim();
-          if (ex === 'core2' || cq === 'aplus-core2') {
-            cert = 'aplus-core2';
-          } else if (ex === 'core1' || cq === 'aplus-core1') {
-            cert = 'aplus-core1';
-          } else if (typeof localStorage !== 'undefined') {
-            var aDev = localStorage.getItem('nplus_dev_cert');
-            if (aDev === 'aplus-core2') cert = 'aplus-core2';
-            else if (aDev === 'aplus-core1') cert = 'aplus-core1';
-          }
-        } catch (e) {}
-      }
-    }
-  } catch (e) { /* not in browser */ }
-  // Only consult localStorage when Pattern A subdomain didn't match
-  // (root certanvil.com + localhost — preserves dev override).
-  if (!cert) {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        var dev = localStorage.getItem('nplus_dev_cert');
-        if (dev === 'secplus' || dev === 'netplus' || dev === 'az900' || dev === 'ai900'
-            || dev === 'aplus-core1' || dev === 'aplus-core2' || dev === 'sc900' || dev === 'clfc02') cert = dev;
-      }
-    } catch (e) { /* localStorage may be blocked */ }
-  }
+    var dev = null;
+    try { dev = localStorage.getItem('nplus_dev_cert'); } catch (e) { /* localStorage may be blocked */ }
+    cert = window.CertRegistry.resolve({ hostname: location.hostname, search: location.search, override: dev });
+  } catch (e) { cert = null; }
   if (!cert) cert = 'netplus';
   document.documentElement.setAttribute('data-cert', cert);
   // v7.89.0 (Lighthouse-90 TASK 1): #cb-cert (the bento command-bar cert
@@ -238,43 +184,22 @@
   // would be wrong on 6 of 7 domains, so compute the correct markup HERE
   // (cert is already resolved above) and let the tiny inline <script> next
   // to #cb-cert assign it synchronously at parse time — no network/deferred
-  // JS wait, no reflow. Table mirrors each certs/*.js meta.name (vendor
-  // prefix stripped, see renderBentoTopbar) + meta.code; keep in sync if a
-  // cert is added.
+  // JS wait, no reflow. Name + code come from the registry.
   try {
-    var CB_CERT_META = {
-      netplus:       ['Network+', 'N10-009'],
-      secplus:       ['Security+', 'SY0-701'],
-      az900:         ['Azure Fundamentals', 'AZ-900'],
-      ai900:         ['Azure AI Fundamentals', 'AI-901'],  // v8.120: AI-900 retired → AI-901 (id kept)
-      sc900:         ['SC-900', 'SC-900'],
-      clfc02:        ['Cloud Practitioner', 'CLF-C02'],
-      'aplus-core1': ['A+ Core 1', '220-1201'],
-      'aplus-core2': ['A+ Core 2', '220-1202']
-    };
-    var cbv = CB_CERT_META[cert] || CB_CERT_META.netplus;
-    window._cbCertHtml = cbv[0] + ' <b>' + cbv[1] + '</b>';
+    var cbe = window.CertRegistry.get(cert);
+    // Same vendor strip as renderBentoTopbar() in features/home.js.
+    window._cbCertHtml = cbe.name.replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, '') + ' <b>' + cbe.code + '</b>';
+    // Domain count drives dg-system.css: the static home grid has 5 domain slots and the CSS hides slots past this count.
+    // Same try: if the registry is missing the attribute stays unset, nothing is hidden, and the cert is the Net+ fallback
+    // (5 domains), so the full grid is correct.
+    document.documentElement.setAttribute('data-domain-count', String(window.CertRegistry.get(cert).domainCount));
   } catch (e) {}
   // v4.87.3: CertAnvil-prefixed cert-aware page title. Bookmarked tabs
   // show "CertAnvil — Network+" / "CertAnvil — Security+" so the parent
   // brand is visible alongside the active cert pack.
   // v7.3.0: AZ-900 branch added for "CertAnvil — Azure Fundamentals".
   try {
-    document.title = (cert === 'secplus')
-      ? 'CertAnvil · Security+'
-      : (cert === 'az900')
-        ? 'CertAnvil · Azure Fundamentals'
-        : (cert === 'ai900')
-          ? 'CertAnvil · Azure AI Fundamentals'
-          : (cert === 'sc900')
-            ? 'CertAnvil · SC-900'
-            : (cert === 'clfc02')
-              ? 'CertAnvil · AWS Cloud Practitioner'
-            : (cert === 'aplus-core1')
-              ? 'CertAnvil · A+ Core 1'
-              : (cert === 'aplus-core2')
-                ? 'CertAnvil · A+ Core 2'
-                : 'CertAnvil · Network+';
+    document.title = 'CertAnvil · ' + window.CertRegistry.get(cert).name.replace(/^(CompTIA|Microsoft)\s+/, '');
   } catch (e) {}
   // v7.81.0 P0a: cert pack moved to end-of-body (no longer blocks <head>).
   // Save URL so the end-of-body injection script can reference it without
@@ -482,7 +407,7 @@
         <div class="card readiness-card" id="readiness-card-v2">
           <div class="readiness-eyebrow">Exam readiness &middot; scaled 100-900</div>
           <div class="readiness-strip-line" aria-hidden="false"><span id="rc-strip-text">Readiness</span><span class="readiness-strip-go" aria-hidden="true">›</span></div>
-          <div class="readiness-score"><span class="rc-v2-numwrap"><span class="rc-v2-glow" aria-hidden="true"></span><svg class="rc-v2-ring" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true"><path d="M306,26 C470,16 590,86 582,164 C574,250 432,300 292,296 C150,292 20,232 24,156 C28,78 152,30 318,32" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span id="rc-v2-num">&mdash;</span></span><span>out of 900</span></div>
+          <div class="readiness-score"><span class="rc-v2-numwrap"><span class="rc-v2-glow" aria-hidden="true"></span><svg class="rc-v2-ring" viewBox="0 0 600 320" preserveAspectRatio="none" aria-hidden="true"><path d="M306,26 C470,16 590,86 582,164 C574,250 432,300 292,296 C150,292 20,232 24,156 C28,78 152,30 318,32" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path></svg><span id="rc-v2-num">--</span></span><span>out of 900</span></div>
           <div class="readiness-tier" id="rc-v2-tier" hidden></div>
           <!-- v7.86.0 (Lighthouse-90 TASK 1/CLS): rc-v2-prediction + rc-v2-trajectory
                used to ship `hidden` (display:none) and get unhidden post-load by
@@ -964,7 +889,7 @@
     <span class="hero-icon">&#9889;</span>
     <h1>Network+ AI Quiz</h1>
     <p>AI-generated MCQs every session. Never the same quiz twice.</p>
-    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.205.2</span>
+    <span id="version-badge" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--accent-light);background:color-mix(in oklab,var(--accent) 12%,transparent);border:1px solid color-mix(in oklab,var(--accent) 30%,transparent);padding:3px 10px;border-radius:99px;cursor:default;user-select:none">v8.206.0</span>
     <div id="streak-badge" class="streak-badge"></div>
     <div id="stats-card" class="hero-stats-strip is-hidden">
       <div class="stats-grid" id="stats-grid"></div>
@@ -974,7 +899,7 @@
     <h3 style="margin-bottom:10px">EXAM READINESS</h3>
     <div class="readiness-top">
       <div class="readiness-score-block">
-        <span class="readiness-num" id="readiness-num">&#8212;</span>
+        <span class="readiness-num" id="readiness-num">--</span>
         <span class="readiness-denom">/ 900</span>
       </div>
       <span class="readiness-badge" id="readiness-badge"></span>
@@ -1065,7 +990,7 @@
     </div>
     <div class="pass-plan-ci-band">
       <div class="pass-plan-ci-row"><span>Pass probability range</span><span id="pass-plan-prob-range">—</span></div>
-      <div class="pass-plan-ci-row"><span>Predicted score</span><span id="pass-plan-predicted-score">—</span></div>
+      <div class="pass-plan-ci-row"><span>Predicted score</span><span id="pass-plan-predicted-score">--</span></div>
       <div class="pass-plan-ci-row"><span>Data confidence</span><span id="pass-plan-data-confidence">—</span></div>
       <div class="pass-plan-confidence-ladder" id="pass-plan-confidence-ladder">
         <div class="pass-plan-ladder-tier" data-tier="low">Low</div>
@@ -1306,7 +1231,7 @@
     <div class="results-v2-hero">
       <div class="results-v2-big">
         <div class="results-v2-big-label">Scaled Score &middot; CompTIA N10-009</div>
-        <div class="results-v2-big-score"><span id="r-v2-score">&mdash;</span><em>/ 900</em></div>
+        <div class="results-v2-big-score"><span id="r-v2-score">--</span><em>/ 900</em></div>
         <div class="results-v2-verdict" id="r-v2-verdict">&uarr; Pass mark cleared &middot; 720</div>
       </div>
       <aside class="results-v2-side">
@@ -1885,6 +1810,7 @@
           <!-- Populated by syncSettingsExamDate() on every Settings page visit -->
         </div>
         <p class="settings-section-hint">Powers the <strong>days until exam</strong> countdown on Home + Analytics, and the red marker cell on the 365-day study heatmap. Set it to keep your study pressure honest.</p>
+        <p class="settings-section-hint" id="settings-cert-legal" hidden></p>
       </section>
       <!-- v4.54.10: editable daily question goal.
            v7.42.0 GAP-3: pro-locked for free users (mockup cert-ios-settings

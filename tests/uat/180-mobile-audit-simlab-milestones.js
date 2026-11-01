@@ -164,8 +164,9 @@ const {
     html.includes('id="page-decision-lab-entry"') && html.includes('id="page-decision-lab-result"'));
   test('v7.59 Decision Lab: runner page + Home tile present in index.html',
     html.includes('id="page-decision-lab"') && html.includes('id="dl-home-opt"'));
-  test('v7.59 Decision Lab: _DL_CERTS allowlist defined (engine + app gate)',
-    js.includes("_DL_CERTS = ['az900', 'ai900', 'sc900', 'clfc02']"));  // v8.126.0: ai900 back with the AI-901 rebuild
+  test('v7.59 Decision Lab: the allowlist is the registry decisionLab flag (engine keeps its own copy)',   // v8.126.0: ai900 back with the AI-901 rebuild; Task 1.4 moved the app gate to the registry
+    (() => { const c = require('vm').createContext({ window: {} }); c.window.window = c.window; require('vm').runInContext(read('lib/cert-registry.js'), c);
+      return c.window.CertRegistry.all().filter((e) => e.decisionLab).map((e) => e.id).join() === 'az900,ai900,sc900,clfc02'; })());
   test('v7.59 Decision Lab: _dlBank + shared _seedBank resolver defined',
     js.includes('function _dlBank(') && js.includes('function _seedBank('));
   test('v7.59 Decision Lab: per-option why render path (_dlGradeAnalyze) defined',
@@ -177,8 +178,8 @@ const {
     js.includes('Exam-style mode is Pro') &&
     js.includes('The full 20-decision set is Pro') &&
     js.includes("That's today's free set"));
-  test('v7.59 Decision Lab: Home tile gated to _DL_CERTS in app.js',
-    js.includes('function renderDecisionLabHomeEntry(') && js.includes("_DL_CERTS.indexOf(window.CURRENT_CERT)"));
+  test('v7.59 Decision Lab: Home tile gated to the registry decisionLab flag in app.js',
+    js.includes('function renderDecisionLabHomeEntry(') && /_re\.decisionLab/.test(js));
   test('v7.59 Decision Lab: verdict + sorter markers present in css',
     dgCss.includes('.dl-confrow') && dgCss.includes('.dl-srv-sel') && dgCss.includes('.dl-graded'));
   test('v7.59 Decision Lab: pricing carries the Decision Lab Pro bullet',

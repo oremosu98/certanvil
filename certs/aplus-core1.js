@@ -111,6 +111,46 @@ window.CERT_PACKS['aplus-core1'] = {
     'troubleshooting-hw-net':   'Hardware & Network Troubleshooting'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'mobile-devices': [
+        { label: 'Mobile Hardware',       key: 'Mobile Device Hardware & Replacement' },
+        { label: 'Connectivity',          key: 'Mobile Accessories & Connectivity' },
+        { label: 'Network Connectivity',  key: 'Mobile Network Connectivity' },
+        { label: 'MDM',                   key: 'Mobile Device Management (MDM)' },
+        { label: 'Synchronization',       key: 'Mobile Synchronization' },
+      ],
+      'networking': [
+        { label: 'Ports & Protocols',     key: 'Ports & Protocols' },
+        { label: 'Wireless Standards',    key: 'Wireless Networking Standards' },
+        { label: 'DNS Records',           key: 'DNS Records & Configuration' },
+        { label: 'Network Hardware',      key: 'Networking Hardware Devices' },
+        { label: 'SOHO Config',           key: 'SOHO Network Configuration' },
+      ],
+      'hardware': [
+        { label: 'RAID',                  key: 'RAID Configurations' },
+        { label: 'Storage Devices',       key: 'Storage Devices' },
+        { label: 'Motherboards',          key: 'Motherboards & Form Factors' },
+        { label: 'Printer Config',        key: 'Printers — Deploy & Configure' },
+        { label: 'Printer Maintenance',   key: 'Printer Maintenance' },
+      ],
+      'virt-cloud': [
+        { label: 'Virtualization',        key: 'Virtualization Concepts' },
+        { label: 'Service Models',        key: 'Cloud Service Models' },
+        { label: 'Deployment Models',     key: 'Cloud Deployment Models' },
+        { label: 'Cloud Characteristics', key: 'Cloud Characteristics' },
+        { label: 'Containers & VDI',      key: 'Containers & VDI' },
+      ],
+      'troubleshooting-hw-net': [
+        { label: 'Methodology',           key: 'Troubleshooting Methodology' },
+        { label: 'Drives & RAID',         key: 'Troubleshoot Drives & RAID' },
+        { label: 'Mobile Issues',         key: 'Troubleshoot Mobile Device Issues' },
+        { label: 'Network Issues',        key: 'Troubleshoot Network Issues' },
+        { label: 'Printer Issues',        key: 'Troubleshoot Printer Issues' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (46 topics across 5 Core 1 domains) ────────────────
   // Topic name = primary key everywhere; domain key is one of: mobile-devices /
   // networking / hardware / virt-cloud / troubleshooting-hw-net.

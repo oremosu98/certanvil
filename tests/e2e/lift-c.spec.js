@@ -141,12 +141,15 @@ for (const vp of PHONES) {
     });
     test("the score shows the cert's scale", async ({ page }) => {
       await openCheck(page, vp);
-      await page.evaluate(() => { CERT_PACK.meta.examMaxScore = 1000; CERT_PACK.meta.examPassScore = 700; CERT_PACK.meta.examMinScore = 1; });
+      // The legend reads the registry's scale for the active cert (the pack meta is only a fallback), so give the
+      // registry a 1-1000 / pass 700 scale, as the Microsoft certs have, and the legend must follow it.
+      await page.evaluate(() => { const R = window.CertRegistry, real = R.scale.bind(R); R.scale = (id) => (id === CURRENT_CERT ? { min: 1, max: 1000, pass: 700, format: 'scaled' } : real(id)); });
       await answerAll(page, 5);
       const chk = page.locator('#ios-check');
       await expect(chk).toContainText('Your starting point');
       await expect(chk).toContainText('/ 1000 readiness');
       await expect(chk).toContainText('Pass 700');
+      await expect(chk.locator('.ifr-legend')).toHaveText(/^1\s*Pass 700\s*1000$/);
       await expect(chk).not.toContainText('See how readiness works');
     });
     test('Start practising starts a quiz (not just Home) and records no skip', async ({ page }) => {

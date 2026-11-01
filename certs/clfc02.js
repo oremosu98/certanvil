@@ -90,6 +90,39 @@ window.CERT_PACKS.clfc02 = {
     'billing-pricing-support': 'Billing, Pricing & Support'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'cloud-concepts': [
+        { label: 'Cloud Benefits',        key: 'Benefits of the AWS Cloud' },
+        { label: 'Well-Architected',      key: 'Well-Architected Framework' },
+        { label: 'Sustainability',        key: 'Sustainability Pillar' },
+        { label: 'Migration (7 Rs)',      key: 'Cloud Migration Strategies (7 Rs)' },
+        { label: 'Cloud Economics',       key: 'Cloud Economics' },
+      ],
+      'security-compliance': [
+        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
+        { label: 'IAM',                   key: 'IAM Users, Groups & Roles' },
+        { label: 'Organizations',         key: 'AWS Organizations' },
+        { label: 'GuardDuty',             key: 'Amazon GuardDuty' },
+        { label: 'KMS & Encryption',      key: 'AWS KMS & Encryption' },
+      ],
+      'cloud-tech-services': [
+        { label: 'Global Infra',          key: 'AWS Global Infrastructure' },
+        { label: 'EC2',                   key: 'Amazon EC2 & Instance Types' },
+        { label: 'S3 Classes',            key: 'Amazon S3 Storage Classes' },
+        { label: 'RDS/Aurora',            key: 'Relational Databases (RDS/Aurora)' },
+        { label: 'VPC/Route 53/CDN',      key: 'Networking (VPC/Route 53/CloudFront)' },
+      ],
+      'billing-pricing-support': [
+        { label: 'Pricing Models',        key: 'EC2 Pricing Models' },
+        { label: 'Support Plans',         key: 'AWS Support Plans' },
+        { label: 'Trusted Advisor',       key: 'AWS Trusted Advisor & Compute Optimizer' },
+        { label: 'Billing & Budgets',     key: 'Consolidated Billing & Budgets' },
+        { label: 'Free Tier',             key: 'AWS Free Tier & Pricing Calculator' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (54 topics across 4 CLF-C02 domains) ──────────────
   // Drives weak-spot routing, exemplar bank picker, lottery, readiness domain
   // attribution. Topic name = primary key everywhere; domain key is one of:

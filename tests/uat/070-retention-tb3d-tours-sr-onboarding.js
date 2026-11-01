@@ -1375,7 +1375,7 @@ test('onb gate: firstrun writes activation (baseline+moved) and skip record',
   (() => { const f = read('lib/onboarding-firstrun.js'); return /function\s+writeActivation/.test(f) && /function\s+recordSkip/.test(f) && /baseline:\s*real\.calibScore/.test(f) && /nplus_onb_skips/.test(f); })());
 // ── Free-tier cert lock ───────────────────────────────────────────────────────
 test('cert-lock: router.certHost maps all 8 certs + defaults to networkplus',
-  (() => { const r = read('lib/router.js'); return /CERT_HOST\s*=/.test(r) && /aplus\.certanvil\.com\/\?exam=core2/.test(r) && /certHost:\s*certHost/.test(r); })());
+  (() => { const r = read('lib/router.js'); return /CertRegistry/.test(r) && /'\?exam=' \+ e\.examSlug/.test(r) && /networkplus\.certanvil\.com/.test(r) && /certHost:\s*certHost/.test(r); /* 543 runs it for all 8 certs */ })());
 test('cert-lock: module exposes _certLock.check + claimIfUnset, fails open',
   (() => { const c = read('lib/cert-lock.js'); return /window\._certLock\s*=\s*\{\s*check/.test(c) && /claimIfUnset/.test(c) && /fail open/i.test(c); })());
 test('cert-lock: gate exempts pro/admin + anonymous, walls wrong cert',
