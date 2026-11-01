@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>CertAnvil · Payments (concept)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;650;700;800&display=swap" rel="stylesheet" />
+<style>
+/* ════════════════════════════════════════════════════════════════════════
+   CertAnvil · MOCKUP STARTER TOKEN BLOCK
+   ────────────────────────────────────────────────────────────────────────
+   Copy this into the <style> of every new mockup. Do NOT eyeball hex —
+   freehand token blocks are how the 2026-06-12 Gauntlet-mockup drift
+   happened (accent pulled 9-19° toward gold, Tailwind pass/fail greens).
+   Values = BRAND.md §3 / live dg-system.css. Audit trail:
+   mockups branch audit-workspace/brand-audit.md.
+
+   Reminders that pair with this block (BRAND.md §4-§9):
+   · easing is ONLY cubic-bezier(0.16, 1, 0.3, 1); entrances start
+     scale(0.96-0.98); hover gated (hover:hover) and (pointer:fine)
+   · Fraunces numbers: font-variant-numeric: lining-nums tabular-nums;
+     font-feature-settings: "lnum","tnum";
+   · eyebrows: Inter 800, 10-11px, tracking 0.08-0.14em (never more)
+   · shadows/tints: color-mix(in oklab, var(--ink) N%, transparent) —
+     never rgba()/hex on chrome
+   · no emoji decoration (semantic ✓ ✗ → only) · no em dashes in copy
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── App-surface mockups (dual theme; --accent-deep = text-accent role) ── */
+:root, [data-theme="dark"] {
+  --bg: oklch(0.17 0.008 275); --surface: oklch(0.205 0.009 275); --surface-2: oklch(0.23 0.009 275);
+  --ink: oklch(0.96 0.006 275); --ink-soft: oklch(0.80 0.012 275); --muted: oklch(0.725 0.013 275);
+  --border: oklch(0.32 0.011 275); --border-soft: oklch(0.255 0.010 275);
+  --accent: oklch(0.80 0.155 64); --accent-deep: oklch(0.86 0.135 64); --on-accent: oklch(0.18 0.020 275);
+  --pass: oklch(0.74 0.150 152); --fail: oklch(0.66 0.17 25);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] {
+  --bg: oklch(0.975 0.007 85); --surface: oklch(0.992 0.004 85); --surface-2: oklch(0.965 0.010 84);
+  --ink: oklch(0.22 0.015 280); --ink-soft: oklch(0.36 0.014 280); --muted: oklch(0.50 0.013 280);
+  --border: oklch(0.86 0.008 85); --border-soft: oklch(0.91 0.006 85);
+  --accent: oklch(0.50 0.155 55); --accent-deep: oklch(0.42 0.150 52); --on-accent: oklch(0.985 0.010 85);
+  --pass: oklch(0.50 0.15 150); --fail: oklch(0.52 0.19 25);
+}
+/* --warn is the only token this mockup adds, taken verbatim from BRAND.md §3. */
+:root, [data-theme="dark"] { --warn: oklch(0.80 0.130 75); }
+[data-theme="light"] { --warn: oklch(0.62 0.14 70); }
+
+/* ════════ Motion tokens (BRAND.md §6, re-timed; transitions.dev choreography only) ════════
+   press 160ms · hover/lift 200ms · swap 220ms · overlay/toast 380ms · surface reveal 520ms   */
+:root {
+  --t-press: 160ms; --t-lift: 200ms; --t-swap: 220ms; --t-ov: 380ms; --t-reveal: 520ms; --t-exit: 200ms;
+  --scrim: color-mix(in oklab, oklch(0.14 0.012 275) 52%, transparent);
+  --shadow-lg: 0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent), 0 18px 40px -16px color-mix(in oklab, var(--ink) 22%, transparent);
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: light dark; }
+[data-theme="dark"] { color-scheme: dark; } [data-theme="light"] { color-scheme: light; }
+body { margin: 0; background: color-mix(in oklab, var(--bg) 92%, var(--ink)); color: var(--ink);
+  font: 15px/1.55 Inter, -apple-system, BlinkMacSystemFont, sans-serif; -webkit-font-smoothing: antialiased; }
+button, input, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+.num { font-family: Fraunces, Georgia, serif; font-variant-numeric: lining-nums tabular-nums; font-feature-settings: "lnum", "tnum"; }
+.eyebrow { display: block; font: 800 11px/1.2 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-deep); }
+.eyebrow.dim { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ════════ HUD (harness chrome, not part of the product) ════════ */
+.hud { position: sticky; top: 0; z-index: 30; padding: 16px 24px 12px;
+  background: color-mix(in oklab, var(--bg) 90%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-soft); }
+.hud-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; max-width: 1480px; margin: 0 auto; }
+.hud-title { font: 600 22px/1.15 Fraunces, Georgia, serif; letter-spacing: -.012em; margin: 4px 0 0; }
+.hud-ctrl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.hud-rows { max-width: 1480px; margin: 12px auto 0; display: grid; gap: 8px; }
+.hud-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.hud-row .lbl { font: 800 10px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); width: 64px; flex: none; }
+.chip { appearance: none; border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px;
+  min-height: 36px; padding: 0 14px; font: 650 12.5px/1 Inter, sans-serif; cursor: pointer; transition: transform var(--t-press) var(--ease); }
+.chip b { font-weight: 800; color: var(--muted); margin-right: 6px; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip[aria-pressed="true"] b { color: inherit; opacity: .75; }
+.chip:active { transform: scale(.97); }
+.hud-note { max-width: 1480px; margin: 10px auto 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+.hud-note b { color: var(--ink-soft); }
+
+/* ════════ Stage + frames ════════ */
+.stage { max-width: 1480px; margin: 0 auto; padding: 28px 24px 80px; }
+.frames { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; align-items: flex-start; }
+.fr { margin: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.fr figcaption { font: 700 11px/1 Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+/* desktop browser window */
+.win { width: 1000px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: var(--bg); box-shadow: var(--shadow-lg); }
+.win-bar { height: 40px; display: flex; align-items: center; gap: 14px; padding: 0 14px; background: var(--surface-2); border-bottom: 1px solid var(--border-soft); }
+.dots { display: inline-flex; gap: 7px; } .dots i { width: 11px; height: 11px; border-radius: 99px; background: var(--border); display: block; }
+.url { flex: 1; max-width: 460px; margin: 0 auto; height: 26px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border-soft);
+  display: flex; align-items: center; justify-content: center; gap: 6px; font: 500 12px/1 Inter, sans-serif; color: var(--muted); }
+.url svg { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.2; }
+.view { position: relative; overflow: hidden; background: var(--bg); color: var(--ink); }
+.win .view { height: 740px; }
+.scroller { height: 100%; overflow-y: auto; overscroll-behavior: contain; container-type: inline-size; }
+.scroller::-webkit-scrollbar { width: 0; }
+/* phones */
+.phone { width: 390px; height: 844px; border-radius: 52px; padding: 11px; flex: none;
+  background: linear-gradient(165deg, #23262f, #0c0d11); box-shadow: 0 40px 90px -34px rgba(0,0,0,0.55), 0 0 0 1.5px rgba(255,255,255,0.06) inset; }
+.screen { width: 100%; height: 100%; border-radius: 42px; overflow: hidden; position: relative; background: var(--bg); color: var(--ink); display: flex; flex-direction: column;
+  --safe-top: 47px; --safe-bottom: 34px; /* simulated env(safe-area-inset-*) for a 390pt iPhone */ }
+.notch { position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 122px; height: 32px; background: #07080b; border-radius: 18px; z-index: 9; }
+.statusbar { flex: none; height: var(--safe-top); display: flex; align-items: center; justify-content: space-between; padding: 4px 28px 0; font: 700 14px/1 Inter, sans-serif; }
+.sb-ic { display: inline-flex; gap: 5px; } .sb-ic i { display: block; width: 17px; height: 10px; border-radius: 3px; background: currentColor; opacity: .85; }
+.homebar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 134px; height: 5px; border-radius: 99px; background: var(--ink); opacity: .85; z-index: 9; }
+.screen .view { flex: 1; min-height: 0; }
+.safari { flex: none; padding: 6px 14px 8px; background: var(--surface-2); border-bottom: 1px solid var(--border-soft); }
+.safari .url { max-width: none; height: 34px; border-radius: 11px; font-size: 13px; }
+
+/* ════════ Buttons (press = scale .97; hover tint = opacity layer, so only transform + opacity move) ════════ */
+.btn { position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 20px; border-radius: 12px; border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
+  font: 650 15px/1 Inter, sans-serif; transition: transform var(--t-press) var(--ease); }
+.btn::after { content: ""; position: absolute; inset: 0; z-index: -1; background: currentColor; opacity: 0; transition: opacity var(--t-lift) var(--ease); }
+@media (hover: hover) and (pointer: fine) { .btn:not([disabled]):hover::after { opacity: .07; } }
+.btn:active:not([disabled]) { transform: scale(.97); }
+.btn:focus-visible { outline: 2px solid color-mix(in oklab, var(--accent) 60%, transparent); outline-offset: 2px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.btn-primary { background: var(--accent); color: var(--on-accent); box-shadow: 0 10px 22px -14px color-mix(in oklab, var(--accent) 80%, transparent); }
+.btn-primary::after { background: var(--on-accent); }
+.btn-ghost { background: transparent; color: var(--accent-deep); border-color: color-mix(in oklab, var(--accent) 36%, var(--border)); }
+.btn-quiet { background: transparent; color: var(--ink-soft); border-color: var(--border); }
+.btn-text { background: transparent; color: var(--ink-soft); border-color: transparent; font-weight: 600; }
+.btn-white { background: var(--on-accent); color: var(--accent-deep); }
+.btn-danger { background: var(--fail); color: var(--on-accent); }
+[data-theme="dark"] .btn-danger { color: oklch(0.18 0.020 275); }
+.btn-block { width: 100%; }
+.btn-sm { min-height: 44px; padding: 0 16px; font-size: 14px; border-radius: 11px; }
+.lnk { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; color: var(--accent-deep); font-weight: 650; text-decoration: underline;
+  text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: pointer; background: none; border: 0; padding: 0; }
+.lnk svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ticks list */
+.ticks { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.ticks li { display: flex; gap: 10px; align-items: flex-start; font-size: 14.5px; line-height: 1.45; color: var(--ink-soft); }
+.ticks li b { color: var(--ink); font-weight: 650; }
+.ticks svg { flex: none; width: 17px; height: 17px; margin-top: 2px; stroke: var(--accent-deep); fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 999px; font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 12%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 28%, var(--border)); }
+.pill.pass { color: var(--pass); background: color-mix(in oklab, var(--pass) 11%, transparent); border-color: color-mix(in oklab, var(--pass) 30%, var(--border)); }
+.pill.warn { color: color-mix(in oklab, var(--warn) 75%, var(--ink)); background: color-mix(in oklab, var(--warn) 14%, transparent); border-color: color-mix(in oklab, var(--warn) 36%, var(--border)); }
+.pill.dim { color: var(--muted); background: color-mix(in oklab, var(--ink) 5%, transparent); border-color: var(--border); }
+
+/* ════════ Landing chrome (certanvil.com) ════════ */
+.site-top { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 32px;
+  background: color-mix(in oklab, var(--bg) 86%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border-soft); }
+.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; min-height: 44px; }
+.mark { width: 30px; height: 30px; fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.mark .c-slash { stroke: var(--muted); stroke-width: 5; }
+.logo-name { font: 600 19px/1 Fraunces, Georgia, serif; letter-spacing: -.01em; color: var(--ink); }
+.nav { display: flex; align-items: center; gap: 4px; }
+.nav a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; font: 600 14px/1 Inter, sans-serif; color: var(--ink-soft); text-decoration: none; border-radius: 10px; }
+.nav a[aria-current="page"] { color: var(--ink); }
+.avatar { width: 34px; height: 34px; border-radius: 999px; display: grid; place-items: center; font: 700 13px/1 Inter, sans-serif; color: var(--accent-deep);
+  background: color-mix(in oklab, var(--accent) 14%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); }
+.avatar-btn { min-width: 44px; min-height: 44px; display: grid; place-items: center; }
+@container (max-width: 620px) {
+  .site-top { padding: 10px 16px; }
+  .nav a.wide { display: none; }
+}
+.site-foot { border-top: 1px solid var(--border-soft); padding: 28px 32px 36px; display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; justify-content: space-between; }
+.site-foot nav { display: flex; flex-wrap: wrap; gap: 0 18px; }
+.site-foot a { min-height: 44px; display: inline-flex; align-items: center; color: var(--ink-soft); font-size: 13.5px; text-decoration: none; }
+.site-foot small { color: var(--muted); font-size: 12.5px; }
+@container (max-width: 620px) { .site-foot { padding: 22px 16px 30px; flex-direction: column; align-items: flex-start; } }
+
+/* ════════ A · Pricing ════════ */
+.pr { max-width: 1040px; margin: 0 auto; padding: 56px 32px 36px; }
+.pr-hero { text-align: center; max-width: 640px; margin: 0 auto 30px; }
+.pr-h1 { font: 600 clamp(30px, 5cqi, 52px)/1.06 Fraunces, Georgia, serif; letter-spacing: -.025em; margin: 14px 0 0; text-wrap: balance; }
+.pr-sub { color: var(--ink-soft); font-size: 16px; line-height: 1.6; margin: 16px auto 0; max-width: 54ch; }
+.notice { display: flex; align-items: center; justify-content: center; gap: 10px; max-width: 560px; margin: 0 auto 22px; padding: 12px 16px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 14px; color: var(--ink-soft); }
+.notice svg { width: 17px; height: 17px; stroke: var(--muted); fill: none; stroke-width: 2; flex: none; }
+.launch { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin: 0 0 18px; padding: 16px 20px; border-radius: 16px;
+  background: color-mix(in oklab, var(--accent) 8%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 26%, var(--border)); }
+.launch-l { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.launch-fig { font-size: 30px; font-weight: 600; letter-spacing: -.02em; line-height: 1; color: var(--ink); }
+.launch-fig s { font-size: 19px; color: var(--muted); margin-right: 6px; text-decoration-thickness: 1.5px; }
+.launch-txt { font-size: 14.5px; color: var(--ink-soft); }
+.launch-ends { font: 650 13px/1.3 Inter, sans-serif; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 7px; }
+.launch-ends svg { width: 15px; height: 15px; stroke: var(--accent-deep); fill: none; stroke-width: 2; }
+.pr-grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 20px; align-items: stretch; }
+@container (max-width: 760px) { .pr { padding: 36px 16px 28px; } .pr-grid { grid-template-columns: 1fr; } .launch { padding: 14px 16px; } }
+.pr-pro { border-radius: 22px; padding: clamp(22px, 3.2cqi, 36px); background: var(--accent); color: var(--on-accent); display: flex; flex-direction: column;
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--ink) 4%, transparent), 0 30px 60px -30px color-mix(in oklab, var(--accent) 70%, transparent); }
+.pr-pro-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tier { font: 800 12px/1 Inter, sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .88; }
+.pr-pro .tag { font: 600 21px/1.25 Fraunces, Georgia, serif; letter-spacing: -.01em; margin: 10px 0 18px; }
+/* currency switcher */
+.cur { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: color-mix(in oklab, var(--on-accent) 14%, transparent); }
+.cur button { appearance: none; border: 0; background: transparent; cursor: pointer; min-width: 44px; height: 38px; border-radius: 999px; padding: 0 10px;
+  font: 700 13px/1 Inter, sans-serif; color: color-mix(in oklab, var(--on-accent) 80%, transparent); transition: transform var(--t-press) var(--ease); }
+.cur button[aria-checked="true"] { background: var(--on-accent); color: var(--accent-deep); }
+.cur button:active { transform: scale(.97); }
+.cur.on-surface { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+.cur.on-surface button { color: var(--muted); }
+.cur.on-surface button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
+/* plan rows (radio) */
+.plans { display: grid; gap: 10px; margin: 0; }
+.plan { position: relative; appearance: none; text-align: left; cursor: pointer; width: 100%; display: grid; grid-template-columns: 22px 1fr; gap: 3px 12px; align-items: center;
+  min-height: 64px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); transition: transform var(--t-press) var(--ease); }
+.plan:active { transform: scale(.985); }
+.plan .ring { grid-row: span 3; width: 22px; height: 22px; border-radius: 999px; border: 2px solid var(--border); position: relative; align-self: center; }
+.plan .ring::after { content: ""; position: absolute; inset: 3px; border-radius: 999px; background: var(--accent); opacity: 0; transform: scale(.96); transition: opacity var(--t-press) var(--ease), transform var(--t-press) var(--ease); }
+.plan[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.plan[aria-checked="true"] .ring { border-color: var(--accent); }
+.plan[aria-checked="true"] .ring::after { opacity: 1; transform: none; }
+.plan .p-name { font: 700 15px/1.2 Inter, sans-serif; display: flex; align-items: center; gap: 8px; }
+.plan .p-badge { font: 800 10px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px;
+  color: var(--accent-deep); background: color-mix(in oklab, var(--accent) 13%, transparent); }
+.plan .p-price { grid-column: 2; font-size: 20px; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+.plan .p-price s { color: var(--muted); font-size: 15px; margin-right: 4px; text-decoration-thickness: 1.5px; }
+.plan .p-price small { font: 600 13px/1 Inter, sans-serif; color: var(--ink-soft); letter-spacing: 0; }
+.plan .p-sub { grid-column: 2; font-size: 12.5px; line-height: 1.35; color: var(--muted); }
+.plans.on-bronze .plan { background: color-mix(in oklab, var(--on-accent) 9%, transparent); border-color: color-mix(in oklab, var(--on-accent) 26%, transparent); color: var(--on-accent); }
+.plans.on-bronze .plan[aria-checked="true"] { background: color-mix(in oklab, var(--on-accent) 17%, transparent); border-color: var(--on-accent); box-shadow: 0 0 0 1px var(--on-accent) inset; }
+.plans.on-bronze .ring { border-color: color-mix(in oklab, var(--on-accent) 50%, transparent); }
+.plans.on-bronze .plan[aria-checked="true"] .ring { border-color: var(--on-accent); }
+.plans.on-bronze .ring::after { background: var(--on-accent); }
+.plans.on-bronze .p-badge { color: var(--on-accent); background: color-mix(in oklab, var(--on-accent) 18%, transparent); }
+.plans.on-bronze .p-sub, .plans.on-bronze .p-price small, .plans.on-bronze .p-price s { color: color-mix(in oklab, var(--on-accent) 80%, transparent); }
+.renew { font-size: 13px; line-height: 1.45; color: var(--muted); margin: 10px 0 0; }
+.on-bronze-txt { color: color-mix(in oklab, var(--on-accent) 86%, transparent); }
+.pr-pro .ticks { margin: 20px 0 22px; }
+.pr-pro .ticks li { color: color-mix(in oklab, var(--on-accent) 90%, transparent); }
+.pr-pro .ticks li b { color: var(--on-accent); }
+.pr-pro .ticks svg { stroke: var(--on-accent); }
+.pr-pro .btn-white { margin-top: auto; }
+.trust { list-style: none; margin: 16px 0 0; padding: 14px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 12.5px; line-height: 1.35; font-weight: 600;
+  border-top: 1px solid color-mix(in oklab, var(--on-accent) 22%, transparent); }
+.trust li { display: flex; gap: 7px; align-items: flex-start; }
+.trust li svg { flex: none; width: 13px; height: 13px; margin-top: 1px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+@container (max-width: 420px) { .trust { grid-template-columns: 1fr; } }
+.pr-pro .trust { color: color-mix(in oklab, var(--on-accent) 84%, transparent); }
+.pr-free { border-radius: 18px; padding: clamp(22px, 2.6cqi, 30px); background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; }
+.pr-free .tier { color: var(--muted); opacity: 1; }
+.free-fig { font-size: 48px; font-weight: 600; letter-spacing: -.03em; line-height: 1; margin: 14px 0 4px; }
+.free-fig small { font: 600 14px/1 Inter, sans-serif; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+.pr-free .tag { font: 600 15px/1.4 Fraunces, Georgia, serif; color: var(--ink-soft); margin: 6px 0 16px; }
+.pr-free .ticks { margin-bottom: 22px; } .pr-free .ticks li { font-size: 14px; }
+.pr-free .btn { margin-top: auto; }
+.pr-anchor { text-align: center; margin: 26px auto 0; max-width: 56ch; font-size: 15px; line-height: 1.55; color: var(--ink-soft); text-wrap: balance; }
+.pr-anchor b { color: var(--ink); }
+/* owned (already Pro) */
+.owned-h { font: 600 40px/1.05 Fraunces, Georgia, serif; letter-spacing: -.02em; margin: 14px 0 8px; }
+.owned-p { font-size: 15px; line-height: 1.5; margin: 0; color: color-mix(in oklab, var(--on-accent) 88%, transparent); }
+.owned-actions { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; margin-top: auto; padding-top: 22px; }
+.owned-actions .lnk { color: var(--on-accent); }
+/* FAQ */
+.faq { max-width: 760px; margin: 0 auto; padding: 30px 32px 56px; }
+.faq h2 { font: 600 clamp(26px, 3.6cqi, 34px)/1.15 Fraunces, Georgia, serif; letter-spacing: -.02em; text-align: center; margin: 10px 0 24px; }
+.faq .eyebrow { text-align: center; }
+.faq-list { border-top: 1px solid var(--border); }
+.faq details { border-bottom: 1px solid var(--border); }
+.faq summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 56px; padding: 14px 2px; font: 600 15.5px/1.35 Inter, sans-serif; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary svg { flex: none; width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2; transition: transform var(--t-lift) var(--ease); }
+.faq details[open] summary svg { transform: rotate(180deg); stroke: var(--accent-deep); }
+.faq .a { padding: 0 2px 20px; font-size: 14.5px; line-height: 1.65; color: var(--ink-soft); max-width: 66ch; }
+.faq details[open] .a { animation: fadeUp var(--t-swap) var(--ease) backwards; }
+@container (max-width: 620px) { .faq { padding: 22px 16px 40px; } }
+
+/* ════════ Overlays: sheet (phones) + dialog (desktop) ════════ */
+.ov { position: absolute; inset: 0; z-index: 6; display: flex; }
+.ov-bd { position: absolute; inset: 0; background: var(--scrim); animation: fadeIn var(--t-ov) var(--ease) backwards; }
+.ov.sheet-ov { align-items: flex-end; }
+.ov.dlg-ov { align-items: center; justify-content: center; padding: 24px; }
+.sheet { position: relative; width: 100%; max-height: calc(100% - 20px); overflow-y: auto; background: var(--surface); border-radius: 24px 24px 0 0;
+  padding: 8px 20px calc(18px + var(--safe-bottom, 0px)); box-shadow: 0 -18px 40px -20px color-mix(in oklab, var(--ink) 30%, transparent);
+  animation: sheetIn var(--t-reveal) var(--ease) backwards; }
+.sheet::-webkit-scrollbar { width: 0; }
+.grab { width: 38px; height: 5px; border-radius: 99px; background: var(--border); margin: 0 auto 6px; }
+.dlg { position: relative; width: min(480px, 100%); max-height: 100%; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 28px; box-shadow: var(--shadow-lg); animation: dlgIn var(--t-ov) var(--ease) backwards; }
+.x { position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 12px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; cursor: pointer;
+  transition: transform var(--t-press) var(--ease); }
+.x:active { transform: scale(.94); }
+.x svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; }
+.sheet .x { top: 6px; right: 8px; }
+
+/* ════════ B · Paywall ════════ */
+.pw { display: flex; flex-direction: column; }
+.pw .eyebrow { margin-top: 8px; }
+.pw-h { font: 600 26px/1.15 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 8px 44px 8px 0; text-wrap: balance; }
+.pw-p { margin: 0 0 18px; font-size: 14.5px; line-height: 1.55; color: var(--ink-soft); }
+.pw .ticks { margin: 18px 0 18px; } .pw .ticks li { font-size: 14px; }
+.pw .launch-line { margin: 10px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-soft); display: flex; gap: 7px; align-items: center; }
+.pw .launch-line svg { width: 14px; height: 14px; stroke: var(--accent-deep); fill: none; stroke-width: 2; flex: none; }
+.pw .renew { margin: 0 0 12px; font-size: 12.5px; text-align: center; }
+.pw .btn-text { margin-top: 4px; }
+.pw-trust { text-align: center; font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+.pw-legal { display: flex; justify-content: center; flex-wrap: wrap; gap: 0 18px; margin-top: 4px; }
+.pw-legal .lnk { font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.pw-done { text-align: center; padding: 20px 4px 6px; }
+.pw-done .pw-h { margin: 14px 0 8px; }
+/* gentle nudge line */
+.nudge { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 2px 0; border-top: 1px solid var(--border-soft); margin-top: 16px;
+  font-size: 13px; color: var(--muted); }
+.nudge .lnk { min-height: 44px; font-size: 13px; }
+
+/* ════════ App chrome (web app + iPhone app) ════════ */
+.app-top { display: flex; align-items: center; gap: 12px; padding: 12px 24px; border-bottom: 1px solid var(--border-soft); background: var(--bg); }
+.cert-pill { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); font: 650 13px/1 Inter, sans-serif; color: var(--ink-soft); }
+.app-top .grow { flex: 1; }
+.app-main { padding: 26px 28px 40px; max-width: 900px; margin: 0 auto; }
+.greet { font: 600 28px/1.15 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 4px 0 18px; }
+.card { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 18px; margin-bottom: 14px; }
+.card h3 { font: 650 15px/1.25 Inter, sans-serif; margin: 0 0 6px; }
+.card p { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.rd { display: flex; align-items: baseline; gap: 10px; }
+.rd .n { font-size: 46px; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+.rd small { font: 700 11px/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.bar { position: relative; height: 8px; border-radius: 99px; background: color-mix(in oklab, var(--ink) 8%, transparent); margin: 16px 0 6px; }
+.bar i { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--accent); }
+.bar .tick { position: absolute; top: -5px; bottom: -5px; width: 2px; background: var(--ink); opacity: .55; border-radius: 2px; }
+.bar-cap { display: flex; justify-content: space-between; font: 600 12px/1.3 Inter, sans-serif; color: var(--muted); }
+.nbm { border-radius: 16px; padding: 18px; background: var(--accent); color: var(--on-accent); margin-bottom: 14px; }
+.nbm h3 { font: 600 19px/1.2 Fraunces, Georgia, serif; margin: 6px 0 12px; }
+.nbm .eyebrow { color: color-mix(in oklab, var(--on-accent) 80%, transparent); }
+.dim-bg { opacity: .9; }
+/* iPhone app */
+.ios-hdr { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 18px 10px; }
+.ios-hdr h1 { flex: 1; font: 600 21px/1.2 Fraunces, Georgia, serif; letter-spacing: -.01em; margin: 0; }
+.icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; flex: none;
+  transition: transform var(--t-press) var(--ease); }
+.icon-btn:active { transform: scale(.94); }
+.icon-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.ios-body { padding: 4px 18px 20px; }
+.tabbar { flex: none; display: flex; border-top: 1px solid var(--border-soft); background: color-mix(in oklab, var(--bg) 86%, var(--surface)); padding: 6px 8px var(--safe-bottom); }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 48px; color: var(--muted); font: 700 10px/1 Inter, sans-serif; }
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.tab.on { color: var(--accent-deep); }
+/* banner (grace period): full hairline tint, symmetric radius, no left stripe */
+.banner { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 16px; border-radius: 14px; margin-bottom: 16px;
+  background: color-mix(in oklab, var(--warn) 10%, var(--surface)); border: 1px solid color-mix(in oklab, var(--warn) 34%, var(--border)); }
+.banner .b-ic { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in oklab, var(--warn) 18%, transparent); color: color-mix(in oklab, var(--warn) 70%, var(--ink)); }
+.banner .b-ic svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.banner .b-txt { flex: 1; min-width: 200px; }
+.banner b { display: block; font: 650 14.5px/1.35 Inter, sans-serif; }
+.banner span { display: block; font-size: 13px; line-height: 1.45; color: var(--ink-soft); margin-top: 2px; }
+/* toast (No charge was made) */
+.toast { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); z-index: 7; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg); font: 600 14px/1.3 Inter, sans-serif; white-space: nowrap; animation: toastIn var(--t-ov) var(--ease) backwards; }
+.toast svg { width: 17px; height: 17px; stroke: var(--muted); fill: none; stroke-width: 2; }
+
+/* ════════ C · Confirmation ════════ */
+.cf { min-height: calc(100% - 64px); display: grid; place-items: center; padding: 48px 20px; }
+.cf-card { width: min(520px, 100%); text-align: center; }
+.cf-h { font: 600 clamp(30px, 6cqi, 44px)/1.08 Fraunces, Georgia, serif; letter-spacing: -.02em; margin: 14px 0 10px; }
+.cf-p { font-size: 15.5px; line-height: 1.55; color: var(--ink-soft); margin: 0 auto; max-width: 42ch; }
+.cf-plan { font: 600 14px/1.4 Inter, sans-serif; color: var(--ink-soft); margin: 0; }
+.cf .ticks { text-align: left; max-width: 380px; margin: 24px auto 26px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); }
+.cf-fine { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 14px auto 0; max-width: 44ch; }
+.badge { width: 64px; height: 64px; border-radius: 999px; margin: 0 auto; display: grid; place-items: center; color: var(--on-accent); background: var(--accent);
+  box-shadow: 0 14px 30px -14px color-mix(in oklab, var(--accent) 80%, transparent); }
+.badge svg { width: 30px; height: 30px; stroke: currentColor; fill: none; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.badge.soft { background: color-mix(in oklab, var(--accent) 14%, var(--surface)); color: var(--accent-deep); box-shadow: none; border: 1px solid color-mix(in oklab, var(--accent) 30%, var(--border)); }
+.spin { width: 44px; height: 44px; margin: 0 auto; border-radius: 999px; border: 3px solid color-mix(in oklab, var(--accent) 18%, transparent); border-top-color: var(--accent);
+  animation: spin 800ms linear infinite; }
+.checking { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font: 600 13px/1 Inter, sans-serif; color: var(--muted); }
+.checking i { width: 8px; height: 8px; border-radius: 99px; background: var(--accent); animation: pulse 1.6s var(--ease) infinite; }
+.cf-swap > * { animation: fadeUp var(--t-reveal) var(--ease) backwards; }
+.cf-swap > *:nth-child(2) { animation-delay: 60ms; } .cf-swap > *:nth-child(3) { animation-delay: 120ms; }
+.cf-swap > *:nth-child(4) { animation-delay: 180ms; } .cf-swap > *:nth-child(5) { animation-delay: 240ms; } .cf-swap > *:nth-child(n+6) { animation-delay: 300ms; }
+.cf-swap .badge { animation: popIn var(--t-reveal) var(--ease) backwards; }
+
+/* ════════ D · Billing + account ════════ */
+.bl { max-width: 720px; margin: 0 auto; padding: 40px 32px 48px; }
+@container (max-width: 620px) { .bl { padding: 24px 16px 36px; } }
+.crumb { font: 600 13px/1 Inter, sans-serif; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.crumb a { text-decoration: none; color: var(--ink-soft); min-height: 44px; display: inline-flex; align-items: center; }
+.bl h1 { font: 600 36px/1.1 Fraunces, Georgia, serif; letter-spacing: -.02em; margin: 2px 0 22px; }
+.bl-card { border: 1px solid var(--border); border-radius: 18px; background: var(--surface); padding: 22px; }
+.bl-card.warn { border-color: color-mix(in oklab, var(--warn) 40%, var(--border)); }
+.bl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.bl-plan { font: 600 26px/1.15 Fraunces, Georgia, serif; letter-spacing: -.015em; margin: 0; }
+.bl-lead { margin: 10px 0 0; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+.dl { margin: 18px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 0; border-top: 1px solid var(--border-soft); }
+.dl dt, .dl dd { margin: 0; padding: 12px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; }
+.dl dt { color: var(--muted); padding-right: 24px; }
+.dl dd { color: var(--ink); font-weight: 550; }
+.dl dd s { color: var(--muted); font-weight: 500; }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; align-items: center; }
+.bl-sec { margin-top: 26px; }
+.bl-sec h2 { font: 800 11px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.bl-sec p { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+.inline-warn { display: flex; gap: 12px; align-items: flex-start; margin-top: 16px; padding: 14px 16px; border-radius: 12px; background: color-mix(in oklab, var(--warn) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--warn) 32%, var(--border)); }
+.inline-warn svg { flex: none; width: 18px; height: 18px; margin-top: 1px; stroke: color-mix(in oklab, var(--warn) 70%, var(--ink)); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.inline-warn b { display: block; font-size: 14.5px; } .inline-warn span { display: block; margin-top: 3px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.inline-note { margin-top: 16px; padding: 14px 16px; border-radius: 12px; background: color-mix(in oklab, var(--accent) 7%, transparent); border: 1px solid color-mix(in oklab, var(--accent) 24%, var(--border)); }
+.inline-note b { display: block; font-size: 14.5px; } .inline-note p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+.acct-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 14px 0; border-bottom: 1px solid var(--border-soft); }
+.acct-row .k { font-size: 13px; color: var(--muted); } .acct-row .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+.acct-row .v .sep { color: var(--muted); font-weight: 500; margin: 0 4px; }
+/* cancel question */
+.opts { display: grid; gap: 8px; margin: 16px 0 0; }
+.opt { appearance: none; width: 100%; text-align: left; cursor: pointer; min-height: 52px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); font: 600 15px/1.3 Inter, sans-serif; transition: transform var(--t-press) var(--ease); }
+.opt:active { transform: scale(.985); }
+.opt .ring { flex: none; width: 20px; height: 20px; border-radius: 99px; border: 2px solid var(--border); position: relative; }
+.opt .ring::after { content: ""; position: absolute; inset: 3px; border-radius: 99px; background: var(--accent); opacity: 0; transform: scale(.96); transition: opacity var(--t-press) var(--ease), transform var(--t-press) var(--ease); }
+.opt[aria-checked="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.opt[aria-checked="true"] .ring { border-color: var(--accent); } .opt[aria-checked="true"] .ring::after { opacity: 1; transform: none; }
+.follow { margin-top: 14px; padding: 16px; border-radius: 14px; background: color-mix(in oklab, var(--accent) 7%, var(--surface)); border: 1px solid color-mix(in oklab, var(--accent) 22%, var(--border));
+  animation: fadeUp var(--t-swap) var(--ease) backwards; }
+.follow b { display: block; font: 600 18px/1.25 Fraunces, Georgia, serif; }
+.follow p { margin: 4px 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.follow textarea { width: 100%; min-height: 88px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); padding: 10px 12px; font-size: 14px; resize: vertical; }
+.dlg-foot { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.dlg-foot .btn { flex: 1 1 160px; }
+/* delete */
+.field { display: grid; gap: 6px; margin-top: 18px; }
+.field label { font: 600 13.5px/1.3 Inter, sans-serif; color: var(--ink-soft); }
+.field input { height: 48px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); padding: 0 14px; font-size: 16px; letter-spacing: .04em; }
+.field input:focus { outline: 2px solid color-mix(in oklab, var(--accent) 50%, transparent); outline-offset: 1px; }
+.gone { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.gone li { display: flex; gap: 10px; font-size: 14px; color: var(--ink-soft); }
+.gone li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 99px; background: var(--muted); margin-top: 8px; }
+/* settings rows (iPhone) */
+.sect { font: 800 10.5px/1 Inter, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 18px 4px 10px; }
+.group { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 10px 16px; border: 0; background: none; width: 100%; text-align: left; text-decoration: none; color: var(--ink); cursor: pointer; }
+.row + .row { border-top: 1px solid var(--border-soft); }
+.row .r-l { flex: 1; font: 600 15px/1.3 Inter, sans-serif; }
+.row .r-l small { display: block; font: 500 12.5px/1.35 Inter, sans-serif; color: var(--muted); margin-top: 2px; }
+.row .r-v { font-size: 14px; color: var(--muted); }
+.row svg { width: 16px; height: 16px; stroke: var(--muted); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.row.static { cursor: default; }
+.row.accent .r-l { color: var(--accent-deep); }
+
+/* ════════ F · Diagnostic ════════ */
+.dx { max-width: 760px; margin: 0 auto; padding: 48px 32px 48px; }
+@container (max-width: 620px) { .dx { padding: 28px 16px 36px; } }
+.dx-score { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin: 14px 0 0; }
+.dx-score .n { font-size: clamp(76px, 15cqi, 112px); font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+.dx-score .cap { font: 700 12px/1.35 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-bottom: 12px; }
+.dx-gap { font: 600 20px/1.35 Fraunces, Georgia, serif; margin: 14px 0 0; }
+.dx-dom { margin: 26px 0 0; display: grid; gap: 12px; }
+.dx-dom .d { display: grid; grid-template-columns: 1fr 44px; gap: 6px 12px; align-items: center; font-size: 14px; color: var(--ink-soft); }
+.dx-dom .d .pct { text-align: right; font: 600 14px/1 Inter, sans-serif; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dx-dom .d .bar { grid-column: 1 / -1; margin: 0; height: 6px; }
+.dx-dom .d.weak .bar i { background: var(--warn); }
+.dx-plan { margin: 22px 0 0; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+.dx-cta { display: grid; gap: 10px; margin-top: 28px; max-width: 460px; }
+.dx-cta .cf-fine { margin: 2px 0 0; text-align: left; }
+
+/* ════════ Preview screens (feature lock) ════════ */
+.lockprev { position: relative; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 16px; overflow: hidden; }
+.lockprev .q { font: 600 15px/1.45 Inter, sans-serif; margin: 8px 0 12px; }
+.lockprev .o { border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; font-size: 13.5px; color: var(--ink-soft); margin-top: 8px; }
+.lockprev .fade { position: absolute; inset: 40% 0 0 0; background: linear-gradient(to bottom, transparent, var(--surface) 70%); }
+.meta-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0 16px; font: 600 13px/1 Inter, sans-serif; color: var(--muted); }
+.meta-row span { display: inline-flex; gap: 6px; align-items: center; }
+.meta-row svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+/* ════════ Motion: keyframes (transform + opacity only) ════════ */
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } }
+@keyframes frameIn { from { opacity: 0; transform: translateY(12px); } }
+@keyframes sheetIn { from { transform: translateY(100%); } }
+@keyframes dlgIn { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+@keyframes popIn { from { opacity: 0; transform: translateY(6px) rotate(-10deg) scale(.96); } }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, -10px) scale(.98); } }
+@keyframes swapIn { from { opacity: 0; transform: translateY(4px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 50% { opacity: .35; } }
+/* exit: faster than entrance (200ms vs 380-520ms) */
+.ov.is-closing .ov-bd { opacity: 0; transition: opacity var(--t-exit) var(--ease); }
+.ov.is-closing .sheet { transform: translateY(100%); transition: transform var(--t-exit) var(--ease); }
+.ov.is-closing .dlg { opacity: 0; transform: scale(.96); transition: opacity var(--t-exit) var(--ease), transform var(--t-exit) var(--ease); }
+.frames > .fr { animation: frameIn var(--t-reveal) var(--ease) backwards; }
+.frames > .fr:nth-child(2) { animation-delay: 60ms; } .frames > .fr:nth-child(3) { animation-delay: 120ms; }
+/* in-page changes (currency, plan, cancel reason) must not replay surface entrances */
+.stage.is-local .fr, .stage.is-local .ov-bd, .stage.is-local .sheet, .stage.is-local .dlg, .stage.is-local .toast, .stage.is-local .cf-swap > *, .stage.is-local .cf-swap .badge { animation: none; }
+.stage.is-local .swap { animation: swapIn var(--t-swap) var(--ease) backwards; }
+.stage.is-local .follow { animation: fadeUp var(--t-swap) var(--ease) backwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-property: opacity !important; }
+  .frames > .fr, .ov-bd, .dlg, .toast, .cf-swap > *, .cf-swap .badge, .follow, .stage.is-local .swap, .faq details[open] .a { animation: fadeIn var(--t-swap) linear backwards !important; }
+  .sheet { animation: fadeIn var(--t-swap) linear backwards !important; }
+  .ov.is-closing .sheet, .ov.is-closing .dlg { transform: none; opacity: 0; transition: opacity var(--t-exit) linear; }
+  .spin { animation: none; border-color: color-mix(in oklab, var(--accent) 40%, transparent); }
+  .checking i { animation: none; }
+  .btn:active, .chip:active, .plan:active, .opt:active, .cur button:active, .x:active, .icon-btn:active { transform: none; }
+  .faq details[open] summary svg { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="hud" aria-label="Mockup controls">
+  <div class="hud-top">
+    <div>
+      <span class="eyebrow">Concept · Payments end to end · spec 2026-11-01</span>
+      <h1 class="hud-title">How people pay for Pro, on every surface</h1>
+    </div>
+    <div class="hud-ctrl">
+      <button class="chip" id="launchToggle" type="button" aria-pressed="true">Launch window: on</button>
+      <button class="chip" id="themeToggle" type="button" aria-pressed="false">Dark theme</button>
+      <button class="chip" id="replay" type="button">Replay</button>
+    </div>
+  </div>
+  <div class="hud-rows">
+    <div class="hud-row" id="rowScreen" role="group" aria-label="Screen"></div>
+    <div class="hud-row" id="rowState" role="group" aria-label="State"></div>
+    <div class="hud-row" id="rowAxis" role="group" aria-label="Surface"></div>
+  </div>
+  <p class="hud-note" id="note"></p>
+</header>
+
+<main class="stage" id="stage"><div class="frames" id="frames"></div></main>
+
+<script>
+(function () {
+'use strict';
+/* ───────── data ───────── */
+var CUR = {
+  usd: { sym: '$', code: 'USD', m: '9.99', y: '89', ym: '7.42', l: '69', ml: '5.75', save: 26, diff: '30.88' },
+  gbp: { sym: '£', code: 'GBP', m: '8.99', y: '79', ym: '6.58', l: '59', ml: '4.92', save: 27, diff: '28.88' },
+  eur: { sym: '€', code: 'EUR', m: '9.99', y: '89', ym: '7.42', l: '69', ml: '5.75', save: 26, diff: '30.88' }
+};
+var S = { screen: 'A', state: 'buy', axis: 'sheet', cur: 'usd', plan: 'yearly', launch: true, reason: null, theme: 'light' };
+var EMAIL = 'jordan@example.com';
+
+/* ───────── icons ───────── */
+var I = {
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  x: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  ext: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  chev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>',
+  back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+  card: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>',
+  info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  timer: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>',
+  list: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/></svg>',
+  home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>',
+  prog: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9M12 19V4M19 19v-7"/></svg>',
+  ana: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="1.6"/><circle cx="18" cy="18" r="1.6"/><circle cx="12" cy="12" r="1.6"/><path d="M7.4 7.4 10.8 10.8M13.2 13.2l3.4 3.4"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1L16.5 2h-4l-.3 2.6a7 7 0 0 0-1.7 1l-2.4-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/></svg>'
+};
+var LOGO = '<svg class="mark" viewBox="0 0 100 100" aria-hidden="true"><path d="M58 12 C42 6, 16 16, 14 34 C12 52, 22 62, 42 64"/><line class="c-slash" x1="30" y1="84" x2="70" y2="16"/><path d="M46 88 L64 50 L82 88 M53 74 L75 74"/></svg>';
+
+function c() { return CUR[S.cur]; }
+function P(v) { return c().sym + v; }
+function ticks(items) { return '<ul class="ticks">' + items.map(function (t) { return '<li>' + I.check + '<span>' + t + '</span></li>'; }).join('') + '</ul>'; }
+
+/* ───────── frames ───────── */
+function desk(url, body, overlay, cap) {
+  return '<figure class="fr"><figcaption>' + (cap || 'Desktop') + '</figcaption><div class="win"><div class="win-bar"><span class="dots"><i></i><i></i><i></i></span><span class="url">' + I.lock + '<span>' + url + '</span></span></div>' +
+    '<div class="view"><div class="scroller">' + body + '</div>' + (overlay || '') + '</div></div></figure>';
+}
+function sb() { return '<div class="statusbar"><span>9:41</span><span class="sb-ic"><i></i><i></i></span></div>'; }
+function mweb(url, body, overlay, cap) {
+  return '<figure class="fr"><figcaption>' + (cap || 'Phone · mobile web') + '</figcaption><div class="phone"><div class="screen"><div class="notch"></div>' + sb() +
+    '<div class="safari"><span class="url">' + I.lock + '<span>' + url + '</span></span></div>' +
+    '<div class="view"><div class="scroller">' + body + '</div>' + (overlay || '') + '</div><div class="homebar"></div></div></div></figure>';
+}
+function ios(body, overlay, cap, opts) {
+  opts = opts || {};
+  return '<figure class="fr"><figcaption>' + (cap || 'iPhone app') + '</figcaption><div class="phone"><div class="screen"><div class="notch"></div>' + sb() +
+    '<div class="view"><div class="scroller">' + body + '</div>' + (overlay || '') + '</div>' + (opts.tab ? tabbar(opts.tab) : '<div class="homebar"></div>') + '</div></div></figure>';
+}
+function tabbar(on) {
+  var t = [['home', 'Home', I.home], ['prog', 'Progress', I.prog], ['ana', 'Analytics', I.ana], ['set', 'Settings', I.gear]];
+  return '<nav class="tabbar">' + t.map(function (x) { return '<span class="tab' + (x[0] === on ? ' on' : '') + '">' + x[2] + '<span>' + x[1] + '</span></span>'; }).join('') + '</nav>';
+}
+function sheet(inner, label) {
+  return '<div class="ov sheet-ov" role="dialog" aria-modal="true" aria-labelledby="' + label + '"><div class="ov-bd"></div><div class="sheet"><div class="grab"></div>' +
+    '<button class="x" type="button" aria-label="Close">' + I.x + '</button>' + inner + '</div></div>';
+}
+function dialog(inner, label) {
+  return '<div class="ov dlg-ov" role="dialog" aria-modal="true" aria-labelledby="' + label + '"><div class="ov-bd"></div><div class="dlg">' +
+    '<button class="x" type="button" aria-label="Close">' + I.x + '</button>' + inner + '</div></div>';
+}
+function iosHdr(title, back) {
+  return '<div class="ios-hdr">' + (back ? '<button class="icon-btn" type="button" aria-label="Back">' + I.back + '</button>' : '') + '<h1>' + title + '</h1></div>';
+}
+
+/* ───────── landing chrome ───────── */
+function siteTop(mode) {
+  var right = mode === 'out'
+    ? '<a href="#" data-go="A/signin">Sign in</a>'
+    : '<a class="avatar-btn" href="#" aria-label="Account"><span class="avatar">J</span></a>';
+  return '<header class="site-top"><a class="logo" href="#">' + LOGO + '<span class="logo-name">CertAnvil</span></a>' +
+    '<nav class="nav"><a class="wide" href="#">Diagnostic</a><a class="wide" href="#" aria-current="' + (mode === 'pricing' ? 'page' : 'false') + '">Pricing</a>' + right + '</nav></header>';
+}
+function siteFoot() {
+  return '<footer class="site-foot"><nav aria-label="Legal"><a href="#">Pricing</a><a href="#">Terms</a><a href="#">Privacy</a><a href="#">Refunds</a><a href="mailto:support@certanvil.com">Contact · support@certanvil.com</a></nav>' +
+    '<small>© 2026 CertAnvil</small></footer>';
+}
+
+/* ───────── shared: plan rows ───────── */
+function planRows(opts) {
+  var k = c(), y = S.plan === 'yearly', launch = S.launch && !opts.noLaunch;
+  var yPrice, ySub, yBadge;
+  if (launch && opts.ios) {
+    yBadge = '';
+    yPrice = '<span class="swap">' + P(k.l) + '</span> <small>Launch offer, first year</small>';
+    ySub = 'Then ' + P(k.y) + ' a year. Ends 1 Dec.';
+  } else if (launch) {
+    yBadge = 'Launch offer';
+    yPrice = '<s>' + P(k.y) + '</s><span class="swap">' + P(k.l) + '</span> <small>first year</small>';
+    ySub = 'Then ' + P(k.y) + ' a year';
+  } else {
+    yBadge = 'Save ' + k.save + '%';
+    yPrice = '<span class="swap">' + P(k.y) + '</span> <small>a year</small>';
+    ySub = P(k.ym) + ' a month';
+  }
+  return '<div class="plans' + (opts.bronze ? ' on-bronze' : '') + '" role="radiogroup" aria-label="Choose a plan" data-web-purchase>' +
+    '<button type="button" class="plan" role="radio" aria-checked="' + y + '" data-plan="yearly"><span class="ring"></span><span class="p-name">Yearly' + (yBadge ? ' <span class="p-badge">' + yBadge + '</span>' : '') + '</span>' +
+    '<span class="p-price num">' + yPrice + '</span><span class="p-sub">' + ySub + '</span></button>' +
+    '<button type="button" class="plan" role="radio" aria-checked="' + (!y) + '" data-plan="monthly"><span class="ring"></span><span class="p-name">Monthly</span>' +
+    '<span class="p-price num"><span class="swap">' + P(k.m) + '</span> <small>a month</small></span></button></div>';
+}
+function renewLine() {
+  var k = c();
+  return S.plan === 'yearly' ? 'Renews automatically at ' + P(k.y) + ' a year until you cancel.' : 'Renews automatically at ' + P(k.m) + ' a month until you cancel.';
+}
+function curSwitch(onSurface) {
+  var o = [['usd', '$', 'US dollars'], ['gbp', '£', 'British pounds'], ['eur', '€', 'Euros']];
+  return '<div class="cur' + (onSurface ? ' on-surface' : '') + '" role="radiogroup" aria-label="Currency">' + o.map(function (x) {
+    return '<button type="button" role="radio" aria-checked="' + (S.cur === x[0]) + '" aria-label="' + x[2] + '" data-cur="' + x[0] + '">' + x[1] + '</button>';
+  }).join('') + '</div>';
+}
+var UNLOCKS = ['Unlimited questions in every cert', 'Exam Simulator and full labs', 'Drills that fix your mistakes'];
+
+/* ═════════════ A · Pricing page ═════════════ */
+function pricing(o) {
+  o = o || {};
+  var k = c(), y = S.plan === 'yearly', launch = S.launch && !o.owned;
+  var hero = '<header class="pr-hero"><span class="eyebrow">Pricing</span><h1 class="pr-h1">Free until it\'s working.<br>Then <span class="swap">' +
+    (launch ? P(k.l) + ' for your first year' : P(k.y) + ' a year') + '</span>.</h1>' +
+    '<p class="pr-sub">Free is the trial: 15 questions a day on one cert, no card, no end date. Pro lifts every limit.</p></header>';
+  var notice = o.notice ? '<div class="notice" role="status">' + I.info + '<span>Checkout cancelled. No charge was made.</span></div>' : '';
+  var launchPanel = launch ? '<section class="launch" aria-label="Launch offer" data-web-purchase><div class="launch-l"><span class="eyebrow">Launch offer</span>' +
+    '<span class="launch-fig num"><s>' + P(k.y) + '</s><span class="swap">' + P(k.l) + '</span></span><span class="launch-txt">for your first year, then ' + P(k.y) + '.</span></div>' +
+    '<span class="launch-ends">' + I.clock + 'Ends 23:59 UK time, 1 Dec</span></section>' : '';
+  var pro;
+  if (o.owned) {
+    var apple = o.owned === 'apple';
+    pro = '<section class="pr-pro" aria-label="Your plan"><div class="pr-pro-head"><span class="tier">Pro</span><span class="pill" style="color:var(--on-accent);background:color-mix(in oklab,var(--on-accent) 16%,transparent);border-color:color-mix(in oklab,var(--on-accent) 30%,transparent)">' + (apple ? 'Billed by Apple' : 'Active') + '</span></div>' +
+      '<h2 class="owned-h">You\'re Pro</h2><p class="owned-p">' + (apple ? 'Yearly, billed by Apple through your Apple ID. Changes and cancellation happen in Apple.' : 'Yearly · renews 14 Mar 2027. Everything on this page is already yours.') + '</p>' +
+      ticks(['Unlimited questions in every cert', 'Exam Simulator, Marathon and full Sim Lab', 'Drill Mistakes and Why-Not']) +
+      '<div class="owned-actions"><a class="btn btn-white" href="#">Start studying</a>' + (apple ? '<a class="lnk" href="#">Manage in Apple ' + I.ext + '</a>' : '<a class="lnk" href="#" data-go="D/proweb">Billing</a>') + '</div></section>';
+  } else {
+    pro = '<section class="pr-pro" aria-label="Pro" data-web-purchase><div class="pr-pro-head"><span class="tier">Pro</span>' + curSwitch() + '</div>' +
+      '<p class="tag">Unlimited questions, every cert.</p>' + planRows({ bronze: true }) +
+      ticks(['Unlimited questions in every cert, including new ones', 'The Exam Simulator, with 90 timed questions and PBQs', 'Sim Lab, Decision Lab and Marathon in full', 'Drill Mistakes and Why-Not, to fix what you got wrong']) +
+      '<button class="btn btn-white btn-block" type="button" data-go="A/signin">Get Pro</button>' +
+      '<p class="renew on-bronze-txt"><span class="swap">' + (y && launch ? 'You pay ' + P(k.l) + ' today. ' : '') + renewLine() + '</span></p>' +
+      '<ul class="trust">' + ['Prices include tax', 'Card, Apple Pay, Google Pay', 'Secure checkout by Stripe', '14-day money-back on web purchases', 'Cancel anytime'].map(function (t) { return '<li>' + I.check + '<span>' + t + '</span></li>'; }).join('') + '</ul></section>';
+  }
+  var free = '<aside class="pr-free" aria-label="Free"><span class="tier">Free</span><div class="free-fig num">' + P('0') + '<small>for good</small></div>' +
+    '<p class="tag">Build the habit first. No card.</p>' +
+    ticks(['15 questions and 5 review cards a day', 'One cert of your choice', 'One Reword Gauntlet run a day', 'Baseline Diagnostic and your Pass Plan']) +
+    (o.owned ? '' : '<a class="btn btn-ghost btn-block" href="#">Start free</a>') + '</aside>';
+  var anchor = '<p class="pr-anchor">One CompTIA exam voucher costs more than <b>a year of Pro</b>. Failing once means buying it twice.</p>';
+  return siteTop(o.owned ? 'in' : (o.signedIn ? 'in' : 'out')).replace('aria-current="false">Pricing', 'aria-current="page">Pricing') +
+    '<main class="pr">' + notice + hero + launchPanel + '<div class="pr-grid">' + pro + free + '</div>' + anchor + '</main>' + faq() + siteFoot();
+}
+function faq() {
+  var k = c();
+  var q = [
+    ['What happens after the first year?', 'Yearly renews at ' + P(k.y) + ' a year until you cancel. If you joined on the launch offer, we email you before that first full-price renewal.'],
+    ['If I cancel, do I keep my progress?', 'Yes. Pro stays on until the end of the period you paid for. After that you\'re on Free, and every answer, streak and score is still there.'],
+    ['How do refunds work?', 'If you bought on the web, you have 14 days from your first payment to ask for your money back: email support@certanvil.com and we refund it in full. If you bought in the iPhone app, Apple handles the refund. Ask at reportaproblem.apple.com.'],
+    ['I bought Pro on my iPhone. Does it work on the web?', 'Yes. Pro belongs to your account, not your device. Sign in with the same account on any device and Pro is there.'],
+    ['Does Pro cover every cert, including new ones?', 'Yes. One price covers every cert we have today and every one we add.'],
+    ['I only need it until my exam. Which plan?', 'Monthly, if your exam is a few months away: cancel once you pass. Yearly costs the same as about nine months of Monthly, so it wins if you plan to study longer or take a second cert.'],
+    ['Why do I see £ or €, and is tax included?', 'You see pounds in the UK, euros in the euro area and dollars everywhere else. Tax is already in the price, so what you see is what you pay. You can switch currency on the Pro card.']
+  ];
+  return '<section class="faq" aria-labelledby="faq-h"><h2 id="faq-h">Before you pay</h2><div class="faq-list">' +
+    q.map(function (x, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + x[0] + I.down + '</summary><div class="a">' + x[1] + '</div></details>'; }).join('') + '</div></section>';
+}
+function signinModal() {
+  var k = c(), y = S.plan === 'yearly';
+  var plan = y ? (S.launch ? 'Pro · Yearly · ' + P(k.l) + ' first year' : 'Pro · Yearly · ' + P(k.y) + ' a year') : 'Pro · Monthly · ' + P(k.m) + ' a month';
+  return '<div class="pw"><span class="pill" style="align-self:flex-start;margin-top:4px">' + plan + '</span>' +
+    '<h2 class="pw-h" id="si-h">Sign in to get Pro</h2><p class="pw-p">Pro belongs to your account, so it works on every device you sign in on. We\'ll keep the plan you picked.</p>' +
+    '<button class="btn btn-quiet btn-block" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 12h8"/></svg>Continue with Google</button>' +
+    '<div style="display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted);font-size:12.5px"><span style="flex:1;height:1px;background:var(--border)"></span>or<span style="flex:1;height:1px;background:var(--border)"></span></div>' +
+    '<div class="field" style="margin-top:0"><label for="si-email">Email</label><input id="si-email" type="email" placeholder="you@example.com" autocomplete="email" style="letter-spacing:0"></div>' +
+    '<button class="btn btn-primary btn-block" type="button" style="margin-top:12px">Email me a sign-in link</button>' +
+    '<p class="pw-trust">Next: secure checkout by Stripe</p></div>';
+}
+
+/* ═════════════ B · Paywall ═════════════ */
+var TRIG = {
+  limit: { eb: 'Daily limit', h: 'You\'ve used today\'s 15 questions', p: 'Your free questions come back at midnight. Pro lifts the limit, so you can keep going now.', second: 'Come back tomorrow' },
+  run: { eb: 'Reword Gauntlet', h: 'That was today\'s free run', p: 'Free includes one Gauntlet run a day. With Pro you can run it as often as you like.', second: 'Not now' },
+  feature: { eb: 'Exam Simulator', h: 'Sit the full practice exam', p: '90 timed questions with PBQs, scored on the real 100 to 900 scale. Part of Pro.', second: 'Not now' },
+  cert: { eb: 'Security+', h: 'Add Security+ with Pro', p: 'Free covers one cert. Pro opens every cert, and your Network+ progress stays where it is.', second: 'Stay on Network+' }
+};
+function paywall(trig, surf) {
+  var t = TRIG[trig], isIos = surf === 'ios', k = c();
+  var launchLine = (S.launch && !isIos && S.plan === 'yearly') ? '<p class="launch-line">' + I.clock + '<span>' + P(k.l) + ' for your first year, then ' + P(k.y) + '. Ends 23:59 UK time, 1 Dec.</span></p>' : '';
+  var foot = isIos
+    ? '<p class="renew">' + renewLine() + ' Cancel at least 24 hours before renewal in your Apple ID settings.</p>' +
+      '<button class="btn btn-primary btn-block" type="button" data-go="B/already">Get Pro</button><button class="btn btn-text btn-block" type="button">' + t.second + '</button>' +
+      '<p class="pw-trust">Cancel anytime · Billed through your Apple ID</p>' +
+      '<div class="pw-legal"><button class="lnk" type="button">Restore purchases</button><a class="lnk" href="#">Terms of Use</a><a class="lnk" href="#">Privacy</a></div>'
+    : '<p class="renew">' + renewLine() + '</p><button class="btn btn-primary btn-block" type="button" data-web-purchase>Get Pro</button>' +
+      '<button class="btn btn-text btn-block" type="button">' + t.second + '</button><p class="pw-trust">Cancel anytime · 14-day money-back</p>';
+  return '<div class="pw"><span class="eyebrow">' + t.eb + '</span><h2 class="pw-h" id="pw-h">' + t.h + '</h2><p class="pw-p">' + t.p + '</p>' +
+    planRows({ ios: isIos }) + launchLine + ticks(UNLOCKS) + foot + '</div>';
+}
+function alreadyPro(surf) {
+  var isIos = surf === 'ios';
+  return '<div class="pw pw-done"><div class="badge soft">' + I.check + '</div><h2 class="pw-h" id="pw-h">You\'re already Pro</h2>' +
+    '<p class="pw-p">This account has Pro' + (isIos ? ', billed on certanvil.com' : '') + ', so there\'s nothing to buy. Everything is unlocked.</p>' +
+    '<button class="btn btn-primary btn-block" type="button">Back to studying</button></div>';
+}
+/* backgrounds the paywall opens over */
+function bgQuizDone(compact) {
+  return '<div class="' + (compact ? 'ios-body' : 'app-main') + '"><span class="eyebrow dim">Network+ · today</span><h2 class="greet" style="margin-top:8px">15 of 15 done</h2>' +
+    '<div class="card"><div class="rd"><span class="n num">12</span><small>right out of 15</small></div><p style="margin-top:8px">Strongest today: subnetting. Weakest: wireless standards.</p></div>' +
+    '<div class="card"><h3>Mistakes saved</h3><p>3 questions went to your mistakes bank for review.</p></div></div>';
+}
+function bgGauntlet(compact) {
+  return '<div class="' + (compact ? 'ios-body' : 'app-main') + '"><span class="eyebrow dim">Reword Gauntlet · result</span><h2 class="greet" style="margin-top:8px">8 of 10 held up</h2>' +
+    '<div class="card"><p>You kept the right answer when the wording changed on 8 questions. Two flipped: port security and STP.</p></div></div>';
+}
+function bgHub(compact) {
+  var rows = [['Network+', 'N10-009 · your cert', true], ['Security+', 'SY0-701', false], ['A+ Core 1', '220-1201', false]];
+  return '<div class="' + (compact ? 'ios-body' : 'app-main') + '"><span class="eyebrow dim">Your certs</span><h2 class="greet" style="margin-top:8px">Pick a cert</h2>' +
+    rows.map(function (r) { return '<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><h3>' + r[0] + '</h3><p>' + r[1] + '</p></div>' + (r[2] ? '<span class="pill pass">Studying</span>' : '<span class="pill dim">' + I.lock.replace('<svg', '<svg width="12" height="12" style="stroke:currentColor;fill:none;stroke-width:2.2"') + ' Pro</span>') + '</div>'; }).join('') + '</div>';
+}
+function featurePreview(compact) {
+  return '<div class="' + (compact ? 'ios-body' : 'app-main') + '"><span class="eyebrow">Pro · preview</span><h2 class="greet" style="margin-top:8px">Exam Simulator</h2>' +
+    '<p style="margin:0;color:var(--ink-soft);font-size:14.5px;line-height:1.55">A full practice exam under real conditions. You get a score on the 100 to 900 scale and a pacing report.</p>' +
+    '<div class="meta-row"><span>' + I.timer + '90 minutes</span><span>' + I.list + '90 questions</span><span>' + I.check.replace('<svg', '<svg style="stroke:currentColor;fill:none;stroke-width:2"') + 'PBQs included</span></div>' +
+    '<div class="lockprev" aria-hidden="true"><span class="eyebrow dim">Question 1 of 90 · 89:12 left</span><p class="q">A technician needs to stop a switch port from accepting frames from more than one MAC address. Which feature fits best?</p>' +
+    '<div class="o">A. Port security</div><div class="o">B. 802.1Q tagging</div><div class="o">C. Spanning tree</div><div class="fade"></div></div>' +
+    '<button class="btn btn-primary btn-block" type="button" style="margin-top:16px" data-go="B/feature">' + I.lock + 'Unlock with Pro</button></div>';
+}
+function bgFor(trig, compact) { return trig === 'run' ? bgGauntlet(compact) : trig === 'cert' ? bgHub(compact) : trig === 'feature' ? featurePreview(compact) : bgQuizDone(compact); }
+function appTop() { return '<div class="app-top"><a class="logo" href="#">' + LOGO + '</a><span class="cert-pill">Network+ · N10-009</span><span class="grow"></span><span class="avatar">J</span></div>'; }
+function nudgeScreen(surface) {
+  var compact = surface !== 'dialog';
+  var inner = '<div class="' + (compact ? 'ios-body' : 'app-main') + '"><span class="eyebrow dim">Question 11 of 15</span>' +
+    '<div class="card" style="margin-top:10px"><p style="font-weight:600;color:var(--ink);font-size:15px;line-height:1.5">Which 802.11 standard first used the 6 GHz band?</p>' +
+    '<div class="lockprev" style="border:0;padding:0;background:none"><div class="o">A. 802.11ac</div><div class="o">B. 802.11ax (Wi-Fi 6E)</div><div class="o">C. 802.11n</div><div class="o">D. 802.11g</div></div>' +
+    '<div class="nudge"><span>10 of today\'s 15 used</span><a class="lnk" href="#" data-go="B/limit">See Pro</a></div></div></div>';
+  return inner;
+}
+
+/* ═════════════ C · Confirmation ═════════════ */
+function cfWeb(kind) {
+  var k = c(), body;
+  if (kind === 'wait') {
+    body = '<div class="cf-card" role="status" aria-live="polite"><div class="spin" aria-hidden="true"></div><h1 class="cf-h">Confirming your payment…</h1>' +
+      '<p class="cf-p">This takes a few seconds. Keep this page open.</p></div>';
+  } else if (kind === 'pro') {
+    body = '<div class="cf-card cf-swap" role="status" aria-live="polite"><div class="badge">' + I.check + '</div><h1 class="cf-h">You\'re Pro</h1>' +
+      '<p class="cf-plan">Yearly · ' + (S.launch ? P(k.l) + ' for your first year, then ' + P(k.y) + ' a year' : P(k.y) + ' a year') + '</p>' +
+      ticks(['Unlimited questions in Network+ and every other cert', 'Exam Simulator, Marathon and full Sim Lab', 'Drill Mistakes and Why-Not']) +
+      '<a class="btn btn-primary" href="#" style="min-width:240px">Start studying</a><p class="cf-fine">Takes you back to Network+. Your receipt is on its way to ' + EMAIL + '.</p></div>';
+  } else {
+    body = '<div class="cf-card cf-swap" role="status" aria-live="polite"><div class="badge soft">' + I.check + '</div><h1 class="cf-h">Payment received</h1>' +
+      '<p class="cf-p">Pro switches on within a minute. Your receipt is on its way to ' + EMAIL + '.</p>' +
+      '<span class="checking"><i></i>Checking every few seconds</span>' +
+      '<p class="cf-fine">You can start studying now. Pro turns on by itself. Still Free after five minutes? Email support@certanvil.com.</p>' +
+      '<a class="btn btn-ghost" href="#" style="margin-top:16px">Start studying</a></div>';
+  }
+  return siteTop('in') + '<main class="cf">' + body + '</main>';
+}
+function cfIos(kind) {
+  var b;
+  if (kind === 'wait') b = '<div class="cf-card" role="status" aria-live="polite"><div class="spin" aria-hidden="true"></div><h1 class="cf-h" style="font-size:30px">Confirming…</h1><p class="cf-p">Apple has your payment. We\'re switching Pro on.</p></div>';
+  else if (kind === 'pro') b = '<div class="cf-card cf-swap" role="status" aria-live="polite"><div class="badge">' + I.check + '</div><h1 class="cf-h" style="font-size:34px">You\'re Pro</h1>' +
+    '<p class="cf-plan">Yearly · billed through your Apple ID</p>' + ticks(['Unlimited questions in every cert', 'Exam Simulator and full labs', 'Drill Mistakes and Why-Not']) +
+    '<button class="btn btn-primary btn-block" type="button">Back to studying</button></div>';
+  else b = '<div class="cf-card cf-swap" role="status" aria-live="polite"><div class="badge soft">' + I.clock + '</div><h1 class="cf-h" style="font-size:32px">Waiting for approval</h1>' +
+    '<p class="cf-p">Your request is with your family organiser. Once they approve it, Pro turns on by itself, even if you close the app.</p>' +
+    '<button class="btn btn-primary btn-block" type="button" style="margin-top:26px">Back to studying</button><p class="cf-fine">Nothing is charged unless they approve.</p></div>';
+  return '<main class="cf" style="min-height:100%;padding:24px 22px">' + b + '</main>';
+}
+
+/* ═════════════ App home (web + iPhone) ═════════════ */
+function homeCards(compact) {
+  return '<div class="card"><span class="eyebrow dim">Readiness</span><div class="rd" style="margin-top:8px"><span class="n num">642</span><small>of 900</small></div>' +
+    '<div class="bar"><i style="width:68%"></i><span class="tick" style="left:77%"></span></div><div class="bar-cap"><span>78 to go</span><span>Pass 720</span></div></div>' +
+    '<div class="nbm"><span class="eyebrow">Next best move</span><h3>Drill your 9 saved mistakes</h3><a class="btn btn-white btn-sm" href="#">Start drill</a></div>';
+}
+function webHome(banner) {
+  return appTop() + '<div class="app-main">' + (banner || '') + '<h2 class="greet">Good evening, Jordan</h2>' + homeCards() + '</div>';
+}
+function iosHome(banner) {
+  return iosHdr('Home') + '<div class="ios-body">' + (banner || '') + '<h2 class="greet" style="font-size:24px">Good evening, Jordan</h2>' + homeCards(true) + '</div>';
+}
+
+/* ═════════════ D · Billing + account ═════════════ */
+function billing(st) {
+  var k = c(), card;
+  var manage = '<a class="btn btn-ghost btn-sm" href="#">Manage billing ' + I.ext + '</a>';
+  var cancelBtn = '<button class="btn btn-quiet btn-sm" type="button" data-go="D/cancel">Cancel Pro</button>';
+  if (st === 'free') {
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Free</h2><span class="pill dim">Current plan</span></div>' +
+      '<p class="bl-lead">15 questions and 5 review cards a day, on one cert.</p><div class="bl-sec" style="margin-top:18px"><h2>Pro adds</h2></div>' + ticks(UNLOCKS) +
+      '<div class="acts" data-web-purchase><a class="btn btn-primary" href="#">Get Pro</a><span style="font-size:13.5px;color:var(--muted)">' + (S.launch ? P(k.l) + ' for your first year, then ' + P(k.y) : P(k.y) + ' a year or ' + P(k.m) + ' a month') + '</span></div></div>';
+  } else if (st === 'proweb' || st === 'promonthly') {
+    var monthly = st === 'promonthly';
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Pro · ' + (monthly ? 'Monthly' : 'Yearly') + '</h2><span class="pill pass">Active</span></div>' +
+      '<dl class="dl">' + (monthly
+        ? '<dt>Price</dt><dd>' + P(k.m) + ' a month</dd><dt>Next charge</dt><dd>' + P(k.m) + ' on 14 Nov 2026</dd>'
+        : '<dt>Price</dt><dd>First year ' + P(k.l) + ', then ' + P(k.y) + ' on 6 Nov 2027</dd><dt>Next charge</dt><dd>' + P(k.y) + ' on 6 Nov 2027</dd>') +
+      '<dt>Paid with</dt><dd>Visa ending 4242</dd></dl><div class="acts">' + manage + cancelBtn + '</div></div>' +
+      (monthly ? '' : '<div class="bl-sec"><h2>Refund</h2><p>Changed your mind? You can have a full refund within 14 days of your first payment, so until 20 Nov 2026.</p>' +
+        '<a class="lnk" href="mailto:support@certanvil.com?subject=Refund%20request&body=Account%3A%20' + EMAIL + '%0APurchased%3A%206%20Nov%202026">Request a refund</a></div>') +
+      '<div class="bl-sec"><h2>Receipts</h2><p>Each receipt is emailed to ' + EMAIL + '. Past invoices are in Manage billing.</p></div>';
+  } else if (st === 'cancelled') {
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Pro until 14 Mar 2027</h2><span class="pill dim">Cancelled</span></div>' +
+      '<p class="bl-lead">You won\'t be charged again. Pro stays on until 14 Mar, then you move to Free with all your progress.</p>' +
+      '<div class="acts"><button class="btn btn-primary btn-sm" type="button">Resume Pro</button>' + manage + '</div></div>';
+  } else if (st === 'failed') {
+    card = '<div class="bl-card warn"><div class="bl-head"><h2 class="bl-plan">Pro · Yearly</h2><span class="pill warn">Payment due</span></div>' +
+      '<div class="inline-warn">' + I.card + '<div><b>Your card didn\'t go through. Update it to keep Pro.</b><span>We\'ll try again over the next few days. Pro stays on until then.</span></div></div>' +
+      '<div class="acts"><a class="btn btn-primary btn-sm" href="#">Update card</a>' + cancelBtn + '</div></div>';
+  } else if (st === 'apple') {
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Pro · Yearly</h2><span class="pill">Billed by Apple</span></div>' +
+      '<p class="bl-lead">Billed by Apple through your Apple ID. Changes, cancellation and refunds go through Apple.</p>' +
+      '<div class="acts"><a class="btn btn-ghost btn-sm" href="#">Manage in Apple ' + I.ext + '</a><a class="lnk" href="#">Request a refund from Apple ' + I.ext + '</a></div></div>';
+  } else if (st === 'ended') {
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Free</h2><span class="pill dim">Pro ended 14 Mar</span></div>' +
+      '<p class="bl-lead">Your Pro has ended. Your progress is kept.</p>' +
+      '<div class="acts" data-web-purchase><a class="btn btn-primary btn-sm" href="#">Renew Pro</a><span style="font-size:13.5px;color:var(--muted)">' + P(k.y) + ' a year or ' + P(k.m) + ' a month</span></div></div>';
+  } else {
+    card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Owner</h2><span class="pill">Full access</span></div>' +
+      '<p class="bl-lead">This account has Pro on every cert. Nothing is billed to it.</p></div>';
+  }
+  var help = '<div class="bl-sec"><h2>Help</h2><p>Questions about a charge? Email <a class="lnk" style="min-height:0" href="mailto:support@certanvil.com">support@certanvil.com</a>.</p></div>';
+  return siteTop('in') + '<main class="bl"><nav class="crumb" aria-label="Breadcrumb"><a href="#" data-go="D/acct-pro">Account</a><span aria-hidden="true">/</span><span>Billing</span></nav><h1>Billing</h1>' + card + help + '</main>' + siteFoot();
+}
+function cancelSheet() {
+  var k = c(), r = S.reason;
+  var opts = [['passed', 'Passed my exam'], ['expensive', 'Too expensive'], ['else', 'Something else']];
+  var f = '';
+  if (r === 'passed') f = '<div class="follow" aria-live="polite"><b>Congratulations on passing</b><p>Lots of people take Security+ after Network+, and Pro already covers it. Your Pro stays on until 14 Nov either way.</p><a class="btn btn-ghost btn-sm" href="#">Start Security+</a></div>';
+  if (r === 'expensive') f = '<div class="follow" aria-live="polite"><b>Yearly costs ' + P(k.ym) + ' a month</b><p>Same Pro, ' + P(k.y) + ' a year. That\'s ' + P(k.diff) + ' a year less than Monthly. Or stay on Free after you cancel: 15 questions a day, with your progress kept.</p><button class="btn btn-ghost btn-sm" type="button">Switch to Yearly</button></div>';
+  if (r === 'else') f = '<div class="follow" aria-live="polite"><b>Anything we could do better?</b><p>Optional. It goes straight to support.</p><label class="sr" for="cx-why">Your reason</label><textarea id="cx-why" placeholder="Type here"></textarea></div>';
+  return '<div class="pw"><h2 class="pw-h" id="cx-h" style="margin-top:6px">Why are you cancelling?</h2><p class="pw-p" style="margin-bottom:0">One question, then you confirm on the next screen.</p>' +
+    '<div class="opts" role="radiogroup" aria-labelledby="cx-h">' + opts.map(function (o) { return '<button class="opt" type="button" role="radio" aria-checked="' + (r === o[0]) + '" data-reason="' + o[0] + '"><span class="ring"></span>' + o[1] + '</button>'; }).join('') + '</div>' + f +
+    '<div class="dlg-foot"><button class="btn btn-quiet" type="button">Keep Pro</button><button class="btn btn-ghost" type="button">Continue to cancel</button></div></div>';
+}
+function account(v) {
+  var k = c(), line, act;
+  if (v === 'free') { line = 'Free'; act = '<a class="btn btn-primary btn-sm" href="#" data-web-purchase>Get Pro</a>'; }
+  else if (v === 'apple') { line = 'Pro<span class="sep">·</span>Yearly<span class="sep">·</span>billed by Apple'; act = '<a class="lnk" href="#" data-go="D/apple">Billing</a>'; }
+  else { line = 'Pro<span class="sep">·</span>Yearly<span class="sep">·</span>renews 14 Mar 2027'; act = '<a class="lnk" href="#" data-go="D/proweb">Billing</a>'; }
+  return siteTop('in') + '<main class="bl"><h1>Account</h1><div class="bl-card" style="padding-top:8px;padding-bottom:8px">' +
+    '<div class="acct-row"><div><div class="k">Plan</div><div class="v">' + line + '</div></div>' + act + '</div>' +
+    '<div class="acct-row"><div><div class="k">Email</div><div class="v">' + EMAIL + '</div></div><span style="font-size:13px;color:var(--muted)">Signed in with Google</span></div>' +
+    '<div class="acct-row" style="border-bottom:0"><div><div class="k">Studying</div><div class="v">Network+ · N10-009</div></div><a class="lnk" href="#">Open</a></div></div>' +
+    '<div class="bl-sec"><a class="lnk" href="#" data-go="G/web">Delete account</a></div></main>' + siteFoot();
+}
+
+/* ═════════════ E · In-app ═════════════ */
+function graceBanner(apple) {
+  return '<div class="banner" role="status"><span class="b-ic">' + I.card + '</span><div class="b-txt">' +
+    (apple ? '<b>Apple couldn\'t renew your Pro.</b><span>Update your payment method in Apple to keep it. Pro stays on in the meantime.</span>'
+      : '<b>Your card didn\'t go through. Update it to keep Pro.</b><span>Pro stays on while we try again.</span>') + '</div>' +
+    (apple ? '<a class="btn btn-ghost btn-sm" href="#">Open Apple ' + I.ext + '</a>' : '<a class="btn btn-ghost btn-sm" href="#">Update card</a>') + '</div>';
+}
+function endedBody(isIos) {
+  var k = c();
+  return '<div class="pw"><span class="eyebrow">Pro</span><h2 class="pw-h" id="end-h">Your Pro has ended</h2>' +
+    '<p class="pw-p">Your progress is kept: every answer, streak and score. You\'re back on Free, with 15 questions and 5 review cards a day on Network+.</p>' +
+    (isIos ? '<p class="renew" style="text-align:left;margin:0 0 12px">Renew: ' + P(k.y) + ' a year, billed through your Apple ID. Renews automatically until you cancel. Cancel at least 24 hours before renewal in your Apple ID settings.</p>' : '<p class="renew" style="text-align:left;margin:0 0 12px">Renew: ' + P(k.y) + ' a year. Renews automatically until you cancel.</p>') +
+    '<button class="btn btn-primary btn-block" type="button"' + (isIos ? '' : ' data-web-purchase') + '>Renew Pro</button><button class="btn btn-text btn-block" type="button">Continue on Free</button>' +
+    (isIos ? '<div class="pw-legal"><button class="lnk" type="button">Restore purchases</button><a class="lnk" href="#">Terms of Use</a><a class="lnk" href="#">Privacy</a></div>' : '') + '</div>';
+}
+function settingsIos(v) {
+  var plan;
+  if (v === 'apple') plan = '<div class="row static"><span class="r-l">Pro<small>Renews 14 Mar · billed by Apple</small></span></div>' +
+    '<a class="row" href="#"><span class="r-l">Manage in Apple</span>' + I.ext + '</a><button class="row" type="button"><span class="r-l">Restore purchases</span></button>';
+  else if (v === 'applecx') plan = '<div class="row static"><span class="r-l">Pro until 14 Mar<small>Cancelled · billed by Apple</small></span></div>' +
+    '<a class="row" href="#"><span class="r-l">Manage in Apple</span>' + I.ext + '</a><button class="row" type="button"><span class="r-l">Restore purchases</span></button>';
+  else if (v === 'web') plan = '<div class="row static"><span class="r-l">Pro<small>Pro · billed on certanvil.com</small></span></div><button class="row" type="button"><span class="r-l">Restore purchases</span></button>';
+  else plan = '<div class="row static"><span class="r-l">Free<small>15 questions and 5 review cards a day</small></span></div>' +
+    '<button class="row accent" type="button" data-go="B/limit"><span class="r-l">Get Pro</span>' + I.chev + '</button><button class="row" type="button"><span class="r-l">Restore purchases</span></button>';
+  return iosHdr('Settings') + '<div class="ios-body"><div class="sect">Plan</div><div class="group">' + plan + '</div>' +
+    '<div class="sect">Study setup</div><div class="group"><div class="row"><span class="r-l">Exam date</span><span class="r-v">12 Dec</span>' + I.chev + '</div>' +
+    '<div class="row"><span class="r-l">Daily goal</span><span class="r-v">20</span>' + I.chev + '</div></div>' +
+    '<div class="sect">Account</div><div class="group"><div class="row"><span class="r-l">' + EMAIL + '</span></div><button class="row" type="button" data-go="G/apple"><span class="r-l" style="color:var(--fail)">Delete account</span>' + I.chev + '</button></div></div>';
+}
+
+/* ═════════════ F · Diagnostic ═════════════ */
+function diagnostic() {
+  var d = [['Networking concepts', 72], ['Network implementation', 61], ['Network operations', 58], ['Network security', 49, 1], ['Network troubleshooting', 66]];
+  return siteTop('out') + '<main class="dx"><span class="eyebrow">Your Network+ diagnostic</span><div class="dx-score"><span class="n num">642</span><span class="cap">Estimated score<br>out of 900</span></div>' +
+    '<div class="bar" style="margin-top:20px"><i style="width:68%"></i><span class="tick" style="left:77%"></span></div><div class="bar-cap"><span>You · 642</span><span>Pass mark · 720</span></div>' +
+    '<p class="dx-gap">78 points short of a pass. Security is where most of them are.</p>' +
+    '<div class="dx-dom">' + d.map(function (x) { return '<div class="d' + (x[2] ? ' weak' : '') + '"><span>' + x[0] + '</span><span class="pct">' + x[1] + '%</span><div class="bar"><i style="width:' + x[1] + '%"></i></div></div>'; }).join('') + '</div>' +
+    '<p class="dx-plan">Your Pass Plan starts with network security, then operations. Save it and it carries on from today.</p>' +
+    '<div class="dx-cta"><a class="btn btn-primary btn-block" href="#">Save your results and keep practising free</a><a class="btn btn-ghost btn-block" href="#" data-web-purchase data-go="A/signin">Go Pro · close the gap to 720</a>' +
+    '<p class="cf-fine">A free account keeps your results. No card.</p></div></main>' + siteFoot();
+}
+
+/* ═════════════ G · Delete account ═════════════ */
+function delBody(kind, compact) {
+  var box = kind === 'web'
+    ? '<div class="inline-note"><b>Your Pro ends with your account</b><p>We cancel it when you delete, so there are no more charges. Still within 14 days of your first payment? <a class="lnk" style="min-height:0" href="#">Request a refund</a> first.</p></div>'
+    : '<div class="inline-warn">' + I.alert + '<div><b>You\'re still billed by Apple. Deleting your account doesn\'t stop that. Cancel in your Apple ID.</b>' +
+      '<a class="lnk" href="#">Open Apple subscriptions ' + I.ext + '</a></div></div>';
+  return '<p class="bl-lead" style="margin-top:0">This removes your progress, history and Pass Plan from every device. It can\'t be undone.</p>' + box +
+    '<ul class="gone"><li>Quiz history, streaks and readiness</li><li>Saved mistakes and review cards</li><li>Your sign-in with ' + (kind === 'web' ? 'Google' : 'Apple') + '</li></ul>' +
+    '<div class="field"><label for="del-' + kind + (compact ? 'c' : '') + '">Type DELETE to confirm</label><input id="del-' + kind + (compact ? 'c' : '') + '" data-del autocomplete="off" autocapitalize="characters"></div>' +
+    '<div class="acts"><button class="btn btn-danger" type="button" disabled data-del-btn>Delete my account</button><a class="btn btn-quiet" href="#">Keep my account</a></div>';
+}
+function delWeb(kind) {
+  return siteTop('in') + '<main class="bl"><nav class="crumb" aria-label="Breadcrumb"><a href="#">Account</a><span aria-hidden="true">/</span><span>Delete account</span></nav><h1>Delete your account</h1>' + delBody(kind) + '</main>';
+}
+function delIos(kind) { return iosHdr('Delete account', true) + '<div class="ios-body">' + delBody(kind, true) + '</div>'; }
+
+/* ═════════════ Registry ═════════════ */
+var SURF = [['sheet', 'Phone sheet · web'], ['ios', 'iPhone app'], ['dialog', 'Desktop dialog']];
+function paywallFrames(trig) {
+  var s = S.axis, body = trig === 'already' ? alreadyPro(s) : paywall(trig, s);
+  var bgTrig = trig === 'already' ? 'limit' : trig;
+  if (s === 'dialog') return desk('networkplus.certanvil.com', appTop() + bgFor(bgTrig, false), dialog(body, 'pw-h'), 'Desktop · web app');
+  var out = '';
+  if (trig === 'feature') out += s === 'ios' ? ios(iosHdr('Exam Simulator', true) + featurePreview(true), '', 'iPhone app · preview first') : mweb('networkplus.certanvil.com', featurePreview(true), '', 'Phone · preview first');
+  out += s === 'ios' ? ios(iosHdr('Network+') + bgFor(bgTrig, true), sheet(body, 'pw-h'), 'iPhone app · paywall') : mweb('networkplus.certanvil.com', bgFor(bgTrig, true), sheet(body, 'pw-h'), 'Phone · mobile web');
+  return out;
+}
+var SCREENS = [
+  { id: 'A', name: 'Pricing', states: [
+    { id: 'buy', label: 'Buy', note: '<b>certanvil.com/pricing.</b> Yearly first and picked; currency follows the visitor\'s country and the $ £ € switch is live. Every price and buy element carries <b>data-web-purchase</b>, so native-hide removes it inside the iPhone app. Toggle the launch window in the bar above.',
+      render: function () { return desk('certanvil.com/pricing', pricing()) + mweb('certanvil.com/pricing', pricing()); } },
+    { id: 'signin', label: 'Get Pro · sign in', note: 'Get Pro while signed out opens sign-in with the chosen plan shown and kept. <b>Web offers Google and email only</b>: Sign in with Apple on the web is a soon-after-launch item (gap 17). Next stop is Stripe Checkout.',
+      render: function () { return desk('certanvil.com/pricing', pricing(), dialog(signinModal(), 'si-h')) + mweb('certanvil.com/pricing', pricing(), sheet(signinModal(), 'si-h')); } },
+    { id: 'proweb', label: 'Already Pro', note: 'Signed in with Pro: a You\'re Pro card replaces every buy button, and the Free card loses its button too. The server would refuse a second checkout anyway (409 already_pro).',
+      render: function () { return desk('certanvil.com/pricing', pricing({ owned: 'web' })) + mweb('certanvil.com/pricing', pricing({ owned: 'web' })); } },
+    { id: 'proapple', label: 'Already Pro · Apple', note: 'Bought in the iPhone app, visiting the web pricing page: You\'re Pro, billed by Apple, with a link to Apple\'s subscriptions page rather than our billing.',
+      render: function () { return desk('certanvil.com/pricing', pricing({ owned: 'apple' })) + mweb('certanvil.com/pricing', pricing({ owned: 'apple' })); } }
+  ] },
+  { id: 'B', name: 'Paywall', axis: SURF, states: [
+    { id: 'limit', label: '15 questions used', note: 'Hard stop on the 15th AI question. Second button is <b>Come back tomorrow</b>. iPhone variant: Apple price and intro offer, auto-renew and 24-hour line, Restore purchases, Terms of Use and Privacy, no money-back line. Tap Get Pro on iPhone to see the already-Pro guard.', render: function () { return paywallFrames('limit'); } },
+    { id: 'run', label: 'Second run today', note: 'Second Gauntlet, PBQ or Decision Lab run in a day: the paywall appears after the result screen, never in the middle of a run.', render: function () { return paywallFrames('run'); } },
+    { id: 'feature', label: 'Pro feature', note: 'Pro-only feature: the preview comes first (Exam Simulator shown), then <b>Unlock with Pro</b> opens the paywall with a headline about that feature.', render: function () { return paywallFrames('feature'); } },
+    { id: 'cert', label: 'Second cert', note: 'Opening a second cert: hard stop that names the cert and reassures that the first cert\'s progress stays.', render: function () { return paywallFrames('cert'); } },
+    { id: 'already', label: 'Already Pro', note: 'Before Apple\'s sheet opens, the app asks the server whether this account already has Pro from any source. If so, no sheet: this screen instead. Web shows the same screen if checkout returns 409 already_pro.', render: function () { return paywallFrames('already'); } },
+    { id: 'nudge', label: 'Gentle nudge', note: 'At 10 of 15 questions (also when reviews are done or an exam date is set): a single line, never a modal. On iPhone, See Pro opens the native paywall.',
+      render: function () { return S.axis === 'dialog' ? desk('networkplus.certanvil.com', appTop() + nudgeScreen('dialog')) : S.axis === 'ios' ? ios(iosHdr('Practice', true) + nudgeScreen('ios')) : mweb('networkplus.certanvil.com', nudgeScreen('sheet')); } }
+  ] },
+  { id: 'C', name: 'Confirmation', states: [
+    { id: 'wait', label: 'Web · confirming', note: '<b>certanvil.com/account</b> is the single web return page. Plays on to You\'re Pro after a moment; press Replay to watch it again. The checkout endpoint passes the source cert (<b>?checkout=success&amp;from=netplus</b>).',
+      render: function () { return desk('certanvil.com/account?checkout=success&from=netplus', cfWeb('wait')) + mweb('certanvil.com/account', cfWeb('wait')); }, after: ['pro', 2400] },
+    { id: 'pro', label: 'Web · You\'re Pro', note: 'What is unlocked, and Start studying, which opens the source cert with <b>?pro=1</b> to force a fresh Pro check.', render: function () { return desk('certanvil.com/account?checkout=success&from=netplus', cfWeb('pro')) + mweb('certanvil.com/account', cfWeb('pro')); } },
+    { id: 'slow', label: 'Web · slow', note: 'The payment is through but the webhook is late. The page keeps checking and turns into You\'re Pro by itself.', render: function () { return desk('certanvil.com/account?checkout=success&from=netplus', cfWeb('slow')) + mweb('certanvil.com/account', cfWeb('slow')); } },
+    { id: 'iwait', label: 'iPhone · confirming', note: 'After Apple\'s purchase sheet closes. The buy button stayed locked while the sheet was open.', render: function () { return ios(cfIos('wait')) + ios(cfIos('pro'), '', 'iPhone app · then'); } },
+    { id: 'ipro', label: 'iPhone · You\'re Pro', note: 'In-app success: Back to studying returns to where the paywall opened.', render: function () { return ios(cfIos('pro')); } },
+    { id: 'ask', label: 'iPhone · Ask to Buy', note: 'Family Sharing approval pending. Pro turns on by itself once approved, including after the app restarts.', render: function () { return ios(cfIos('ask')); } },
+    { id: 'nocharge', label: 'Checkout cancelled', note: 'Leaving Stripe Checkout returns people to where they started, with No charge was made. Shown on the pricing page and in the web app.',
+      render: function () { return desk('certanvil.com/pricing?checkout=cancelled', pricing({ notice: true })) + mweb('networkplus.certanvil.com', bgQuizDone(true), '<div class="toast" role="status">' + I.info + 'Checkout cancelled. No charge was made.</div>'); } }
+  ] },
+  { id: 'D', name: 'Billing', states: [
+    { id: 'free', label: 'Free', note: '<b>/manage-subscription</b> becomes <b>Billing</b>. Free: what Pro adds, and one Get Pro.', render: function () { return desk('certanvil.com/manage-subscription', billing('free')) + mweb('certanvil.com/manage-subscription', billing('free')); } },
+    { id: 'proweb', label: 'Pro · web', note: 'Launch buyer shown: first-year price and the date the full price starts. Request a refund appears only for the first web payment, within 14 days, as a pre-filled email to support.', render: function () { return desk('certanvil.com/manage-subscription', billing('proweb')) + mweb('certanvil.com/manage-subscription', billing('proweb')); } },
+    { id: 'cancelled', label: 'Cancelled, still on', note: 'Cancelled but paid up: Pro until the date, with Resume.', render: function () { return desk('certanvil.com/manage-subscription', billing('cancelled')) + mweb('certanvil.com/manage-subscription', billing('cancelled')); } },
+    { id: 'failed', label: 'Card failed', note: 'Grace period: Pro stays on during Stripe Smart Retries. Cancel is still visible.', render: function () { return desk('certanvil.com/manage-subscription', billing('failed')) + mweb('certanvil.com/manage-subscription', billing('failed')); } },
+    { id: 'apple', label: 'Billed by Apple', note: 'Apple-billed Pro seen on the web: links to Apple\'s subscriptions and refund pages only.', render: function () { return desk('certanvil.com/manage-subscription', billing('apple')) + mweb('certanvil.com/manage-subscription', billing('apple')); } },
+    { id: 'ended', label: 'Pro ended', note: 'Pro ended: progress kept, Renew in one tap. No guilt copy.', render: function () { return desk('certanvil.com/manage-subscription', billing('ended')) + mweb('certanvil.com/manage-subscription', billing('ended')); } },
+    { id: 'owner', label: 'Owner', note: 'Owner (admin) account: full access, no billing actions.', render: function () { return desk('certanvil.com/manage-subscription', billing('owner')); } },
+    { id: 'cancel', label: 'Cancel question', note: 'Cancel asks one question, then Stripe\'s portal confirms. Pick an answer to see the follow-up. Persona is on <b>Monthly</b> so Too expensive can suggest Yearly. Continue to cancel is always there.',
+      render: function () { return desk('certanvil.com/manage-subscription', billing('promonthly'), dialog(cancelSheet(), 'cx-h')) + mweb('certanvil.com/manage-subscription', billing('promonthly'), sheet(cancelSheet(), 'cx-h')); } },
+    { id: 'acct-pro', label: 'Account · Pro', note: 'Account page status line, read from the real subscription instead of the admin role.', render: function () { return desk('certanvil.com/account', account('pro')) + mweb('certanvil.com/account', account('pro')); } },
+    { id: 'acct-free', label: 'Account · Free', note: 'Free shows one Get Pro.', render: function () { return desk('certanvil.com/account', account('free')) + mweb('certanvil.com/account', account('free')); } },
+    { id: 'acct-apple', label: 'Account · Apple', note: 'Apple-billed status line.', render: function () { return desk('certanvil.com/account', account('apple')) + mweb('certanvil.com/account', account('apple')); } }
+  ] },
+  { id: 'E', name: 'In-app', states: [
+    { id: 'grace', label: 'Card failed banner', note: 'A calm banner during the grace period. Web app links to Update card; the iPhone app (billed by Apple) links to Apple. A web-billed account on iPhone gets no banner link, per the iPhone rules.',
+      render: function () { return desk('networkplus.certanvil.com', webHome(graceBanner(false)), '', 'Desktop · web app') + ios(iosHome(graceBanner(true)), '', 'iPhone app · billed by Apple', { tab: 'home' }); } },
+    { id: 'ended', label: 'Pro has ended', note: 'Shown once, the first time the app opens after Pro ends. Renew is one tap: Stripe on the web, Apple on iPhone.',
+      render: function () { return desk('networkplus.certanvil.com', webHome(), dialog(endedBody(false), 'end-h'), 'Desktop · web app') + ios(iosHome(), sheet(endedBody(true), 'end-h'), 'iPhone app', { tab: 'home' }); } },
+    { id: 'set-apple', label: 'Settings · Apple', note: 'iPhone Settings, Apple-billed and renewing.', render: function () { return ios(settingsIos('apple'), '', 'iPhone app', { tab: 'set' }); } },
+    { id: 'set-applecx', label: 'Settings · Apple cancelled', note: 'Apple-billed, cancelled: <b>Pro until 14 Mar</b>.', render: function () { return ios(settingsIos('applecx'), '', 'iPhone app', { tab: 'set' }); } },
+    { id: 'set-web', label: 'Settings · web-billed', note: 'Web-billed Pro on iPhone: plain text <b>Pro · billed on certanvil.com</b>, never a link.', render: function () { return ios(settingsIos('web'), '', 'iPhone app', { tab: 'set' }); } },
+    { id: 'set-free', label: 'Settings · Free', note: 'Free on iPhone: Get Pro opens the native paywall.', render: function () { return ios(settingsIos('free'), '', 'iPhone app', { tab: 'set' }); } }
+  ] },
+  { id: 'F', name: 'Diagnostic', states: [
+    { id: 'results', label: 'Results', note: 'Saving results for free stays the main button; Go Pro is second and goes through the same sign-in and checkout. The old "add your email below" promise is gone. Both buttons are hidden in the iPhone app.',
+      render: function () { return desk('certanvil.com/diagnostic/results', diagnostic()) + mweb('certanvil.com/diagnostic/results', diagnostic()); } }
+  ] },
+  { id: 'G', name: 'Delete account', states: [
+    { id: 'web', label: 'Billed on web', note: 'A page replaces the bare confirm box. Web-billed Pro is cancelled with the account. Type DELETE to enable the button.',
+      render: function () { return desk('certanvil.com/account/delete', delWeb('web')) + mweb('certanvil.com/account/delete', delWeb('web')); } },
+    { id: 'apple', label: 'Billed by Apple', note: 'Apple-billed: a warning and a link to Apple\'s subscriptions page. <b>Delete stays available</b> (no gate). The Sign in with Apple token is revoked on deletion.',
+      render: function () { return ios(delIos('apple')) + desk('certanvil.com/account/delete', delWeb('apple')); } }
+  ] }
+];
+
+/* ═════════════ HUD + render ═════════════ */
+var stage = document.getElementById('stage'), frames = document.getElementById('frames'), timer = null;
+function scr() { return SCREENS.filter(function (s) { return s.id === S.screen; })[0]; }
+function st() { var s = scr(); return s.states.filter(function (x) { return x.id === S.state; })[0] || s.states[0]; }
+function chip(label, on, data, key) { return '<button class="chip" type="button" aria-pressed="' + on + '" ' + data + '>' + (key ? '<b>' + key + '</b>' : '') + label + '</button>'; }
+function hud() {
+  document.getElementById('rowScreen').innerHTML = '<span class="lbl">Screen</span>' + SCREENS.map(function (s) { return chip(s.name, s.id === S.screen, 'data-screen="' + s.id + '"', s.id); }).join('');
+  document.getElementById('rowState').innerHTML = '<span class="lbl">State</span>' + scr().states.map(function (x) { return chip(x.label, x.id === st().id, 'data-state="' + x.id + '"'); }).join('');
+  var ax = document.getElementById('rowAxis');
+  ax.innerHTML = scr().axis ? '<span class="lbl">Surface</span>' + scr().axis.map(function (a) { return chip(a[1], a[0] === S.axis, 'data-axis="' + a[0] + '"'); }).join('') : '';
+  ax.hidden = !scr().axis;
+  document.getElementById('note').innerHTML = st().note || '';
+  document.getElementById('launchToggle').textContent = 'Launch window: ' + (S.launch ? 'on' : 'off');
+  document.getElementById('launchToggle').setAttribute('aria-pressed', S.launch);
+}
+function render(local) {
+  clearTimeout(timer);
+  var keep = [];
+  if (local) frames.querySelectorAll('.scroller, .sheet, .dlg').forEach(function (el) { keep.push(el.scrollTop); });
+  stage.classList.toggle('is-local', !!local);
+  S.state = st().id;
+  frames.innerHTML = st().render();
+  if (local) frames.querySelectorAll('.scroller, .sheet, .dlg').forEach(function (el, i) { if (keep[i]) el.scrollTop = keep[i]; });
+  hud();
+  try { history.replaceState(null, '', '#' + S.screen + '/' + S.state + (scr().axis ? '/' + S.axis : '')); } catch (e) {}
+  var a = st().after;
+  if (a && !local) timer = setTimeout(function () { S.state = a[0]; render(false); }, a[1]);
+}
+function go(path) {
+  var p = path.split('/');
+  S.screen = p[0]; S.state = p[1] || scr().states[0].id; if (p[2]) S.axis = p[2]; S.reason = null; S.plan = 'yearly';
+  render(false); window.scrollTo({ top: 0 });
+}
+
+document.addEventListener('click', function (e) {
+  var x = e.target.closest('.x');
+  if (x) { var ov = x.closest('.ov'); ov.classList.add('is-closing'); setTimeout(function () { ov.remove(); }, 210); return; }
+  var t = e.target.closest('[data-screen],[data-state],[data-axis],[data-cur],[data-plan],[data-reason],[data-go],a[href="#"]');
+  if (!t) return;
+  if (t.matches('a[href="#"]') && !t.dataset.go) { e.preventDefault(); return; }
+  e.preventDefault();
+  if (t.dataset.screen) { S.screen = t.dataset.screen; S.state = scr().states[0].id; S.reason = null; S.plan = 'yearly'; render(false); }
+  else if (t.dataset.state) { S.state = t.dataset.state; S.reason = null; S.plan = 'yearly'; render(false); }
+  else if (t.dataset.axis) { S.axis = t.dataset.axis; render(false); }
+  else if (t.dataset.cur) { S.cur = t.dataset.cur; render(true); }
+  else if (t.dataset.plan) { S.plan = t.dataset.plan; render(true); }
+  else if (t.dataset.reason) { S.reason = t.dataset.reason; render(true); }
+  else if (t.dataset.go) {
+    var g = t.dataset.go;
+    if (g === 'B/already' && S.screen === 'B') { S.state = 'already'; render(false); return; }
+    go(g);
+  }
+});
+document.addEventListener('input', function (e) {
+  if (!e.target.matches('[data-del]')) return;
+  var btn = e.target.closest('.bl, .ios-body').querySelector('[data-del-btn]');
+  if (btn) btn.disabled = e.target.value.trim().toUpperCase() !== 'DELETE';
+});
+document.getElementById('themeToggle').addEventListener('click', function () {
+  S.theme = S.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', S.theme);
+  this.textContent = S.theme === 'light' ? 'Dark theme' : 'Light theme';
+  this.setAttribute('aria-pressed', S.theme === 'dark');
+  try { localStorage.setItem('ca-pay-theme', S.theme); } catch (err) {}
+});
+document.getElementById('launchToggle').addEventListener('click', function () { S.launch = !S.launch; render(true); });
+document.getElementById('replay').addEventListener('click', function () { render(false); });
+
+try { var th = localStorage.getItem('ca-pay-theme'); if (th === 'dark' || th === 'light') { S.theme = th; document.documentElement.setAttribute('data-theme', th); document.getElementById('themeToggle').textContent = th === 'light' ? 'Dark theme' : 'Light theme'; } } catch (err) {}
+var h = (location.hash || '').replace('#', '').split('/');
+if (h[0] && SCREENS.some(function (s) { return s.id === h[0]; })) { S.screen = h[0]; if (h[1]) S.state = h[1]; if (h[2]) S.axis = h[2]; }
+render(false);
+window.__PAY = { SCREENS: SCREENS, S: S, go: go, render: render };
+})();
+</script>
+</body>
+</html>
