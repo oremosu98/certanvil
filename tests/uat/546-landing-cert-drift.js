@@ -9,12 +9,22 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
-const { test } = require('./_context');
+const { test: baseTest } = require('./_context');
 
-(function () {
-  console.log('\n\x1b[1m── Landing cert lists match the registry ──\x1b[0m');
+// Two passes. Pass 1 is the shipped state (the four new exams hidden: absent from every public list). Pass 2 is the reveal path:
+// the registry has the four un-hidden and landing/lib/new-certs.js has its one switch flipped, and every public list must then
+// contain them, so the ship step cannot miss a list. Lists the new certs feed are EXECUTED (not just parsed) in both passes.
+function run(revealed) {
+  const test = (name, ok) => baseTest((revealed ? '[reveal] ' : '') + name, ok);
+  console.log('\n\x1b[1m── Landing cert lists match the registry' + (revealed ? ' (reveal path: four new exams un-hidden)' : '') + ' ──\x1b[0m');
   const ROOT = path.resolve(__dirname, '..', '..');
-  const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+  const read = (p) => {
+    let src = fs.readFileSync(path.join(ROOT, p), 'utf8');
+    if (revealed && p === 'lib/cert-registry.js') src = src.replace(/hidden: true, /g, '');
+    if (revealed && p === 'landing/lib/new-certs.js') src = src.replace('var NEW_CERTS_REVEALED = false;', 'var NEW_CERTS_REVEALED = true;');
+    return src;
+  };
+  const NEW_IDS = ['secai', 'prince2', 'psm1', 'psm2'];
 
   const sb = { console: { log() {}, warn() {}, error() {} } };
   sb.window = sb; vm.createContext(sb);
@@ -23,12 +33,22 @@ const { test } = require('./_context');
   const ALL = REG.all();
   const PUBLIC = ALL.filter((e) => !e.hidden);
   const HIDDEN_IDS = ALL.filter((e) => e.hidden).map((e) => e.id);
+  // The new-exams data file (its helpers return [] until its switch is on). `nc` is the window the list code runs against.
+  const nc = { console: { log() {} } }; nc.window = nc; vm.createContext(nc);
+  vm.runInContext(read('landing/lib/new-certs.js'), nc, { filename: 'new-certs.js' });
+  const NEWC = nc.certanvilNewCerts();
+  const runFn = (src, what, args, ctx) => { try { return vm.runInNewContext('(' + src + ')', Object.assign({ window: nc }, ctx || {}), { filename: what }).apply(null, args || []); } catch (e) { throw new Error('546: cannot run ' + what + ': ' + e.message); } };
 
   // Accepted differences, keyed 'list|id|what'. Each one is a deliberate landing choice, not drift.
   const ALLOWED_DRIFT = {
     // Security+ has an intake and a quiz but no results page, so the shared results renderer has no entry for it.
-    'results-config|secplus|missing': 'Sec+ diagnostic has no results.html; results-config.js only configures certs that have one'
+    'results-config|secplus|missing': 'Sec+ diagnostic has no results.html; results-config.js only configures certs that have one',
+    // One Scrum plate covers PSM I and II (founder): it opens PSM I and PSM II is the in-app switch.
+    'index|psm2|missing': 'one Scrum landing tile opens PSM I; PSM II is switched in-app (founder)'
   };
+  NEW_IDS.forEach((id) => ['results-config', 'generate-allow', 'generate-codes', 'picker-tiles', 'picker-whitelist'].forEach((l) => {
+    ALLOWED_DRIFT[l + '|' + id + '|missing'] = 'new-cert diagnostics deferred (founder, 1 Nov)';
+  }));
   const allowed = (list, id, what) => Object.prototype.hasOwnProperty.call(ALLOWED_DRIFT, list + '|' + id + '|' + what)
     || Object.prototype.hasOwnProperty.call(ALLOWED_DRIFT, list + '|*|' + what);
 
@@ -76,6 +96,18 @@ const { test } = require('./_context');
   }
   // Hidden-leak helper: ids in `rows` that are in `hiddenIds`.
   const leaks = (rows, hiddenIds) => rows.filter((r) => hiddenIds.indexOf(r.id) !== -1).map((r) => r.id);
+  // The landing switch and the registry flag move together: tiles must never point at a hidden app, or hide a live one.
+  if (!revealed) {
+    test('Landing new-certs switch is off exactly while all four new exams are hidden in the registry',
+      nc.CERTANVIL_NEW_CERTS_REVEALED === false && NEW_IDS.every((id) => REG.get(id).hidden === true) && NEWC.length === 0);
+  } else {
+    test('Reveal path: the switch is on, the registry has the four un-hidden, and the data matches the registry (code, scores, host)',
+      nc.CERTANVIL_NEW_CERTS_REVEALED === true && NEWC.length === 4 && NEW_IDS.every((id) => {
+        const c = NEWC.filter((x) => x.id === id)[0], e = REG.get(id);
+        return c && !e.hidden && c.code === e.code && c.maxScore === e.scale.max && c.passScore === e.scale.pass
+          && c.host === e.host && c.format === e.scale.format;
+      }));
+  }
   const check = (name, list, rows, opts) => {
     const bad = compare(list, rows, opts);
     test('Landing ' + name + ' matches the registry' + (bad.length ? ' (' + bad.join('; ') + ')' : ''), bad.length === 0 && rows.length > 0);
@@ -97,7 +129,11 @@ const { test } = require('./_context');
   const reRow = /rowForCert\(\{/g;
   let m;
   while ((m = reRow.exec(auth))) authRows.push(evalLit(balanced(auth, m.index, '{', '}', 'rowForCert'), 'auth.js rowForCert'));
-  check('auth.js My-certs rows', 'auth', authRows.map((r) => ({ id: r.id, code: r.code })));
+  // renderMyCertsList needs the DOM, so its new-cert rows are checked by source (the loop) plus the data above.
+  const authLoop = /certanvilNewCerts \? window\.certanvilNewCerts\(\) : \[\]\)\.forEach\(function \(c\) \{\s*var spec = \{[\s\S]*?id: c\.id,[\s\S]*?code: c\.code,[\s\S]*?rows\.push\(rowForCert\(spec\)\)/.test(auth);
+  test('Landing auth.js My-certs rows merge the new-cert helper (id and code from the data)', authLoop);
+  const authAll = authRows.map((r) => ({ id: r.id, code: r.code })).concat(authLoop ? NEWC.map((c) => ({ id: c.id, code: c.code })) : []);
+  check('auth.js My-certs rows', 'auth', authAll);
 
   // 2. landing/lib/account.js: entitlement tiles, then the exam-format table (max and pass).
   const acct = read('landing/lib/account.js');
@@ -106,8 +142,13 @@ const { test } = require('./_context');
   const reEnt = /\bid:\s*'([\w-]+)',\s*name:[^\n]*\n\s*code:\s*'([^']+)'/g;
   while ((m = reEnt.exec(entFn))) acctRows.push({ id: m[1], code: m[2] });
   after(entFn, 'var rest', '[', ']').forEach((r) => acctRows.push({ id: r.id, code: r.code }));
+  const entRun = (role) => runFn('function(role)' + entFn, 'account.js getCertEntitlements', [role]);
+  entRun('admin').concat(entRun('user')).forEach((r) => acctRows.push({ id: r.id, code: r.code }));
   check('account.js entitlement tiles', 'account-tiles', acctRows);
   const fmts = after(acct, 'var EXAM_FORMATS', '{', '}');
+  const fmtMerge = /\(window\.certanvilNewCerts \? window\.certanvilNewCerts\(\) : \[\]\)\.forEach\(function \(c\) \{\s*EXAM_FORMATS\[[\s\S]*?\}\);/.exec(acct);
+  if (!fmtMerge) throw new Error('546: pattern not found: the new-cert EXAM_FORMATS merge in landing/lib/account.js');
+  vm.runInNewContext(fmtMerge[0], { window: nc, EXAM_FORMATS: fmts });
   check('account.js EXAM_FORMATS', 'account-formats', Object.keys(fmts).map((id) => ({ id, max: fmts[id].maxScore, pass: fmts[id].passScore })));
   test('Landing account.js EXAM_FORMATS examName names the registry exam code',
     PUBLIC.every((e) => fmts[e.id] && fmts[e.id].examName.indexOf(e.code) !== -1));
@@ -115,27 +156,47 @@ const { test } = require('./_context');
   // 3. landing/lib/cross-cert-analytics.js: the domain-weight table (ids) and the cert catalog (id, code, max, pass).
   const cca = read('landing/lib/cross-cert-analytics.js');
   const weights = after(cca, 'var DOMAIN_WEIGHTS_BY_CERT', '{', '}');
+  const wMerge = /\(window\.certanvilNewCerts \? window\.certanvilNewCerts\(\) : \[\]\)\.forEach\(function \(c\) \{ DOMAIN_WEIGHTS_BY_CERT\[c\.id\] = c\.weights; \}\);/.exec(cca);
+  if (!wMerge) throw new Error('546: pattern not found: the new-cert domain-weight merge in landing/lib/cross-cert-analytics.js');
+  vm.runInNewContext(wMerge[0], { window: nc, DOMAIN_WEIGHTS_BY_CERT: weights });
   check('cross-cert-analytics domain-weight table', 'cca-weights', Object.keys(weights).map((id) => ({ id })));
   const cat = balanced(cca, cca.indexOf('function getCertCatalog'), '{', '}', 'getCertCatalog');
   const ccaRows = [];
   const reCat = /\bid:\s*'([\w-]+)',[\s\S]*?code:\s*'([^']+)'[\s\S]*?maxScore:\s*(\d+),\s*passScore:\s*(\d+)/g;
   while ((m = reCat.exec(cat))) ccaRows.push({ id: m[1], code: m[2], max: +m[3], pass: +m[4] });
+  runFn('function(role)' + cat, 'cross-cert-analytics getCertCatalog', ['admin']).forEach((r) => ccaRows.push({ id: r.id, code: r.code, max: r.maxScore, pass: r.passScore }));
   check('cross-cert-analytics catalog', 'cca-catalog', ccaRows);
 
   // 4. landing/lib/admin.js: admin-only cert table. Live rows only; hidden certs may appear here.
   const adm = read('landing/lib/admin.js');
   const packs = after(adm.slice(adm.indexOf('function renderCertPacks')), 'var packs', '[', ']');
+  const admFn = adm.slice(adm.indexOf('function renderCertPacks'));
+  const admCtx = { elCertsTbody: { innerHTML: '' }, escapeHtml: (x) => String(x) };
+  runFn('function()' + balanced(admFn, 0, '{', '}', 'renderCertPacks'), 'admin.js renderCertPacks', [], admCtx);
+  const admHtml = admCtx.elCertsTbody.innerHTML;
+  test('Landing admin.js cert table lists all four new exams, as Hidden until revealed and as Live after',
+    NEW_IDS.every((id) => admHtml.indexOf('>' + REG.get(id).code + '<') !== -1) && /Hidden/.test(admHtml) === !revealed);
   const liveByCode = packs.filter((p) => p.live);
   const codeToId = {}; ALL.forEach((e) => { codeToId[e.code] = e.id; });
   test('Landing admin.js cert table: every live row is a registry cert (by exam code), and every public cert has one',
-    liveByCode.every((p) => codeToId[p.code]) && PUBLIC.every((e) => liveByCode.some((p) => p.code === e.code)));
+    liveByCode.every((p) => codeToId[p.code]) && PUBLIC.every((e) => liveByCode.some((p) => p.code === e.code) || admHtml.indexOf('>' + e.code + '<') !== -1));
   test('Landing admin.js cert table: coming-soon rows are not registry certs',
     packs.filter((p) => !p.live).every((p) => !codeToId[p.code]));
 
   // 5. landing/index.html: the Blueprint Wall CERTS array (live certs only; SOON is a separate array of coming-soon tiles).
   const idx = read('landing/index.html');
   const wall = after(idx, 'var CERTS = [', '[', ']');
-  check('index.html Blueprint Wall CERTS', 'index', wall.map((c) => ({ id: c.id, code: c.code })));
+  const tileMerge = /var NEW_TILES = [\s\S]*?CERTS = CERTS\.concat\(NEW_TILES\);/.exec(idx);
+  if (!tileMerge) throw new Error('546: pattern not found: the NEW_TILES merge in landing/index.html');
+  const wallCtx = { window: nc, CERTS: wall.slice() }; vm.runInNewContext(tileMerge[0], wallCtx);
+  const wallAll = wallCtx.CERTS;
+  check('index.html Blueprint Wall CERTS', 'index', wallAll.map((c) => ({ id: c.id, code: c.code })));
+  if (revealed) {
+    const scrum = wallAll.filter((c) => c.id === 'psm1')[0], covers = (NEWC.filter((c) => c.id === 'psm1')[0].wall || {}).covers || [];
+    test('Reveal path: the wall has one Scrum tile that opens PSM I and covers PSM II, and the legal lines for PRINCE2 and Scrum are in the data',
+      !!scrum && /scrum\.certanvil\.com\/$/.test(scrum.href) && covers.indexOf('psm2') !== -1
+      && NEWC.filter((c) => c.id === 'prince2')[0].legal.indexOf('PeopleCert') !== -1 && NEWC.filter((c) => c.id === 'psm1')[0].legal.indexOf('Scrum.org') !== -1);
+  }
   const soon = after(idx, 'var SOON = [', '[', ']');
   test('Landing index.html coming-soon tiles are not registry certs (a cert that goes live must leave SOON)',
     soon.every((c) => !codeToId[c.code]));
@@ -187,15 +248,23 @@ const { test } = require('./_context');
   // coming-soon cert (FUTURE) that is not yet in the registry. When one launches it must move into the registry.
   const FUTURE = ['ccna', 'aws-saa', 'az104'];
   const ov = { window: {} }; vm.createContext(ov);
+  if (revealed) { ov.window = ov; vm.runInContext(read('landing/lib/new-certs.js'), ov, { filename: 'new-certs.js' }); }
   vm.runInContext(read('landing/lib/cross-cert-overlap.js'), ov, { filename: 'cross-cert-overlap.js' });
   const ovRows = ov.window.CROSS_CERT_OVERLAP || [];
   const ovIds = []; ovRows.forEach((r) => { ovIds.push({ id: r.from }, { id: r.to }); });
   const ovBad = ovIds.filter((r) => !(REG.isKnown(r.id) ? !REG.get(r.id).hidden : FUTURE.indexOf(r.id) !== -1)).map((r) => r.id);
   test('Landing cross-cert-overlap.js from/to ids are public registry certs or coming-soon certs' + (ovBad.length ? ' (' + ovBad.join(', ') + ')' : ''),
     ovRows.length > 0 && ovBad.length === 0 && FUTURE.every((id) => !REG.isKnown(id)));
+  const hasPair = (a, b) => ovRows.some((r) => r.from === a && r.to === b);
+  test(revealed ? 'Reveal path: overlap rows for SecAI+ (Security+ strong, AI-901 light) and PSM I to PSM II are present'
+                : 'Landing cross-cert-overlap.js has no rows for the hidden new exams',
+    revealed ? hasPair('secplus', 'secai') && hasPair('ai900', 'secai') && hasPair('psm1', 'psm2')
+             : !ovRows.some((r) => NEW_IDS.indexOf(r.from) !== -1 || NEW_IDS.indexOf(r.to) !== -1));
 
   // Hidden entries stay out of every public list (vacuous today; bites the day a hidden cert is added).
   const publicRows = authRows.concat(acctRows, ccaRows, wall, genRows, ovIds, pickRows(tiles), pickRows(whitelist), pickRows(nameSlugs),
     Object.keys(cfg).map((s) => ({ id: slugId(s) })), slugs.map((s) => ({ id: slugId(s) })));
   test('No hidden registry cert appears in any public landing list', leaks(publicRows, HIDDEN_IDS).length === 0);
-})();
+}
+run(false);
+run(true);

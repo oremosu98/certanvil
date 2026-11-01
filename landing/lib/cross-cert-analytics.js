@@ -102,6 +102,9 @@
     }
   };
 
+  // The four new exams add their domain weights once revealed (empty until then).
+  (window.certanvilNewCerts ? window.certanvilNewCerts() : []).forEach(function (c) { DOMAIN_WEIGHTS_BY_CERT[c.id] = c.weights; });
+
   // ── Cert catalog ────────────────────────────────────────────────────────
   // Local source of truth for the analytics page. Eight exams (7 certs / 3 vendors).
   // Phase G consolidates this with cert_entitlements DB table.
@@ -111,6 +114,14 @@
   //   - 'soon' — coming soon, no study possible yet
   //   - 'passed' — derived at runtime from profile.metadata.cert_results.<cert>.status
   function getCertCatalog(role) {
+    var newCerts = (window.certanvilNewCerts ? window.certanvilNewCerts() : []).map(function (c) {
+      return {
+        id: c.id, name: c.name, code: c.code, glyphClass: c.id, glyph: c.glyph, status: 'active',
+        examFormat: c.format, maxScore: c.maxScore, passScore: c.passScore, examName: c.examName,
+        cta: { label: 'Open →', href: c.href + (c.href.indexOf('?') === -1 ? '?cert=' : '&cert=') + c.id },
+        coachActive: c.coach
+      };
+    });
     return [
       {
         id: 'netplus',
@@ -226,7 +237,7 @@
         cta: { label: 'Open →', href: 'https://clfc02.certanvil.com/?cert=clfc02' },
         coachActive: 'AWS cloud fundamentals. Cloud-concepts overlap with AZ-900.'
       }
-    ];
+    ].concat(newCerts);
   }
 
   // E2E hook (v7.8.2): expose the cert catalog so Playwright can assert the
@@ -303,8 +314,10 @@
   function certGlyphHTML(glyph, glyphClass){
     var g = String(glyph || '');
     if (!g) return '';
-    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : '';
+    var sup = glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : glyphClass === 'psm1' ? 'I' : glyphClass === 'psm2' ? 'II' : '';
     var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    // New exams (hidden until reveal): SecAI+ accents its S, PSM I / II carry a small numeral.
+    if (glyphClass === 'secai') return '<span class="cg"><span class="cg-ac">S</span>AI</span>';
     var head = esc(g.slice(0, -1)), last = esc(g.slice(-1));
     return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }

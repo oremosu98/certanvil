@@ -445,6 +445,12 @@
       { name: 'AWS Solutions Architect', code: 'SAA-C03', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA', live: false },
       { name: 'Azure Administrator', code: 'AZ-104', visibility: 'Coming-soon tile', bank: '—', status: 'Notify-me CTA', live: false },
     ];
+    // The four new exams are always listed here; "Hidden" until lib/new-certs.js is revealed.
+    var newRows = (window.certanvilNewCertsAdmin ? window.certanvilNewCertsAdmin() : []).map(function (c) {
+      return { name: c.name, code: c.code, visibility: (c.hidden ? 'Hidden · Pro' : 'Public · Pro'), bank: c.bank,
+               status: (c.hidden ? 'Hidden · ' : 'Live · ') + c.host, live: true };
+    });
+    packs = packs.slice(0, 8).concat(newRows, packs.slice(8));
     elCertsTbody.innerHTML = packs.map(function (p) {
       return ''
         + '<tr' + (p.live ? '' : ' style="opacity:.65"') + '>'

@@ -333,8 +333,10 @@
   function certGlyphHTML(glyph, glyphClass, supOverride){
     var g = String(glyph || '');
     if (!g) return '';
-    var sup = supOverride || (glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : '');
+    var sup = supOverride || (glyphClass === 'aplus-core1' ? '1' : glyphClass === 'aplus-core2' ? '2' : glyphClass === 'psm1' ? 'I' : glyphClass === 'psm2' ? 'II' : '');
     var esc = function(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+    // New exams (hidden until reveal): SecAI+ accents its S, PSM I / II carry a small numeral.
+    if (glyphClass === 'secai') return '<span class="cg"><span class="cg-ac">S</span>AI</span>';
     var head = esc(g.slice(0, -1)), last = esc(g.slice(-1));
     return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }
@@ -566,6 +568,19 @@
       activeMeta: 'available now',
       href: 'https://clfc02.certanvil.com/'
     }));
+    // The four new exams: empty until lib/new-certs.js is revealed (one switch for every landing list).
+    (window.certanvilNewCerts ? window.certanvilNewCerts() : []).forEach(function (c) {
+      var spec = {
+        id: c.id,
+        glyph: c.glyph,
+        glyphClass: 'cert-glyph-' + c.id,
+        name: c.name,
+        code: c.code,
+        activeMeta: 'available now',
+        href: c.href
+      };
+      rows.push(rowForCert(spec));
+    });
     listEl.innerHTML = rows.join('');
 
     // Show Security+ analytics quick link in the cross-cert modal too
