@@ -666,7 +666,7 @@ function pricing(o) {
       ticks(['Unlimited questions in every cert, including new ones', 'The Exam Simulator, with 90 timed questions and PBQs', 'Sim Lab, Decision Lab and Marathon in full', 'Drill Mistakes and Why-Not, to fix what you got wrong']) +
       '<button class="btn btn-white btn-block" type="button" data-go="A/signin">Get Pro</button>' +
       '<p class="renew on-bronze-txt"><span class="swap">' + (y && launch ? 'You pay ' + P(k.l) + ' today. ' : '') + renewLine() + '</span></p>' +
-      '<ul class="trust">' + ['Prices include tax', 'Card, Apple Pay, Google Pay', 'Secure checkout by Stripe', '14-day money-back on web purchases', 'Cancel anytime'].map(function (t) { return '<li>' + I.check + '<span>' + t + '</span></li>'; }).join('') + '</ul></section>';
+      '<ul class="trust">' + ['Prices include tax', 'Card, Apple Pay, Google Pay', 'Secure checkout by Stripe', 'Cancel anytime'].map(function (t) { return '<li>' + I.check + '<span>' + t + '</span></li>'; }).join('') + '</ul></section>';
   }
   var free = '<aside class="pr-free" aria-label="Free"><span class="tier">Free</span><div class="free-fig num">' + P('0') + '<small>for good</small></div>' +
     '<p class="tag">Build the habit first. No card.</p>' +
@@ -681,7 +681,7 @@ function faq() {
   var q = [
     ['What happens after the first year?', 'Yearly renews at ' + P(k.y) + ' a year until you cancel. If you joined on the launch offer, we email you before that first full-price renewal.'],
     ['If I cancel, do I keep my progress?', 'Yes. Pro stays on until the end of the period you paid for. After that you\'re on Free, and every answer, streak and score is still there.'],
-    ['How do refunds work?', 'If you bought on the web, you have 14 days from your first payment to ask for your money back: email support@certanvil.com and we refund it in full. If you bought in the iPhone app, Apple handles the refund. Ask at reportaproblem.apple.com.'],
+    ['Can I get a refund?', 'Pro starts the moment you pay, so there are no automatic refunds. If something went wrong, email support@certanvil.com and we\'ll look at it. If you bought in the iPhone app, refunds go through Apple at reportaproblem.apple.com.'],
     ['I bought Pro on my iPhone. Does it work on the web?', 'Yes. Pro belongs to your account, not your device. Sign in with the same account on any device and Pro is there.'],
     ['Does Pro cover every cert, including new ones?', 'Yes. One price covers every cert we have today and every one we add.'],
     ['I only need it until my exam. Which plan?', 'Monthly, if your exam is a few months away: cancel once you pass. Yearly costs the same as about nine months of Monthly, so it wins if you plan to study longer or take a second cert.'],
@@ -699,7 +699,7 @@ function signinModal() {
     '<div style="display:flex;align-items:center;gap:12px;margin:14px 0;color:var(--muted);font-size:12.5px"><span style="flex:1;height:1px;background:var(--border)"></span>or<span style="flex:1;height:1px;background:var(--border)"></span></div>' +
     '<div class="field" style="margin-top:0"><label for="si-email">Email</label><input id="si-email" type="email" placeholder="you@example.com" autocomplete="email" style="letter-spacing:0"></div>' +
     '<button class="btn btn-primary btn-block" type="button" style="margin-top:12px">Email me a sign-in link</button>' +
-    '<p class="pw-trust">Next: secure checkout by Stripe</p></div>';
+    '<p class="pw-trust">Next: secure checkout by Stripe, where you confirm Pro starts straight away</p></div>';
 }
 
 /* ═════════════ B · Paywall ═════════════ */
@@ -718,7 +718,7 @@ function paywall(trig, surf) {
       '<p class="pw-trust">Cancel anytime · Billed through your Apple ID</p>' +
       '<div class="pw-legal"><button class="lnk" type="button">Restore purchases</button><a class="lnk" href="#">Terms of Use</a><a class="lnk" href="#">Privacy</a></div>'
     : '<p class="renew">' + renewLine() + '</p><button class="btn btn-primary btn-block" type="button" data-web-purchase>Get Pro</button>' +
-      '<button class="btn btn-text btn-block" type="button">' + t.second + '</button><p class="pw-trust">Cancel anytime · 14-day money-back</p>';
+      '<button class="btn btn-text btn-block" type="button">' + t.second + '</button><p class="pw-trust">Cancel anytime · Secure checkout by Stripe</p>';
   return '<div class="pw"><span class="eyebrow">' + t.eb + '</span><h2 class="pw-h" id="pw-h">' + t.h + '</h2><p class="pw-p">' + t.p + '</p>' +
     planRows({ ios: isIos }) + launchLine + ticks(UNLOCKS) + foot + '</div>';
 }
@@ -823,8 +823,6 @@ function billing(st) {
         ? '<dt>Price</dt><dd>' + P(k.m) + ' a month</dd><dt>Next charge</dt><dd>' + P(k.m) + ' on 14 Nov 2026</dd>'
         : '<dt>Price</dt><dd>First year ' + P(k.l) + ', then ' + P(k.y) + ' on 6 Nov 2027</dd><dt>Next charge</dt><dd>' + P(k.y) + ' on 6 Nov 2027</dd>') +
       '<dt>Paid with</dt><dd>Visa ending 4242</dd></dl><div class="acts">' + manage + cancelBtn + '</div></div>' +
-      (monthly ? '' : '<div class="bl-sec"><h2>Refund</h2><p>Changed your mind? You can have a full refund within 14 days of your first payment, so until 20 Nov 2026.</p>' +
-        '<a class="lnk" href="mailto:support@certanvil.com?subject=Refund%20request&body=Account%3A%20' + EMAIL + '%0APurchased%3A%206%20Nov%202026">Request a refund</a></div>') +
       '<div class="bl-sec"><h2>Receipts</h2><p>Each receipt is emailed to ' + EMAIL + '. Past invoices are in Manage billing.</p></div>';
   } else if (st === 'cancelled') {
     card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Pro until 14 Mar 2027</h2><span class="pill dim">Cancelled</span></div>' +
@@ -836,8 +834,8 @@ function billing(st) {
       '<div class="acts"><a class="btn btn-primary btn-sm" href="#">Update card</a>' + cancelBtn + '</div></div>';
   } else if (st === 'apple') {
     card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Pro · Yearly</h2><span class="pill">Billed by Apple</span></div>' +
-      '<p class="bl-lead">Billed by Apple through your Apple ID. Changes, cancellation and refunds go through Apple.</p>' +
-      '<div class="acts"><a class="btn btn-ghost btn-sm" href="#">Manage in Apple ' + I.ext + '</a><a class="lnk" href="#">Request a refund from Apple ' + I.ext + '</a></div></div>';
+      '<p class="bl-lead">Billed by Apple through your Apple ID. Changes and cancellation go through Apple.</p>' +
+      '<div class="acts"><a class="btn btn-ghost btn-sm" href="#">Manage in Apple ' + I.ext + '</a></div></div>';
   } else if (st === 'ended') {
     card = '<div class="bl-card"><div class="bl-head"><h2 class="bl-plan">Free</h2><span class="pill dim">Pro ended 14 Mar</span></div>' +
       '<p class="bl-lead">Your Pro has ended. Your progress is kept.</p>' +
@@ -917,7 +915,7 @@ function diagnostic() {
 /* ═════════════ G · Delete account ═════════════ */
 function delBody(kind, compact) {
   var box = kind === 'web'
-    ? '<div class="inline-note"><b>Your Pro ends with your account</b><p>We cancel it when you delete, so there are no more charges. Still within 14 days of your first payment? <a class="lnk" style="min-height:0" href="#">Request a refund</a> first.</p></div>'
+    ? '<div class="inline-note"><b>Your Pro ends with your account</b><p>We cancel it when you delete, so there are no more charges.</p></div>'
     : '<div class="inline-warn">' + I.alert + '<div><b>You\'re still billed by Apple. Deleting your account doesn\'t stop that. Cancel in your Apple ID.</b>' +
       '<a class="lnk" href="#">Open Apple subscriptions ' + I.ext + '</a></div></div>';
   return '<p class="bl-lead" style="margin-top:0">This removes your progress, history and Pass Plan from every device. It can\'t be undone.</p>' + box +
@@ -953,7 +951,7 @@ var SCREENS = [
       render: function () { return desk('certanvil.com/pricing', pricing({ owned: 'apple' })) + mweb('certanvil.com/pricing', pricing({ owned: 'apple' })); } }
   ] },
   { id: 'B', name: 'Paywall', axis: SURF, states: [
-    { id: 'limit', label: '15 questions used', note: 'Hard stop on the 15th AI question. Second button is <b>Come back tomorrow</b>. iPhone variant: Apple price and intro offer, auto-renew and 24-hour line, Restore purchases, Terms of Use and Privacy, no money-back line. Tap Get Pro on iPhone to see the already-Pro guard.', render: function () { return paywallFrames('limit'); } },
+    { id: 'limit', label: '15 questions used', note: 'Hard stop on the 15th AI question. Second button is <b>Come back tomorrow</b>. iPhone variant: Apple price and intro offer, auto-renew and 24-hour line, Restore purchases, Terms of Use and Privacy. Tap Get Pro on iPhone to see the already-Pro guard.', render: function () { return paywallFrames('limit'); } },
     { id: 'run', label: 'Second run today', note: 'Second Gauntlet, PBQ or Decision Lab run in a day: the paywall appears after the result screen, never in the middle of a run.', render: function () { return paywallFrames('run'); } },
     { id: 'feature', label: 'Pro feature', note: 'Pro-only feature: the preview comes first (Exam Simulator shown), then <b>Unlock with Pro</b> opens the paywall with a headline about that feature.', render: function () { return paywallFrames('feature'); } },
     { id: 'cert', label: 'Second cert', note: 'Opening a second cert: hard stop that names the cert and reassures that the first cert\'s progress stays.', render: function () { return paywallFrames('cert'); } },
@@ -974,10 +972,10 @@ var SCREENS = [
   ] },
   { id: 'D', name: 'Billing', states: [
     { id: 'free', label: 'Free', note: '<b>/manage-subscription</b> becomes <b>Billing</b>. Free: what Pro adds, and one Get Pro.', render: function () { return desk('certanvil.com/manage-subscription', billing('free')) + mweb('certanvil.com/manage-subscription', billing('free')); } },
-    { id: 'proweb', label: 'Pro · web', note: 'Launch buyer shown: first-year price and the date the full price starts. Request a refund appears only for the first web payment, within 14 days, as a pre-filled email to support.', render: function () { return desk('certanvil.com/manage-subscription', billing('proweb')) + mweb('certanvil.com/manage-subscription', billing('proweb')); } },
+    { id: 'proweb', label: 'Pro · web', note: 'Launch buyer shown: first-year price and the date the full price starts. No refund button: refunds are case by case through support.', render: function () { return desk('certanvil.com/manage-subscription', billing('proweb')) + mweb('certanvil.com/manage-subscription', billing('proweb')); } },
     { id: 'cancelled', label: 'Cancelled, still on', note: 'Cancelled but paid up: Pro until the date, with Resume.', render: function () { return desk('certanvil.com/manage-subscription', billing('cancelled')) + mweb('certanvil.com/manage-subscription', billing('cancelled')); } },
     { id: 'failed', label: 'Card failed', note: 'Grace period: Pro stays on during Stripe Smart Retries. Cancel is still visible.', render: function () { return desk('certanvil.com/manage-subscription', billing('failed')) + mweb('certanvil.com/manage-subscription', billing('failed')); } },
-    { id: 'apple', label: 'Billed by Apple', note: 'Apple-billed Pro seen on the web: links to Apple\'s subscriptions and refund pages only.', render: function () { return desk('certanvil.com/manage-subscription', billing('apple')) + mweb('certanvil.com/manage-subscription', billing('apple')); } },
+    { id: 'apple', label: 'Billed by Apple', note: 'Apple-billed Pro seen on the web: a link to Apple\'s subscriptions page only.', render: function () { return desk('certanvil.com/manage-subscription', billing('apple')) + mweb('certanvil.com/manage-subscription', billing('apple')); } },
     { id: 'ended', label: 'Pro ended', note: 'Pro ended: progress kept, Renew in one tap. No guilt copy.', render: function () { return desk('certanvil.com/manage-subscription', billing('ended')) + mweb('certanvil.com/manage-subscription', billing('ended')); } },
     { id: 'owner', label: 'Owner', note: 'Owner (admin) account: full access, no billing actions.', render: function () { return desk('certanvil.com/manage-subscription', billing('owner')); } },
     { id: 'cancel', label: 'Cancel question', note: 'Cancel asks one question, then Stripe\'s portal confirms. Pick an answer to see the follow-up. Persona is on <b>Monthly</b> so Too expensive can suggest Yearly. Continue to cancel is always there.',

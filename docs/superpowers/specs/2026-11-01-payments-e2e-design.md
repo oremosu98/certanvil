@@ -33,7 +33,7 @@ still say 20 free questions a day and USD at your bank's rate.
 | D6 | **iPhone: Apple in-app purchase only, in every country**, through RevenueCat. No link or price that points to web purchase. |
 | D7 | **Web: Stripe hosted Checkout** with card, Apple Pay, Google Pay and Link; prices tax-inclusive in the buyer's currency. Apply for **Stripe Managed Payments** (merchant of record); run on **Stripe Tax** until access is granted. |
 | D8 | **An account comes first** on every surface. **Pro belongs to the account**: buy anywhere, Pro everywhere. |
-| D9 | **14-day money-back applies to web purchases only.** iPhone refunds go through Apple. |
+| D9 | **No refund promise and no refund button anywhere** (founder, 1 Nov: it invites abuse). Refunds are the founder's call, case by case, by email to support. Web checkout records the buyer's consent to start Pro straight away and their acknowledgement that this ends the 14-day cancellation right (UK Consumer Contracts Regulations / EU equivalent), using Stripe Checkout's required terms consent plus custom text: "I want Pro to start now, and I understand I lose my 14-day right to cancel." iPhone refunds stay with Apple. |
 | D10 | **One contact:** support@certanvil.com on every customer surface; billing@ forwards to it. |
 | D11 | **Landing analytics:** Vercel Web Analytics (no cookie banner). |
 | D12 | **Business address:** a registered-address service. Founder sets it up next month; it is the **last step before launch** and gates the Terms and footer. |
@@ -56,8 +56,8 @@ launch line (web: "$69 for your first year, then $89. Ends [date, time]" with $8
 iPhone: Apple's intro offer as described in D5); three things Pro unlocks (unlimited questions in
 every cert, Exam Simulator and full labs, fixing your mistakes); an auto-renew line on every
 surface ("Renews automatically at $89 a year until you cancel." On iPhone add "Cancel at least 24
-hours before renewal in your Apple ID settings."); trust line "Cancel anytime" plus "14-day
-money-back" on web or "Billed through your Apple ID" on iPhone; iPhone only: "Restore purchases"
+hours before renewal in your Apple ID settings."); trust line "Cancel anytime", plus "Billed through your Apple ID" on
+iPhone; iPhone only: "Restore purchases"
 and links to Terms of Use and Privacy.
 
 **Prices come from one place.** A single pricing endpoint on certanvil.com (`/api/pricing`) reads
@@ -94,9 +94,9 @@ source.
   runs; **Get Pro** → sign-in modal (plan shown) → Stripe → `/account` confirmation. Already Pro:
   a "You're Pro" card instead of buy buttons ("Billed by Apple" when it is).
 - Trust lines under the button: "Prices include tax · Card, Apple Pay, Google Pay · Secure checkout
-  by Stripe · 14-day money-back on web purchases · Cancel anytime".
-- FAQ, in order: what happens after the first year; cancel and keep progress; refunds (web 14 days,
-  iPhone via Apple); bought on iPhone, works on web; every cert including new ones; only need it
+  by Stripe · Cancel anytime".
+- FAQ, in order: what happens after the first year; cancel and keep progress; refunds (no automatic refunds;
+  write to support; iPhone purchases are refunded by Apple); bought on iPhone, works on web; every cert including new ones; only need it
   until my exam; why £/€ and is tax included.
 - Diagnostic results: "Save your results and keep practising free" stays the main button; the
   second becomes **Go Pro** ("Close the gap to [pass mark]") through the same journey. The dead
@@ -112,20 +112,20 @@ source.
 | State | Shows | Actions |
 |---|---|---|
 | Free | What Pro adds | Get Pro |
-| Pro, billed on web | Plan, price, next charge; launch buyers: "first year $69, then $89 on [date]" | Manage billing (Stripe portal) · Cancel · Request a refund (first web payment, within 14 days) |
+| Pro, billed on web | Plan, price, next charge; launch buyers: "first year $69, then $89 on [date]" | Manage billing (Stripe portal) · Cancel |
 | Cancelled, still active | "Pro until 14 Mar" | Resume |
 | Card failed (grace) | "Your card didn't go through. Update it to keep Pro." | Update card |
-| Billed by Apple | "Billed by Apple through your Apple ID" | Links to Apple subscriptions and Apple refunds |
+| Billed by Apple | "Billed by Apple through your Apple ID" | Link to Apple subscriptions |
 | Pro ended | "Your Pro has ended. Your progress is kept." | Renew |
 | Owner | As today | None |
 
 - **Cancel** asks one question first: "Passed my exam" → congratulations and the next cert; "Too
   expensive" → on Monthly, suggest Yearly. Then Stripe's portal confirms. The cancel button is never
   hidden.
-- **Refund:** a pre-filled email (account email, purchase date) to support@; the founder issues a
-  full refund in Stripe. The webhook treats a full refund (`charge.refunded`) as the end: it
-  revokes Pro **and cancels the subscription** through the Stripe API, so it can never renew. A
-  partial refund changes nothing.
+- **Refunds:** none promised, no button. Someone who writes to support gets a case-by-case answer
+  from the founder. If the founder does refund in full, the webhook treats it (`charge.refunded`)
+  as the end: it revokes Pro **and cancels the subscription** through the Stripe API, so it can
+  never renew. A partial refund changes nothing.
 - **Receipts:** Stripe's emailed receipts and the portal invoice list; Apple sends its own.
 - **Failed renewal:** Pro stays on through the grace period (Stripe Smart Retries; Apple Billing
   Grace Period) with a calm in-app banner.
@@ -145,7 +145,7 @@ source.
 ## Launch moment
 - One email, only to the "CertAnvil Pro" waitlist (cert waitlists hear about the offer in their
   cert's launch email), 48 hours before the site switches: Pro is live, $69 for your first year
-  then $89, ends [date], what Pro unlocks, 14-day money-back on web, one button to checkout, a
+  then $89, ends [date], what Pro unlocks, one button to checkout, a
   working one-click unsubscribe. The form promised one email, so there is no reminder sequence.
 - Fix first: the waitlist email says reply "unsubscribe"; the form promised one click.
 - Launch day: waitlist buttons become Get Pro; offer panel on pricing; one-line homepage banner;
@@ -156,7 +156,7 @@ source.
 
 ## iPhone: what the app must never show
 No web price used as a buy prompt, no Go Pro / waitlist for Pro, no links to pricing, billing,
-Stripe or web refunds, no "14-day money-back", no web launch offer. Plain text "Pro · billed on
+Stripe or refunds, no web launch offer. Plain text "Pro · billed on
 certanvil.com" is allowed.
 
 Today's hiding rule matches only links containing "pricing" or "manage-subscription"
@@ -169,11 +169,11 @@ page including diagnostic; in the app, pricing and billing pages route to the na
 ## Legal and trust pages
 - **Terms** (rewrite §4–6): prices in your currency with tax included; auto-renewal; launch offer
   (one first year at the offer price, renews at full price, end date); iPhone purchases billed,
-  refunded and cancelled through Apple; money-back for web purchases only; retry period matching
+  refunded and cancelled through Apple; no automatic refunds, with the 14-day cancellation right waived by the buyer's consent at checkout; retry period matching
   Stripe; deletion and subscriptions; free tier is 15 questions a day. If Managed Payments is
   granted, name Stripe as the seller and route payment questions to it.
 - **Privacy:** add Apple and RevenueCat alongside Stripe.
-- **Pricing footer:** Terms, Privacy, Refunds, Contact.
+- **Pricing footer:** Terms, Privacy, Contact.
 - **Business address (D12):** registered-address service in the footer and Terms. Founder, next
   month, last step before launch.
 
@@ -192,7 +192,7 @@ web, (B) iPhone, (C) landing, legal and launch.
 
 **Before launch: web app and landing (plans A and C)**
 3. Account status from the real subscription; Billing page with every state; cancel question;
-   refund email and the refund-cancels webhook; `/account` confirmation page with `from` and the
+   the consent line at checkout and the refund-cancels webhook; `/account` confirmation page with `from` and the
    `?pro=1` re-check.
 4. Pricing page rebuild, diagnostic Go Pro, homepage copy, every Go Pro button pointed at the
    paywall or pricing.
@@ -212,7 +212,7 @@ web, (B) iPhone, (C) landing, legal and launch.
 9. Grace-period banner and Pro-ended screen.
 10. `data-web-purchase` marker and native-hide on every landing page.
 11. Terms (sale section; fix the limits to 15 questions and 5 review cards everywhere), Privacy,
-    FAQ, refund wording, one contact address, pricing footer links.
+    FAQ, refund wording (no promise), one contact address, pricing footer links.
 12. Waitlist one-click unsubscribe; launch email (its button goes to pricing with Yearly kept,
     through sign-in).
 13. Vercel Web Analytics plus checkout events (started, paid, cancelled) for the funnels below.
@@ -269,7 +269,8 @@ error, so a paying user is never locked out by a bad connection.
 - **Confirming payment inside each cert app on the web:** domain hops while Pro switches on; one
   page at `/account` instead.
 - **More URL patterns in native-hide:** misses buttons and text; one marker covers them all.
-- **Self-serve refund button:** invites abuse; a pre-filled email is enough at launch volume.
+- **Self-serve refund button, and any refund promise (14-day money-back):** founder rejected both on 1 Nov;
+  they invite abuse. Do not re-propose.
 - **A multi-email launch sequence:** breaks the waitlist's "one email" promise.
 
 ## Related
