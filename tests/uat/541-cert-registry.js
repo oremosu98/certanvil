@@ -31,6 +31,9 @@ const { test } = require('./_context');
   const APPROVED = { 'aplus-core1': '220-1201', 'aplus-core2': '220-1202' };
 
   test('Registry has 8 entries, ids match the snapshot', R && R.all().length === 8 && R.all().map((e) => e.id).sort().join() === IDS.join());
+  test('diagnosticSlug: the four diagnostic URL slugs are pinned, every other cert falls back to its id',
+    R.get('netplus').diagnosticSlug === 'network-plus' && R.get('secplus').diagnosticSlug === 'security-plus' && R.get('az900').diagnosticSlug === 'azure-fundamentals'
+    && R.get('ai900').diagnosticSlug === 'azure-ai-fundamentals' && R.all().filter((e) => ['netplus', 'secplus', 'az900', 'ai900'].indexOf(e.id) === -1).every((e) => e.diagnosticSlug === e.id));
   test('get/isKnown: known ids resolve, unknown ids do not', R.get('netplus').id === 'netplus' && R.get('nope') === null && R.isKnown('az900') && !R.isKnown('secai') && !R.isKnown(''));
 
   const scaleBad = [];

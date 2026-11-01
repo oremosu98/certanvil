@@ -33,9 +33,8 @@ const { test } = require('./_context');
   const allowed = (list, id, what) => Object.prototype.hasOwnProperty.call(ALLOWED_DRIFT, list + '|' + id + '|' + what)
     || Object.prototype.hasOwnProperty.call(ALLOWED_DRIFT, list + '|*|' + what);
 
-  // The diagnostic funnel names certs by URL slug. Four slugs differ from the registry id.
-  // (registry diagnosticSlug is currently the id for every cert, so it is not used here.)
-  const SLUG_TO_ID = { 'network-plus': 'netplus', 'security-plus': 'secplus', 'azure-fundamentals': 'az900', 'azure-ai-fundamentals': 'ai900' };
+  // The diagnostic funnel names certs by URL slug; the registry's diagnosticSlug is the map.
+  const SLUG_TO_ID = {}; ALL.forEach((e) => { SLUG_TO_ID[e.diagnosticSlug] = e.id; });
   const slugId = (s) => SLUG_TO_ID[s] || s;
 
   // Slice from `start` to the matching close of the bracket that opens at or after `from`.
