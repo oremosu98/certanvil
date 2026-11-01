@@ -119,6 +119,39 @@ window.CERT_PACKS.sc900 = {
     'compliance-solutions': 'Microsoft Compliance Solutions'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      'sci-concepts': [
+        { label: 'Zero Trust',            key: 'Zero Trust Model' },
+        { label: 'Defense in Depth',      key: 'Defense in Depth' },
+        { label: 'Shared Responsibility', key: 'Shared Responsibility Model' },
+        { label: 'AuthN vs AuthZ',        key: 'Authentication vs Authorization' },
+        { label: 'Encryption & Hashing',  key: 'Encryption & Hashing' },
+      ],
+      'entra': [
+        { label: 'Entra ID',              key: 'Entra ID Function & Identity Types' },
+        { label: 'Conditional Access',    key: 'Conditional Access' },
+        { label: 'MFA',                   key: 'Multifactor Authentication (Entra)' },
+        { label: 'PIM',                   key: 'Privileged Identity Management (PIM)' },
+        { label: 'ID Protection',         key: 'Entra ID Protection' },
+      ],
+      'security-solutions': [
+        { label: 'Defender XDR',          key: 'Microsoft Defender XDR' },
+        { label: 'Defender for Cloud',    key: 'Microsoft Defender for Cloud' },
+        { label: 'Sentinel',              key: 'Microsoft Sentinel' },
+        { label: 'Azure Firewall',        key: 'Azure Firewall' },
+        { label: 'Key Vault',             key: 'Azure Key Vault' },
+      ],
+      'compliance-solutions': [
+        { label: 'Purview Portal',        key: 'Microsoft Purview Portal' },
+        { label: 'Compliance Manager',    key: 'Compliance Manager & Compliance Score' },
+        { label: 'Sensitivity Labels',    key: 'Sensitivity Labels & Policies' },
+        { label: 'DLP',                   key: 'Data Loss Prevention (DLP)' },
+        { label: 'Insider Risk',          key: 'Insider Risk Management' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (53 topics across 4 SC-900 domains) ───────────────
   // Drives weak-spot routing, exemplar bank picker, lottery, readiness domain
   // attribution. Topic name = primary key everywhere; domain key is one of:

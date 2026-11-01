@@ -137,6 +137,48 @@ window.CERT_PACKS.secplus = {
     governance:   'Program Management & Oversight'
   },
 
+  // Home-page domain grid: the canonical topics shown per domain. Keys equal domainWeights keys; each `key` is an exact
+  // topicDomains key (weak-spot matching). Read by features/home.js via CERT_PACK.canonicalDomainTopics.
+  canonicalDomainTopics: {
+      concepts: [
+        { label: 'Security Controls', key: 'Security Controls' },
+        { label: 'CIA Triad & AAA',   key: 'CIA Triad & AAA' },
+        { label: 'Change Mgmt',       key: 'Change Management' },
+        { label: 'Technical Change Mgmt', key: 'Technical Change Management' },
+        { label: 'Cryptography',      key: 'Cryptography Fundamentals' },
+        { label: 'PKI',               key: 'PKI & Certificate Management' },
+        { label: 'Obfuscation',  key: 'Obfuscation' },
+      ],
+      threats: [
+        { label: 'Threat Actors',     key: 'Threat Actors & Motivations' },
+        { label: 'Attack Vectors',    key: 'Attack Vectors & Surfaces' },
+        { label: 'Social Engineering', key: 'Social Engineering' },
+        { label: 'Malware Types',     key: 'Malware Types' },
+        { label: 'Mitigation',        key: 'Mitigation Techniques' },
+      ],
+      architecture: [
+        { label: 'Architecture Models', key: 'Architecture Models' },
+        { label: 'Zero Trust & SDN',   key: 'Zero Trust & SDN' },
+        { label: 'Cloud Security',     key: 'Cloud Security & Shared Responsibility' },
+        { label: 'Data Protection',    key: 'Data Protection' },
+        { label: 'Resilience',         key: 'Resilience & Recovery' },
+      ],
+      operations: [
+        { label: 'Hardening',         key: 'Endpoint & Server Hardening' },
+        { label: 'Vuln Mgmt',         key: 'Vulnerability Management' },
+        { label: 'Monitoring & SIEM', key: 'Security Monitoring & SIEM' },
+        { label: 'IAM',               key: 'Identity & Access Management' },
+        { label: 'Incident Response', key: 'Incident Response' },
+      ],
+      governance: [
+        { label: 'Governance',        key: 'Security Governance' },
+        { label: 'Risk Mgmt',         key: 'Risk Management' },
+        { label: 'Third-Party Risk',  key: 'Third-Party Risk Management' },
+        { label: 'Compliance',        key: 'Compliance Frameworks' },
+        { label: 'Audits',            key: 'Audits & Assessments' },
+      ],
+  },
+
   // ── TOPIC → DOMAIN MAP (32 topics across 5 SY0-701 domains) ───────────
   // Drives weak-spot routing, exemplar bank picker, lottery, readiness
   // domain attribution. Topic name = primary key everywhere; domain key

@@ -1193,10 +1193,11 @@ test('v4.54.10 CSS: .sb-streak-label is monospace small-caps',
 
 // Domain grid canonical topics
 // v4.99.80: cert-aware — Net+ canonical has OSI→Firewalls→7-Step; Sec+ has Security Controls→Audits
-test('v4.54.10 JS: _CANONICAL_NETPLUS covers 5 topics per domain',
-  /_CANONICAL_NETPLUS\s*=\s*\{[\s\S]{0,3000}OSI Model[\s\S]{0,2000}Firewalls[\s\S]{0,1000}7-Step Method/.test(js));
-test('v4.54.10 JS: _CANONICAL_SECPLUS covers 5 SY0-701 domains',
-  /_CANONICAL_SECPLUS\s*=\s*\{[\s\S]{0,3000}Security Controls[\s\S]{0,2000}Incident Response[\s\S]{0,1000}Audits/.test(js));
+// registry Task 1.5: the canonical topic objects moved from home.js into each pack as canonicalDomainTopics.
+test('v4.54.10 JS (retargeted): netplus canonicalDomainTopics covers 5 topics per domain',
+  /canonicalDomainTopics:\s*\{[\s\S]{0,3000}OSI Model[\s\S]{0,2000}Firewalls[\s\S]{0,1000}7-Step Method/.test(certNetplus));
+test('v4.54.10 JS (retargeted): secplus canonicalDomainTopics covers 5 SY0-701 domains',
+  /canonicalDomainTopics:\s*\{[\s\S]{0,3000}Security Controls[\s\S]{0,2000}Incident Response[\s\S]{0,1000}Audits/.test(certSecplus));
 test('v4.54.10 CSS: .dg-topic-list vertical list with accent-dot bullets',
   /\.dg-topic-list\s*\{[\s\S]{0,400}flex-direction:\s*column/.test(css) &&
   /\.dg-topic-dot\s*\{[\s\S]{0,400}border-radius:\s*50%/.test(css));

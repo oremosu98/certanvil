@@ -207,8 +207,8 @@ test('v8.120.0 AI-901: no retired AI-900 machine-learning domain or topics remai
 test('v8.120.0 AI-901: Microsoft Foundry is covered (>= 10 exemplars name it) and the home grid matches the pack',
   !!_ai901 && _ai901.questionExemplars.filter(e => /Foundry/.test(e.question + ' ' + e.explanation)).length >= 10
     && (() => {
-      const hm = fs.readFileSync(path.join(ROOT, 'features', 'home.js'), 'utf8');
-      const block = (hm.match(/const _CANONICAL_AI900 = \{([\s\S]*?)\n    \};/) || [])[1] || '';
+      // registry Task 1.5: the canonical block moved from home.js into certs/ai900.js as canonicalDomainTopics.
+      const block = (certAi900.match(/canonicalDomainTopics: \{([\s\S]*?)\n  \},\n/) || [])[1] || '';
       const keys = [...block.matchAll(/key: '([^']+)'/g)].map(m => m[1]);
       return keys.length === 10 && keys.every(k => _ai901.topicDomains[k]);
     })());

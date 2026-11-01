@@ -313,8 +313,10 @@ test('v7.2.0 ObjBadge: _progressRowHtml does NOT emit a topic-obj-badge (v2 name
 // domain-order derivation from DOMAIN_WEIGHTS and Sec+ canonical topics.
 test('v4.88.1 → v4.99.80 Security+: renderSetupDomainGrid reads domainOrder from DOMAIN_WEIGHTS',
   /renderSetupDomainGrid[\s\S]{0,2000}DOMAIN_WEIGHTS[\s\S]{0,200}Object\.keys\(DOMAIN_WEIGHTS\)/.test(js));
-test('v4.88.1 → v4.99.80 Security+: renderSetupDomainGrid uses _CANONICAL_SECPLUS for Sec+ topics',
-  js.includes('_CANONICAL_SECPLUS'));
+// registry Task 1.5: Sec+ topics now live in the pack; the grid reads CERT_PACK.canonicalDomainTopics.
+test('v4.88.1 → v4.99.80 Security+ (retargeted): renderSetupDomainGrid reads the active pack\'s canonicalDomainTopics; Sec+ pack carries them',
+  /renderSetupDomainGrid[\s\S]{0,4000}CERT_PACK\.canonicalDomainTopics/.test(read('features/home.js'))
+    && /canonicalDomainTopics:\s*\{\s*concepts:\s*\[\s*\{ label: 'Security Controls'/.test(certSecplus));
 
 // ── v4.88.4: URL action handler ──
 // External surfaces (landing CTA, share links) can route to specific app
