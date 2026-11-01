@@ -2586,6 +2586,8 @@ html[data-theme] body .tad-cert-glyph{flex:none!important;width:30px!important;h
 html[data-theme] body .tad-cert-glyph .cg{display:inline-flex!important;align-items:baseline!important;white-space:nowrap!important;}
 html[data-theme] body .tad-cert-glyph .cg-ac{color:var(--accent)!important;}
 html[data-theme] body .tad-cert-glyph .cg-sup{font-size:.55em!important;align-self:flex-start!important;color:var(--accent)!important;font-weight:700!important;margin-left:.5px!important;}
+/* v8.205.0: three-letter lettermarks (AWS, SAI, PSM + numeral) drop a size so they fit the 30px tile (mockups/new-certs-concept.html §1) */
+html[data-theme] body .tad-cert-glyph .cg.cg-3{font-size:11px!important;letter-spacing:-.03em!important;}
 /* The glyph tile bg now adapts (color-mix on var(--surface)), so ink + accent
    adapt with it via the base rules above — var(--text) (near-white in dark) and
    var(--accent) (bright bronze in dark). No theme-pinned override needed; pinning

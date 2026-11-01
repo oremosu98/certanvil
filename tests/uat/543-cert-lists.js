@@ -51,9 +51,9 @@ const { test } = require('./_context');
   const PUBLIC = R0.listed(false).map((e) => e.id);
   const ALL = R0.all().map((e) => e.id);
   test('Sanity: the real registry lists the eight certs, and a hidden fake is excluded for non-admins',
-    PUBLIC.length === 8 && ALL.length === 8 && (() => { const r = box({}).window.CertRegistry; return r.listed(false).length === 8 && r.listed(true).length === 9 && r.visible().length === 8; })());
+    PUBLIC.length === 8 && ALL.length === 12 && (() => { const r = box({}).window.CertRegistry; return r.listed(false).length === 8 && r.listed(true).length === 13 && r.visible().length === 8; })());   // 12 = the eight + four hidden new certs
   test('visible(): follows window._certanvilIsAdmin, hidden before the profile loads',
-    (() => { const sb = box({}); const r = sb.window.CertRegistry; const a = r.visible().length; sb.window._certanvilIsAdmin = true; const b = r.visible().length; return a === 8 && b === 9; })());
+    (() => { const sb = box({}); const r = sb.window.CertRegistry; const a = r.visible().length; sb.window._certanvilIsAdmin = true; const b = r.visible().length; return a === 8 && b === 13; })());
 
   // ── list surfaces: each returns the registry's visible ids, in registry order; hidden only for admins ──
   const surfaces = [];
@@ -61,13 +61,14 @@ const { test } = require('./_context');
   surfaces.push({
     name: 'auth-state getAvailableCerts',
     ids: (sb) => run(sb, fn('auth-state.js', 'getAvailableCerts') + '\ngetAvailableCerts("user")').map((c) => c.id),
-    order: (r) => { const v = r.visible(); return v.filter((e) => !e.family).concat(v.filter((e) => e.family)).map((e) => e.id); }
+    // single exams by vendor group, then the family pairs (A+, PSM) last
+    order: (r) => { const g = r.vendorGroups(r.visible()), out = []; g.forEach((x) => x.entries.forEach((e) => { if (!e.family) out.push(e.id); })); g.forEach((x) => x.entries.forEach((e) => { if (e.family) out.push(e.id); })); return out; }
   });
   // 2. iOS first-run picker
   surfaces.push({
     name: 'ios-firstrun pickCerts',
     ids: (sb) => run(sb, fn('features/ios-firstrun.js', 'pickRow') + '\n' + fn('features/ios-firstrun.js', 'pickCerts') + '\npickCerts()').map((c) => c.id),
-    order: (r) => r.visible().map((e) => e.id)
+    order: (r) => [].concat.apply([], r.vendorGroups(r.visible()).map((g) => g.entries.map((e) => e.id)))   // grouped by vendor
   });
   // 3 + 4. onboarding first-run and onboarding home
   ['lib/onboarding-firstrun.js', 'lib/onboarding-home.js'].forEach((f) => surfaces.push({
@@ -82,7 +83,7 @@ const { test } = require('./_context');
       non === s.order(sbA.window.CertRegistry).join() && non.split(',').length === 8 && non.indexOf('zz') === -1);
     const sbB = box({ window: {} }); sbB.window._certanvilIsAdmin = true;
     const adm = s.ids(sbB);
-    test(s.name + ': admin also gets the hidden fake', adm.indexOf('zz') !== -1 && adm.length === 9);
+    test(s.name + ': admin also gets the hidden fake (and the four hidden new certs)', adm.indexOf('zz') !== -1 && adm.length === 13);
     const sbC = box({ window: {} }, false); delete sbC.window.CertRegistry;
     let safe = null, threw = false;
     try { safe = s.ids(sbC); } catch (e) { threw = true; }
@@ -98,6 +99,17 @@ const { test } = require('./_context');
     rel(surfaces[0].ids(sbO), EIGHT) === EIGHT.join());
   test('Literal order, picker + both onboarding lists: netplus, secplus, aplus-core1, aplus-core2, az900, ai900, sc900, clfc02',
     surfaces.slice(1).every((s) => rel(s.ids(sbO), EIGHT_PICK) === EIGHT_PICK.join()));
+  // v8.205.0: where the four new certs sit (admin view, since they are hidden): SecAI+ with CompTIA, PRINCE2 after AWS, PSM pair last.
+  const sbN = box({}, false); sbN.window._certanvilIsAdmin = true;
+  test('New certs in the switcher: netplus, secplus, secai, az900, ai900, sc900, clfc02, prince2, aplus-core1, aplus-core2, psm1, psm2',
+    surfaces[0].ids(sbN).join() === 'netplus,secplus,secai,az900,ai900,sc900,clfc02,prince2,aplus-core1,aplus-core2,psm1,psm2');
+  test('New certs in the first-run picker, by vendor: CompTIA (netplus, secplus, secai, A+), Microsoft, AWS, PeopleCert, Scrum.org',
+    surfaces[1].ids(sbN).join() === 'netplus,secplus,secai,aplus-core1,aplus-core2,az900,ai900,sc900,clfc02,prince2,psm1,psm2');
+  // The picker draws one vendor heading per group, in order, and PSM rows show the full name as their second line.
+  const pickHtml = run(sbN, fn('features/ios-firstrun.js', 'pickRow') + '\n' + fn('features/ios-firstrun.js', 'pickCerts') + '\n' + fn('features/ios-firstrun.js', '_ifrPickerHtml') + '\n_ifrPickerHtml({ certs: pickCerts(), selected: "psm1", first: true })');
+  test('Picker shows vendor headings CompTIA, Microsoft, AWS, PeopleCert, Scrum.org (in that order) and "Lock in PSM I"',
+    (pickHtml.match(/<div class="ifr-sect">([^<]+)<\/div>/g) || []).map((h) => h.replace(/<[^>]+>/g, '')).join() === 'CompTIA,Microsoft,AWS,PeopleCert,Scrum.org' &&
+    /Lock in PSM I</.test(pickHtml) && /<span class="ifr-nm">PSM II<\/span><span class="ifr-cd">Professional Scrum Master II<\/span>/.test(pickHtml) && !/Choose one to study/.test(pickHtml));
 
   // ── the ACTIVE cert resolves from its own entry, not the filtered list: a non-admin on a hidden cert's host sees its own name ──
   (() => {

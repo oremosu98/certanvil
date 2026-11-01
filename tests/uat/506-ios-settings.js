@@ -110,9 +110,9 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
       /CA_NATIVE/.test(so) && /_certanvilSignedIn === false/.test(so) && /250/.test(so) && /15000/.test(so) && /requireAccount\('signedout'\)/.test(so)
       && so.indexOf('l.click()') < so.indexOf('requireAccount'));
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
-    // Re-pinned for cert-registry Tasks 1.3 + 1.4 (getActiveCertId, getAvailableCerts and tadSwitchCert read the registry); earlier by Admin in the app Task 7 (Preview as Free: the admin-as-Pro check, the admin flag, sign-out clears it).
+    // Re-pinned for new-certs Task R1 (switcher vendor order, data-driven glyph accent/numeral); earlier for cert-registry Tasks 1.3 + 1.4 (getActiveCertId, getAvailableCerts and tadSwitchCert read the registry); earlier by Admin in the app Task 7 (Preview as Free: the admin-as-Pro check, the admin flag, sign-out clears it).
     test('auth-state.js (gated lane) is untouched by Lift B4',
-      require('crypto').createHash('sha256').update(auth).digest('hex') === '47c7b5187079e017e914c472ef72eb224e1bfdeeb0b1124dab0ca67743321986');
+      require('crypto').createHash('sha256').update(auth).digest('hex') === 'c32689fa696f91e36a870871b803c5be24a744fe54771219a55a5ace80a36653');
   } catch (err) {
     test('Lift B4 Settings: block (threw)', false);
     results.errors.push('506 ios-settings block threw: ' + err.message);

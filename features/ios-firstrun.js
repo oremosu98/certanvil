@@ -175,10 +175,13 @@
   // m = {certs: [{id, glyph, name, code}], selected, pro}
   function _ifrPickerHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
-    var sel = null;
+    var sel = null, lastVendor = null;
     var rows = (m.certs || []).map(function (c) {
       var on = c.id === m.selected; if (on) sel = c;
-      return '<button type="button" class="ifr-cert' + (on ? ' sel' : '') + '" data-act="cert" data-id="' + e(c.id) + '" aria-pressed="' + on + '">' +
+      // a vendor heading (CompTIA, Microsoft, AWS, PeopleCert, Scrum.org) before the first row of each vendor
+      var head = c.vendor && c.vendor !== lastVendor ? '<div class="ifr-sect">' + e(c.vendor) + '</div>' : '';
+      if (c.vendor) lastVendor = c.vendor;
+      return head + '<button type="button" class="ifr-cert' + (on ? ' sel' : '') + '" data-act="cert" data-id="' + e(c.id) + '" aria-pressed="' + on + '">' +
         '<span class="ifr-mark">' + e(c.glyph) + '</span><span class="ifr-meta"><span class="ifr-nm">' + e(c.name) + '</span><span class="ifr-cd">' + e(c.code) + '</span></span>' +
         '<span class="ifr-pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span></button>';
     }).join('');
@@ -194,7 +197,7 @@
     return '<div class="ifr-picker' + (m.first ? ' ifr-first' : '') + '">' +
       head +
       '<div class="ifr-pnote"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><p>' + note + '</p></div>' +
-      '<div class="ifr-body"><div class="ifr-sect">Choose one to study</div>' + rows + '</div>' +
+      '<div class="ifr-body">' + ((m.certs || []).some(function (c) { return c.vendor; }) ? '' : '<div class="ifr-sect">Choose one to study</div>') + rows + '</div>' +
       '<div class="ifr-foot"><button type="button" class="ifr-btn" data-act="' + (m.pro ? 'start' : 'lock') + '">' + (m.pro ? 'Start with ' : 'Lock in ') + name + '</button>' + hint + signin + '</div>' +
     '</div>';
   }
@@ -440,10 +443,14 @@
 
   // ── Behind the onboarding switch: June's picker in #onb-firstrun, the lock-in sheet in B4's #ist-sheet. ──
   // The picker rows are the registry's visible certs (no registry on the page: the Network+ default alone).
-  function pickRow(e) { return { id: e.id, glyph: e.mark, name: e.labels.firstrun, code: e.code }; }
+  // Rows come grouped by vendor (CertRegistry.vendorGroups): each row carries its vendor, and the picker shows one heading per vendor.
+  function pickRow(e) { return { id: e.id, glyph: e.mark, name: e.labels.firstrun, code: e.labels.firstrunCode || e.code, vendor: e.vendor || '' }; }
   function pickCerts() {
     var R = window.CertRegistry;
-    return R ? R.visible().map(pickRow) : [{ id: 'netplus', glyph: 'N+', name: 'Network+', code: 'N10-009' }];
+    if (!R) return [{ id: 'netplus', glyph: 'N+', name: 'Network+', code: 'N10-009', vendor: 'CompTIA' }];
+    var rows = [];
+    R.vendorGroups(R.visible()).forEach(function (g) { rows = rows.concat(g.entries.map(pickRow)); });
+    return rows;
   }
   // Name of any registry cert (hidden too), so the active cert always resolves; pickCerts() is only the pickable list.
   function pickName(id) { var R = window.CertRegistry, e = R && R.get(id); if (e) return e.labels.firstrun; var l = pickCerts(); for (var i = 0; i < l.length; i++) if (l[i].id === id) return l[i].name; return ''; }

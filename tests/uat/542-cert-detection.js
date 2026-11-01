@@ -73,7 +73,7 @@ const { _fnBody, test, vm } = require('./_context');
   // 2. Default and unknown override.
   test('netplus is the default on localhost and an unknown host in all three paths',
     agree(all3('localhost'), 'netplus') && agree(all3('example.com'), 'netplus'));
-  const unk = { storage: { [KEY]: 'secai' } };
+  const unk = { storage: { [KEY]: 'cysa' } };
   test('unknown override falls back to netplus in head and detectCert',
     head('localhost', unk).cert === 'netplus' && detect('localhost', unk).cert === 'netplus' && active('localhost', unk).cert === 'netplus');
   const typo = { storage: { [KEY]: 'secplsu' } };
@@ -107,7 +107,7 @@ const { _fnBody, test, vm } = require('./_context');
   // 5. ?cert= and ?exam= entry points in detectCert (unchanged behaviour: honoured on any host, persisted).
   const dc = detect('localhost', { search: '?cert=secplus' });
   test('detectCert: ?cert=<known id> wins and is persisted', dc.cert === 'secplus' && dc.writes.indexOf(KEY) !== -1);
-  test('detectCert: ?cert=<unknown id> is ignored', detect('localhost', { search: '?cert=secai' }).cert === 'netplus');
+  test('detectCert: ?cert=<unknown id> is ignored', detect('localhost', { search: '?cert=cysa' }).cert === 'netplus');
   test('detectCert: ?exam=core2 on the A+ host maps to aplus-core2 and is persisted',
     detect('aplus.certanvil.com', { search: '?exam=core2' }).cert === 'aplus-core2' && detect('aplus.certanvil.com', { search: '?exam=core2' }).writes.indexOf(KEY) !== -1);
   test('detectCert: ?exam= is ignored off the A+ family (localhost, another cert host), like the head',
@@ -150,7 +150,7 @@ const { _fnBody, test, vm } = require('./_context');
       const o = { search: '?cert=' + t.id }; return head(h, o).cert === t.id && detect(h, o).cert === t.id;
     })));
   test('?cert=<unknown id> is ignored by head and detectCert on a cert host',
-    head('azure.certanvil.com', { search: '?cert=secai' }).cert === 'az900' && detect('azure.certanvil.com', { search: '?cert=secai' }).cert === 'az900');
+    head('azure.certanvil.com', { search: '?cert=cysa' }).cert === 'az900' && detect('azure.certanvil.com', { search: '?cert=cysa' }).cert === 'az900');
   // getActiveCertId ignores query params but runs after detectCert has persisted the choice: same context, same storage.
   const seq = mkCtx('networkplus.certanvil.com', q);
   vm.runInContext(detectSrc + '\ndetectCert()', seq.ctx);
@@ -181,9 +181,9 @@ const { _fnBody, test, vm } = require('./_context');
 
   // 7c. The full matrix: every host x query x saved override. All three paths must agree with each other and with
   // CertRegistry.resolve (they all call it; this guards the wiring and the side-effect-free path).
-  const mHosts = ['localhost', 'example.com', 'aplus-x.vercel.app'].concat(R.all().map((e) => e.host));
-  const mQueries = ['', '?cert=secplus', '?cert=aplus-core2', '?cert=secai', '?exam=core1', '?exam=core2', '?exam=core9', '?cert=az900&exam=core2', '?cert=SecPlus'];
-  const mOverrides = [undefined, 'secai'].concat(R.all().map((e) => e.id));
+  const mHosts = ['localhost', 'example.com', 'aplus-x.vercel.app', 'scrum-x.vercel.app'].concat(R.all().map((e) => e.host));
+  const mQueries = ['', '?cert=secplus', '?cert=aplus-core2', '?cert=cysa', '?exam=core1', '?exam=core2', '?exam=core9', '?cert=az900&exam=core2', '?cert=SecPlus', '?exam=psm1', '?exam=psm2', '?cert=psm2', '?cert=secai'];
+  const mOverrides = [undefined, 'cysa'].concat(R.all().map((e) => e.id));
   const matrixBad = []; let matrixN = 0;
   mHosts.forEach((h) => mQueries.forEach((qs) => mOverrides.forEach((ov) => {
     const o = { search: qs, storage: ov ? { [KEY]: ov } : {} };
@@ -205,6 +205,53 @@ const { _fnBody, test, vm } = require('./_context');
   const plain = { storage: { [KEY]: v1.ls[KEY] } };
   test('Next plain networkplus visit with that persisted override: all three return netplus',
     agree(all3('networkplus.certanvil.com', plain), 'netplus'));
+
+  // 7e. v8.205.0 Scrum family (PSM I / PSM II on scrum.certanvil.com), same generic family rules as A+.
+  test('Scrum: a cold visit to scrum.certanvil.com (and a scrum-x preview) opens PSM I in all three paths',
+    agree(all3('scrum.certanvil.com'), 'psm1') && agree(all3('scrum-x.vercel.app'), 'psm1'));
+  const psm2q = { search: '?exam=psm2' };
+  test('Scrum: ?exam=psm2 opens PSM II in head and detectCert, and is persisted',
+    head('scrum.certanvil.com', psm2q).cert === 'psm2' && detect('scrum.certanvil.com', psm2q).cert === 'psm2' && detect('scrum.certanvil.com', psm2q).writes.indexOf(KEY) !== -1);
+  const sq = mkCtx('scrum.certanvil.com', psm2q);
+  const sqDetect = vm.runInContext(detectSrc + '\ndetectCert()', sq.ctx);
+  sq.win.CURRENT_CERT = sqDetect;
+  const sqActive = vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', sq.ctx);
+  test('Scrum: after detectCert takes ?exam=psm2, getActiveCertId agrees (psm2)', sqDetect === 'psm2' && sqActive === 'psm2' && sq.ls[KEY] === 'psm2');
+  test('Scrum: a saved PSM II override on the scrum host opens PSM II in all three paths',
+    agree(all3('scrum.certanvil.com', { storage: { [KEY]: 'psm2' } }), 'psm2'));
+  test('Scrum: a non-member override (secplus, aplus-core2) lands on PSM I; ?exam=core2 means nothing on the scrum host',
+    agree(all3('scrum.certanvil.com', { storage: { [KEY]: 'secplus' } }), 'psm1') && agree(all3('scrum.certanvil.com', { storage: { [KEY]: 'aplus-core2' } }), 'psm1') &&
+    head('scrum.certanvil.com', { search: '?exam=core2' }).cert === 'psm1' && detect('scrum.certanvil.com', { search: '?exam=core2' }).cert === 'psm1');
+  test('Scrum: ?exam=psm2 means nothing on the A+ host or localhost',
+    head('aplus.certanvil.com', psm2q).cert === 'aplus-core1' && detect('aplus.certanvil.com', psm2q).cert === 'aplus-core1' && detect('localhost', psm2q).cert === 'netplus');
+  test('SecAI+ and PRINCE2 hosts open their own cert in all three paths (secai never routes to AI-900)',
+    agree(all3('secai.certanvil.com'), 'secai') && agree(all3('secai-x.vercel.app'), 'secai') && agree(all3('prince2.certanvil.com'), 'prince2') &&
+    agree(all3('secai.certanvil.com', { storage: { [KEY]: 'ai900' } }), 'secai'));
+  test('Hidden certs still open by ?cert= on any host (the preview try-out path)',
+    ['secai', 'prince2', 'psm1', 'psm2'].every((id) => head('networkplus.certanvil.com', { search: '?cert=' + id }).cert === id && detect('localhost', { search: '?cert=' + id }).cert === id));
+  // In-family switch: tadSwitchCert psm1 -> psm2 does exactly what A+ Core 1 -> Core 2 does: stays on the family host
+  // (no navigation), saves the member as the override and reloads; the reload's resolve then opens that member.
+  // From another host it navigates to scrum.certanvil.com/?exam=psm2.
+  const authSrc = rd('auth-state.js');
+  const swm = /window\.tadSwitchCert\s*=\s*function/.exec(authSrc);
+  const swSrc = (() => { const open = authSrc.indexOf('{', swm.index); let d = 1, i = open + 1; while (d > 0) { if (authSrc[i] === '{') d++; else if (authSrc[i] === '}') d--; i++; } return authSrc.slice(swm.index, i); })();
+  const switchFrom = (host, override, target) => {
+    const c = mkCtx(host, { storage: override ? { [KEY]: override } : {} });
+    let reloaded = false;
+    c.win._gateProOnly = () => true; c.win.location.reload = () => { reloaded = true; };
+    vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + swSrc + ';', c.ctx);
+    const before = c.win.location.href;
+    c.win.tadSwitchCert(target);
+    return { stayed: c.win.location.href === before, reloaded, saved: c.ls[KEY], href: c.win.location.href,
+      next: R.resolve({ hostname: host, search: '', override: c.ls[KEY] }) };
+  };
+  const s12 = switchFrom('scrum.certanvil.com', 'psm1', 'psm2'), s21 = switchFrom('scrum.certanvil.com', 'psm2', 'psm1');
+  const a12 = switchFrom('aplus.certanvil.com', 'aplus-core1', 'aplus-core2'), x2 = switchFrom('secplus.certanvil.com', 'secplus', 'psm2');
+  test('tadSwitchCert psm1 <-> psm2 stays on scrum.certanvil.com, saves the member and reloads into it (same as A+ Core 1 <-> 2)',
+    s12.stayed && s12.reloaded && s12.saved === 'psm2' && s12.next === 'psm2' && s21.stayed && s21.reloaded && s21.next === 'psm1' &&
+    a12.stayed && a12.reloaded && a12.next === 'aplus-core2');
+  test('tadSwitchCert to PSM II from another host goes to scrum.certanvil.com/?exam=psm2',
+    x2.href === 'https://scrum.certanvil.com/?exam=psm2' && !x2.saved);
 
   // 8. Source hygiene: no hand-kept per-cert id lists left in the three paths.
   const lists = /'secplus'[^\n]*'az900'[^\n]*'ai900'/;

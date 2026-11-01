@@ -90,12 +90,14 @@
   // as Sec+). Future Azure certs (AZ-104, AZ-204, AZ-305) co-exist on the
   // same azure.certanvil.com subdomain via in-app cert switcher rather
   // than new subdomains (founder lock 2026-05-26).
-  // Now CertRegistry.visible() (hidden certs only for admins). Registry order, except the A+ rows stay last, as the
-  // switcher has had them since v7.6.0. Registry missing (stale cached page): an empty list, so the switcher hides itself.
+  // Now CertRegistry.visible() (hidden certs only for admins). Single exams grouped by vendor (CertRegistry.vendorGroups,
+  // vendors in registry order), then the family pairs (A+, PSM), which have sat last since v7.6.0. For the eight
+  // launch certs that is exactly registry order with A+ last. Registry missing (stale cached page): an empty list.
   function getAvailableCerts(role) {
     var R = window.CertRegistry;
-    var v = R ? R.visible() : [];
-    v = v.filter(function (e) { return !e.family; }).concat(v.filter(function (e) { return e.family; }));
+    var g = R ? R.vendorGroups(R.visible()) : [], v = [];
+    g.forEach(function (x) { v = v.concat(x.entries.filter(function (e) { return !e.family; })); });
+    g.forEach(function (x) { v = v.concat(x.entries.filter(function (e) { return e.family; })); });
     return v.map(function (e) { return { id: e.id, name: e.name, code: e.code, tier: e.tier, glyph: e.glyph }; });
   }
 
@@ -559,12 +561,17 @@
       .replace(/'/g, '&#39;');
   }
 
+  // Fraunces lettermark: one bronze letter (the registry's glyphAccent: the last, or the first for SecAI+ 'SAI') and
+  // an optional bronze numeral (glyphSup: A+ 1/2, PSM I/II). Three-letter glyphs (AWS, SAI, PSM) drop a size (.cg-3) to fit the tile.
   function certGlyphHTML(glyph, certId) {
     var g = String(glyph || '');
     if (!g) return '';
-    var sup = certId === 'aplus-core1' ? '1' : certId === 'aplus-core2' ? '2' : '';
-    var head = escapeHtml(g.slice(0, -1)), last = escapeHtml(g.slice(-1));
-    return '<span class="cg">' + head + '<span class="cg-ac">' + last + '</span>' + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
+    var e = window.CertRegistry && window.CertRegistry.get(certId);
+    var sup = escapeHtml((e && e.glyphSup) || '');
+    var parts = e && e.glyphAccent === 'first'
+      ? ['', escapeHtml(g.charAt(0)), escapeHtml(g.slice(1))]
+      : [escapeHtml(g.slice(0, -1)), escapeHtml(g.slice(-1)), ''];
+    return '<span class="cg' + (g.length >= 3 ? ' cg-3' : '') + '">' + parts[0] + '<span class="cg-ac">' + parts[1] + '</span>' + parts[2] + (sup ? '<span class="cg-sup">' + sup + '</span>' : '') + '</span>';
   }
 
   if (document.readyState === 'loading') {
