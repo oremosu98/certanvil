@@ -98,6 +98,17 @@ const { test } = require('./_context');
   test("formatScore: scaled rounds to integer string, null/NaN/undefined give '--'",
     R.formatScore('netplus', 684) === '684' && R.formatScore('netplus', 684.6) === '685' && R.formatScore('az900', null) === '--' && R.formatScore('az900', undefined) === '--' && R.formatScore('az900', NaN) === '--');
 
+  // byHost is routing, not a trust check: it looks only at the first label, so a foreign suffix still routes.
+  // Pinned so a change is deliberate. Never use byHost to decide whether a host is really ours.
+  test('byHost pins current behaviour for a foreign suffix: ai.evil.com routes to ai900 (routing only, not a trust check)',
+    R.byHost('ai.evil.com') === 'ai900' && R.byHost('secai.evil.com') === null);
+
+  const mut = R.get('az900');
+  const before = JSON.stringify(R.get('az900')) + JSON.stringify(R.all().map((e) => e.id));
+  try { mut.name = 'x'; mut.labels.signin = 'x'; mut.scale.pass = 1; mut.hostAliases.push('x'); mut.hidden = true; R.scale('az900').pass = 1; R.all().pop(); } catch (e) { /* strict-mode throw is fine */ }
+  test('Entries are frozen: mutation attempts do not change get(id) or all()',
+    JSON.stringify(R.get('az900')) + JSON.stringify(R.all().map((e) => e.id)) === before && Object.isFrozen(mut) && Object.isFrozen(mut.labels) && Object.isFrozen(mut.scale) && Object.isFrozen(mut.hostAliases) && R.all().length === 8);
+
   // Test-only injection: hidden cert + a percent-scale cert, on a fresh registry so the shared one is untouched.
   const R2 = load();
   R2._add({ id: 'zz', name: 'Hidden Cert', hidden: true, hostPrefix: 'zz', host: 'zz.certanvil.com', scale: { min: 0, max: 100, pass: 70, format: 'percent' } });
@@ -105,6 +116,7 @@ const { test } = require('./_context');
     R2.byHost('zz.certanvil.com') === 'zz' && R2.byHost('zz-x.vercel.app') === 'zz' &&
     R2.listed(false).every((e) => e.id !== 'zz') && R2.listed(true).some((e) => e.id === 'zz') && R2.listed(false).length === 8 && R2.all().length === 9);
   test("formatScore percent: 72 -> '72%', null -> '--'", R2.formatScore('zz', 72) === '72%' && R2.formatScore('zz', 71.6) === '72%' && R2.formatScore('zz', null) === '--');
+  test('_add entries are frozen too', Object.isFrozen(R2.get('zz')) && Object.isFrozen(R2.get('zz').scale) && Object.isFrozen(R2.get('zz').hostAliases));
   test('Real registry was not affected by the test-only _add', R.all().length === 8 && !R.isKnown('zz'));
 
   const src = read('lib/cert-registry.js');
@@ -116,7 +128,8 @@ const { test } = require('./_context');
   const html = read('index.html');
   const iReg = html.indexOf('<script src="lib/cert-registry.js"');
   const iNative = html.indexOf('<script src="native-shell.js"');
-  const iDetect = html.indexOf('document.title');
+  const dm = /\(function\s*\(\s*\)\s*\{\s*var\s+cert\s*=\s*null\s*;/.exec(html); // same marker the 540 extractor uses
+  const iDetect = dm ? dm.index : -1;
   test('index.html loads the registry after native-shell.js and before the inline detection IIFE', iNative > -1 && iReg > iNative && iDetect > iReg);
   test('sw.js precaches the registry', /'\.\/lib\/cert-registry\.js'/.test(read('sw.js')));
   test('app.js does not read CertRegistry yet (consumers are later tasks)', !/CertRegistry/.test(read('app.js')));
