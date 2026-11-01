@@ -1680,6 +1680,7 @@
 
       /* ── New exams (SecAI+, PRINCE2, Scrum) · from lib/new-certs.js, empty until that file is revealed.
             One Scrum plate covers PSM I and II (it opens PSM I). ── */
+      var LIVE_BASE = CERTS.length; // live exams before the new ones (A+ counts as two tiles, so tiles = exams)
       var NEW_TILES = (window.certanvilNewCerts ? window.certanvilNewCerts() : []).filter(function(c){return c.id!=='psm2';}).map(function(c){
         var w=c.wall||{};
         return { id:c.id, name:w.name||c.name, code:c.code, plateCode:w.code, vendor:c.vendor, mark:w.mark||c.mark, href:c.href,
@@ -1898,7 +1899,9 @@
           if(legal.firstChild)legal.removeAttribute('hidden');
         }
         var n=document.querySelectorAll('[data-new-certs-count]');
-        for(var i=0;i<n.length;i++)n[i].textContent='Twelve';
+        var words=['Zero','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen'];
+        var total=LIVE_BASE+fresh.length; // 8 existing exams plus every revealed exam (PSM II shares the Scrum tile)
+        for(var i=0;i<n.length;i++)n[i].textContent=words[total]||String(total);
       })();
       if(io){ soonPlates.forEach(function(p){io.observe(p);}); }
       else { soonPlates.forEach(function(p){p.classList.add('drawn');}); }

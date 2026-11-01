@@ -597,7 +597,7 @@
   function buildMyCertRow(c) {
     return ''
       + '<a class="my-cert-row" href="' + escapeHtml(c.href) + '">'
-      +   '<span class="my-cert-glyph ' + c.glyphClass + '">' + certGlyphHTML(c.glyph, c.glyphClass, /core2/.test(c.href || '') ? '2' : /core1/.test(c.href || '') ? '1' : '') + '</span>'
+      +   '<span class="my-cert-glyph ' + c.glyphClass + '">' + certGlyphHTML(c.glyph, c.id, /core2/.test(c.href || '') ? '2' : /core1/.test(c.href || '') ? '1' : '') + '</span>'
       +   '<div class="my-cert-info">'
       +     '<div class="my-cert-name-row">'
       +       '<span class="my-cert-name">' + escapeHtml(c.name) + '</span>'

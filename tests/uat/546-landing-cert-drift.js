@@ -108,6 +108,22 @@ function run(revealed) {
           && c.host === e.host && c.format === e.scale.format;
       }));
   }
+  if (revealed) {
+    const byId = {}; NEWC.forEach((c) => { byId[c.id] = c; });
+    test('Reveal path: hosts are secai/prince2/scrum.certanvil.com, and the PSM II link carries ?exam=psm2 (PSM I does not)',
+      byId.secai.host === 'secai.certanvil.com' && byId.prince2.host === 'prince2.certanvil.com'
+      && byId.psm1.host === 'scrum.certanvil.com' && byId.psm2.host === 'scrum.certanvil.com'
+      && byId.secai.href === 'https://secai.certanvil.com/' && byId.prince2.href === 'https://prince2.certanvil.com/'
+      && byId.psm1.href === 'https://scrum.certanvil.com/' && byId.psm2.href === 'https://scrum.certanvil.com/?exam=psm2');
+    // The weights keys feed the analytics weak-domain lookup, so they must be each pack's domain labels, with its weights.
+    const packLit = (id, marker) => { const src = fs.readFileSync(path.join(ROOT, 'certs', id + '.js'), 'utf8'); return after(src, marker, '{', '}'); };
+    NEW_IDS.forEach((id) => {
+      const labels = packLit(id, 'domainLabels:'), dw = packLit(id, 'domainWeights:'), w = byId[id].weights;
+      const keys = Object.keys(labels);
+      test('Reveal path: ' + id + ' landing weights use the pack domain labels and the pack weights',
+        keys.length === Object.keys(w).length && keys.every((k) => w[labels[k]] === Math.round(dw[k] * 100)));
+    });
+  }
   const check = (name, list, rows, opts) => {
     const bad = compare(list, rows, opts);
     test('Landing ' + name + ' matches the registry' + (bad.length ? ' (' + bad.join('; ') + ')' : ''), bad.length === 0 && rows.length > 0);
@@ -134,6 +150,20 @@ function run(revealed) {
   test('Landing auth.js My-certs rows merge the new-cert helper (id and code from the data)', authLoop);
   const authAll = authRows.map((r) => ({ id: r.id, code: r.code })).concat(authLoop ? NEWC.map((c) => ({ id: c.id, code: c.code })) : []);
   check('auth.js My-certs rows', 'auth', authAll);
+  // Execute the real My-certs code (renderMyCertsList -> rowForCert -> buildMyCertRow -> certGlyphHTML) against a stub DOM.
+  const fnSrc = (src, name) => { const i = src.indexOf('function ' + name); if (i < 0) throw new Error('546: ' + name + ' not found in auth.js'); return src.slice(i, src.indexOf('{', i)) + balanced(src, i, '{', '}', name); };
+  const listEl = { innerHTML: '' };
+  vm.runInNewContext(['escapeHtml', 'certGlyphHTML', 'buildMyCertRow', 'renderMyCertsList'].map((n) => fnSrc(auth, n)).join('\n') + '\nrenderMyCertsList({});',
+    { window: nc, document: { getElementById: (id) => (id === 'my-certs-list' ? listEl : null) } }, { filename: 'auth.js My-certs' });
+  const rowHtml = (code) => (listEl.innerHTML.split('</a>').filter((r) => r.indexOf('my-cert-code">' + code + ' ') !== -1)[0] || '');
+  test('Landing auth.js My-certs glyphs: existing rows keep their marks (A+ Core 1 numeral); new rows are absent while hidden',
+    /cg-sup">1</.test(rowHtml('220-1201')) && /cg-sup">2</.test(rowHtml('220-1202')) && /cg-ac">\+</.test(rowHtml('N10-009'))
+    && (revealed || NEW_IDS.every((id) => rowHtml(REG.get(id).code) === '')));
+  if (revealed) {
+    test('Reveal path: My-certs rows draw the new marks (SecAI+ bronze S, PSM I numeral I, PSM II numeral II, PRINCE2 P2)',
+      /cg-ac">S<\/span>AI</.test(rowHtml('CY0-001')) && /cg-sup">I</.test(rowHtml('PSM I')) && /cg-sup">II</.test(rowHtml('PSM II'))
+      && /cg-ac">2</.test(rowHtml('Foundation')));
+  }
 
   // 2. landing/lib/account.js: entitlement tiles, then the exam-format table (max and pass).
   const acct = read('landing/lib/account.js');
@@ -145,6 +175,10 @@ function run(revealed) {
   const entRun = (role) => runFn('function(role)' + entFn, 'account.js getCertEntitlements', [role]);
   entRun('admin').concat(entRun('user')).forEach((r) => acctRows.push({ id: r.id, code: r.code }));
   check('account.js entitlement tiles', 'account-tiles', acctRows);
+  const lockedUser = entRun('user'), OLD_LOCKED = lockedUser.filter((r) => NEW_IDS.indexOf(r.id) === -1 && r.id !== 'netplus');
+  test('Landing account.js locked tiles: the eight existing certs keep the generic locked chip, the new exams use their own glyph class',
+    OLD_LOCKED.length === 7 && OLD_LOCKED.every((r) => r.glyphClass === 'locked' || r.id === 'secplus' && r.glyphClass === 'locked')
+    && lockedUser.filter((r) => NEW_IDS.indexOf(r.id) !== -1).every((r) => r.glyphClass === r.id));
   const fmts = after(acct, 'var EXAM_FORMATS', '{', '}');
   const fmtMerge = /\(window\.certanvilNewCerts \? window\.certanvilNewCerts\(\) : \[\]\)\.forEach\(function \(c\) \{\s*EXAM_FORMATS\[[\s\S]*?\}\);/.exec(acct);
   if (!fmtMerge) throw new Error('546: pattern not found: the new-cert EXAM_FORMATS merge in landing/lib/account.js');
@@ -197,6 +231,7 @@ function run(revealed) {
       !!scrum && /scrum\.certanvil\.com\/$/.test(scrum.href) && covers.indexOf('psm2') !== -1
       && NEWC.filter((c) => c.id === 'prince2')[0].legal.indexOf('PeopleCert') !== -1 && NEWC.filter((c) => c.id === 'psm1')[0].legal.indexOf('Scrum.org') !== -1);
   }
+  test('Landing index.html live-exam count is derived from the revealed certs, not hardcoded', !/textContent\s*=\s*'Twelve'/.test(idx) && /LIVE_BASE\+fresh\.length/.test(idx));
   const soon = after(idx, 'var SOON = [', '[', ']');
   test('Landing index.html coming-soon tiles are not registry certs (a cert that goes live must leave SOON)',
     soon.every((c) => !codeToId[c.code]));

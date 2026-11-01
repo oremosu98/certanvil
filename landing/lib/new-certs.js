@@ -37,7 +37,7 @@
       mark: { m: 'P', a: '2' },
       sub: 'Foundation  ·  5 areas  ·  weights estimated',
       domains: [['Practices', 60], ['Processes', 15], ['People', 13], ['Principles', 8], ['Core concepts', 4]],
-      weights: { 'Practices': 60, 'Processes': 15, 'People': 13, 'Principles': 8, 'Core concepts': 4 },
+      weights: { 'Practices (business case, organizing, quality, plans, risk, issues, progress)': 60, 'Processes (SU, DP, IP, CS, MPD, SB, CP)': 15, 'People': 13, 'Principles': 8, 'Core concepts (integrated elements, delivery approaches, tailoring)': 4 },
       bank: 'Pro · launching' },
     { id: 'psm1', name: 'Professional Scrum Master I', code: 'PSM I', vendor: 'Scrum.org', glyph: 'PSM', glyphClass: 'psm1',
       href: 'https://scrum.certanvil.com/', format: 'percent', maxScore: 100, passScore: 85, examName: 'Professional Scrum Master I (PSM I)',

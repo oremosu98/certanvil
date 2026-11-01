@@ -157,7 +157,7 @@
     ];
     // The four new exams: empty until lib/new-certs.js is revealed.
     rest = rest.concat((window.certanvilNewCerts ? window.certanvilNewCerts() : []).map(function (c) {
-      return { id: c.id, name: c.name, code: c.code, glyph: c.glyph };
+      return { id: c.id, name: c.name, code: c.code, glyph: c.glyph, fresh: true };
     }));
     rest.forEach(function (c) {
       if (role === 'admin') {
@@ -176,7 +176,8 @@
           id: c.id,
           name: c.name,
           code: c.code,
-          glyphClass: 'locked',
+          // The eight existing certs keep the generic locked chip; the new exams keep their own mark (SecAI+ S, PSM numeral).
+          glyphClass: c.fresh ? c.id : 'locked',
           glyph: c.glyph,
           meta: 'upgrade to Pro to unlock',
           status: 'locked',
