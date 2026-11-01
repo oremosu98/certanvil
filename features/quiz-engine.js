@@ -1135,8 +1135,10 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
   function renderMCQ(q, box, ans) {
     box.setAttribute('role', 'radiogroup');
     box.setAttribute('aria-label', 'Answer options');
-    // v8.205.0: only the letters the question has, so a true/false (two-option) MCQ draws two buttons, not two blank ones
-    ['A','B','C','D'].filter(l => q.options && q.options[l] != null && q.options[l] !== '').forEach(l => {
+    // v8.205.0: only the letters the question has, so a true/false (two-option) MCQ draws two buttons, not two blank ones.
+    // Only for the lettered-object shape; anything else (a raw array) keeps the old four buttons.
+    const _lettered = q.options && typeof q.options === 'object' && !Array.isArray(q.options);
+    ['A','B','C','D'].filter(l => !_lettered || (q.options[l] != null && q.options[l] !== '')).forEach(l => {
       const btn = document.createElement('button');
       const isSelected = ans && ans.chosen === l;
       btn.className = 'option' + (isSelected ? ' exam-selected' : '');
@@ -2389,7 +2391,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       if (onQuiz) {
         const q = questions[current];
         const qType = getQType(q);
-        if (qType === 'mcq' && key !== 'E' && q.options && q.options[key]) pick(key, q);   // C/D mean nothing on a two-option question
+        if (qType === 'mcq' && key !== 'E' && (Array.isArray(q.options) || (q.options && q.options[key]))) pick(key, q);   // C/D mean nothing on a two-option question
         else if (qType === 'multi-select' && q.options && q.options[key]) {
           // Toggle multi-select option via keyboard
           const optBtn = document.querySelector(`#options .option[data-letter="${key}"]`);
@@ -2398,7 +2400,7 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       } else if (onExam) {
         const q = examQuestions[examCurrent];
         const qType = getQType(q);
-        if (qType === 'mcq' && key !== 'E' && q.options && q.options[key]) {
+        if (qType === 'mcq' && key !== 'E' && (Array.isArray(q.options) || (q.options && q.options[key]))) {
           examAnswers[examCurrent].chosen = key;
           renderExam();
         } else if (qType === 'multi-select' && q.options && q.options[key]) {
