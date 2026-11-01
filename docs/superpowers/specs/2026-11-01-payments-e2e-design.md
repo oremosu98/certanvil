@@ -1,7 +1,7 @@
 ---
 up: "[[Decisions MOC]]"
 type: spec
-status: draft
+status: draft (review fixes applied)
 cert: all
 updated: 2026-11-01
 tags: [spec, mobile, design]
@@ -25,11 +25,11 @@ still say 20 free questions a day and USD at your bank's rate.
 ## Decisions (locked)
 | # | Decision |
 |---|---|
-| D1 | Plans: **Free** and **Pro**. Pro is **Monthly** ($9.99 / £8.99 / €9.99) or **Yearly** ($89 / £79 / €89, shown as "$7.42 a month"). Nothing else. |
+| D1 | Plans: **Free** and **Pro**. Pro is **Monthly** ($9.99 / £8.99 / €9.99) or **Yearly** ($89 / £79 / €89). Nothing else. The billed amount per period is always the most prominent price; "$7.42 a month" is a smaller secondary line under Yearly. These figures are the web prices and the target Apple tiers; the iPhone app always shows StoreKit's localized price, never a hardcoded figure. |
 | D2 | **Yearly is the default** everywhere it can be chosen. |
 | D3 | **No trial.** Free is the trial. |
 | D4 | **Same price on iPhone and web**, in local currency, tax included. Apple's 15% (Small Business Program) is absorbed. |
-| D5 | **Launch offer:** Yearly at **$69 / £59 / €69 for the first year**, then the normal price. A real 30-day window with a stated end time; Pro waitlist told 48 hours first; ends on its own in Stripe and Apple; never extended. |
+| D5 | **Launch offer:** Yearly at **$69 / £59 / €69 for the first year**, then the normal price. A real 30-day window; Pro waitlist told 48 hours first; ends on its own; never extended. **Web:** one Stripe *amount-off* coupon, $20 / £20 / €20 (per-currency amounts), duration once, redeem-by the end time; the checkout endpoint attaches it automatically while the window is open (no code to type). **iPhone:** an Apple introductory offer (pay up front, one year) on Yearly at the matching tier, with Apple's start and end *dates*; Apple gives it only to people new to the subscription group, and prices it per storefront. The iPhone shows "Launch offer, first year" with StoreKit's price and "Ends [date]" (date only); the web shows the date and time. |
 | D6 | **iPhone: Apple in-app purchase only, in every country**, through RevenueCat. No link or price that points to web purchase. |
 | D7 | **Web: Stripe hosted Checkout** with card, Apple Pay, Google Pay and Link; prices tax-inclusive in the buyer's currency. Apply for **Stripe Managed Payments** (merchant of record); run on **Stripe Tax** until access is granted. |
 | D8 | **An account comes first** on every surface. **Pro belongs to the account**: buy anywhere, Pro everywhere. |
@@ -50,16 +50,28 @@ that matches the trigger.
 | Tapping a Pro-only feature (Exam Simulator, Marathon, Drill Mistakes, Why-Not, Sim Lab full, Decision Lab exam) | **Preview, then "Unlock with Pro".** |
 | 10 of 15 questions used; daily reviews finished; exam date set | **Gentle nudge** only: a line, never a modal. |
 
-Paywall content: headline; Yearly (picked) and Monthly in the visitor's currency; during the launch
-window "$69 for your first year, then $89. Ends [date, time]" with $89 struck through; three things
-Pro unlocks (unlimited questions in every cert, Exam Simulator and full labs, fixing your mistakes);
-trust line "Cancel anytime" plus "14-day money-back" on web or "Billed through your Apple ID" on
-iPhone; iPhone only: "Restore purchases" and links to Terms and Privacy.
+Paywall content: headline; Yearly (picked) and Monthly, each led by its billed amount ("$89 a year",
+"$9.99 a month") with "$7.42 a month" as a smaller line under Yearly; during the launch window the
+launch line (web: "$69 for your first year, then $89. Ends [date, time]" with $89 struck through;
+iPhone: Apple's intro offer as described in D5); three things Pro unlocks (unlimited questions in
+every cert, Exam Simulator and full labs, fixing your mistakes); an auto-renew line on every
+surface ("Renews automatically at $89 a year until you cancel." On iPhone add "Cancel at least 24
+hours before renewal in your Apple ID settings."); trust line "Cancel anytime" plus "14-day
+money-back" on web or "Billed through your Apple ID" on iPhone; iPhone only: "Restore purchases"
+and links to Terms of Use and Privacy.
+
+**Prices come from one place.** A single pricing endpoint on certanvil.com (`/api/pricing`) reads
+the visitor's country (Vercel's country header) and returns currency, prices and the launch-offer
+state. The landing site and the web app paywall on every cert subdomain both read it (CORS
+allowlist for `*.certanvil.com`), so they can never drift. The checkout endpoint uses the same
+source.
 
 ## How people pay
 **iPhone app**
 1. Paywall → if signed out, sign in (Apple, Google, email) with the chosen plan kept.
-2. Apple's purchase sheet. The buy button locks while it is open.
+2. Before opening Apple's sheet, the app asks the server whether the account already has Pro (from
+   any source); if it does, no sheet opens and it shows "You're already Pro". Then Apple's purchase
+   sheet. The buy button locks while it is open.
 3. "Confirming…" → **"You're Pro"** → "Back to studying". Ask to Buy: "Waiting for approval".
 4. Settings: "Pro until 14 Mar", "Manage in Apple", "Restore purchases". Web-billed Pro reads
    "Pro · billed on certanvil.com" as plain text, never a link.
@@ -68,8 +80,11 @@ iPhone; iPhone only: "Restore purchases" and links to Terms and Privacy.
 1. Paywall → if signed out, sign in with the plan kept.
 2. Stripe Checkout, email filled and locked, launch offer applied automatically.
 3. Return to **certanvil.com/account**, the single web confirmation page: "Confirming your
-   payment…" → "You're Pro", what is unlocked, and **Start studying** (back to the cert they came
-   from, else the last one used). Slow webhook: "Payment received, Pro switches on within a minute"
+   payment…" → "You're Pro", what is unlocked, and **Start studying**. The checkout endpoint puts
+   the source cert in the return address (`?checkout=success&from=<cert id>`); with no `from`
+   (bought on the landing site), it uses the account's active cert from the profile, else
+   Network+. Start studying opens that cert's app with `?pro=1`, which forces a fresh Pro check on
+   load and skips any cached Free state. Slow webhook: "Payment received, Pro switches on within a minute"
    plus the emailed receipt; the page keeps checking.
 4. Cancelled at Stripe: back where they started with "No charge was made."
 
@@ -107,18 +122,25 @@ iPhone; iPhone only: "Restore purchases" and links to Terms and Privacy.
 - **Cancel** asks one question first: "Passed my exam" → congratulations and the next cert; "Too
   expensive" → on Monthly, suggest Yearly. Then Stripe's portal confirms. The cancel button is never
   hidden.
-- **Refund:** a pre-filled email (account email, purchase date) to support@; the founder refunds in
-  Stripe and the webhook removes Pro.
+- **Refund:** a pre-filled email (account email, purchase date) to support@; the founder issues a
+  full refund in Stripe. The webhook treats a full refund (`charge.refunded`) as the end: it
+  revokes Pro **and cancels the subscription** through the Stripe API, so it can never renew. A
+  partial refund changes nothing.
 - **Receipts:** Stripe's emailed receipts and the portal invoice list; Apple sends its own.
 - **Failed renewal:** Pro stays on through the grace period (Stripe Smart Retries; Apple Billing
   Grace Period) with a calm in-app banner.
 - **Pro ended:** a one-time screen; progress kept, free limits back, renew in one tap. No guilt copy.
 - **Renewal reminder:** email before the first full-price renewal of a launch-offer year.
-- **Account deletion:** web-billed Pro is cancelled with the account; Apple-billed Pro shows "You're
-  still billed by Apple. Cancel in your Apple ID first" with the link before Delete is enabled. A
-  page replaces the bare confirm box.
+- **Account deletion:** web-billed Pro is cancelled with the account. Apple-billed Pro shows a
+  warning, "You're still billed by Apple. Deleting your account doesn't stop that. Cancel in your
+  Apple ID", with the link to Apple's subscriptions page; Delete stays available (Apple expects a
+  warning and a link, not a gate). The Sign in with Apple token is revoked on deletion, as Apple
+  requires (the revoke already exists from Stage 5c; keep it). A page replaces the bare confirm
+  box.
 - **Already-Pro guard:** nobody with Pro sees a buy button anywhere; the server refuses a second
-  checkout (`409 already_pro`).
+  Stripe checkout (`409 already_pro`); the iPhone app checks the server before opening Apple's
+  sheet. If a double purchase still happens (for example two devices at once), the founder is
+  alerted and refunds the newer one.
 
 ## Launch moment
 - One email, only to the "CertAnvil Pro" waitlist (cert waitlists hear about the offer in their
@@ -156,28 +178,43 @@ page including diagnostic; in the app, pricing and billing pages route to the na
   month, last step before launch.
 
 ## Gaps to close
-**Before launch: iPhone**
-1. Apple in-app purchase for both plans via RevenueCat; App Store Server Notifications into the
-   same subscription record (`provider='apple'`); Restore purchases.
-2. The native paywall (today hidden), and the confirmation, Ask to Buy and Settings states.
-3. Apple-billing warning before account deletion.
+Build order follows dependencies: the shared subscription record comes first, because the iPhone,
+the guard, the labels and the analytics all read it. Planned as three plans: (A) foundation and
+web, (B) iPhone, (C) landing, legal and launch.
 
-**Before launch: web and landing**
-4. Merge the Stripe branch (checkout, portal, webhook, `provider_subscriptions`) onto today's main,
-   apply its migration, restore the admin bypass its `is_pro()` rewrite drops, add the race
-   handling and `cancel-on-delete`.
-5. Local-currency prices, Stripe Tax (or Managed Payments), the launch coupon, wallets.
-6. Pricing page rebuild, diagnostic Go Pro, homepage copy, every Go Pro button pointed at the
+**Before launch: foundation (plan A, first)**
+1. Merge the Stripe branch (checkout, portal, webhook, `provider_subscriptions`, the
+   `apply_provider_subscription_event` RPC) onto today's main, apply its migration, restore the
+   admin bypass its `is_pro()` rewrite drops, check the server's daily limit is 15 (an older
+   branch migration still returns 20), and add the race handling and `cancel-on-delete`.
+2. The `/api/pricing` endpoint (country → currency, prices, launch-offer state), local-currency
+   Stripe prices, Stripe Tax (or Managed Payments), the automatic launch coupon, wallets.
+
+**Before launch: web app and landing (plans A and C)**
+3. Account status from the real subscription; Billing page with every state; cancel question;
+   refund email and the refund-cancels webhook; `/account` confirmation page with `from` and the
+   `?pro=1` re-check.
+4. Pricing page rebuild, diagnostic Go Pro, homepage copy, every Go Pro button pointed at the
    paywall or pricing.
-7. Account status from the real subscription; Billing page with every state; cancel question;
-   refund email; `/account` confirmation page.
 
-**Before launch: both**
+**Before launch: iPhone (plan B)**
+5. Apple in-app purchase for both plans via RevenueCat. Apple's notifications reach us through
+   **RevenueCat's webhook** (`landing/api/revenuecat/webhook.js`), written into the same
+   subscription record with `provider='apple'`; we do not consume App Store Server Notifications
+   directly. Restore purchases.
+6. The native paywall (today hidden) with the 3.1.2 disclosure (billed amount first, auto-renew
+   line, Terms of Use and Privacy links, StoreKit prices), and the confirmation, Ask to Buy and
+   Settings states; the server check before Apple's sheet.
+7. Apple-billing warning (not a gate) before account deletion.
+
+**Before launch: everywhere (plan C)**
 8. Already-Pro guard and "billed by Apple / on web" labels.
 9. Grace-period banner and Pro-ended screen.
 10. `data-web-purchase` marker and native-hide on every landing page.
-11. Terms, Privacy, FAQ, refund wording, one contact address, pricing footer links.
-12. Waitlist one-click unsubscribe; launch email.
+11. Terms (sale section; fix the limits to 15 questions and 5 review cards everywhere), Privacy,
+    FAQ, refund wording, one contact address, pricing footer links.
+12. Waitlist one-click unsubscribe; launch email (its button goes to pricing with Yearly kept,
+    through sign-in).
 13. Vercel Web Analytics plus checkout events (started, paid, cancelled) for the funnels below.
 14. Business address (founder, last).
 
@@ -190,11 +227,14 @@ page including diagnostic; in the app, pricing and billing pages route to the na
 
 **Founder-only jobs**
 - Apply for Stripe Managed Payments.
-- Stripe: Monthly and Yearly prices in USD, GBP and EUR; the launch coupon ($69 / £59 / €69, first
-  year, 30-day redemption window); wallets on; Smart Retries on; receipt emails on.
-- App Store Connect: both plans in one subscription group, the Yearly introductory offer, Billing
-  Grace Period; confirm Apple's price points match $9.99 / $89 and the £/€ figures.
+- Stripe: Monthly and Yearly prices in USD, GBP and EUR; the launch coupon (amount off $20 / £20 /
+  €20, once, redeem-by the end time); wallets on; Smart Retries on; receipt emails on.
+- App Store Connect: the Paid Apps agreement, tax forms and banking; both plans in one
+  subscription group; the Yearly introductory offer (pay up front, one year, with dates); Billing
+  Grace Period; a Terms of Use (EULA) link in the app's metadata; confirm Apple's price points
+  match $9.99 / $89 and the £/€ figures. (Small Business Program: already enrolled, July.)
 - RevenueCat account linked to App Store Connect.
+- Vercel secrets: the Stripe keys, webhook secret and price IDs, and the RevenueCat webhook secret.
 - Registered-address service (next month, last).
 
 ## Measuring it
@@ -217,6 +257,12 @@ error, so a paying user is never locked out by a bad connection.
 - **Free trial (card up front):** in exam prep it mostly catches people who forget to cancel.
 - **Cheaper web price / US link-out from the app:** US fees are still in court and the UK still
   requires Apple purchase; revisit after launch.
+- **Consuming App Store Server Notifications directly:** RevenueCat already receives them and
+  sends one webhook; two feeds into one record invite double writes.
+- **Gating account deletion on cancelling Apple first:** Apple expects a warning and a link, and
+  may reject a gate.
+- **A percent-off launch coupon:** $89→$69 and £79→£59 are different percentages; a fixed $20 /
+  £20 / €20 is exact in all three.
 - **Paddle:** 5% + 50¢ hurts a $9.99 payment and means rebuilding the Stripe work.
 - **Plain Stripe with VAT filed by the founder:** quarterly EU VAT returns from the first EU sale.
 - **Embedded checkout:** more to build and break for little gain over hosted Checkout.
