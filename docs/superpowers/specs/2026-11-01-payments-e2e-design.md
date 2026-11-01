@@ -1,14 +1,14 @@
 ---
 up: "[[Decisions MOC]]"
 type: spec
-status: draft (review fixes applied)
+status: approved
 cert: all
 updated: 2026-11-01
 tags: [spec, mobile, design]
 ---
 # Payments end to end: how people pay for Pro, on every surface
 
-The founder agreed this design on 1 Nov 2026, after two specialist passes (product design and
+The founder agreed this design and approved the screens on 1 Nov 2026, after two specialist passes (product design and
 marketing) over the app, the iOS app and the landing site. It covers what people pay, where they
 meet the ask, how they pay on each surface, life after paying, and the gaps to close.
 Supersedes the open questions in `PHASE-G-PLAN-2026-06-11.md`; its locked decisions still stand
