@@ -7,9 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  # ── JOB 1: Run all tests ──
-  test:
-    name: UAT + Playwright
+  # ── JOB 1a: UAT static analysis (runs alongside the Playwright shards) ──
+  uat:
+    name: UAT (static analysis)
     runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
     steps:
       - uses: actions/checkout@v6
@@ -25,6 +25,28 @@ jobs:
       - name: Run UAT (static analysis)
         run: node tests/uat.js
 
+  # ── JOB 1b: Playwright E2E, split across shards ──
+  # One runner on 2 workers took ~16 min for the ~1,000 tests. Six shards run
+  # in parallel (~3 min each); each writes a blob report that JOB 1 merges.
+  # To add shards, change the matrix list and every "/6" in this job together.
+  e2e:
+    name: Playwright shard ${{ matrix.shard }}/6
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
+    strategy:
+      fail-fast: false   # finish every shard so the merged report shows all failures
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
@@ -36,15 +58,59 @@ jobs:
       # v7.8.2: also gate on the `landing` project (serves landing/ on :3132,
       # asserts the cd8c784 cert-coverage contract). Both projects use Chromium.
       - name: Run Playwright E2E tests (Chromium + landing — gating)
-        run: npx playwright test --project=chromium --project=landing
+        run: npx playwright test --project=chromium --project=landing --shard=${{ matrix.shard }}/6 --reporter=list,blob
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+  # ── JOB 1: the required check ──
+  # Branch protection requires "UAT + Playwright", and every later job
+  # `needs: test`, so this job keeps that name and id. It passes only when UAT
+  # and every shard passed. `always()` (not `!cancelled()`) so a cancelled run
+  # reports a failure instead of a skipped check, which would count as passing.
+  test:
+    name: UAT + Playwright
+    needs: [uat, e2e]
+    if: always()
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to 26.04, which Playwright cannot run (28 Oct 2026)
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          path: all-blob-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge Playwright reports
+        run: npx playwright merge-reports --reporter=html,list ./all-blob-reports
 
       - name: Upload Playwright report on failure
-        if: failure()
+        if: needs.e2e.result != 'success'
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Gate on UAT and every shard
+        run: |
+          echo "UAT: ${{ needs.uat.result }} · Playwright shards: ${{ needs.e2e.result }}"
+          test "${{ needs.uat.result }}" = success && test "${{ needs.e2e.result }}" = success
 
   # ── JOB 2: Tech debt monitor ──
   tech-debt:
