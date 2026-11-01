@@ -4,6 +4,17 @@
       "authState": "ai900",
       "head": "ai900"
     },
+    "hostAliases": {
+      "ai.certanvil.com": {
+        "authState": "ai900",
+        "head": "ai900"
+      },
+      "ai-x.vercel.app": {
+        "authState": "ai900",
+        "head": "ai900"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://ai.certanvil.com/",
     "proGated": true,
     "glyph": "AI",
@@ -13,6 +24,7 @@
       "signin": "Microsoft Azure AI Fundamentals",
       "firstrun": "Azure AI Fundamentals",
       "onboarding": "AI-901",
+      "onboardingHome": "AI-901",
       "certLock": "Azure AI-901"
     },
     "codes": {
@@ -35,6 +47,17 @@
       "authState": "aplus-core1",
       "head": "aplus-core1"
     },
+    "hostAliases": {
+      "aplus.certanvil.com": {
+        "authState": "aplus-core1",
+        "head": "aplus-core1"
+      },
+      "aplus-x.vercel.app": {
+        "authState": "aplus-core1",
+        "head": "aplus-core1"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://aplus.certanvil.com/?exam=core1",
     "proGated": true,
     "glyph": "A+",
@@ -44,6 +67,7 @@
       "signin": "CompTIA A+ Core 1",
       "firstrun": "A+ Core 1",
       "onboarding": "A+ Core 1",
+      "onboardingHome": "A+ Core 1",
       "certLock": "A+ Core 1"
     },
     "codes": {
@@ -66,6 +90,17 @@
       "authState": "aplus-core1",
       "head": "aplus-core1"
     },
+    "hostAliases": {
+      "aplus.certanvil.com": {
+        "authState": "aplus-core1",
+        "head": "aplus-core1"
+      },
+      "aplus-x.vercel.app": {
+        "authState": "aplus-core1",
+        "head": "aplus-core1"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://aplus.certanvil.com/?exam=core2",
     "proGated": true,
     "glyph": "A+",
@@ -75,6 +110,7 @@
       "signin": "CompTIA A+ Core 2",
       "firstrun": "A+ Core 2",
       "onboarding": "A+ Core 2",
+      "onboardingHome": "A+ Core 2",
       "certLock": "A+ Core 2"
     },
     "codes": {
@@ -97,6 +133,17 @@
       "authState": "az900",
       "head": "az900"
     },
+    "hostAliases": {
+      "azure.certanvil.com": {
+        "authState": "az900",
+        "head": "az900"
+      },
+      "azure-x.vercel.app": {
+        "authState": "az900",
+        "head": "az900"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://azure.certanvil.com/",
     "proGated": true,
     "glyph": "AZ",
@@ -106,6 +153,7 @@
       "signin": "Microsoft Azure Fundamentals",
       "firstrun": "Azure Fundamentals",
       "onboarding": "AZ-900",
+      "onboardingHome": "AZ-900",
       "certLock": "Azure AZ-900"
     },
     "codes": {
@@ -128,6 +176,17 @@
       "authState": "clfc02",
       "head": "clfc02"
     },
+    "hostAliases": {
+      "clfc02.certanvil.com": {
+        "authState": "clfc02",
+        "head": "clfc02"
+      },
+      "clfc02-x.vercel.app": {
+        "authState": "clfc02",
+        "head": "clfc02"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://clfc02.certanvil.com/",
     "proGated": true,
     "glyph": "AWS",
@@ -137,6 +196,7 @@
       "signin": "AWS Cloud Practitioner",
       "firstrun": "Cloud Practitioner",
       "onboarding": "Cloud Practitioner",
+      "onboardingHome": "Cloud Practitioner",
       "certLock": "AWS CLF-C02"
     },
     "codes": {
@@ -159,6 +219,17 @@
       "authState": "netplus",
       "head": "netplus"
     },
+    "hostAliases": {
+      "networkplus.certanvil.com": {
+        "authState": "netplus",
+        "head": "netplus"
+      },
+      "networkplus-x.vercel.app": {
+        "authState": "netplus",
+        "head": "netplus"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://networkplus.certanvil.com/",
     "proGated": false,
     "glyph": "N+",
@@ -168,6 +239,7 @@
       "signin": "Network+",
       "firstrun": "Network+",
       "onboarding": "Network+",
+      "onboardingHome": "Network+",
       "certLock": "Network+"
     },
     "codes": {
@@ -190,6 +262,17 @@
       "authState": "sc900",
       "head": "sc900"
     },
+    "hostAliases": {
+      "sc900.certanvil.com": {
+        "authState": "sc900",
+        "head": "sc900"
+      },
+      "sc900-x.vercel.app": {
+        "authState": "sc900",
+        "head": "sc900"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://sc900.certanvil.com/",
     "proGated": true,
     "glyph": "SC",
@@ -199,6 +282,7 @@
       "signin": "Microsoft SC-900",
       "firstrun": "Security Fundamentals",
       "onboarding": "SC-900",
+      "onboardingHome": "SC-900",
       "certLock": "Security SC-900"
     },
     "codes": {
@@ -221,6 +305,17 @@
       "authState": "secplus",
       "head": "secplus"
     },
+    "hostAliases": {
+      "secplus.certanvil.com": {
+        "authState": "secplus",
+        "head": "secplus"
+      },
+      "secplus-x.vercel.app": {
+        "authState": "secplus",
+        "head": "secplus"
+      }
+    },
+    "devOverrideAllowed": true,
     "switchHost": "https://secplus.certanvil.com/",
     "proGated": true,
     "glyph": "S+",
@@ -230,6 +325,7 @@
       "signin": "Security+",
       "firstrun": "Security+",
       "onboarding": "Security+",
+      "onboardingHome": "Security+",
       "certLock": "Security+"
     },
     "codes": {

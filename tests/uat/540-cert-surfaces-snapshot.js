@@ -44,5 +44,9 @@ const { test } = require('./_context');
   test('Snapshot spot checks: CLF-C02 glyph AWS, mark CLF; first-run A+ Core 1 code is 220-1101',
     fixture.clfc02.glyph === 'AWS' && fixture.clfc02.mark === 'CLF' && fixture['aplus-core1'].codes.firstrun === '220-1101');
   test('Every cert surface matches the snapshot (zero unapproved diffs)' + (diffs.length ? ' — ' + diffs.slice(0, 5).join(' | ') : ''), diffs.length === 0);
+  const nulls = Object.keys(want).filter((k) => want[k] === null);
+  const okNulls = ['aplus-core1', 'aplus-core2', 'netplus', 'secplus'].map((id) => id + '.scale.min');
+  test('No fixture value is null except the four CompTIA scale.min entries' + (nulls.length ? ' (null: ' + nulls.join(',') + ')' : ''),
+    nulls.slice().sort().join() === okNulls.slice().sort().join());
   test('Approved changes are only ever the two first-run A+ codes', Object.keys(APPROVED_CHANGES).join() === 'aplus-core1.codes.firstrun,aplus-core2.codes.firstrun');
 })();
