@@ -491,7 +491,8 @@
   ON['review-pick'] = function (b) { var v = b.getAttribute('data-n'); _call('pickSrSessionSize', v === 'all' ? 'all' : parseInt(v, 10)); _repaint(); };
   ON.topup = function () { _call('toggleSrTopUp'); _repaint(); };
   ON.exam = function () {
-    var cur = _call('getExamDate') || null, base = cur ? cur.split('-') : null, now = new Date();
+    // A date already past opens on this month: its own month may have no day left to pick (after "Didn't pass").
+    var cur = _call('getExamDate') || null, base = cur && cur >= _todayIso() ? cur.split('-') : null, now = new Date();
     _cal = { year: base ? parseInt(base[0], 10) : now.getFullYear(), month: base ? parseInt(base[1], 10) - 1 : now.getMonth(), selected: cur };
     _drawExam();
   };
