@@ -75,7 +75,8 @@
       if (id === cur && typeof scale.max === 'number') max = scale.max;
       var R = typeof window !== 'undefined' ? window.CertRegistry : null, rs = R ? R.scale(id) : null;
       var fmt = (id === cur && scale.format) ? scale.format : (rs && rs.format === 'percent' ? 'percent' : 'scaled');   // percent certs: "72% · pass 60%"
-      var row = { id: id, name: _hubShort(c.name), code: c.code || '', glyph: c.glyph || '', max: max, score: hasSnap ? snap.score : null, days: days,
+      var re = R ? R.get(id) : null;   // My certs name + code slot from the registry (PSM I · Scrum.org), else the list's own
+      var row = { id: id, name: (re && re.labels.hubName) || _hubShort(c.name), code: (re && re.labels.hubCode) || c.code || '', glyph: c.glyph || '', max: max, score: hasSnap ? snap.score : null, days: days,
         fmt: fmt, pass: rs ? rs.pass : undefined };
       var _pp = fmt === 'percent' ? '%' : '';
       if (isPassed) passedCount++;

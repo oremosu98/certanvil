@@ -2557,6 +2557,8 @@ html[data-theme] body #page-settings.ist-on.active { padding: 0 !important; marg
   /* iOS rows */
   #ios-settings .ist-group { border: 1px solid var(--border); border-radius: 16px; background: var(--surface); overflow: hidden; }
   #ios-settings .ist-acct + .ist-group { margin-top: 10px; }
+  /* v8.205.0: the cert's trademark line, as an iOS group footer under Study setup (PRINCE2, PSM): small, grey, quiet */
+  #ios-settings .ist-gfoot { margin: 8px 14px 4px; font: 500 12px/1.45 Inter, sans-serif; color: var(--text-dim); }
   #ios-settings .ist-row { width: 100%; min-height: 50px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 0; background: transparent; color: var(--text); text-align: left; font: 600 14px/1.25 Inter, sans-serif; cursor: pointer; transition: background-color .15s var(--ios-ease); }
   #ios-settings .ist-row + .ist-row, #ios-settings .ist-group > * + .ist-row { border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent); }
   #ios-settings .ist-row:active { background: color-mix(in oklab, var(--text) 5%, transparent); }

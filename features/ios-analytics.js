@@ -162,13 +162,14 @@
 
     // Domains
     var dm = m.domains, why = dm.why || {};
-    var dh = '<div class="in-card in-reveal">' + head('Mastery by domain', 'Worst first') + dm.rows.map(function (d) {
+    var est = dm.est || null;   // {vendor} when the pack's weights are CertAnvil estimates (PRINCE2, PSM)
+    var dh = '<div class="in-card in-reveal">' + head('Mastery by domain', est ? 'Estimated weights' : 'Worst first') + dm.rows.map(function (d) {
       var cls = d.questions === 0 || d.tier === 'novice' || d.tier === 'unstudied' ? 'weak' : d.tier === 'mastered' ? 'strong' : '';
       return '<div class="in-mrow"><div class="in-mrow-top"><span class="in-mrow-nm">' + e(d.name) + '</span><span class="in-mrow-sc' + (cls ? ' in-' + cls : '') + '">' + e(d.num)
         + ' · ' + (d.questions ? '<span class="in-pct">' + d.accuracy + '%</span>' : 'no % yet') + '</span></div>'
         + '<div class="in-bar' + (cls ? ' in-' + cls + 'bar' : '') + '"><span data-w="' + Math.max(d.accuracy, 4) + '" style="width:0%"></span></div>'
-        + '<p class="in-mrow-meta">' + d.questions + ' question' + (d.questions === 1 ? '' : 's') + ' · ' + d.weight + '% of exam' + (d.weakest ? ' · <span class="in-tag">weakest, drill here</span>' : '') + '</p></div>';
-    }).join('') + '</div>';
+        + '<p class="in-mrow-meta">' + d.questions + ' question' + (d.questions === 1 ? '' : 's') + ' · ' + (est ? 'about ' : '') + d.weight + '% of exam' + (d.weakest ? ' · <span class="in-tag">weakest, drill here</span>' : '') + '</p></div>';
+    }).join('') + (est ? '<p class="in-card-sub">' + e(est.vendor) + ' doesn’t publish how the exam splits across topics. These weights are our estimate, and your readiness uses them.</p>' : '') + '</div>';
     if (why.headline) dh += '<div class="in-lev in-reveal"><p class="in-card-kick">Highest-leverage move</p><div class="in-lev-gain">' + e(why.leverage) + '<span class="in-u"> on your readiness score</span></div>'
       + '<p class="in-lev-act">' + e(why.headline) + '</p><p class="in-lev-body">' + e(why.body) + '</p><div class="in-lev-list">'
       + (why.factors || []).map(function (f) { return '<div class="in-lev-row"><span class="in-lev-mark in-' + (f.effect === 'up' ? 'up' : 'dn') + '">' + (f.effect === 'up' ? ICON.up : ICON.dn) + '</span><span><b>' + e(f.label) + '</b> ' + e(f.note) + '</span></div>'; }).join('') + '</div></div>';
@@ -256,6 +257,8 @@
     if (!model.empty) {
       model.readiness = Object.assign({ maxScore: (typeof EXAM_MAX_SCORE === 'number' && EXAM_MAX_SCORE) || 900, fmt: (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT) || 'scaled' }, model.readiness);
       model.wins.exams = D.examHistory || [];
+      var _meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+      if (_meta.weightsAreEstimates) { var _re = window.CertRegistry && window.CertRegistry.get(CURRENT_CERT); model.domains.est = { vendor: (_re && _re.vendor) || 'The exam body' }; }
     }
     root.innerHTML = _iosAnalyticsHtml(model, _inCert());
     _inWire(root, model);

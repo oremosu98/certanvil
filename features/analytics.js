@@ -2283,16 +2283,20 @@
 
   function _anaBtDomains(D) {
     const esc = _anaBtEsc;
+    // PRINCE2 / PSM: the pack's weights are CertAnvil estimates (meta.weightsAreEstimates), so say so once.
+    const meta = (typeof CERT_PACK === 'object' && CERT_PACK && CERT_PACK.meta) || {};
+    const re = meta.weightsAreEstimates && window.CertRegistry ? window.CertRegistry.get(typeof CURRENT_CERT === 'string' ? CURRENT_CERT : '') : null;
+    const est = meta.weightsAreEstimates ? ((re && re.vendor) || 'The exam body') : '';
     const rows = D.domains.slice().sort((a, b) => a.accuracy - b.accuracy).map(d => {
       const weak = d.accuracy > 0 && d.accuracy < 60;
       return `<div class="dom-row">
           <div class="dl"><span class="obj mono">${d.num}</span><span class="txt">${esc(d.name)}</span></div>
           <div class="dm mono">${d.accuracy > 0 ? d.accuracy + '%' : '—'}</div>
           <div class="dom-bar"><i data-d="${d.idx}" data-w="${d.accuracy}" style="width:0"></i></div>
-          <div class="dom-meta">${d.questions} questions · ${d.weight}% of exam${weak ? ' · <span class="flag">weakest, drill here</span>' : ''}</div>
+          <div class="dom-meta">${d.questions} questions · ${est ? 'about ' : ''}${d.weight}% of exam${weak ? ' · <span class="flag">weakest, drill here</span>' : ''}</div>
         </div>`;
     }).join('');
-    return `<div class="tile s-domains"><div class="tile-eyebrow">Mastery by domain <span class="count">${D.domains.length} domains · worst first</span></div><div class="dom-list">${rows}</div></div>`;
+    return `<div class="tile s-domains"><div class="tile-eyebrow">Mastery by domain <span class="count">${D.domains.length} domains · ${est ? 'estimated weights' : 'worst first'}</span></div><div class="dom-list">${rows}</div>${est ? `<p class="dom-meta dom-note">${esc(est)} doesn’t publish how the exam splits across topics. These weights are our estimate.</p>` : ''}</div>`;
   }
 
   function _anaBtStreak(D) {

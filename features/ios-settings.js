@@ -111,7 +111,7 @@
       examLabel = parseInt(p[2], 10) + ' ' + MON[parseInt(p[1], 10) - 1].slice(0, 3) + (typeof ex.days === 'number' ? ' · ' + ex.days + (ex.days === 1 ? ' day' : ' days') : '');
     }
     return {
-      out: !s.signedIn, email: s.email || '', pro: !!s.pro, methodsRow: !!s.methodsRow, methods: s.methods || ['email'], certName: (s.cert && s.cert.name) || '', certCode: (s.cert && s.cert.code) || '',
+      out: !s.signedIn, email: s.email || '', pro: !!s.pro, methodsRow: !!s.methodsRow, methods: s.methods || ['email'], certName: (s.cert && s.cert.name) || '', certCode: (s.cert && s.cert.code) || '', legal: (s.cert && s.cert.legal) || '',
       passPlanHtml: s.passPlanHtml || '', sync: !!g.sync && !!s.signedIn, examLabel: examLabel, goal: Number(s.goal) || 15, glanceGoal: Number(g.goal) || Number(s.goal) || 15,
       today: Number(g.today) || 0, review: s.review || { size: 5, topUp: false }, wrongCount: Number(s.wrongCount) || 0, still: !!s.still,
       remRow: !!s.remRow, remLabel: s.remLabel || 'Off',   // Stage 5d: Reminders (iOS app only); the label is patched from the live permission
@@ -176,7 +176,8 @@
       + row(null, 'goal', 'Daily goal', null, m.glanceGoal + ' a day')
       + row(null, 'today', 'Today', null, m.today + ' of ' + m.glanceGoal)
       + (m.out ? '' : row('tour', 'home', 'Replay the tour', 'Four quick tips on Home', null))
-      + (m.out ? '' : row('suggest', 'star', 'Suggest a cert', 'Tell us which exam to add next', null)) + '</div>';   // F3: signed in only, like the tour
+      + (m.out ? '' : row('suggest', 'star', 'Suggest a cert', 'Tell us which exam to add next', null)) + '</div>'   // F3: signed in only, like the tour
+      + (m.legal ? '<p class="ist-gfoot reveal" data-legal>' + e(m.legal) + '</p>' : '');   // the cert's trademark line, as the group's footer (PRINCE2, PSM)
     h += '<div class="ist-card reveal"><div class="ist-k">Daily goal' + (m.pro ? '' : '<span class="ist-lock">' + svg(I.lock, 10) + 'Pro</span>') + '</div>'
       + '<div class="ist-big"><b>' + (m.pro ? m.goal : 15) + '</b><span>questions a day</span></div>'
       + (m.pro ? seg('goal-pick', [10, 20, 30, 50], m.goal) + '<button type="button" class="ist-pri ist-wide" data-act="goal-save">Save</button><p class="ist-note">This sets the Today card on Home. Pick a number you can hit every day.</p>'
