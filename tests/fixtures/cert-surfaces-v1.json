@@ -1,0 +1,250 @@
+{
+  "ai900": {
+    "hostDetected": {
+      "authState": "ai900",
+      "head": "ai900"
+    },
+    "switchHost": "https://ai.certanvil.com/",
+    "proGated": true,
+    "glyph": "AI",
+    "mark": "AI",
+    "names": {
+      "switcher": "Microsoft Azure AI Fundamentals",
+      "signin": "Microsoft Azure AI Fundamentals",
+      "firstrun": "Azure AI Fundamentals",
+      "onboarding": "AI-901",
+      "certLock": "Azure AI-901"
+    },
+    "codes": {
+      "switcher": "AI-901",
+      "firstrun": "AI-901"
+    },
+    "scale": {
+      "min": 1,
+      "max": 1000,
+      "pass": 700
+    },
+    "simLab": false,
+    "decisionLab": true,
+    "title": "CertAnvil · Azure AI Fundamentals",
+    "topbar": "Azure AI Fundamentals <b>AI-901</b>",
+    "domainCount": 2
+  },
+  "aplus-core1": {
+    "hostDetected": {
+      "authState": "aplus-core1",
+      "head": "aplus-core1"
+    },
+    "switchHost": "https://aplus.certanvil.com/?exam=core1",
+    "proGated": true,
+    "glyph": "A+",
+    "mark": "A+",
+    "names": {
+      "switcher": "CompTIA A+ Core 1",
+      "signin": "CompTIA A+ Core 1",
+      "firstrun": "A+ Core 1",
+      "onboarding": "A+ Core 1",
+      "certLock": "A+ Core 1"
+    },
+    "codes": {
+      "switcher": "220-1201",
+      "firstrun": "220-1101"
+    },
+    "scale": {
+      "min": null,
+      "max": 900,
+      "pass": 675
+    },
+    "simLab": true,
+    "decisionLab": false,
+    "title": "CertAnvil · A+ Core 1",
+    "topbar": "A+ Core 1 <b>220-1201</b>",
+    "domainCount": 5
+  },
+  "aplus-core2": {
+    "hostDetected": {
+      "authState": "aplus-core1",
+      "head": "aplus-core1"
+    },
+    "switchHost": "https://aplus.certanvil.com/?exam=core2",
+    "proGated": true,
+    "glyph": "A+",
+    "mark": "A+",
+    "names": {
+      "switcher": "CompTIA A+ Core 2",
+      "signin": "CompTIA A+ Core 2",
+      "firstrun": "A+ Core 2",
+      "onboarding": "A+ Core 2",
+      "certLock": "A+ Core 2"
+    },
+    "codes": {
+      "switcher": "220-1202",
+      "firstrun": "220-1102"
+    },
+    "scale": {
+      "min": null,
+      "max": 900,
+      "pass": 700
+    },
+    "simLab": true,
+    "decisionLab": false,
+    "title": "CertAnvil · A+ Core 2",
+    "topbar": "A+ Core 2 <b>220-1202</b>",
+    "domainCount": 4
+  },
+  "az900": {
+    "hostDetected": {
+      "authState": "az900",
+      "head": "az900"
+    },
+    "switchHost": "https://azure.certanvil.com/",
+    "proGated": true,
+    "glyph": "AZ",
+    "mark": "AZ",
+    "names": {
+      "switcher": "Microsoft Azure Fundamentals",
+      "signin": "Microsoft Azure Fundamentals",
+      "firstrun": "Azure Fundamentals",
+      "onboarding": "AZ-900",
+      "certLock": "Azure AZ-900"
+    },
+    "codes": {
+      "switcher": "AZ-900",
+      "firstrun": "AZ-900"
+    },
+    "scale": {
+      "min": 1,
+      "max": 1000,
+      "pass": 700
+    },
+    "simLab": false,
+    "decisionLab": true,
+    "title": "CertAnvil · Azure Fundamentals",
+    "topbar": "Azure Fundamentals <b>AZ-900</b>",
+    "domainCount": 3
+  },
+  "clfc02": {
+    "hostDetected": {
+      "authState": "clfc02",
+      "head": "clfc02"
+    },
+    "switchHost": "https://clfc02.certanvil.com/",
+    "proGated": true,
+    "glyph": "AWS",
+    "mark": "CLF",
+    "names": {
+      "switcher": "AWS Cloud Practitioner",
+      "signin": "AWS Cloud Practitioner",
+      "firstrun": "Cloud Practitioner",
+      "onboarding": "Cloud Practitioner",
+      "certLock": "AWS CLF-C02"
+    },
+    "codes": {
+      "switcher": "CLF-C02",
+      "firstrun": "CLF-C02"
+    },
+    "scale": {
+      "min": 100,
+      "max": 1000,
+      "pass": 700
+    },
+    "simLab": false,
+    "decisionLab": true,
+    "title": "CertAnvil · AWS Cloud Practitioner",
+    "topbar": "Cloud Practitioner <b>CLF-C02</b>",
+    "domainCount": 4
+  },
+  "netplus": {
+    "hostDetected": {
+      "authState": "netplus",
+      "head": "netplus"
+    },
+    "switchHost": "https://networkplus.certanvil.com/",
+    "proGated": false,
+    "glyph": "N+",
+    "mark": "N+",
+    "names": {
+      "switcher": "Network+",
+      "signin": "Network+",
+      "firstrun": "Network+",
+      "onboarding": "Network+",
+      "certLock": "Network+"
+    },
+    "codes": {
+      "switcher": "N10-009",
+      "firstrun": "N10-009"
+    },
+    "scale": {
+      "min": null,
+      "max": 900,
+      "pass": 720
+    },
+    "simLab": true,
+    "decisionLab": false,
+    "title": "CertAnvil · Network+",
+    "topbar": "Network+ <b>N10-009</b>",
+    "domainCount": 5
+  },
+  "sc900": {
+    "hostDetected": {
+      "authState": "sc900",
+      "head": "sc900"
+    },
+    "switchHost": "https://sc900.certanvil.com/",
+    "proGated": true,
+    "glyph": "SC",
+    "mark": "SC",
+    "names": {
+      "switcher": "Microsoft SC-900",
+      "signin": "Microsoft SC-900",
+      "firstrun": "Security Fundamentals",
+      "onboarding": "SC-900",
+      "certLock": "Security SC-900"
+    },
+    "codes": {
+      "switcher": "SC-900",
+      "firstrun": "SC-900"
+    },
+    "scale": {
+      "min": 1,
+      "max": 1000,
+      "pass": 700
+    },
+    "simLab": false,
+    "decisionLab": true,
+    "title": "CertAnvil · SC-900",
+    "topbar": "SC-900 <b>SC-900</b>",
+    "domainCount": 4
+  },
+  "secplus": {
+    "hostDetected": {
+      "authState": "secplus",
+      "head": "secplus"
+    },
+    "switchHost": "https://secplus.certanvil.com/",
+    "proGated": true,
+    "glyph": "S+",
+    "mark": "S+",
+    "names": {
+      "switcher": "Security+",
+      "signin": "Security+",
+      "firstrun": "Security+",
+      "onboarding": "Security+",
+      "certLock": "Security+"
+    },
+    "codes": {
+      "switcher": "SY0-701",
+      "firstrun": "SY0-701"
+    },
+    "scale": {
+      "min": null,
+      "max": 900,
+      "pass": 750
+    },
+    "simLab": true,
+    "decisionLab": false,
+    "title": "CertAnvil · Security+",
+    "topbar": "Security+ <b>SY0-701</b>",
+    "domainCount": 5
+  }
+}
