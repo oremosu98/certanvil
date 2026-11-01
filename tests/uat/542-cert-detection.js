@@ -39,7 +39,7 @@ const { _fnBody, test, vm } = require('./_context');
     });
     win.location = loc;
     if (!o.noRegistry) vm.runInContext(registrySrc, ctx);
-    return { ctx, win, attrs, doc, writes };
+    return { ctx, win, attrs, doc, writes, ls };
   }
   const head = (host, o) => { const c = mkCtx(host, o); vm.runInContext(headCode, c.ctx); return { cert: c.attrs['data-cert'], title: c.doc.title, topbar: c.win._cbCertHtml, writes: c.writes, c }; };
   const detect = (host, o) => { const c = mkCtx(host, o); if (o && o.dataCert) c.attrs['data-cert'] = o.dataCert; return { cert: vm.runInContext(detectSrc + '\ndetectCert()', c.ctx), writes: c.writes }; };
@@ -178,6 +178,33 @@ const { _fnBody, test, vm } = require('./_context');
   };
   test('A cert added to the registry is honoured as an override by head, detectCert and getActiveCertId',
     agree(fakeAll({ storage: { [KEY]: 'zzfake' } }), 'zzfake'));
+
+  // 7c. The full matrix: every host x query x saved override. All three paths must agree with each other and with
+  // CertRegistry.resolve (they all call it; this guards the wiring and the side-effect-free path).
+  const mHosts = ['localhost', 'example.com', 'aplus-x.vercel.app'].concat(R.all().map((e) => e.host));
+  const mQueries = ['', '?cert=secplus', '?cert=aplus-core2', '?cert=secai', '?exam=core1', '?exam=core2', '?exam=core9', '?cert=az900&exam=core2', '?cert=SecPlus'];
+  const mOverrides = [undefined, 'secai'].concat(R.all().map((e) => e.id));
+  const matrixBad = []; let matrixN = 0;
+  mHosts.forEach((h) => mQueries.forEach((qs) => mOverrides.forEach((ov) => {
+    const o = { search: qs, storage: ov ? { [KEY]: ov } : {} };
+    const want = R.resolve({ hostname: h, search: qs, override: ov });
+    const r = all3(h, o); matrixN++;
+    if (!R.isKnown(want) || !agree(r, want)) matrixBad.push(h + ' ' + qs + ' override=' + ov + ' -> ' + JSON.stringify(r) + ' want ' + want);
+  })));
+  test('All three paths agree with CertRegistry.resolve for every host x query x override (' + matrixN + ' combinations)' + (matrixBad.length ? ' — ' + matrixBad.slice(0, 3).join(' | ') : ''), matrixBad.length === 0);
+
+  // 7d. The leak sequence: a ?cert=secplus visit to networkplus persists an override; the next plain networkplus visit
+  // must be netplus everywhere (host beats the override). Same storage carried between the two visits.
+  const v1 = mkCtx('networkplus.certanvil.com', { search: '?cert=secplus' });
+  const v1Head = (() => { const c = mkCtx('networkplus.certanvil.com', { search: '?cert=secplus' }); vm.runInContext(headCode, c.ctx); return c.attrs['data-cert']; })();
+  const v1Detect = vm.runInContext(detectSrc + '\ndetectCert()', v1.ctx);
+  v1.win.CURRENT_CERT = v1Detect;  // app.js exposes this at boot; auth-state runs after it
+  const v1Active = vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', v1.ctx);
+  test('?cert=secplus visit to networkplus: head, detectCert and getActiveCertId all say secplus (even after the param is stripped)',
+    v1Head === 'secplus' && v1Detect === 'secplus' && v1Active === 'secplus' && v1.ls[KEY] === 'secplus');
+  const plain = { storage: { [KEY]: v1.ls[KEY] } };
+  test('Next plain networkplus visit with that persisted override: all three return netplus',
+    agree(all3('networkplus.certanvil.com', plain), 'netplus'));
 
   // 8. Source hygiene: no hand-kept per-cert id lists left in the three paths.
   const lists = /'secplus'[^\n]*'az900'[^\n]*'ai900'/;

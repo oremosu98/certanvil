@@ -113,15 +113,15 @@
   window.buildSignInUrl = buildSignInUrl;
 
   function getActiveCertId() {
-    // Saved override first (any known id), then the host. Registry missing (stale cached page): use what the
-    // head already resolved. Runs after detectCert(), which persists a ?cert= choice, so it agrees on that too.
+    // CertRegistry.resolve(), the same call the head IIFE and detectCert() make. detectCert() has already run and
+    // stripped a ?cert= from the URL by now, so its answer (window.CURRENT_CERT) wins when set. Registry missing
+    // (stale cached page): use what the head already resolved.
     var R = window.CertRegistry;
     if (!R) return (typeof document !== 'undefined' && document.documentElement.getAttribute('data-cert')) || 'netplus';
-    try {
-      var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
-      if (R.isKnown(dev)) return dev;
-    } catch (e) {}
-    try { return R.byHost(window.location.hostname || '') || 'netplus'; } catch (e) {}
+    if (R.isKnown(window.CURRENT_CERT)) return window.CURRENT_CERT;
+    var dev = null;
+    try { dev = localStorage.getItem(CERT_OVERRIDE_KEY); } catch (e) {}
+    try { return R.resolve({ hostname: window.location.hostname, search: window.location.search, override: dev }); } catch (e) {}
     return 'netplus';
   }
 

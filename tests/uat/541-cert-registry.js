@@ -131,6 +131,22 @@ const { test } = require('./_context');
   const dm = /\(function\s*\(\s*\)\s*\{\s*var\s+cert\s*=\s*null\s*;/.exec(html); // same marker the 540 extractor uses
   const iDetect = dm ? dm.index : -1;
   test('index.html loads the registry after native-shell.js and before the inline detection IIFE', iNative > -1 && iReg > iNative && iDetect > iReg);
+  // resolve({ hostname, search, override }): one resolver for head, detectCert and getActiveCertId. Never null.
+  const rs = (h, q, o) => R.resolve({ hostname: h, search: q, override: o });
+  test('resolve 1: ?cert=<known id> wins on any host, over an override, case-insensitive',
+    rs('networkplus.certanvil.com', '?cert=secplus', 'az900') === 'secplus' && rs('localhost', '?cert=SecPlus') === 'secplus' && rs('aplus.certanvil.com', '?cert=secplus', 'aplus-core2') === 'secplus');
+  test('resolve 1: an unknown ?cert= is ignored', rs('azure.certanvil.com', '?cert=secai') === 'az900' && rs('localhost', '?cert=secai') === 'netplus');
+  test('resolve 2: family host, ?exam=<member slug> beats the override', rs('aplus.certanvil.com', '?exam=core2', 'aplus-core1') === 'aplus-core2' && rs('aplus.certanvil.com', '?exam=core1', 'aplus-core2') === 'aplus-core1');
+  test('resolve 2: family host, override used only when it is a member; else first member',
+    rs('aplus.certanvil.com', '', 'aplus-core2') === 'aplus-core2' && rs('aplus.certanvil.com', '', 'secplus') === 'aplus-core1' && rs('aplus.certanvil.com', '', 'secai') === 'aplus-core1' && rs('aplus.certanvil.com') === 'aplus-core1');
+  test('resolve 2: unknown ?exam= falls through to the override then the first member', rs('aplus.certanvil.com', '?exam=core9', 'aplus-core2') === 'aplus-core2' && rs('aplus.certanvil.com', '?exam=core9') === 'aplus-core1');
+  test('resolve 2: ?exam= means nothing off the family', rs('localhost', '?exam=core2') === 'netplus' && rs('secplus.certanvil.com', '?exam=core2') === 'secplus');
+  test('resolve 3: a non-family cert host beats every other override',
+    R.all().filter((e) => !e.family).every((e) => R.all().every((o) => rs(e.host, '', o.id) === e.id)));
+  test('resolve 4: unmatched hosts use a known override', rs('localhost', '', 'secplus') === 'secplus' && rs('example.com', '', 'aplus-core2') === 'aplus-core2' && rs('', '', 'az900') === 'az900');
+  test('resolve 5: unknown override, no host, bad input all give netplus, never null',
+    rs('localhost', '', 'secai') === 'netplus' && rs('localhost') === 'netplus' && R.resolve() === 'netplus' && R.resolve({}) === 'netplus' && rs(null, null, 42) === 'netplus');
+  test('resolve: a malformed query does not throw', rs('localhost', '?cert=%E0%A4%A') === 'netplus');
   test('sw.js precaches the registry', /'\.\/lib\/cert-registry\.js'/.test(read('sw.js')));
   test('app.js detectCert reads the registry (Task 1.3 consumer)', /CertRegistry/.test(read('app.js')));
 })();

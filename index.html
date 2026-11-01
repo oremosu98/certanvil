@@ -163,29 +163,13 @@
 // window.CERT_PACKS.<cert> populated synchronously).
 (function() {
   var cert = null;
-  // Cert resolution reads window.CertRegistry (lib/cert-registry.js, loaded just above) — no per-cert lists here.
-  // Must agree with detectCert() in app.js and getActiveCertId() in auth-state.js (the v7.2.2 lesson: if they
-  // drift, CERT_PACK is null). Priority: ?cert=<known id> on any host (landing links to
-  // networkplus.certanvil.com/?cert=secplus) -> family host (?exam=<examSlug> -> saved override if a member -> first
-  // member) -> any other cert host -> saved override if the registry knows it -> 'netplus'.
-  // Hostname wins over the saved override on a non-family cert host. Registry missing (stale cached page): netplus.
+  // Cert resolution is CertRegistry.resolve() (lib/cert-registry.js, loaded just above): the same call detectCert()
+  // in app.js and getActiveCertId() in auth-state.js make, so the three cannot drift (the v7.2.2 lesson).
+  // Registry missing (stale cached page): netplus.
   try {
-    var R = window.CertRegistry, dev = null;
+    var dev = null;
     try { dev = localStorage.getItem('nplus_dev_cert'); } catch (e) { /* localStorage may be blocked */ }
-    var q = new URL(location.href).searchParams;
-    var cq = (q.get('cert') || '').toLowerCase().trim();
-    var hostCert = (typeof location !== 'undefined' && location.hostname) ? R.byHost(location.hostname) : null;
-    var fam = hostCert ? R.familyOf(hostCert) : null;
-    if (R.isKnown(cq)) {
-      cert = cq;
-    } else if (fam) {
-      var members = R.familyMembers(fam);
-      var ex = (q.get('exam') || '').toLowerCase().trim();
-      for (var i = 0; i < members.length && !cert; i++) if (ex && R.get(members[i]).examSlug === ex) cert = members[i];
-      cert = cert || (members.indexOf(dev) !== -1 ? dev : hostCert);
-    } else {
-      cert = hostCert || (R.isKnown(dev) ? dev : null);
-    }
+    cert = window.CertRegistry.resolve({ hostname: location.hostname, search: location.search, override: dev });
   } catch (e) { cert = null; }
   if (!cert) cert = 'netplus';
   document.documentElement.setAttribute('data-cert', cert);

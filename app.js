@@ -20,7 +20,7 @@ if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 // active cert is resolved by detectCert() at app boot, reading window.CertRegistry:
 //   1. ?cert=<known id>, or ?exam=<examSlug> on a family host (A+)
 //   2. hostname (a family host also honours the saved override)
-//   3. localStorage 'nplus_dev_cert' override, then default 'netplus'
+//   3. localStorage 'nplus_dev_cert' override (unmatched hosts only), then default 'netplus'
 //
 // Phase 1A scope (this ship): cert metadata + RETENTION_GAP_CONCEPTS only.
 // Phase 1B (next session): TOPIC_DOMAINS, DOMAIN_WEIGHTS, topicResources,
@@ -32,7 +32,7 @@ if (typeof window !== 'undefined') window.APP_VERSION = APP_VERSION;
 // load (defensive — production deploys always load the pack via <script>).
 
 function detectCert() {
-  // Reads window.CertRegistry. Must agree with the head IIFE in index.html and getActiveCertId() in auth-state.js.
+  // CertRegistry.resolve(), the same call the head IIFE in index.html and getActiveCertId() in auth-state.js make.
   // Registry missing (stale cached page): use what the head already resolved.
   const R = (typeof window !== 'undefined' && window.CertRegistry) || null;
   if (!R) return (typeof document !== 'undefined' && document.documentElement.getAttribute('data-cert')) || 'netplus';
@@ -41,35 +41,23 @@ function detectCert() {
   const certOverrideKey = 'nplus_' + 'dev_cert';
   let dev = null;
   try { dev = localStorage.getItem(certOverrideKey); } catch (e) {}
-  let hostCert = null;
-  try { hostCert = (typeof location !== 'undefined' && location.hostname) ? R.byHost(location.hostname) : null; } catch (e) {}
-  const fam = hostCert ? R.familyOf(hostCert) : null;
-  const members = fam ? R.familyMembers(fam) : [];
-  // 1. ?cert=<known id> (cross-origin entry points, e.g. landing's "Resume Security+") or, on a family host,
-  //    ?exam=<examSlug> naming a member (A+ landing tiles). Persist the choice so it survives a refresh, then
-  //    strip the param from the address bar.
+  const loc = (typeof location !== 'undefined') ? location : { hostname: '', search: '', href: '' };
+  const id = R.resolve({ hostname: loc.hostname, search: loc.search, override: dev });
+  // A ?cert=<known id> (landing's "Resume Security+") or an A+ ?exam= that picked the member is persisted so a
+  // refresh keeps it, then stripped from the address bar.
   try {
-    if (typeof location !== 'undefined' && location.search) {
-      const url = new URL(location.href);
-      const param = (url.searchParams.get('cert') || '').toLowerCase().trim();
-      const examParam = (url.searchParams.get('exam') || '').toLowerCase().trim();
-      const byCert = R.isKnown(param);
-      const hit = byCert ? param : (examParam && members.filter((id) => R.get(id).examSlug === examParam)[0]) || null;
-      if (hit) {
-        try { localStorage.setItem(certOverrideKey, hit); } catch (e) {}
-        try {
-          url.searchParams.delete(byCert ? 'cert' : 'exam');
-          history.replaceState({}, '', url.toString());
-        } catch (e) {}
-        return hit;
+    if (loc.search) {
+      const url = new URL(loc.href);
+      const cp = (url.searchParams.get('cert') || '').toLowerCase().trim();
+      const ep = (url.searchParams.get('exam') || '').toLowerCase().trim();
+      const key = R.isKnown(cp) ? 'cert' : (ep && R.familyOf(R.byHost(loc.hostname)) && R.get(id).examSlug === ep) ? 'exam' : null;
+      if (key) {
+        try { localStorage.setItem(certOverrideKey, id); } catch (e) {}
+        try { url.searchParams.delete(key); history.replaceState({}, '', url.toString()); } catch (e) {}
       }
     }
   } catch (e) {}
-  // 2. Hostname wins over a saved override on a cert host (v7.2.1). A family host (A+ now) uses the saved
-  //    override when it is a member, else the first member. Root certanvil.com + localhost fall through.
-  if (hostCert) return members.indexOf(dev) !== -1 ? dev : hostCert;
-  // 3. Saved override switches cert without changing URL (root domain + localhost). Unknown ids are ignored.
-  return R.isKnown(dev) ? dev : 'netplus';
+  return id;
 }
 
 const CURRENT_CERT = detectCert();

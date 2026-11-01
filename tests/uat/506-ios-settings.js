@@ -112,7 +112,7 @@ const { _fnBody, fs, html, path, ROOT, results, test, vm } = require('./_context
     const auth = fs.readFileSync(path.join(ROOT, 'auth-state.js'));
     // Re-pinned for cert-registry Task 1.3 (getActiveCertId + tadSwitchCert read the registry); earlier by Admin in the app Task 7 (Preview as Free: the admin-as-Pro check, the admin flag, sign-out clears it).
     test('auth-state.js (gated lane) is untouched by Lift B4',
-      require('crypto').createHash('sha256').update(auth).digest('hex') === '04f6f2ffe2dc5d6a2282aa7ba9b14a3b3d695f4eab59c7c584a0ab8876e7b7ae');
+      require('crypto').createHash('sha256').update(auth).digest('hex') === 'c0f7c6e3d5059af7c81a879860f59f4c1b1b247abcbb602ad63f7569db43165c');
   } catch (err) {
     test('Lift B4 Settings: block (threw)', false);
     results.errors.push('506 ios-settings block threw: ' + err.message);
