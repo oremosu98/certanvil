@@ -29,7 +29,7 @@
 | index.html | 2403 | 158 KB |
 | dg-system.css | 6235 | 612 KB |
 | tests/uat.js + tests/uat/ (96 modules) | 35415 | — |
-UAT checks: 6289 · E2E `test(` count: 809 · APP_VERSION: 8.205.1 · stamped-at: worktree
+UAT checks: 6289 · E2E `test(` count: 810 · APP_VERSION: 8.205.2 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,9 +135,9 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.205.2 | Admin: See past reports when nothing is open |
 | v8.205.1 | Report a problem keeps your text if you cancel after a failed send |
 | v8.205.0 | Admin in the app: Report a problem everywhere, the Admin screen, Fixed and tell them, Preview as Free |
-| v8.204.1 | Readiness says Pass level and what to do before booking, then Exam ready at 4 of 4 |
 
 _Older releases (v7.60.0 and back) live in [CHANGELOG.md](./CHANGELOG.md)._
 
