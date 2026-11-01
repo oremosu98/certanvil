@@ -153,8 +153,8 @@ for (const vp of PHONES) {
       await page.evaluate(() => { renderSettingsPage(); window.__sw = []; window.tadSwitchCert = function (id) { window.__sw.push([id, document.getElementById('ist-sheet').classList.contains('open')]); return false; }; });
       await R(page).locator('[data-act="cert"]').click();
       const sheet = page.locator('#ist-sheet');
-      await expect(sheet.locator('.ist-cert')).toHaveCount(8);
-      await expect(sheet.locator('.ist-pro-tag')).toHaveCount(7);
+      await expect(sheet.locator('.ist-cert')).toHaveCount(12);   // v8.206.0: the eight + four new exams
+      await expect(sheet.locator('.ist-pro-tag')).toHaveCount(11);
       await expect(sheet.locator('.ist-cert.on')).toHaveCount(1);
       await sheet.locator('[data-act="pick-cert"][data-id="secplus"]').click();
       expect(await page.evaluate(() => window.__sw)).toEqual([['secplus', false]]);
