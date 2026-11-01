@@ -138,7 +138,7 @@
         passScore: 750,
         examName: 'Security+ SY0-701',
         cta: role === 'admin'
-          ? { label: 'Resume →', href: 'https://networkplus.certanvil.com/?cert=secplus' }
+          ? { label: 'Resume →', href: 'https://secplus.certanvil.com/?cert=secplus' }
           : { label: 'Upgrade →', href: '#', disabled: true, title: 'Stripe billing coming with Phase G' },
         coachActive: 'Builds on N+. 65% knowledge transfer from Network+.'
       },
