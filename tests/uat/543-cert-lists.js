@@ -50,10 +50,10 @@ const { test } = require('./_context');
   const R0 = box({}, false).window.CertRegistry;
   const PUBLIC = R0.listed(false).map((e) => e.id);
   const ALL = R0.all().map((e) => e.id);
-  test('Sanity: the real registry lists the eight certs, and a hidden fake is excluded for non-admins',
-    PUBLIC.length === 8 && ALL.length === 12 && (() => { const r = box({}).window.CertRegistry; return r.listed(false).length === 8 && r.listed(true).length === 13 && r.visible().length === 8; })());   // 12 = the eight + four hidden new certs
+  test('Sanity: the real registry lists all twelve certs, and a hidden fake is excluded for non-admins',
+    PUBLIC.length === 12 && ALL.length === 12 && (() => { const r = box({}).window.CertRegistry; return r.listed(false).length === 12 && r.listed(true).length === 13 && r.visible().length === 12; })());   // v8.206.0: the four new certs are revealed
   test('visible(): follows window._certanvilIsAdmin, hidden before the profile loads',
-    (() => { const sb = box({}); const r = sb.window.CertRegistry; const a = r.visible().length; sb.window._certanvilIsAdmin = true; const b = r.visible().length; return a === 8 && b === 13; })());
+    (() => { const sb = box({}); const r = sb.window.CertRegistry; const a = r.visible().length; sb.window._certanvilIsAdmin = true; const b = r.visible().length; return a === 12 && b === 13; })());
 
   // ── list surfaces: each returns the registry's visible ids, in registry order; hidden only for admins ──
   const surfaces = [];
@@ -80,10 +80,10 @@ const { test } = require('./_context');
     const sbA = box({ window: {} });
     const non = s.ids(sbA).join();
     test(s.name + ': non-admin gets the visible ids in registry order, hidden fake excluded',
-      non === s.order(sbA.window.CertRegistry).join() && non.split(',').length === 8 && non.indexOf('zz') === -1);
+      non === s.order(sbA.window.CertRegistry).join() && non.split(',').length === 12 && non.indexOf('zz') === -1);
     const sbB = box({ window: {} }); sbB.window._certanvilIsAdmin = true;
     const adm = s.ids(sbB);
-    test(s.name + ': admin also gets the hidden fake (and the four hidden new certs)', adm.indexOf('zz') !== -1 && adm.length === 13);
+    test(s.name + ': admin also gets the hidden fake', adm.indexOf('zz') !== -1 && adm.length === 13);
     const sbC = box({ window: {} }, false); delete sbC.window.CertRegistry;
     let safe = null, threw = false;
     try { safe = s.ids(sbC); } catch (e) { threw = true; }
@@ -99,7 +99,7 @@ const { test } = require('./_context');
     rel(surfaces[0].ids(sbO), EIGHT) === EIGHT.join());
   test('Literal order, picker + both onboarding lists: netplus, secplus, aplus-core1, aplus-core2, az900, ai900, sc900, clfc02',
     surfaces.slice(1).every((s) => rel(s.ids(sbO), EIGHT_PICK) === EIGHT_PICK.join()));
-  // v8.205.0: where the four new certs sit (admin view, since they are hidden): SecAI+ with CompTIA, PRINCE2 after AWS, PSM pair last.
+  // v8.205.0: where the four new certs sit (admin view, so the hidden fake is listed too): SecAI+ with CompTIA, PRINCE2 after AWS, PSM pair last.
   const sbN = box({}, false); sbN.window._certanvilIsAdmin = true;
   test('New certs in the switcher: netplus, secplus, secai, az900, ai900, sc900, clfc02, prince2, aplus-core1, aplus-core2, psm1, psm2',
     surfaces[0].ids(sbN).join() === 'netplus,secplus,secai,az900,ai900,sc900,clfc02,prince2,aplus-core1,aplus-core2,psm1,psm2');
@@ -116,7 +116,7 @@ const { test } = require('./_context');
     const sb = box({ window: {} });
     sb.window.CURRENT_CERT = 'zz';
     test('Active hidden cert: onboarding-home certById and onboarding-firstrun certById return its own label (not Network+)',
-      run(sb, fn('lib/onboarding-home.js', 'row') + fn('lib/onboarding-home.js', 'certs') + '\n' + fn('lib/onboarding-home.js', 'certById') + '\ncertById("zz").name + "|" + certById("zz").vendor + "|" + certs().length') === 'ZZ Onb|ZZ Sub|8'
+      run(sb, fn('lib/onboarding-home.js', 'row') + fn('lib/onboarding-home.js', 'certs') + '\n' + fn('lib/onboarding-home.js', 'certById') + '\ncertById("zz").name + "|" + certById("zz").vendor + "|" + certs().length') === 'ZZ Onb|ZZ Sub|12'
       && run(sb, fn('lib/onboarding-firstrun.js', 'row') + fn('lib/onboarding-firstrun.js', 'certs') + '\n' + fn('lib/onboarding-firstrun.js', 'certById') + '\ncertById("zz").name') === 'ZZ Onb');
     test('Active hidden cert: first-run picker pickName resolves it although pickCerts() excludes it',
       run(sb, fn('features/ios-firstrun.js', 'pickRow') + fn('features/ios-firstrun.js', 'pickCerts') + '\n' + fn('features/ios-firstrun.js', 'pickName') + '\npickName("zz") + "|" + pickCerts().some(function(c){return c.id==="zz";})') === 'Zed Short|false');

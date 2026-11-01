@@ -30,7 +30,7 @@ const { test } = require('./_context');
   const R = load();
   const APPROVED = { 'aplus-core1': '220-1201', 'aplus-core2': '220-1202' };
 
-  const NEW = ['secai', 'prince2', 'psm1', 'psm2'];   // v8.205.0, hidden until ship
+  const NEW = ['secai', 'prince2', 'psm1', 'psm2'];   // v8.205.0, revealed in v8.206.0
   test('Registry has 12 entries (the eight + four new), ids match the snapshot', R && R.all().length === 12 && R.all().map((e) => e.id).sort().join() === IDS.join());
   test('diagnosticSlug: the four diagnostic URL slugs are pinned, every other cert falls back to its id',
     R.get('netplus').diagnosticSlug === 'network-plus' && R.get('secplus').diagnosticSlug === 'security-plus' && R.get('az900').diagnosticSlug === 'azure-fundamentals'
@@ -73,7 +73,7 @@ const { test } = require('./_context');
     eq('hostFor', R.hostFor(id), f.switchHost.replace(/^https:\/\//, '').replace(/[\/?].*$/, ''));
     // First-run code: the registry carries the approved A+ change.
     eq('code (first-run, approved)', e.labels.firstrunCode, APPROVED[id] || f.codes.firstrun);
-    if (e.hidden !== (NEW.indexOf(id) !== -1)) fx.push(id + '.hidden wrong');
+    if (e.hidden) fx.push(id + '.hidden wrong');   // v8.206.0: nothing ships hidden
   });
   test('Registry entries carry the snapshot values (A+ first-run code as approved)' + (fx.length ? ' — ' + fx.slice(0, 5).join(' | ') : ''), fx.length === 0);
 
@@ -93,7 +93,7 @@ const { test } = require('./_context');
   });
   test('Task 1.4 fields (labels.gate, labels.onboardingHomeSub, decisionLabSeed) carry the values of the maps they replaced' + (f14.length ? ' — ' + f14.join(', ') : ''), f14.length === 0);
   test('visible(): hidden certs only once window._certanvilIsAdmin is set',
-    (() => { const w = { window: {} }; w.window.window = w.window; vm.createContext(w); vm.runInContext(read('lib/cert-registry.js'), w); const r = w.window.CertRegistry; r._add({ id: 'q', hidden: true }); const a = r.visible().length; w.window._certanvilIsAdmin = true; return a === 8 && r.visible().length === 13; })());
+    (() => { const w = { window: {} }; w.window.window = w.window; vm.createContext(w); vm.runInContext(read('lib/cert-registry.js'), w); const r = w.window.CertRegistry; r._add({ id: 'q', hidden: true }); const a = r.visible().length; w.window._certanvilIsAdmin = true; return a === 12 && r.visible().length === 13; })());
 
   const hostBad = [];
   IDS.forEach((id) => {
@@ -136,7 +136,7 @@ const { test } = require('./_context');
   R2._add({ id: 'zz', name: 'Hidden Cert', hidden: true, hostPrefix: 'zz', host: 'zz.certanvil.com', scale: { min: 0, max: 100, pass: 70, format: 'percent' } });
   test('Hidden cert resolves by host but is not listed unless admin',
     R2.byHost('zz.certanvil.com') === 'zz' && R2.byHost('zz-x.vercel.app') === 'zz' &&
-    R2.listed(false).every((e) => e.id !== 'zz') && R2.listed(true).some((e) => e.id === 'zz') && R2.listed(false).length === 8 && R2.all().length === 13);
+    R2.listed(false).every((e) => e.id !== 'zz') && R2.listed(true).some((e) => e.id === 'zz') && R2.listed(false).length === 12 && R2.all().length === 13);
   test("formatScore percent: 72 -> '72%', null -> '--'", R2.formatScore('zz', 72) === '72%' && R2.formatScore('zz', 71.6) === '72%' && R2.formatScore('zz', null) === '--');
   test('_add entries are frozen too', Object.isFrozen(R2.get('zz')) && Object.isFrozen(R2.get('zz').scale) && Object.isFrozen(R2.get('zz').hostAliases));
   test('Real registry was not affected by the test-only _add', R.all().length === 12 && !R.isKnown('zz'));
@@ -172,8 +172,8 @@ const { test } = require('./_context');
   // ── v8.205.0: the four new exams ──
   const keysOf = (e) => Object.keys(e).sort().join() + '|' + Object.keys(e.labels).sort().join() + '|' + Object.keys(e.scale).sort().join();
   test('New entries carry every field the eight carry (same entry, labels and scale keys)', R.all().every((e) => keysOf(e) === keysOf(R.get('netplus'))));
-  test('New entries: hidden, Pro, no Sim Lab / Decision Lab, diagnosticSlug = id, appended after the eight',
-    NEW.every((id) => { const e = R.get(id); return e.hidden === true && e.tier === 'pro' && !e.simLab && !e.decisionLab && e.decisionLabSeed === null && e.diagnosticSlug === id; }) &&
+  test('New entries: visible, Pro, no Sim Lab / Decision Lab, diagnosticSlug = id, appended after the eight',
+    NEW.every((id) => { const e = R.get(id); return e.hidden === false && e.tier === 'pro' && !e.simLab && !e.decisionLab && e.decisionLabSeed === null && e.diagnosticSlug === id; }) &&
     R.all().slice(8).map((e) => e.id).join() === NEW.join());
   test('New entries: hosts, vendors, codes, domain counts and scales',
     R.get('secai').host === 'secai.certanvil.com' && R.get('secai').vendor === 'CompTIA' && R.get('secai').code === 'CY0-001' && R.get('secai').domainCount === 4 &&

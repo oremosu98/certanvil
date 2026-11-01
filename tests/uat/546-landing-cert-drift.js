@@ -301,5 +301,6 @@ function run(revealed) {
     Object.keys(cfg).map((s) => ({ id: slugId(s) })), slugs.map((s) => ({ id: slugId(s) })));
   test('No hidden registry cert appears in any public landing list', leaks(publicRows, HIDDEN_IDS).length === 0);
 }
-run(false);
+// v8.206.0: the four new exams shipped, so the hidden pass no longer matches any real state. Only the revealed pass runs;
+// run(false) stays available for the next cert that ships behind the switch.
 run(true);

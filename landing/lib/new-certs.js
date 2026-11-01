@@ -14,7 +14,7 @@
 // Loaded as a plain script before auth.js on every page that uses these lists. Never touches localStorage.
 (function () {
   'use strict';
-  var NEW_CERTS_REVEALED = false;
+  var NEW_CERTS_REVEALED = true;
 
   var LEGAL_PRINCE2 = 'PRINCE2® is a registered trademark of PeopleCert. Not affiliated with or endorsed by PeopleCert.';
   var LEGAL_SCRUM = 'Professional Scrum Master™ and PSM are trademarks of Scrum.org. Not affiliated with or endorsed by Scrum.org.';

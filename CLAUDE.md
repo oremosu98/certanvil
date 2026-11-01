@@ -28,8 +28,8 @@
 | styles.css | 14888 | 550 KB |
 | index.html | 2329 | 154 KB |
 | dg-system.css | 6188 | 609 KB |
-| tests/uat.js + tests/uat/ (108 modules) | 37648 | — |
-UAT checks: 6855 · E2E `test(` count: 813 · APP_VERSION: 8.205.2 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (108 modules) | 37649 | — |
+UAT checks: 6827 · E2E `test(` count: 813 · APP_VERSION: 8.206.0 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |
@@ -135,6 +135,7 @@ npx playwright test              # E2E (tests/e2e/app.spec.js)
 
 | Version | Features Added |
 |---|---|
+| v8.206.0 | Four new exams live: CompTIA SecAI+, PRINCE2 7 Foundation, PSM I and PSM II (cert registry) |
 | v8.205.1 | Report a problem keeps your text if you cancel after a failed send |
 | v8.205.0 | Admin in the app: Report a problem everywhere, the Admin screen, Fixed and tell them, Preview as Free |
 | v8.204.1 | Readiness says Pass level and what to do before booking, then Exam ready at 4 of 4 |
