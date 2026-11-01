@@ -53,7 +53,8 @@ function authSurfaces() {
   if (!sm) throw new Error('pattern window.tadSwitchCert not found in auth-state.js');
   const switchSrc = sliceBraced(src, sm.index, 'window.tadSwitchCert in auth-state.js');
   const mk = (host, storage) => {
-    const win = { location: { hostname: host, href: '', reload() {} }, _gateProOnly: () => true };
+    // _certanvilIsAdmin: hidden certs are listed too, so a hidden cert's switcher row is captured like any other.
+    const win = { location: { hostname: host, href: '', reload() {} }, _gateProOnly: () => true, _certanvilIsAdmin: true };
     const ls = Object.assign({}, storage || {});
     const ctx = vm.createContext({
       window: win,
@@ -100,7 +101,7 @@ function headSurfaces() {
 // each surface's own function is cut out of the real source and run next to the real registry. A missing function throws.
 function surface(file, names, code, globals) {
   const src = read(file);
-  const win = {}; win.window = win;
+  const win = { _certanvilIsAdmin: true }; win.window = win;   // admin view: hidden certs are listed too
   const ctx = vm.createContext(Object.assign({ window: win, console: { log() {}, warn() {}, error() {} } }, globals || {}));
   vm.runInContext(read('lib/cert-registry.js'), ctx);
   return vm.runInContext(names.map((n) => fnSrc(src, n, file)).join('\n') + '\n' + code, ctx);
@@ -140,7 +141,8 @@ function extract() {
 
   // Host aliases: subdomain prefix each cert answers on (probe input), then what both detectors say for the
   // canonical host and a Vercel preview host. Prefix list is the probe, the detected results are the capture.
-  const PREFIX = { netplus: 'networkplus', secplus: 'secplus', az900: 'azure', ai900: 'ai', sc900: 'sc900', clfc02: 'clfc02', 'aplus-core1': 'aplus', 'aplus-core2': 'aplus' };
+  const PREFIX = { netplus: 'networkplus', secplus: 'secplus', az900: 'azure', ai900: 'ai', sc900: 'sc900', clfc02: 'clfc02', 'aplus-core1': 'aplus', 'aplus-core2': 'aplus',
+    secai: 'secai', prince2: 'prince2', psm1: 'scrum', psm2: 'scrum' };
   const aliases = (id) => {
     const p = PREFIX[id]; const o = {};
     [p + '.certanvil.com', p + '-x.vercel.app'].forEach((h) => { o[h] = { authState: auth.detect(h), head: head.run(h).cert }; });

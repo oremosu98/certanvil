@@ -257,6 +257,135 @@
     "topbar": "Network+ <b>N10-009</b>",
     "domainCount": 5
   },
+  "prince2": {
+    "hostDetected": {
+      "authState": "prince2",
+      "head": "prince2"
+    },
+    "hostAliases": {
+      "prince2.certanvil.com": {
+        "authState": "prince2",
+        "head": "prince2"
+      },
+      "prince2-x.vercel.app": {
+        "authState": "prince2",
+        "head": "prince2"
+      }
+    },
+    "devOverrideAllowed": true,
+    "switchHost": "https://prince2.certanvil.com/",
+    "proGated": true,
+    "glyph": "P2",
+    "mark": "P2",
+    "names": {
+      "switcher": "PRINCE2 7 Foundation",
+      "signin": "PRINCE2 7 Foundation",
+      "firstrun": "PRINCE2 Foundation",
+      "onboarding": "PRINCE2 Foundation",
+      "onboardingHome": "PRINCE2 Foundation",
+      "certLock": "PRINCE2 Foundation"
+    },
+    "codes": {
+      "switcher": "Foundation",
+      "firstrun": "Foundation"
+    },
+    "scale": {
+      "min": 0,
+      "max": 100,
+      "pass": 60
+    },
+    "simLab": false,
+    "decisionLab": false,
+    "title": "CertAnvil · PRINCE2 7 Foundation",
+    "topbar": "PRINCE2 7 Foundation <b>Foundation</b>",
+    "domainCount": 5
+  },
+  "psm1": {
+    "hostDetected": {
+      "authState": "psm1",
+      "head": "psm1"
+    },
+    "hostAliases": {
+      "scrum.certanvil.com": {
+        "authState": "psm1",
+        "head": "psm1"
+      },
+      "scrum-x.vercel.app": {
+        "authState": "psm1",
+        "head": "psm1"
+      }
+    },
+    "devOverrideAllowed": true,
+    "switchHost": "https://scrum.certanvil.com/?exam=psm1",
+    "proGated": true,
+    "glyph": "PSM",
+    "mark": "PSM",
+    "names": {
+      "switcher": "Professional Scrum Master I",
+      "signin": "Professional Scrum Master I",
+      "firstrun": "PSM I",
+      "onboarding": "PSM I",
+      "onboardingHome": "PSM I",
+      "certLock": "PSM I"
+    },
+    "codes": {
+      "switcher": "PSM I",
+      "firstrun": "Professional Scrum Master I"
+    },
+    "scale": {
+      "min": 0,
+      "max": 100,
+      "pass": 85
+    },
+    "simLab": false,
+    "decisionLab": false,
+    "title": "CertAnvil · Professional Scrum Master I",
+    "topbar": "Professional Scrum Master I <b>PSM I</b>",
+    "domainCount": 3
+  },
+  "psm2": {
+    "hostDetected": {
+      "authState": "psm1",
+      "head": "psm1"
+    },
+    "hostAliases": {
+      "scrum.certanvil.com": {
+        "authState": "psm1",
+        "head": "psm1"
+      },
+      "scrum-x.vercel.app": {
+        "authState": "psm1",
+        "head": "psm1"
+      }
+    },
+    "devOverrideAllowed": true,
+    "switchHost": "https://scrum.certanvil.com/?exam=psm2",
+    "proGated": true,
+    "glyph": "PSM",
+    "mark": "PSM",
+    "names": {
+      "switcher": "Professional Scrum Master II",
+      "signin": "Professional Scrum Master II",
+      "firstrun": "PSM II",
+      "onboarding": "PSM II",
+      "onboardingHome": "PSM II",
+      "certLock": "PSM II"
+    },
+    "codes": {
+      "switcher": "PSM II",
+      "firstrun": "Professional Scrum Master II"
+    },
+    "scale": {
+      "min": 0,
+      "max": 100,
+      "pass": 85
+    },
+    "simLab": false,
+    "decisionLab": false,
+    "title": "CertAnvil · Professional Scrum Master II",
+    "topbar": "Professional Scrum Master II <b>PSM II</b>",
+    "domainCount": 4
+  },
   "sc900": {
     "hostDetected": {
       "authState": "sc900",
@@ -298,6 +427,49 @@
     "decisionLab": true,
     "title": "CertAnvil · SC-900",
     "topbar": "SC-900 <b>SC-900</b>",
+    "domainCount": 4
+  },
+  "secai": {
+    "hostDetected": {
+      "authState": "secai",
+      "head": "secai"
+    },
+    "hostAliases": {
+      "secai.certanvil.com": {
+        "authState": "secai",
+        "head": "secai"
+      },
+      "secai-x.vercel.app": {
+        "authState": "secai",
+        "head": "secai"
+      }
+    },
+    "devOverrideAllowed": true,
+    "switchHost": "https://secai.certanvil.com/",
+    "proGated": true,
+    "glyph": "SAI",
+    "mark": "SAI",
+    "names": {
+      "switcher": "CompTIA SecAI+",
+      "signin": "CompTIA SecAI+",
+      "firstrun": "SecAI+",
+      "onboarding": "SecAI+",
+      "onboardingHome": "SecAI+",
+      "certLock": "SecAI+"
+    },
+    "codes": {
+      "switcher": "CY0-001",
+      "firstrun": "CY0-001"
+    },
+    "scale": {
+      "min": 100,
+      "max": 900,
+      "pass": 600
+    },
+    "simLab": false,
+    "decisionLab": false,
+    "title": "CertAnvil · SecAI+",
+    "topbar": "SecAI+ <b>CY0-001</b>",
     "domainCount": 4
   },
   "secplus": {

@@ -39,8 +39,13 @@ const { test } = require('./_context');
     diffs.push(k + ': fixture ' + JSON.stringify(want[k]) + ' vs now ' + JSON.stringify(got[k]));
   });
 
-  test('Snapshot covers the eight current certs, in id order',
-    Object.keys(fixture).join() === 'ai900,aplus-core1,aplus-core2,az900,clfc02,netplus,sc900,secplus' && Object.keys(live).join() === Object.keys(fixture).join());
+  // v8.205.0: the four new certs (secai, prince2, psm1, psm2) were added as new keys only; the eight's values are unchanged.
+  test('Snapshot covers the eight launch certs plus the four new ones, in id order',
+    Object.keys(fixture).join() === 'ai900,aplus-core1,aplus-core2,az900,clfc02,netplus,prince2,psm1,psm2,sc900,secai,secplus' && Object.keys(live).join() === Object.keys(fixture).join());
+  test('New certs: scrum host opens PSM I, the switcher sends PSM II to ?exam=psm2, percent scales and the S-first SecAI+ glyph are captured',
+    fixture.psm1.hostDetected.head === 'psm1' && fixture.psm2.switchHost === 'https://scrum.certanvil.com/?exam=psm2' &&
+    fixture.prince2.scale.pass === 60 && fixture.psm2.scale.pass === 85 && fixture.secai.glyph === 'SAI' && fixture.secai.hostDetected.head === 'secai' &&
+    fixture.psm1.codes.firstrun === 'Professional Scrum Master I');
   test('Snapshot spot checks: CLF-C02 glyph AWS, mark CLF; first-run A+ Core 1 code is 220-1101',
     fixture.clfc02.glyph === 'AWS' && fixture.clfc02.mark === 'CLF' && fixture['aplus-core1'].codes.firstrun === '220-1101');
   test('Every cert surface matches the snapshot (zero unapproved diffs)' + (diffs.length ? ' — ' + diffs.slice(0, 5).join(' | ') : ''), diffs.length === 0);
