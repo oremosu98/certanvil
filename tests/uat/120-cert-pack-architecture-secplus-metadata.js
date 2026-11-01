@@ -49,7 +49,7 @@ test('v7.2.1 CertPack: detectCert maps secplus.certanvil.com to secplus',
 test('v7.2.1 CertPack: detectCert maps networkplus.certanvil.com to netplus',
   _byHost('networkplus.certanvil.com') === 'netplus' && /byHost\(/.test(_detectBody));
 test('v4.86.0 CertPack: detectCert defaults to netplus',
-  /function\s+detectCert[\s\S]{0,5000}return\s+['"]netplus['"]/.test(js));
+  /'netplus'/.test(_detectBody) && /R\.isKnown\(dev\) \? dev : 'netplus'/.test(_detectBody));
 test('v4.86.0 CertPack: CURRENT_CERT and CERT_PACK constants declared',
   /const\s+CURRENT_CERT\s*=\s*detectCert\(\)/.test(js) &&
   /const\s+CERT_PACK\s*=.*window\.CERT_PACKS\[CURRENT_CERT\]/.test(js));

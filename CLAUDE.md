@@ -24,12 +24,12 @@
 <!-- machine-owned — run `node scripts/stamp-facts.js` to refresh; do not hand-edit -->
 | Metric | Lines | Size |
 |---|---|---|
-| app.js | 8249 | 442 KB |
+| app.js | 8248 | 442 KB |
 | styles.css | 14888 | 550 KB |
-| index.html | 2341 | 155 KB |
+| index.html | 2340 | 155 KB |
 | dg-system.css | 6235 | 612 KB |
-| tests/uat.js + tests/uat/ (99 modules) | 35725 | — |
-UAT checks: 6348 · E2E `test(` count: 809 · APP_VERSION: 8.205.1 · stamped-at: worktree
+| tests/uat.js + tests/uat/ (99 modules) | 35761 | — |
+UAT checks: 6355 · E2E `test(` count: 809 · APP_VERSION: 8.205.1 · stamped-at: worktree
 <!-- FACTS:AUTO:END -->
 
 | File | Purpose | Size |

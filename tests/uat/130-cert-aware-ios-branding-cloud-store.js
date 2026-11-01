@@ -200,7 +200,7 @@ test('v4.87.3 Brand: meta description leads with CertAnvil',
 test('v4.87.3 Brand: apple-mobile-web-app-title is CertAnvil',
   /<meta name="apple-mobile-web-app-title" content="CertAnvil"/.test(html));
 test('v4.87.3 Brand: inline <head> script sets CertAnvil-prefixed title for both certs',
-  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html) && /CertRegistry\.get\(cert\)\.shortName/.test(html));
+  /document\.title\s*=\s*'CertAnvil · '\s*\+/.test(html) && /CertRegistry\.get\(cert\)\.name/.test(html));
 test('v4.87.3 Brand: hardcoded "Network+ AI Quiz" page title removed',
   !/<title>Network\+ AI Quiz<\/title>/.test(html));
 

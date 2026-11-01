@@ -113,9 +113,10 @@
   window.buildSignInUrl = buildSignInUrl;
 
   function getActiveCertId() {
-    // Registry missing (stale cached page): netplus. Saved override first (any known id), then the host.
+    // Saved override first (any known id), then the host. Registry missing (stale cached page): use what the
+    // head already resolved. Runs after detectCert(), which persists a ?cert= choice, so it agrees on that too.
     var R = window.CertRegistry;
-    if (!R) return 'netplus';
+    if (!R) return (typeof document !== 'undefined' && document.documentElement.getAttribute('data-cert')) || 'netplus';
     try {
       var dev = localStorage.getItem(CERT_OVERRIDE_KEY);
       if (R.isKnown(dev)) return dev;

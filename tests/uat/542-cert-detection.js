@@ -27,7 +27,7 @@ const { _fnBody, test, vm } = require('./_context');
     const search = o.search || '';
     const loc = { hostname: host, href: 'https://' + host + '/' + search, search };
     const attrs = {};
-    const doc = { title: '', write() {}, documentElement: { setAttribute: (k, v) => { attrs[k] = v; } } };
+    const doc = { title: '', write() {}, documentElement: { setAttribute: (k, v) => { attrs[k] = v; }, getAttribute: (k) => (k in attrs ? attrs[k] : null) } };
     const ctx = vm.createContext({
       window: win, document: doc, URL, location: loc,
       history: { replaceState() {} },
@@ -42,8 +42,8 @@ const { _fnBody, test, vm } = require('./_context');
     return { ctx, win, attrs, doc, writes };
   }
   const head = (host, o) => { const c = mkCtx(host, o); vm.runInContext(headCode, c.ctx); return { cert: c.attrs['data-cert'], title: c.doc.title, topbar: c.win._cbCertHtml, writes: c.writes, c }; };
-  const detect = (host, o) => { const c = mkCtx(host, o); return { cert: vm.runInContext(detectSrc + '\ndetectCert()', c.ctx), writes: c.writes }; };
-  const active = (host, o) => { const c = mkCtx(host, o); return { cert: vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', c.ctx), writes: c.writes }; };
+  const detect = (host, o) => { const c = mkCtx(host, o); if (o && o.dataCert) c.attrs['data-cert'] = o.dataCert; return { cert: vm.runInContext(detectSrc + '\ndetectCert()', c.ctx), writes: c.writes }; };
+  const active = (host, o) => { const c = mkCtx(host, o); if (o && o.dataCert) c.attrs['data-cert'] = o.dataCert; return { cert: vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', c.ctx), writes: c.writes }; };
   const all3 = (host, o) => ({ h: head(host, o).cert, d: detect(host, o).cert, a: active(host, o).cert });
   const agree = (r, want) => r.h === want && r.d === want && r.a === want;
 
@@ -108,11 +108,16 @@ const { _fnBody, test, vm } = require('./_context');
   const dc = detect('localhost', { search: '?cert=secplus' });
   test('detectCert: ?cert=<known id> wins and is persisted', dc.cert === 'secplus' && dc.writes.indexOf(KEY) !== -1);
   test('detectCert: ?cert=<unknown id> is ignored', detect('localhost', { search: '?cert=secai' }).cert === 'netplus');
-  test('detectCert: ?exam=core2 maps to aplus-core2', detect('localhost', { search: '?exam=core2' }).cert === 'aplus-core2');
+  test('detectCert: ?exam=core2 on the A+ host maps to aplus-core2 and is persisted',
+    detect('aplus.certanvil.com', { search: '?exam=core2' }).cert === 'aplus-core2' && detect('aplus.certanvil.com', { search: '?exam=core2' }).writes.indexOf(KEY) !== -1);
+  test('detectCert: ?exam= is ignored off the A+ family (localhost, another cert host), like the head',
+    detect('localhost', { search: '?exam=core2' }).cert === 'netplus' && detect('secplus.certanvil.com', { search: '?exam=core2' }).cert === 'secplus'
+    && head('localhost', { search: '?exam=core2' }).cert === 'netplus');
   test('No localStorage write happens on a plain visit to any registry host (head, detectCert, getActiveCertId)',
     R.all().every((e) => head(e.host).writes.length === 0 && detect(e.host).writes.length === 0 && active(e.host).writes.length === 0));
 
-  // 6. Registry missing (a cached old index.html with a newer script): netplus, no throw.
+  // 6. Registry missing (a cached old index.html with a newer script): head falls to netplus; detectCert and
+  // getActiveCertId return whatever the head already set in data-cert (netplus when nothing), and never throw.
   const none = { noRegistry: true };
   let threw = false; let nr = {};
   try { nr = { h: head('secplus.certanvil.com', none).cert, d: detect('secplus.certanvil.com', none).cert, a: active('secplus.certanvil.com', none).cert }; } catch (e) { threw = true; }
@@ -120,20 +125,51 @@ const { _fnBody, test, vm } = require('./_context');
   let threw2 = false; let nr2 = {};
   try { const o = { noRegistry: true, storage: { [KEY]: 'secplus' }, search: '?cert=secplus' }; nr2 = { h: head('localhost', o).cert, d: detect('localhost', o).cert, a: active('localhost', o).cert }; } catch (e) { threw2 = true; }
   test('Registry missing, with an override and ?cert=: still netplus, no throw', !threw2 && agree(nr2, 'netplus'));
+  let threw3 = false; let nr3 = {};
+  try { const o = { noRegistry: true, dataCert: 'az900' }; nr3 = { d: detect('localhost', o).cert, a: active('localhost', o).cert }; } catch (e) { threw3 = true; }
+  test('Registry missing: detectCert and getActiveCertId return the head\'s data-cert (az900), so an old cached page agrees', !threw3 && nr3.d === 'az900' && nr3.a === 'az900');
+
+  // 6b. Every non-family registry host x every other known id as the saved override: the host wins in head and detectCert
+  // (the v7.2.2 bug was a secplus host with a netplus override).
+  const hostBad = [];
+  R.all().filter((e) => !e.family).forEach((e) => {
+    R.all().filter((o) => o.id !== e.id).forEach((o) => {
+      const opts = { storage: { [KEY]: o.id } };
+      const h = head(e.host, opts).cert; const d = detect(e.host, opts).cert;
+      if (h !== e.id || d !== e.id) hostBad.push(e.host + ' + override ' + o.id + ' -> head ' + h + ', detectCert ' + d);
+    });
+  });
+  test('Every non-family host beats every other known override in head and detectCert' + (hostBad.length ? ' — ' + hostBad.slice(0, 3).join(' | ') : ''), hostBad.length === 0);
+
+  // 6c. ?cert=<known id> on a non-family host (landing links to networkplus.certanvil.com/?cert=secplus): all paths agree.
+  const q = { search: '?cert=secplus' };
+  test('?cert=secplus on networkplus.certanvil.com: head and detectCert both open Security+',
+    head('networkplus.certanvil.com', q).cert === 'secplus' && detect('networkplus.certanvil.com', q).cert === 'secplus');
+  test('?cert=<known id> is honoured by head and detectCert on every host (all ids x all hosts)',
+    R.all().every((t) => ['localhost', 'example.com'].concat(R.all().map((e) => e.host)).every((h) => {
+      const o = { search: '?cert=' + t.id }; return head(h, o).cert === t.id && detect(h, o).cert === t.id;
+    })));
+  test('?cert=<unknown id> is ignored by head and detectCert on a cert host',
+    head('azure.certanvil.com', { search: '?cert=secai' }).cert === 'az900' && detect('azure.certanvil.com', { search: '?cert=secai' }).cert === 'az900');
+  // getActiveCertId ignores query params but runs after detectCert has persisted the choice: same context, same storage.
+  const seq = mkCtx('networkplus.certanvil.com', q);
+  vm.runInContext(detectSrc + '\ndetectCert()', seq.ctx);
+  const seqActive = vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', seq.ctx);
+  test('After detectCert persists ?cert=secplus, getActiveCertId returns secplus too (all three agree)', seqActive === 'secplus');
 
   // 7. Head title/topbar for an entry the old tables never knew (registry fallback).
   const hc = mkCtx('localhost', { storage: { [KEY]: 'zzfake' } });
-  hc.win.CertRegistry._add({ id: 'zzfake', name: 'Fake Cert', shortName: 'Fake', code: 'ZZ-1' });
+  hc.win.CertRegistry._add({ id: 'zzfake', name: 'CompTIA Fake Cert', shortName: 'Fake', code: 'ZZ-1' });
   vm.runInContext(headCode, hc.ctx);
   test('A registry-only cert gets its title and topbar from the registry (no table edit needed)',
-    hc.attrs['data-cert'] === 'zzfake' && hc.doc.title === 'CertAnvil · Fake' && hc.win._cbCertHtml === 'Fake <b>ZZ-1</b>');
+    hc.attrs['data-cert'] === 'zzfake' && hc.doc.title === 'CertAnvil · Fake Cert' && hc.win._cbCertHtml === 'Fake Cert <b>ZZ-1</b>');
 
   // 7b. A registry-only cert works as an override in all three paths (the property new certs rely on).
   const fakeAll = (o) => {
     const out = {};
     [['h', head], ['d', detect], ['a', active]].forEach(([k, fn]) => {
       // fn builds its own ctx, so rebuild with the fake added via a registry source suffix.
-      const c = mkCtx('localhost', o); c.win.CertRegistry._add({ id: 'zzfake', shortName: 'Fake', code: 'ZZ-1' });
+      const c = mkCtx('localhost', o); c.win.CertRegistry._add({ id: 'zzfake', name: 'Fake', shortName: 'Fake', code: 'ZZ-1' });
       if (k === 'h') { vm.runInContext(headCode, c.ctx); out[k] = c.attrs['data-cert']; }
       else if (k === 'd') out[k] = vm.runInContext(detectSrc + '\ndetectCert()', c.ctx);
       else out[k] = vm.runInContext("var CERT_OVERRIDE_KEY = 'nplus_' + 'dev_cert';\n" + activeSrc + '\ngetActiveCertId()', c.ctx);
