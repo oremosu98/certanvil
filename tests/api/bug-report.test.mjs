@@ -154,6 +154,15 @@ await t('a reporter lookup failure logs the report and the status', async () => 
   assert.equal(j.failed, 1);
   assert.ok(logged.some((m) => /report 7/.test(m) && /500/.test(m)), logged.join(' | '));
 });
+await t('a garbled NOTIFY_FROM_EMAIL falls back to notify@certanvil.com', async () => {
+  for (const [v, want] of [['notify@certanvil.comnotify@certanvil.comnotify"certanvil.com', 'notify@certanvil.com'], [' hello@certanvil.com ', 'hello@certanvil.com'], ['', 'notify@certanvil.com']]) {
+    setEnv(Object.assign({}, ENV, { NOTIFY_FROM_EMAIL: v }));
+    stub({ reports: [{ id: 1, user_id: 'u1' }], emails: { u1: 'a@x.com' } });
+    await handler(post({ action: 'fixed', ids: [1] }));
+    assert.equal(JSON.parse(mails()[0].init.body).from, 'CertAnvil <' + want + '>', v);
+  }
+  setEnv(ENV);
+});
 await t('buildFixedEmail escapes the title and cuts to 50 plus an ellipsis', async () => {
   const e = mod.buildFixedEmail('<b>"x"</b>');
   assert.ok(e.html.includes('&lt;b&gt;&quot;x&quot;&lt;/b&gt;') && !e.html.includes('<b>'));

@@ -53,6 +53,7 @@
 //     where cert = 'Security+' order by created_at desc;
 
 import { logServerError } from './_lib/log-server-error.js';
+import { senderEmail } from './_lib/sender.js';
 
 export const config = { runtime: 'edge' };
 
@@ -172,7 +173,7 @@ export default async function handler(req) {
 
   // ── Send via Resend if configured ──────────────────────────────────────
   const resendKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com';
+  const fromEmail = senderEmail();
   const adminEmail = process.env.NOTIFY_ADMIN_EMAIL;
 
   if (resendKey) {

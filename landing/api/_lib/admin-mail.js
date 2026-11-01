@@ -2,10 +2,11 @@
 // the server-side admin check, and one Resend send. Edge runtime, ESM. Every env var is read at call time so a missing
 // one answers a clean 503 instead of a crash (ENVIRONMENT_STRATEGY.md: ship safely before the env is set).
 // The landing project has no SUPABASE_URL env (30 Oct): fall back to the project's public URL, as notify.js does.
+import { senderEmail } from './sender.js';
 
 export function supabaseUrl() { return process.env.SUPABASE_URL || 'https://appmuaqwuethndvalarl.supabase.co'; }
 export function serviceKey() { return process.env.SUPABASE_SERVICE_ROLE_KEY || ''; }
-export function fromAddress() { return 'CertAnvil <' + (process.env.NOTIFY_FROM_EMAIL || 'notify@certanvil.com') + '>'; }
+export function fromAddress() { return 'CertAnvil <' + senderEmail() + '>'; }
 
 // Names of the required env vars that are not set.
 export function missingEnv(names) {
