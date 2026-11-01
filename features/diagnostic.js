@@ -772,7 +772,7 @@
     const upperPct = Math.round((1 / (1 + Math.exp(-((p.upperBound - EXAM_PASS_SCORE) / (p.ciHalfWidth / 1.645))))) * 100);
     if (rangeEl) rangeEl.textContent = lowerPct + '-' + upperPct + '%';
     const predEl = document.getElementById('pass-plan-predicted-score');
-    if (predEl) predEl.textContent = p.predicted + ' / ' + EXAM_MAX_SCORE;
+    if (predEl) predEl.textContent = formatExamScore(p.predicted) + (EXAM_SCORE_FORMAT === 'percent' ? '' : ' / ' + EXAM_MAX_SCORE);
     const dataConfEl = document.getElementById('pass-plan-data-confidence');
     if (dataConfEl) {
       const labels = { low: 'Low — 20 of ~50 questions answered', medium: 'Medium — 50+ questions answered', high: 'High — 80+ questions answered' };

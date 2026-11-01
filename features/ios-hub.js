@@ -15,6 +15,13 @@
   var HUB_DAY = 86400000;
   var HUB_STALE_DAYS = 14;          // a snapshot older than this says so
   // The top of a cert's score scale, from the registry (Microsoft and AWS certs: 1000). Unknown cert or no registry: 900.
+  // How a score reads for this row: '684' on a scaled cert, '72%' on a percent one (row.fmt comes from the registry scale).
+  function _hubFmt(r, n) { return r && r.fmt === 'percent' ? Math.round(n) + '%' : String(n); }
+  // The right-hand score on a studying row / tile: "684 / 900" (scaled, unchanged) or "72% · pass 60%" (percent).
+  function _hubRight(r, round) {
+    var n = round ? Math.round(r.score) : r.score;
+    return r.fmt === 'percent' ? '<b>' + _esc(_hubFmt(r, n)) + '</b> · pass ' + _esc(r.pass) + '%' : '<b>' + _esc(n) + '</b> / ' + _esc(r.max);
+  }
   function _hubMax(id) { var R = typeof window !== 'undefined' ? window.CertRegistry : null, s = R ? R.scale(id) : null; return s ? s.max : 900; }
 
   // "CompTIA A+ Core 1" -> "A+ Core 1"; "Microsoft Azure Fundamentals" -> "Azure Fundamentals". AWS stays: it is the brand.
@@ -66,23 +73,27 @@
       var days = _hubDays(dates[id], now);
       var max = _hubMax(id);
       if (id === cur && typeof scale.max === 'number') max = scale.max;
-      var row = { id: id, name: _hubShort(c.name), code: c.code || '', glyph: c.glyph || '', max: max, score: hasSnap ? snap.score : null, days: days };
+      var R = typeof window !== 'undefined' ? window.CertRegistry : null, rs = R ? R.scale(id) : null;
+      var fmt = (id === cur && scale.format) ? scale.format : (rs && rs.format === 'percent' ? 'percent' : 'scaled');   // percent certs: "72% · pass 60%"
+      var row = { id: id, name: _hubShort(c.name), code: c.code || '', glyph: c.glyph || '', max: max, score: hasSnap ? snap.score : null, days: days,
+        fmt: fmt, pass: rs ? rs.pass : undefined };
+      var _pp = fmt === 'percent' ? '%' : '';
       if (isPassed) passedCount++;
       else if (days !== null && days >= 0 && (nextExam === null || days < nextExam)) nextExam = days;   // the soonest future date, only for certs still being studied
 
       if (id === cur) {   // the active cert gets the rich card, not a list row
         row.passed = isPassed;
         row.hasScore = hasSnap;
-        row.pass = typeof scale.pass === 'number' ? scale.pass : (max === 1000 ? 700 : 720);
+        row.pass = typeof scale.pass === 'number' ? scale.pass : (rs ? rs.pass : (max === 1000 ? 700 : 720));
         row.min = typeof scale.min === 'number' ? scale.min : 100;
-        row.sub = isPassed ? (oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score : 'No score logged') : _hubExamLine(days);
+        row.sub = isPassed ? (oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score + _pp : 'No score logged') : _hubExamLine(days);
         active = row;
         return;
       }
       if (!o.pro) return;   // Free sees one folded row instead of the library
 
       if (isPassed) {
-        row.sub = oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score : 'No score logged';
+        row.sub = oc && typeof oc.score === 'number' && isFinite(oc.score) ? 'Scored ' + oc.score + _pp : 'No score logged';
         row.scored = oc && typeof oc.score === 'number' && isFinite(oc.score) ? oc.score : null;
         passed.push(row);
       } else if (hasSnap) {
@@ -118,7 +129,7 @@
     var greeting = { lead: part + (first ? ', ' + first : '') + '.', bold: '', rest: '' };
     if (due && active) { greeting.bold = due + (due === 1 ? ' card' : ' cards'); greeting.rest = (due === 1 ? ' is' : ' are') + ' due on ' + active.name + '.'; }
     return {
-      stats: { nextExamDays: nextExam, passed: passedCount, streak: o.streak || 0, readiness: active && active.hasScore ? active.score : null, due: due },
+      stats: { nextExamDays: nextExam, passed: passedCount, streak: o.streak || 0, readiness: active && active.hasScore ? active.score : null, readinessFmt: active ? active.fmt : 'scaled', due: due },
       greeting: greeting,
       active: active, studying: studying, passed: passed, notStarted: notStarted, freeRow: freeRow, pro: !!o.pro
     };
@@ -166,7 +177,8 @@
     var scale = {
       min: typeof EXAM_MIN_SCORE === 'number' ? EXAM_MIN_SCORE : undefined,
       max: typeof EXAM_MAX_SCORE === 'number' ? EXAM_MAX_SCORE : undefined,
-      pass: typeof EXAM_PASS_SCORE === 'number' ? EXAM_PASS_SCORE : undefined
+      pass: typeof EXAM_PASS_SCORE === 'number' ? EXAM_PASS_SCORE : undefined,
+      format: (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 'percent' : undefined
     };
     var name = '', due = 0;
     try { name = window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || ''; } catch (_) { name = ''; }
@@ -201,9 +213,9 @@
     function sect(label, count) { return '<div class="ihb-sect' + rv() + '><b>' + _esc(label) + '</b><span class="ihb-count">' + _esc(count) + '</span></div>'; }
     function row(r, kind) {
       var right;
-      if (kind === 'passed') right = '<span class="ihb-state">' + TICK + 'Passed</span><span class="ihb-score">' + (r.scored != null ? 'Scored <b>' + _esc(r.scored) + '</b>' : 'No score logged') + '</span>';
+      if (kind === 'passed') right = '<span class="ihb-state">' + TICK + 'Passed</span><span class="ihb-score">' + (r.scored != null ? 'Scored <b>' + _esc(_hubFmt(r, r.scored)) + '</b>' : 'No score logged') + '</span>';
       else if (kind === 'fresh') right = '<span class="ihb-state">Start ' + CHEV + '</span>';
-      else right = '<span class="ihb-state">Open ' + CHEV + '</span><span class="ihb-score"><b>' + _esc(r.score) + '</b> / ' + _esc(r.max) + '</span>';
+      else right = '<span class="ihb-state">Open ' + CHEV + '</span><span class="ihb-score">' + _hubRight(r) + '</span>';
       var sub = kind === 'passed' ? _esc(r.code) : (kind === 'fresh' ? _esc(r.code) : _esc(r.sub));
       return '<button class="ihb-row ihb-' + kind + (r.stale ? ' ihb-stale' : '') + rv() + ' type="button" data-act="open-cert" data-id="' + _esc(r.id) + '">'
         + '<span class="ihb-mark' + (kind === 'passed' ? ' ihb-is-pass' : '') + '">' + _esc(r.glyph) + '</span>'
@@ -226,7 +238,7 @@
         + '<div class="ihb-stat ihb-pass"><b>' + _esc(s.passed) + '</b><span>Passed</span></div>' + flame + '</div>';
     } else {
       h += '<div class="ihb-stats' + rv() + '>'
-        + '<div class="ihb-stat"><b>' + (s.readiness === null ? '<small>None yet</small>' : _esc(s.readiness)) + '</b><span>Readiness</span></div>'
+        + '<div class="ihb-stat"><b>' + (s.readiness === null ? '<small>None yet</small>' : _esc(_hubFmt({ fmt: s.readinessFmt }, s.readiness))) + '</b><span>Readiness</span></div>'
         + '<div class="ihb-stat"><b>' + _esc(s.due) + '</b><span>Due today</span></div>' + flame + '</div>';
     }
 
@@ -240,9 +252,9 @@
         + '<span class="ihb-badge">' + (a.passed ? 'Passed' : 'Active') + '</span></div>';
       if (a.passed) h += '<p class="ihb-ac-line">' + _esc(a.sub) + '</p>';
       else if (a.hasScore) {
-        h += '<div class="ihb-ac-score"><span class="ihb-num">' + _esc(a.score) + '</span><span class="ihb-of">/ ' + _esc(a.max) + ' readiness</span></div>'
+        h += '<div class="ihb-ac-score"><span class="ihb-num">' + _esc(_hubFmt(a, a.score)) + '</span><span class="ihb-of">' + (a.fmt === 'percent' ? '' : '/ ' + _esc(a.max) + ' ') + 'readiness</span></div>'
           + '<div class="ihb-bar"><span style="width:' + pct + '%"></span><span class="ihb-tick" style="left:' + tick + '%"></span></div>'
-          + '<div class="ihb-legend"><span>' + _esc(a.min) + '</span><span class="ihb-p">Pass ' + _esc(a.pass) + '</span><span>' + _esc(a.max) + '</span></div>'
+          + '<div class="ihb-legend"><span>' + _esc(_hubFmt(a, a.min)) + '</span><span class="ihb-p">Pass ' + _esc(_hubFmt(a, a.pass)) + '</span><span>' + _esc(_hubFmt(a, a.max)) + '</span></div>'
           + (m.pro ? '<p class="ihb-ac-line">' + _esc(a.sub) + '</p>' : '');
       } else h += '<p class="ihb-ac-line">No readiness yet. Your first quiz sets the baseline.</p>';
       h += '<button class="ihb-primary" type="button" data-act="continue">' + (a.passed ? 'Review ' : 'Continue ') + _esc(a.name) + '</button>'
@@ -325,9 +337,9 @@
     function stat(v, label, cls) { return '<div class="dmc-stat' + (cls ? ' ' + cls : '') + '"><b>' + v + '</b><span>' + _esc(label) + '</span></div>'; }
     function tile(r, kind) {
       var ft;
-      if (kind === 'passed') ft = '<span class="dmc-st">Passed</span><span>' + (r.scored != null ? 'Scored <b>' + _esc(r.scored) + '</b>' : 'No score logged') + '</span>';
+      if (kind === 'passed') ft = '<span class="dmc-st">Passed</span><span>' + (r.scored != null ? 'Scored <b>' + _esc(_hubFmt(r, r.scored)) + '</b>' : 'No score logged') + '</span>';
       else if (kind === 'fresh') ft = '<span class="dmc-st">Start</span>';
-      else ft = '<span class="dmc-st">Open</span><span><b>' + _esc(Math.round(r.score)) + '</b> / ' + _esc(r.max) + '</span>';
+      else ft = '<span class="dmc-st">Open</span><span>' + _hubRight(r, true) + '</span>';
       var cd = kind === 'studying' ? r.sub : r.code;
       return '<button class="dmc-cg' + (kind === 'passed' ? ' dmc-pass' : kind === 'fresh' ? ' dmc-fresh' : '') + '" type="button" data-act="open-cert" data-id="' + _esc(r.id) + '">'
         + '<span class="dmc-row1"><span class="dmc-mark' + (kind === 'passed' ? ' dmc-is-pass' : kind === 'fresh' ? ' dmc-dim' : '') + '">' + _esc(r.glyph) + '</span><span class="dmc-nm">' + _esc(r.name) + '</span></span>'
@@ -336,7 +348,7 @@
 
     var h = '<div class="dmc-top dmc-rv" style="--d:0"><p class="dmc-greet">' + _greetHtml(m.greeting) + '</p><div class="dmc-stats">';
     if (m.pro) h += stat(s.nextExamDays === null ? '<small>None set</small>' : _esc(s.nextExamDays) + '<small> ' + (s.nextExamDays === 1 ? 'day' : 'days') + '</small>', 'Next exam') + stat(_esc(s.passed), 'Passed', 'dmc-pass') + stat(_esc(s.streak), 'Day streak');
-    else h += stat(s.readiness === null ? '<small>None yet</small>' : _esc(Math.round(s.readiness)), 'Readiness') + stat(_esc(s.due), 'Due today') + stat(_esc(s.streak), 'Day streak');
+    else h += stat(s.readiness === null ? '<small>None yet</small>' : _esc(_hubFmt({ fmt: s.readinessFmt }, Math.round(s.readiness))), 'Readiness') + stat(_esc(s.due), 'Due today') + stat(_esc(s.streak), 'Day streak');
     h += '</div></div><div class="dmc-grid"><div class="dmc-col dmc-rv" style="--d:1">' + sect(m.pro ? 'My certs' : 'Your cert', m.pro ? 'all certs' : 'Free plan');
     if (a) {
       var pct = a.hasScore ? Math.max(0, Math.min(100, (a.score - a.min) / (a.max - a.min) * 100)) : 0;
@@ -346,9 +358,9 @@
         + '<span class="dmc-badge' + (a.passed ? ' dmc-is-pass' : '') + '">' + (a.passed ? 'Passed' : 'Active') + '</span></div>';
       if (a.passed) h += '<p>' + _esc(a.sub) + '</p>';
       else if (a.hasScore) {
-        h += '<div class="dmc-ac-score"><b>' + _esc(Math.round(a.score)) + '</b><span>/ ' + _esc(a.max) + ' readiness</span></div>'
+        h += '<div class="dmc-ac-score"><b>' + _esc(_hubFmt(a, Math.round(a.score))) + '</b><span>' + (a.fmt === 'percent' ? '' : '/ ' + _esc(a.max) + ' ') + 'readiness</span></div>'
           + '<div class="dmc-bar"><span style="width:' + pct.toFixed(1) + '%"></span><i style="left:' + tick.toFixed(1) + '%"></i></div>'
-          + '<div class="dmc-leg"><span>' + _esc(a.min) + '</span><span>Pass <b>' + _esc(a.pass) + '</b></span><span>' + _esc(a.max) + '</span></div>'
+          + '<div class="dmc-leg"><span>' + _esc(_hubFmt(a, a.min)) + '</span><span>Pass <b>' + _esc(_hubFmt(a, a.pass)) + '</b></span><span>' + _esc(_hubFmt(a, a.max)) + '</span></div>'
           + (m.pro ? '<p>' + _esc(a.sub) + '</p>' : '');
       } else h += '<p>No readiness yet. Your first quiz sets the baseline.</p>';
       h += '<button class="dmc-btn dmc-pri" type="button" data-act="continue">' + (a.passed ? 'Review ' : 'Continue ') + _esc(a.name) + '</button>'

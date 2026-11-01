@@ -14,8 +14,15 @@
   // readiness band keeps CompTIA's relative width and is placed so the pass line
   // sits at the same mastery point Network+ uses (2/3 of the band), rather than
   // stretching 420-870, which would put a Microsoft pass at ~53% mastery.
-  const EXAM_MIN_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMinScore) || 100;
+  // v9: the scale comes from CertRegistry.scale(CURRENT_CERT) when the registry is there, else from the pack meta (CompTIA packs
+  // define no min, so 100). A min of 0 is real (percent certs), so test typeof number, never `|| 100`. format:'percent' certs
+  // (PRINCE2, Scrum) are scored 0-100 = weighted accuracy: the readiness band is the whole scale, so predicted === accuracy.
+  // (Declared after the consts that call it: function declarations hoist.)
+  const EXAM_MIN_SCORE = _regScale() ? _regScale().min : ((CERT_PACK && CERT_PACK.meta && typeof CERT_PACK.meta.examMinScore === 'number') ? CERT_PACK.meta.examMinScore : 100);
+  const EXAM_SCORE_FORMAT = (_regScale() && _regScale().format === 'percent') ? 'percent' : 'scaled';
+  function _regScale() { return (typeof CertRegistry !== 'undefined' && CertRegistry && typeof CURRENT_CERT === 'string') ? CertRegistry.scale(CURRENT_CERT) : null; }
   const READINESS_BAND = (function () {
+    if (EXAM_SCORE_FORMAT === 'percent') return [EXAM_MIN_SCORE, EXAM_MAX_SCORE];
     if (EXAM_MIN_SCORE === 100 && EXAM_MAX_SCORE === 900) return [420, 870];
     const w = Math.round((EXAM_MAX_SCORE - EXAM_MIN_SCORE) * 450 / 800);
     const lo = Math.max(EXAM_MIN_SCORE, Math.round(EXAM_PASS_SCORE - w * 2 / 3));
@@ -28,6 +35,19 @@
   const READINESS_CLOSE = readinessFromRaw(230 / 4.5);
   const READINESS_BUILDING = readinessFromRaw(80 / 4.5);
   function scaledExamScore(correct, total) { return total > 0 ? Math.round(EXAM_MIN_SCORE + (correct / total) * (EXAM_MAX_SCORE - EXAM_MIN_SCORE)) : EXAM_MIN_SCORE; }
+  // Display helpers for every score reader. formatExamScore: '684' | '72%' | '--' (never NaN). examScoreOf: the '/ 900' tail,
+  // empty for percent. examPassText: the pass line ('720' | '60%').
+  function formatExamScore(n) {
+    if (typeof n !== 'number' || n !== n || !isFinite(n)) return '--';
+    return EXAM_SCORE_FORMAT === 'percent' ? Math.round(n) + '%' : String(Math.round(n));
+  }
+  function examScoreOf() { return EXAM_SCORE_FORMAT === 'percent' ? '' : '/ ' + EXAM_MAX_SCORE; }
+  function examPassText() { return formatExamScore(EXAM_PASS_SCORE); }
+  // The empty-score placeholder: percent certs read '--' (never '0%'); scaled certs keep their em dash.
+  const NO_SCORE = EXAM_SCORE_FORMAT === 'percent' ? '--' : '\u2014';
+  // 'Readiness' plus the score and its max, or just 'Readiness 72%'; and how the exam's scale reads in copy ('100-900' | 'as a percentage').
+  function readinessStrip(p) { return formatExamScore(p) + (EXAM_SCORE_FORMAT === 'percent' ? '' : '/' + EXAM_MAX_SCORE); }
+  function examScoreRangeText() { return EXAM_SCORE_FORMAT === 'percent' ? 'as a percentage' : EXAM_MIN_SCORE + '-' + EXAM_MAX_SCORE; }
   // v8.134.0: per-topic mastery shared by Progress rows and Smart picking.
   // A topic with few answers is blended with the student's accuracy on the
   // rest of its domain, as if they had already answered MASTERY_PRIOR_ANSWERS
@@ -83,6 +103,11 @@
   window.readinessFromRaw = readinessFromRaw;
   window.readinessBarPct = readinessBarPct;
   window.scaledExamScore = scaledExamScore;
+  window.EXAM_SCORE_FORMAT = EXAM_SCORE_FORMAT;
+  window.formatExamScore = formatExamScore;
+  window.examScoreOf = examScoreOf;
+  window.examPassText = examPassText;
+  window.examScoreRangeText = examScoreRangeText;
 
   function diffWeight(d) {
     if (!d) return 1.5;
@@ -208,8 +233,9 @@
     const mixTopic = (typeof MIXED_TOPIC === 'string') ? MIXED_TOPIC : 'Mixed';
     // 1. range
     const low = typeof r.lowerBound === 'number' ? r.lowerBound : null;
-    const range = { key: 'range', label: 'Score clears ' + pass + ', even at the low end', met: low !== null && low >= pass, pass: pass,
-      detail: low === null ? 'No score yet' : 'Low end is ' + low + ' today' };
+    const fx = (typeof formatExamScore === 'function' ? formatExamScore : String);   // '720' on a scaled cert, '60%' on a percent one
+    const range = { key: 'range', label: 'Score clears ' + fx(pass) + ', even at the low end', met: low !== null && low >= pass, pass: pass,
+      detail: low === null ? 'No score yet' : 'Low end is ' + fx(low) + ' today' };
     // 2. volume: exam-level or harder answers (E + H), same rows the score reads
     let vol = 0;
     hist.forEach(e => {
@@ -262,7 +288,7 @@
     if (i.key === 'mocks') return (i.passes || 0) >= 1 ? 'Do 1 more full exam and pass it' : 'Do 2 full exams and pass them';
     if (i.key === 'areas') return 'Get ' + (i.weakName || 'every exam area') + ' to ' + (typeof i.passAccuracy === 'number' ? i.passAccuracy : 75) + '%';
     if (i.key === 'volume') return 'Answer ' + Math.max(1, 300 - (i.count || 0)) + ' more exam-level questions';
-    if (i.key === 'range') return 'Lift your low end above ' + (i.pass || ((typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720));
+    if (i.key === 'range') return 'Lift your low end above ' + (typeof formatExamScore === 'function' ? formatExamScore : String)(i.pass || ((typeof EXAM_PASS_SCORE === 'number') ? EXAM_PASS_SCORE : 720));
     return null;
   }
   window.getBookItNextStep = getBookItNextStep;
@@ -696,18 +722,20 @@
   function getForecastCopy(r) {
     const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const dayLabel = (iso) => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return mm ? (+mm[3]) + ' ' + MON[+mm[2] - 1] : ''; };
+    // percent certs show '72%'; scaled values pass through untouched (numbers stay numbers)
+    const fx = (n) => (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' && typeof formatExamScore === 'function') ? formatExamScore(n) : n;
     const pc = r.pace, hasDate = typeof r.daysToExam === 'number' && r.daysToExam >= 0;
     const past = typeof r.daysToExam === 'number' && r.daysToExam < 0;   // founder 31 Oct: a past date asks for a NEW date
     const togo = (r.pointsToPass <= 0 ? 'You\'re at the pass mark.' : '<b>' + r.pointsToPass + ' points</b> to the pass mark.');
     if (pc) {
       const pw = Math.round(Math.abs(pc.pointsPerWeek)), when = dayLabel(pc.examDate);
       const lead = pw === 0 ? 'Holding <b>steady</b>.' : (pc.pointsPerWeek > 0 ? 'Up about <b>' + pw + ' points a week</b>.' : 'Down about <b>' + pw + ' points a week</b> lately.');
-      const around = ' you\'d be around <b>' + pc.projected + ' on ' + when + '</b>';
+      const around = ' you\'d be around <b>' + fx(pc.projected) + ' on ' + when + '</b>';
       const line = (pc.pointsPerWeek < 0 && pw > 0)
         ? lead + ' On this pace' + around + '. A few short sets a week turns it round.'
-        : lead + (pc.short ? ' At this pace' + around + ', short of the ' + r.passScore + ' pass mark. Study more each week, or move the date.'
-          : ' On this pace' + around + ', over the ' + r.passScore + ' pass mark.');
-      return { line, label: 'Forecast for ' + when, value: pc.projected, range: 'likely ' + pc.low + ' to ' + pc.high, dim: false };
+        : lead + (pc.short ? ' At this pace' + around + ', short of the ' + fx(r.passScore) + ' pass mark. Study more each week, or move the date.'
+          : ' On this pace' + around + ', over the ' + fx(r.passScore) + ' pass mark.');
+      return { line, label: 'Forecast for ' + when, value: fx(pc.projected), range: 'likely ' + fx(pc.low) + ' to ' + fx(pc.high), dim: false };
     }
     if (past) return { line: togo + ' Set a new exam date to see where you\'ll be on the day.', label: 'Forecast', value: 'Set a date', range: '', dim: true };
     if (!hasDate) return { line: togo + ' Set your exam date to see where you\'ll be on the day.', label: 'Forecast', value: 'Set a date', range: '', dim: true };
@@ -1126,7 +1154,7 @@
     // with live data so returning from a quiz doesn't replay the intro.
     if (_readinessIntroArmed) {
       _readinessIntroArmed = false;
-      animateCount('readiness-num', 0, predicted, 1400);
+      animateCount('readiness-num', 0, predicted, 1400, EXAM_SCORE_FORMAT === 'percent' ? '%' : '');
       barEl.style.transition = 'none';
       barEl.style.width = '0%';
       void barEl.offsetWidth; // force reflow so the next assignment animates
@@ -1141,9 +1169,9 @@
       // already no-ops when the value is unchanged or NaN.
       const oldReadinessVal = parseInt(numEl.textContent, 10);
       if (!isNaN(oldReadinessVal) && oldReadinessVal !== predicted) {
-        animateCount('readiness-num', oldReadinessVal, predicted, 900);
+        animateCount('readiness-num', oldReadinessVal, predicted, 900, EXAM_SCORE_FORMAT === 'percent' ? '%' : '');
       } else {
-        numEl.textContent = predicted;
+        numEl.textContent = formatExamScore(predicted);
       }
       barEl.style.width = barPct + '%';
     }
@@ -1181,7 +1209,7 @@
       let probClass = 'high';
       if (probPct < 50) probClass = 'low';
       else if (probPct < 80) probClass = 'med';
-      predEl.innerHTML = '<strong>' + predicted + '</strong> '
+      predEl.innerHTML = '<strong>' + formatExamScore(predicted) + '</strong> '
         + '<span class="ci">± ' + data.ciHalfWidth + '</span> '
         + '<span class="sep">·</span> '
         + '<span class="prob ' + probClass + '">' + probPct + '% pass probability</span>';
@@ -1216,7 +1244,7 @@
         if (data.targetGap > 0) {
           const cls = data.targetGap > 60 ? 'warn' : (data.targetGap > 20 ? 'mid' : 'good');
           trajEl.innerHTML = _trajDays(data.daysToExam) + ' &middot; your low estimate needs <strong>+'
-            + data.targetGap + ' pts</strong> to clear ' + EXAM_PASS_SCORE;
+            + data.targetGap + ' pts</strong> to clear ' + examPassText();
           trajEl.className = 'readiness-trajectory ' + cls;
           trajEl.hidden = false;
         } else {
@@ -1514,10 +1542,10 @@
       card.onclick = null;
     }
     // v8.128.0: pass mark shows before the first quiz too (HTML default was 720).
-    { const _pm = document.getElementById('rc-v2-passmark'); if (_pm) _pm.textContent = EXAM_PASS_SCORE; }
+    { const _pm = document.getElementById('rc-v2-passmark'); if (_pm) _pm.textContent = examPassText(); }
     const history = (typeof loadHistory === 'function') ? loadHistory() : [];
     if (history.length === 0 || typeof getReadinessScore !== 'function') {
-      numEl.textContent = '\u2014';
+      numEl.textContent = NO_SCORE;
       barEl.style.width = '0%';
       deltaEl.textContent = 'first quiz pending';
       if (predEl) predEl.hidden = true;
@@ -1531,20 +1559,20 @@
       // getReadinessScore returns { predicted, raw, ciHalfWidth, passProbability, whatIf, ... }
       const r = getReadinessScore();
       if (r && typeof r.predicted === 'number') {
-        numEl.textContent = r.predicted;
+        numEl.textContent = formatExamScore(r.predicted);
         // Phone strip: compact one-liner shown <=620px
         if (_stripEl) {
           if (typeof r.passProbability === 'number') {
-            _stripEl.textContent = 'Readiness ' + r.predicted + '/' + EXAM_MAX_SCORE + ' \u00b7 ' + Math.round(r.passProbability * 100) + '% pass';
+            _stripEl.textContent = 'Readiness ' + readinessStrip(r.predicted) + ' \u00b7 ' + Math.round(r.passProbability * 100) + '% pass';
           } else {
-            _stripEl.textContent = 'Readiness ' + r.predicted + '/' + EXAM_MAX_SCORE;
+            _stripEl.textContent = 'Readiness ' + readinessStrip(r.predicted);
           }
         }
         const pct = readinessBarPct(r.predicted);
         barEl.style.width = pct + '%';
         queueReadinessAnimation(r.predicted, pct, r.examReady);
         renderBookItRow(r, history);
-        const pm = document.getElementById('rc-v2-passmark'); if (pm) pm.textContent = EXAM_PASS_SCORE;
+        const pm = document.getElementById('rc-v2-passmark'); if (pm) pm.textContent = examPassText();
 
         // v4.73.0: prediction line \u2014 pass probability + CI inside the dark card
         if (predEl && typeof r.passProbability === 'number') {
@@ -1564,7 +1592,7 @@
 
         // Delta line (compact): show range under bar
         if (typeof r.lowerBound === 'number' && typeof r.upperBound === 'number') {
-          deltaEl.textContent = 'range ' + r.lowerBound + '\u2013' + r.upperBound;
+          deltaEl.textContent = 'range ' + formatExamScore(r.lowerBound) + '\u2013' + formatExamScore(r.upperBound);
         } else {
           deltaEl.textContent = '';
         }
@@ -1592,7 +1620,7 @@
             if (r.targetGap > 0) {
               const cls = r.targetGap > 60 ? 'warn' : (r.targetGap > 20 ? 'mid' : 'good');
               trajEl.innerHTML = _trajDays(r.daysToExam) + ' &middot; your low estimate needs <strong>+'
-                + r.targetGap + ' pts</strong> to clear ' + EXAM_PASS_SCORE;
+                + r.targetGap + ' pts</strong> to clear ' + examPassText();
               trajEl.className = 'rc-v2-trajectory ' + cls;
               trajEl.hidden = false;
             } else {
@@ -1605,13 +1633,13 @@
           }
         }
       } else {
-        numEl.textContent = '\u2014';
+        numEl.textContent = NO_SCORE;
         if (predEl) predEl.hidden = true;
         if (whatIfEl) whatIfEl.hidden = true;
         if (trajEl) trajEl.hidden = true;
       }
     } catch (_) {
-      numEl.textContent = '\u2014';
+      numEl.textContent = NO_SCORE;
       if (predEl) predEl.hidden = true;
       if (whatIfEl) whatIfEl.hidden = true;
       if (trajEl) trajEl.hidden = true;

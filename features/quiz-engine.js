@@ -2018,15 +2018,15 @@ JUDGEMENT CASES (the format of the hardest real ${certCode} items) — write abo
       // Animated count-up from current (or 0) to scaled
       const cur = parseInt(scoreEl.textContent, 10);
       if (typeof animateCount === 'function') {
-        animateCount('r-v2-score', isNaN(cur) ? 0 : cur, scaled, 1100);
+        animateCount('r-v2-score', isNaN(cur) ? 0 : cur, scaled, 1100, EXAM_SCORE_FORMAT === 'percent' ? '%' : '');
       } else {
-        scoreEl.textContent = scaled;
+        scoreEl.textContent = formatExamScore(scaled);
       }
     }
     _ffClear();   // 31 Oct fast-start: nothing appends to a finished quiz
     if (verdictEl) {
       if (passed) {
-        verdictEl.innerHTML = '\u2191 Pass mark cleared \u00b7 ' + EXAM_PASS_SCORE;
+        verdictEl.innerHTML = '\u2191 Pass mark cleared \u00b7 ' + examPassText();
         verdictEl.classList.remove('results-v2-verdict-fail');
         verdictEl.classList.add('results-v2-verdict-pass');
       } else {

@@ -438,7 +438,9 @@
       // → AZ-900 700) AND the vendor word for AZ-900.
       const threshold = document.querySelector('.exam-results-v2-threshold');
       if (threshold) {
-        threshold.innerHTML = 'Pass mark: ' + passMark + ' / ' + maxScore + ' &middot; ' + vendor + ' ' + code + ' scaled score';
+        threshold.innerHTML = EXAM_SCORE_FORMAT !== 'percent'
+          ? 'Pass mark: ' + passMark + ' / ' + maxScore + ' &middot; ' + vendor + ' ' + code + ' scaled score'
+          : 'Pass mark: ' + examPassText() + ' &middot; ' + vendor + ' ' + code + ' scored as a percentage';
       }
 
       // 6. Domain breakdown sub
@@ -464,7 +466,9 @@
       // 10. v8.128.0: score scale + exam format. Static HTML is CompTIA's
       // 100-900 / 90 questions / 90 min; each swap is a no-op when they match.
       const minS = EXAM_MIN_SCORE, maxS = EXAM_MAX_SCORE;
+      const pctCert = EXAM_SCORE_FORMAT === 'percent';
       const swapScale = function (el) {
+        if (el && pctCert) { el.innerHTML = el.innerHTML.replace(/scaled 100-900/g, 'scored as a percentage').replace(/scored 100-900/g, 'scored as a percentage').replace(/100-900/g, 'a percentage').replace(/\s*(\/|out of) 900\b/g, ''); return; }   // percent certs: no "/ 900" beside the number
         if (el) el.innerHTML = el.innerHTML.replace(/100-900/g, minS + '-' + maxS).replace(/(\/|out of) 900\b/g, '$1 ' + maxS);
       };
       ['.readiness-eyebrow', '#exam-note', '.readiness-denom', '.results-v2-big-score em'].forEach(function (s) {
@@ -473,7 +477,7 @@
       const rcNum = document.getElementById('rc-v2-num');
       if (rcNum && rcNum.parentNode) swapScale(rcNum.parentNode.nextElementSibling);
       const fullExamOd = document.querySelector('button[onclick="startExam()"] .od');
-      if (fullExamOd) fullExamOd.textContent = EXAM_QUESTION_COUNT + ' questions, ' + Math.round(EXAM_TIME_SECONDS / 60) + '-min timer, scored ' + minS + '-' + maxS;
+      if (fullExamOd) fullExamOd.textContent = EXAM_QUESTION_COUNT + ' questions, ' + Math.round(EXAM_TIME_SECONDS / 60) + '-min timer, scored ' + (pctCert ? 'as a percentage' : minS + '-' + maxS);
       document.querySelectorAll('#page-exam-results .ed-pagehead-eyebrow').forEach(function (el) {
         el.innerHTML = el.innerHTML.replace(/\b90 questions\b/, EXAM_QUESTION_COUNT + ' questions');
       });
@@ -1511,9 +1515,10 @@
     try { name = String(window._certanvilDisplayName || localStorage.getItem('certanvil_display_name_cache') || '').trim().split(/\s+/)[0] || ''; } catch (_) { name = ''; }
     try { certName = String((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.name) || '').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''); } catch (_) { certName = ''; }
     var fmt = function (n) { return n.toLocaleString('en-GB'); };
+    var _pcS = (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? '%' : '';   // readiness reads '72%' on a percent cert
     var vals = [t.readiness, t.answers, t.best], labels = ['Readiness', 'Answers', 'Best streak'], tiles = '';
     // Not safely loaded from the cloud yet: no tiles, and no claim that everything is there, rather than zeros.
-    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"') + '>' + (v == null ? '&ndash;' : fmt(v)) + '</b><span>' + labels[i] + '</span></div>'; });
+    if (withTiles !== false) vals.forEach(function (v, i) { tiles += '<div class="dm-in" style="--d:' + (4 + i) + '"><b' + (v == null ? '' : ' data-to="' + v + '"' + (i === 0 && _pcS ? ' data-sfx="%"' : '')) + '>' + (v == null ? '&ndash;' : fmt(v) + (i === 0 ? _pcS : '')) + '</b><span>' + labels[i] + '</span></div>'; });
     var html = '<div class="dm-body"><span class="wb-markwrap"><span class="wb-glow" aria-hidden="true"></span><span class="wb-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><g class="wb-arrow"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v4h4"></path></g></svg></span></span>'
       + '<h2 class="dm-in" style="--d:1" tabindex="-1">Welcome back' + (name ? ', ' + escHtml(name) : '') + '.</h2>'
       + '<p class="dm-in" style="--d:2">We&#39;ve cancelled your account deletion.' + (withTiles === false ? '' : ' Everything is right where you left it.') + '</p>'
@@ -1533,8 +1538,8 @@
           if (!b.isConnected) return;
           if (!t0) t0 = ts;
           var p = Math.min((ts - t0) / 900, 1);
-          b.textContent = fmt(Math.round(to * (1 - Math.pow(1 - p, 3))));
-          if (p < 1) requestAnimationFrame(step); else b.textContent = fmt(to);
+          b.textContent = fmt(Math.round(to * (1 - Math.pow(1 - p, 3)))) + (b.getAttribute('data-sfx') || '');
+          if (p < 1) requestAnimationFrame(step); else b.textContent = fmt(to) + (b.getAttribute('data-sfx') || '');
         })(performance.now());
       }, 480 + i * 60);
     });
@@ -1893,8 +1898,8 @@
     }
     const rec = _deskOcSaved();
     if (rec && rec.outcome === 'passed') {
-      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score : ''), title: 'Pick your next cert',
-        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
+      return { kind: 'nextcert', kick: name + ' passed' + (typeof rec.score === 'number' ? ' \u00B7 scored ' + rec.score + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') : ''), title: 'Pick your next cert',
+        sub: (typeof rec.predicted === 'number' ? 'We predicted ' + rec.predicted + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') + ' on exam day. ' : '') + 'Your streak carries on with your next cert.' };
     }
     return null;
   }

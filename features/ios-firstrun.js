@@ -26,8 +26,12 @@
   }
 
   // The cert's own readiness scale (never a hard-coded 720 / 900).
+  // The registry's scale wins (it carries format:'percent' for PRINCE2 / Scrum, with min 0); without it, the pack meta.
   function _ifrScale(meta) {
     meta = meta || {};
+    var R = (typeof window !== 'undefined' && window.CertRegistry) ? window.CertRegistry : null;
+    var rs = (R && typeof CURRENT_CERT === 'string') ? R.scale(CURRENT_CERT) : null;
+    if (rs) return rs;
     return {
       min: typeof meta.examMinScore === 'number' ? meta.examMinScore : 100,
       max: typeof meta.examMaxScore === 'number' ? meta.examMaxScore : 900,
@@ -55,7 +59,7 @@
         '<span><span class="ifr-hb-name">' + e(c.name) + '</span><span class="ifr-hb-code">' + e(c.code) + '</span></span></div>' +
         '<span class="ifr-plan">' + (m.pro ? 'Pro' : 'Free') + '</span></div>' + quota + '</div>' +
       '<div class="ifr-ready ifr-rv"><span class="ifr-ready-dial"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14l4-4"/><path d="M3.5 18a9 9 0 1 1 17 0"/></svg></span>' +
-        '<div><div class="ifr-ready-t">Readiness: not placed yet</div><div class="ifr-ready-s">Scored ' + e(sc.min) + ' to ' + e(sc.max) + ', with ' + e(sc.pass) + ' to pass. Answer a few and it appears here.</div></div></div>' +
+        '<div><div class="ifr-ready-t">Readiness: not placed yet</div><div class="ifr-ready-s">' + (sc.format === 'percent' ? 'Scored as a percentage, with ' + e(sc.pass) + '% to pass.' : 'Scored ' + e(sc.min) + ' to ' + e(sc.max) + ', with ' + e(sc.pass) + ' to pass.') + ' Answer a few and it appears here.</div></div></div>' +
       '<div class="ifr-diag ifr-rv"><div class="ifr-diag-head"><span class="ifr-diag-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20v-6"/><path d="M6 20v-3"/><path d="M18 20v-9"/><path d="M4 11l6-5 4 3 6-6"/></svg></span>' +
         '<div><div class="ifr-diag-kick">Recommended first step</div><div class="ifr-diag-h">Place your readiness</div></div></div>' +
         '<p class="ifr-diag-p">' + diagP + '</p><button type="button" class="ifr-btn" data-act="check">Take the 30-second check</button></div>' +
@@ -114,6 +118,7 @@
   function _ifrScoreHtml(m) {
     function e(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     var sc = m.scale || { min: 100, max: 900, pass: 720 }, c = m.cert || {}, span = Math.max(1, sc.max - sc.min);
+    var pc = sc.format === 'percent', f = function (n) { return pc ? Math.round(n) + '%' : String(n); };   // '72%' or '684'
     var pct = Math.max(0, Math.min(100, Math.round(1000 * (m.score - sc.min) / span) / 10));
     var tick = Math.round(1000 * (sc.pass - sc.min) / span) / 10;
     return '<div class="ifr-check ifr-score">' +
@@ -121,9 +126,9 @@
       '<div class="ifr-body">' +
         '<p class="ifr-kicker">Your starting point</p>' +
         '<div class="ifr-ac"><div class="ifr-ac-top"><span class="ifr-mark">' + e(c.glyph) + '</span><span><span class="ifr-hb-name">' + e(c.name) + '</span><span class="ifr-hb-code">' + e(c.code) + '</span></span><span class="ifr-badge">Day one</span></div>' +
-          '<div class="ifr-ac-score"><span class="ifr-ac-num" data-to="' + e(m.score) + '">' + e(m.score) + '</span><span class="ifr-ac-of">/ ' + e(sc.max) + ' readiness</span></div>' +
+          '<div class="ifr-ac-score"><span class="ifr-ac-num" data-to="' + e(m.score) + '">' + e(f(m.score)) + '</span><span class="ifr-ac-of">' + (pc ? 'readiness' : '/ ' + e(sc.max) + ' readiness') + '</span></div>' +
           '<div class="ifr-bar"><span style="width:' + pct + '%"></span><span class="ifr-tick" style="left:' + tick + '%"></span></div>' +
-          '<div class="ifr-legend"><span>' + e(sc.min) + '</span><span class="p">Pass ' + e(sc.pass) + '</span><span>' + e(sc.max) + '</span></div></div>' +
+          '<div class="ifr-legend"><span>' + e(f(sc.min)) + '</span><span class="p">Pass ' + e(f(sc.pass)) + '</span><span>' + e(f(sc.max)) + '</span></div></div>' +
         '<p class="ifr-frame">A starting point, not a grade.</p>' +
         '<div class="ifr-aha2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v4h-4"/></svg>' +
           '<p>Practise a little and this number moves. Most people see it climb in their first few sessions, so the best read on your progress is the next one.</p></div>' +
@@ -361,7 +366,7 @@
       var reduce = false; try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (_) {}
       if (num && !reduce && typeof requestAnimationFrame === 'function') {
         var t0 = null, from = sc.min;
-        var step = function (ts) { if (t0 === null) t0 = ts; var t = Math.min((ts - t0) / 850, 1); num.textContent = Math.round(from + (score - from) * (1 - Math.pow(1 - t, 3))); if (t < 1) requestAnimationFrame(step); };
+        var step = function (ts) { if (t0 === null) t0 = ts; var t = Math.min((ts - t0) / 850, 1); num.textContent = Math.round(from + (score - from) * (1 - Math.pow(1 - t, 3))) + (sc.format === 'percent' ? '%' : ''); if (t < 1) requestAnimationFrame(step); };
         requestAnimationFrame(step);
       }
     } else {

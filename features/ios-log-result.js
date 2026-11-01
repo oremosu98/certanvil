@@ -43,7 +43,8 @@
   function _certName() { return String(_meta().name || '').replace(/^(CompTIA|Microsoft|Amazon|AWS)\s+/, ''); }
   function _scale() {
     return { min: typeof EXAM_MIN_SCORE === 'number' ? EXAM_MIN_SCORE : 100, max: typeof EXAM_MAX_SCORE === 'number' ? EXAM_MAX_SCORE : 900,
-      pass: typeof EXAM_PASS_SCORE === 'number' ? EXAM_PASS_SCORE : 720 };
+      pass: typeof EXAM_PASS_SCORE === 'number' ? EXAM_PASS_SCORE : 720,
+      fmt: (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent') ? 'percent' : 'scaled' };
   }
   function _today() { return typeof window._localDay === 'function' ? window._localDay() : new Date().toISOString().slice(0, 10); }
 
@@ -120,9 +121,9 @@
       + '<button type="button" role="radio" data-act="pick" data-v="failed" aria-checked="false">Didn\'t pass</button></div></div>'
       + '<div class="il-field il-rv" style="--d:3"><label for="il-score">Your score, if you have it</label>'
       + '<div class="il-score-wrap"><div class="il-score-box"><input id="il-score" type="text" inputmode="numeric" autocomplete="off" value="' + _esc(m.score) + '" aria-describedby="il-help" />'
-      + '<span class="il-of">&nbsp;/ ' + _esc(m.max) + '</span></div>'
-      + '<span class="il-passline">pass mark<b>' + _esc(m.pass) + '</b></span></div>'
-      + '<p class="il-help" id="il-help">' + _esc(m.name) + ' is scored from ' + _esc(m.min) + ' to ' + _esc(m.max) + '. ' + _esc(m.pass) + ' is a pass.</p>'
+      + '<span class="il-of">' + (m.fmt === 'percent' ? '%' : '&nbsp;/ ' + _esc(m.max)) + '</span></div>'
+      + '<span class="il-passline">pass mark<b>' + _esc(m.pass) + (m.fmt === 'percent' ? '%' : '') + '</b></span></div>'
+      + '<p class="il-help" id="il-help">' + _esc(m.name) + (m.fmt === 'percent' ? ' is scored as a percentage. ' + _esc(m.pass) + '% is a pass.' : ' is scored from ' + _esc(m.min) + ' to ' + _esc(m.max) + '. ' + _esc(m.pass) + ' is a pass.') + '</p>'
       + '<p class="il-err" id="il-err" role="alert" hidden></p></div>'
       + '<div class="il-field il-rv" style="--d:4"><label for="il-date">Date taken</label><input class="il-inp" id="il-date" type="date" value="' + _esc(m.date) + '" max="' + _esc(m.today) + '" /></div>'
       + '</div>'
@@ -214,12 +215,12 @@
     var when = _longDate(rec.date);
     if (rec.outcome === 'passed') {
       t.textContent = name + ' is passed'; l.textContent = 'Logged to your hub.';
-      b.hidden = false; b.textContent = (rec.score != null ? rec.score + ' / ' + sc.max : 'No score logged') + (when ? ' · ' + when : '');
+      b.hidden = false; b.textContent = (rec.score != null ? rec.score + (sc.fmt === 'percent' ? '%' : ' / ' + sc.max) : 'No score logged') + (when ? ' · ' + when : '');
       go.textContent = 'See it in your hub'; alt.textContent = 'Edit the result'; seal.hidden = false;
       root.setAttribute('data-end', 'passed');
     } else {   // a fail is met kindly and points at the next attempt
       t.textContent = "That's a hard exam."; l.textContent = 'Your progress is all still here. Pick a new date when you’re ready.';
-      b.hidden = rec.score == null; b.textContent = rec.score != null ? rec.score + ' / ' + sc.max + ' · logged' : '';
+      b.hidden = rec.score == null; b.textContent = rec.score != null ? rec.score + (sc.fmt === 'percent' ? '%' : ' / ' + sc.max) + ' · logged' : '';
       go.textContent = 'Set a new date'; alt.textContent = 'Not now'; seal.hidden = true;
       root.setAttribute('data-end', 'failed');
     }
@@ -238,7 +239,7 @@
     if (date > today) date = today;   // a result can't be from the future
     var name = _certName() || 'Your cert';
     var m = { name: name, code: meta.code || '', mark: _certMark(cert),
-      min: sc.min, max: sc.max, pass: sc.pass, date: date, today: today, score: prev && typeof prev.score === 'number' ? prev.score : '' };
+      min: sc.min, max: sc.max, pass: sc.pass, fmt: sc.fmt, date: date, today: today, score: prev && typeof prev.score === 'number' ? prev.score : '' };
     var root = _ensureHost();
     _prevFocus = opts.from || document.activeElement;   // opts.from: the opener (WebKit does not focus a clicked button)
     _seq++;   // a reopen inside the 200ms exit keeps the dialog

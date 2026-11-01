@@ -272,7 +272,7 @@
     // and size gates below only matter for Pro edge states now.
     if (!_gateProOnly('The Exam Simulator', {
       title: 'The Exam Simulator is a Pro feature',
-      body: `${EXAM_QUESTION_COUNT} questions against a ${Math.round(EXAM_TIME_SECONDS / 60)}-minute clock, scored ${EXAM_MIN_SCORE}-${EXAM_MAX_SCORE} like test day. Free covers your daily practice; the full rehearsal is Pro.`  // v8.128.0: per-cert format
+      body: `${EXAM_QUESTION_COUNT} questions against a ${Math.round(EXAM_TIME_SECONDS / 60)}-minute clock, scored ${examScoreRangeText()} like test day. Free covers your daily practice; the full rehearsal is Pro.`  // v8.128.0: per-cert format
     })) return;
     if (!_gateActivityForQuota('exam simulator')) return;
     if (!_gateSessionSizeForQuota(90, { mode: 'exam' })) return;
@@ -485,7 +485,7 @@
     banner.setAttribute('role', 'status');
     banner.innerHTML = `
       <span class="exam-shortfall-icon" aria-hidden="true"></span>
-      <span class="exam-shortfall-text">This exam has <strong>${actualCount} of ${EXAM_QUESTION_COUNT}</strong> questions. The quality check removed ${filtered}. Your score is scaled to the ${actualCount} you get, so the ${EXAM_PASS_SCORE} pass mark still holds.</span>
+      <span class="exam-shortfall-text">This exam has <strong>${actualCount} of ${EXAM_QUESTION_COUNT}</strong> questions. The quality check removed ${filtered}. Your score is scaled to the ${actualCount} you get, so the ${examPassText()} pass mark still holds.</span>
       <button class="exam-shortfall-dismiss" onclick="document.getElementById('exam-shortfall-banner')?.remove()" aria-label="Dismiss">\u00D7</button>
     `;
     examPage.insertBefore(banner, examPage.firstChild);
@@ -947,7 +947,7 @@
 
     const scoreEl = document.getElementById('exam-scaled-score');
     scoreEl.style.color  = passed ? 'var(--green)' : 'var(--red)';
-    animateCount('exam-scaled-score', 0, scaledScore, 1200);
+    animateCount('exam-scaled-score', 0, scaledScore, 1200, EXAM_SCORE_FORMAT === 'percent' ? '%' : '');
 
     const badge = document.getElementById('exam-pass-badge');
     badge.textContent = passed ? 'PASS' : 'FAIL';
@@ -962,11 +962,12 @@
 
     // v8.162.0: the 100-900 conversion is linear and the real scaling is
     // unpublished, so say what the pass mark means here and call it an estimate.
-    const _passPct = Math.round(((EXAM_PASS_SCORE - EXAM_MIN_SCORE) / (EXAM_MAX_SCORE - EXAM_MIN_SCORE)) * 100);
+    const _passPct = Math.round(((EXAM_PASS_SCORE - EXAM_MIN_SCORE) / Math.max(1, EXAM_MAX_SCORE - EXAM_MIN_SCORE)) * 100);   // a zero-width band can never divide by zero
+    const _pctCert = EXAM_SCORE_FORMAT === 'percent';
     document.getElementById('exam-result-msg').textContent = (passed
-      ? `Score ${scaledScore}/${EXAM_MAX_SCORE}, above the ${EXAM_PASS_SCORE} pass mark.`
-      : `Score ${scaledScore}/${EXAM_MAX_SCORE}, ${EXAM_PASS_SCORE - scaledScore} points short of the ${EXAM_PASS_SCORE} pass mark.`)
-      + ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`
+      ? `Score ${formatExamScore(scaledScore)}${_pctCert ? '' : '/' + EXAM_MAX_SCORE}, above the ${examPassText()} pass mark.`
+      : `Score ${formatExamScore(scaledScore)}${_pctCert ? '' : '/' + EXAM_MAX_SCORE}, ${EXAM_PASS_SCORE - scaledScore} points short of the ${examPassText()} pass mark.`)
+      + (_pctCert ? ' This exam is scored as a percentage, so your score is the share you got right.' : ` Here, ${EXAM_PASS_SCORE} is about ${_passPct}% correct. The real exam's scaling isn't published, so treat this as an estimate.`)
       + (pbqCount ? ` PBQs earned ${Math.round(pbqPoints * 10) / 10} of ${pbqCount} points, with partial credit per step.` : '')
       + (_examPauses ? ` Paused ${_examPauses === 1 ? 'once' : _examPauses === 2 ? 'twice' : _examPauses + ' times'}, ${Math.max(1, Math.round(_examPausedMs / 60000))} min in total. The real exam has no pause.` : '');
 
@@ -1060,7 +1061,7 @@
       wrongBy[en.q.topic] = (wrongBy[en.q.topic] || 0) + 1;
     });
     return {
-      scaled: n.scaled, minScore: EXAM_MIN_SCORE, maxScore: EXAM_MAX_SCORE, passScore: EXAM_PASS_SCORE,
+      scaled: n.scaled, minScore: EXAM_MIN_SCORE, maxScore: EXAM_MAX_SCORE, passScore: EXAM_PASS_SCORE, fmt: EXAM_SCORE_FORMAT,
       certLabel: vendor + ' ' + ((typeof CERT_CODE === 'string' && CERT_CODE) || ''),
       total: n.total, correct: n.correct, wrong: n.wrong, skipped: n.skipped, pct: n.pct,
       pauses: _examPauses || 0, pausedMs: _examPausedMs || 0,

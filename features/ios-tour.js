@@ -19,7 +19,7 @@
   function packMeta() { var p = window.CERT_PACK; return (p && p.meta) || {}; }
   function scaleLine() {
     var s = typeof window._ifrScale === 'function' ? window._ifrScale(packMeta()) : null;
-    return (s ? 'It runs from ' + s.min + ' to ' + s.max + ', and <b>' + s.pass + ' is a pass</b>. ' : '') + 'It unlocks after your first quiz and climbs as you answer.';
+    return (s ? (s.format === 'percent' ? 'It is a percentage, and <b>' + s.pass + '% is a pass</b>. ' : 'It runs from ' + s.min + ' to ' + s.max + ', and <b>' + s.pass + ' is a pass</b>. ') : '') + 'It unlocks after your first quiz and climbs as you answer.';
   }
   var _IT_STEPS = [
     { sel: '#ios-home .ih-rd', h: 'Your readiness score', get p() { return scaleLine(); } },

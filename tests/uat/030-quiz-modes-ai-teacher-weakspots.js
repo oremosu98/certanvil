@@ -448,7 +448,7 @@ test('v4.42.0: renderReadinessCard reads prior numEl value for animateCount',
 test('v4.42.0: renderReadinessCard calls animateCount on change',
   /animateCount\('readiness-num'/.test(readinessBody));
 test('v4.42.0: renderReadinessCard falls back to hot-swap on first render',
-  readinessBody.includes('numEl.textContent = predicted'));
+  readinessBody.includes('numEl.textContent = formatExamScore(predicted)'));   // percent scoring: the hot-swap formats the score ('72%')
 
 // Fix 3+4: celebration toast + milestone capture.
 test('v4.42.0: showMilestoneCelebration helper defined',
@@ -578,7 +578,7 @@ test('v4.42.1: animateCount appends suffix during step',
   test('v4.42.1: renderReadinessCard consumes _readinessIntroArmed',
     body.includes('_readinessIntroArmed') && body.includes('_readinessIntroArmed = false'));
   test('v4.42.1: renderReadinessCard intro animates 0 -> predicted',
-    body.includes("animateCount('readiness-num', 0, predicted, 1400)"));
+    body.includes("animateCount('readiness-num', 0, predicted, 1400"));   // percent scoring adds a '%' suffix argument
   test('v4.42.1: renderReadinessCard intro disables bar transition + reflow',
     body.includes("barEl.style.transition = 'none'") && body.includes('void barEl.offsetWidth'));
   test('v4.42.1: renderReadinessCard intro restores transition via setTimeout',
@@ -586,7 +586,7 @@ test('v4.42.1: animateCount appends suffix during step',
   test('v4.42.1: renderReadinessCard intro uses cubic-bezier reveal',
     body.includes('cubic-bezier(0.2, 0.8, 0.2, 1)'));
   test('v4.42.1: renderReadinessCard falls back to v4.42.0 roll-up after intro',
-    body.includes("animateCount('readiness-num', oldReadinessVal, predicted, 900)"));
+    body.includes("animateCount('readiness-num', oldReadinessVal, predicted, 900"));   // percent scoring adds a '%' suffix argument
 })();
 
 // Daily Goal ring intro wiring

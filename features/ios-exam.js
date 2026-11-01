@@ -49,7 +49,7 @@
       .sort(function (a, b) { return b.wrong - a.wrong; }).slice(0, 4).map(function (w) { return w.topic; });
 
     return {
-      passed: passed, gap: gap, over: over, headline: headline, sub: sub, label: 'Scaled score · ' + d.certLabel, tags: tags, msg: msg,
+      passed: passed, gap: gap, over: over, headline: headline, sub: sub, label: (d.fmt === 'percent' ? 'Score · ' : 'Scaled score · ') + d.certLabel, fmt: d.fmt === 'percent' ? 'percent' : 'scaled', tags: tags, msg: msg,
       note: "An estimate: the real exam's scaling isn't published.",
       meter: { fill: Math.max(0, Math.min(100, pctOf(d.scaled))), tick: pctOf(d.passScore), min: d.minScore, pass: d.passScore, max: d.maxScore },
       scaled: d.scaled, maxScore: d.maxScore, total: d.total,
@@ -70,11 +70,11 @@
       + '<div class="ie-body"><div class="ie-done-head ie-reveal"><span class="ie-done-kick">' + CHECK + 'Exam · ' + m.total + ' questions · complete</span>'
       + '<h2 class="ie-done-title">' + e(m.headline.lead) + ' <em>' + e(m.headline.em) + '</em></h2><p class="ie-done-sub">' + e(m.sub) + '</p></div>';
     h += '<div class="ie-scorecard ie-reveal' + (m.passed ? ' ie-passed' : '') + '"><div class="ie-sc-top"><div class="ie-sc-lbl">' + e(m.label) + '</div>'
-      + '<div><span class="ie-sc-num" data-to="' + m.scaled + '">' + m.scaled + '</span><span class="ie-sc-of">/ ' + m.maxScore + '</span></div>'
+      + '<div><span class="ie-sc-num" data-to="' + m.scaled + '"' + (m.fmt === 'percent' ? ' data-sfx="%"' : '') + '>' + m.scaled + (m.fmt === 'percent' ? '%' : '') + '</span><span class="ie-sc-of">' + (m.fmt === 'percent' ? '' : '/ ' + m.maxScore) + '</span></div>'
       + '<div class="ie-sc-tags">' + m.tags.map(function (t) { return '<span class="ie-sc-tag ie-' + t.kind + '">' + e(t.text) + '</span>'; }).join('') + '</div>'
       + '<p class="ie-sc-msg">' + m.msg.replace(/<b>/g, '\u0001').replace(/<\/b>/g, '\u0002').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\u0001/g, '<b>').replace(/\u0002/g, '</b>') + '</p>'
       + '<div class="ie-sc-meter"><div class="ie-sc-meter-track"><span class="ie-sc-meter-fill" data-w="' + m.meter.fill + '"></span><span class="ie-sc-meter-tick" style="left:' + m.meter.tick + '%"></span></div>'
-      + '<div class="ie-sc-meter-legend"><span>' + m.meter.min + '</span><span class="ie-p">Pass ' + m.meter.pass + '</span><span>' + m.meter.max + '</span></div>'
+      + '<div class="ie-sc-meter-legend"><span>' + m.meter.min + (m.fmt === 'percent' ? '%' : '') + '</span><span class="ie-p">Pass ' + m.meter.pass + (m.fmt === 'percent' ? '%' : '') + '</span><span>' + m.meter.max + (m.fmt === 'percent' ? '%' : '') + '</span></div>'
       + '<p class="ie-sc-note">' + e(m.note) + '</p></div></div>'
       + '<div class="ie-sc-stats">' + m.tiles.map(function (t) { return '<div class="ie-sc-stat' + (t.kind ? ' ie-' + t.kind : '') + '"><span class="ie-sn">' + e(t.n) + '</span><span class="ie-sl">' + t.l + '</span></div>'; }).join('') + '</div></div>';
     h += '<p class="ie-sect-kick">Where the points went</p><h3 class="ie-sect-title">By <em>domain.</em></h3>'
@@ -120,7 +120,7 @@
     if (num && !reduce) {
       var to = +num.getAttribute('data-to'), t0 = null;
       num.textContent = '0';
-      var step = function (t) { if (!t0) t0 = t; var p = Math.min((t - t0) / 950, 1); num.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+      var step = function (t) { if (!t0) t0 = t; var p = Math.min((t - t0) / 950, 1); num.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + (num.getAttribute('data-sfx') || ''); if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
     }
     root.onclick = function (ev) {

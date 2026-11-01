@@ -92,13 +92,13 @@ let _dailyGoalIntroArmed = true;
 // node-only context, or deploy-time race).
 const EXAM_TIME_SECONDS = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examTimeSeconds) || 5400;
 const EXAM_QUESTION_COUNT = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examQuestionCount) || 90;
-const EXAM_PASS_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examPassScore) || 720;
+const EXAM_PASS_SCORE = window.CertRegistry ? window.CertRegistry.examScale(CURRENT_CERT, CERT_PACK && CERT_PACK.meta).pass : ((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examPassScore) || 720);  // CertRegistry.scale (percent certs: pass 60)
 // v4.81.0: Baseline Diagnostic + Pass Plan (Codex r5 #1 / Issue #243)
 const DIAGNOSTIC_QUESTION_COUNT = 20;       // single sitting, ~30 min
 const DIAGNOSTIC_DURATION_MS = 30 * 60 * 1000;  // 30-min timer (no hard cutoff — informational only in MVP)
 const DIAGNOSTIC_RETAKE_COOLDOWN_DAYS = 7;  // user can retake after 7 days
 const DIAGNOSTIC_RETAKE_COOLDOWN_MS = DIAGNOSTIC_RETAKE_COOLDOWN_DAYS * 86400000;
-const EXAM_MAX_SCORE = (CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900;
+const EXAM_MAX_SCORE = window.CertRegistry ? window.CertRegistry.examScale(CURRENT_CERT, CERT_PACK && CERT_PACK.meta).max : ((CERT_PACK && CERT_PACK.meta && CERT_PACK.meta.examMaxScore) || 900);
 // v8.128.0: per-cert score scale (EXAM_MIN_SCORE, READINESS_BAND, readinessFromRaw,
 // readinessBarPct, scaledExamScore) lives in features/readiness.js.
 // v4.87.0: cert-aware exam name string for prompt injection. Examples:
@@ -2953,7 +2953,7 @@ function renderStatsCard() {
     <div class="sstat"><div class="sv" style="color:${avgColor}">${stats.avgPct}%</div><div class="sl">Avg Score</div></div>
     <div class="sstat"><div class="sv">${streakIcon} ${streakData.currentStreak}</div><div class="sl">Day streak</div></div>
     <div class="sstat"><div class="sv">${todayQs}</div><div class="sl">Qs today</div></div>
-    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? stats.bestExam : '\u2014'}</div><div class="sl">Best exam</div></div>`;
+    <div class="sstat"><div class="sv">${stats.bestExam > 0 ? formatExamScore(stats.bestExam) : (EXAM_SCORE_FORMAT === 'percent' ? '--' : '\u2014')}</div><div class="sl">Best exam</div></div>`;
 }
 
 // ══════════════════════════════════════════
@@ -4937,9 +4937,9 @@ function animateReadinessCardV2(pending){
   const settle=()=>{ if(green) green.style.width=barPct+'%'; card.classList.toggle('is-pass',passed);
     if(passed){ drawReadinessRing(card); showReadinessStamp(card,'Exam ready',false); try{ if(typeof launchConfetti==='function') launchConfetti(); else fireReadinessConfetti(card); }catch(_){ fireReadinessConfetti(card);} }
     else { showReadinessStamp(card,scaled>=passLine?'Pass level':(passLine-scaled)+' pts to pass',scaled<passLine); } };  // Pass level: green, no ring or confetti; the Before you book row names the next step
-  if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=scaled; if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
+  if(reduce){ const n=document.getElementById('rc-v2-num'); if(n) n.textContent=formatExamScore(scaled); if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%'; settle(); return; }
   if(fill) fill.style.width=barPct+'%'; if(green) green.style.width=barPct+'%';
-  animateCount('rc-v2-num',100,scaled,1100); setTimeout(settle,1150);
+  animateCount('rc-v2-num',EXAM_SCORE_FORMAT==='percent'?0:100,scaled,1100,EXAM_SCORE_FORMAT==='percent'?'%':''); setTimeout(settle,1150);
 }
 function drawReadinessRing(card){
   const ring=card.querySelector('.rc-v2-ring'); const num=document.getElementById('rc-v2-num'); const path=ring&&ring.querySelector('path');

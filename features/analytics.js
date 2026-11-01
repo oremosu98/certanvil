@@ -384,7 +384,7 @@
     const W = 960, H = 220, PAD = 50;
     const innerW = W - 2 * PAD, innerH = H - 2 * PAD;
     const passPct = readinessBarPct(EXAM_PASS_SCORE); // v8.128.0: position on the cert's readiness band
-    const passYRaw = 72; // 72% raw accuracy ~= pass mark heuristic used in prototype
+    const passYRaw = EXAM_SCORE_FORMAT === 'percent' ? EXAM_PASS_SCORE : 72; // 72% raw accuracy ~= pass mark heuristic used in prototype
     const yOf = (p) => PAD + (1 - p / 100) * innerH;
     const xOf = (i, n) => PAD + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
     const plot = (seriesKey) => {
@@ -677,15 +677,15 @@
       <div class="ana-ready-head">
         <div class="ana-ready-head-left">
           <h3 class="ana-ready-title">EXAM READINESS</h3>
-          <div class="ana-subtitle">CompTIA-domain-weighted · ${EXAM_PASS_SCORE} = pass</div>
+          <div class="ana-subtitle">CompTIA-domain-weighted · ${examPassText()} = pass</div>
         </div>
         ${dateChip}
       </div>
       <div class="ana-ready-hero-row">
         <div class="ana-ready-score-block">
           <div class="ana-ready-num-wrap">
-            <span class="ana-ready-num" style="color:${tierColor}">${predicted}</span>
-            <span class="ana-ready-denom">/ ${EXAM_MAX_SCORE}</span>
+            <span class="ana-ready-num" style="color:${tierColor}">${formatExamScore(predicted)}</span>
+            <span class="ana-ready-denom">${examScoreOf()}</span>
           </div>
           <div class="ana-ready-badge" style="background:${tierBg};color:${tierColor}">${tier}</div>
         </div>
@@ -693,11 +693,11 @@
           <div class="ana-ready-bar">
             <div class="ana-ready-bar-fill" style="width:${barPct}%;background:${tierColor}"></div>
             <div class="ana-ready-bar-passtick" style="left:${passTickPct}%" aria-hidden="true"></div>
-            <div class="ana-ready-bar-passlabel" style="left:${passTickPct}%" aria-hidden="true">${EXAM_PASS_SCORE} PASS</div>
+            <div class="ana-ready-bar-passlabel" style="left:${passTickPct}%" aria-hidden="true">${examPassText()} PASS</div>
           </div>
           <div class="ana-ready-bar-scale" aria-hidden="true">
-            <span>${READINESS_BAND[0]}</span>
-            <span>${READINESS_BAND[1]}</span>
+            <span>${formatExamScore(READINESS_BAND[0])}</span>
+            <span>${formatExamScore(READINESS_BAND[1])}</span>
           </div>
         </div>
       </div>
@@ -934,7 +934,7 @@
           const pass = scaled >= EXAM_PASS_SCORE;
           const date = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
           return `<div class="ana-exam-row">
-            <div class="ana-exam-score" style="color:${pass ? 'var(--green)' : 'var(--red)'}">${scaled}</div>
+            <div class="ana-exam-score" style="color:${pass ? 'var(--green)' : 'var(--red)'}">${formatExamScore(scaled)}</div>
             <div class="ana-exam-badge" style="background:${pass ? 'rgba(var(--green-rgb),.1)' : 'rgba(var(--red-rgb),.1)'};color:${pass ? 'var(--green)' : 'var(--red)'}">${pass ? 'PASS' : 'FAIL'}</div>
             <div class="ana-exam-details">${e.score}/${e.total} correct (${e.pct}%)</div>
             <div class="ana-exam-date">${date}</div>
@@ -2204,7 +2204,7 @@
             <div class="tile-eyebrow" style="margin:0">Readiness</div>
             <span class="read-tier${passCls}">${esc(r.tier)}</span>
           </div>
-          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}">0</span><span class="of">/ ${EXAM_MAX_SCORE}</span></div>
+          <div class="read-score"><span class="big mono" data-cnt="${r.predicted}"${EXAM_SCORE_FORMAT === 'percent' ? ' data-suffix="%"' : ''}>0</span><span class="of">${examScoreOf()}</span></div>
           <p class="read-cap">${fc.line}</p>
           <div class="read-bar-wrap">
             <div class="read-bar">
@@ -2509,7 +2509,7 @@
       const pass = e.score >= PASS;
       return `<div class="exam-row">
           <div><div class="el">${esc(e.label)} #${D.examHistory.length - i}</div><div class="ed mono">${esc(e.date)} · ${e.questions}q</div></div>
-          <div class="es ${pass ? 'pass' : ''} mono">${e.score}</div>
+          <div class="es ${pass ? 'pass' : ''} mono">${formatExamScore(e.score)}</div>
           <div class="exam-bar"><i class="${pass ? 'pass' : ''}" data-w="${(e.pct).toFixed(0)}" style="width:0"></i></div>
         </div>`;
     }).join('');

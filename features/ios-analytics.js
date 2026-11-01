@@ -101,9 +101,9 @@
     var past = typeof r.daysToExam === 'number' && r.daysToExam < 0, ago = past ? -r.daysToExam : 0;   // founder 31 Oct: a past date reads "N days ago", as on desktop
     var dte = hasDate ? (r.daysToExam <= 0 ? 'Today' : r.daysToExam + (r.daysToExam === 1 ? ' day' : ' days')) : past ? ago + (ago === 1 ? ' day ago' : ' days ago') : 'Not set';
     h += page(0, 'Readiness', '<div class="in-rd in-reveal"><div class="in-rd-top"><span class="in-rd-eyebrow">Readiness</span><span class="in-rd-tier">' + e(r.tier) + '</span></div>'
-      + '<div class="in-rd-score"><span class="in-rd-num" data-to="' + r.predicted + '">' + r.predicted + '</span><span class="in-rd-of">/ ' + (r.maxScore || 900) + '</span></div>'
+      + '<div class="in-rd-score"><span class="in-rd-num" data-to="' + r.predicted + '"' + (r.fmt === 'percent' ? ' data-sfx="%"' : '') + '>' + r.predicted + (r.fmt === 'percent' ? '%' : '') + '</span><span class="in-rd-of">' + (r.fmt === 'percent' ? '' : '/ ' + (r.maxScore || 900)) + '</span></div>'
       + '<div class="in-bar"><span data-w="' + (r.barPct || 0).toFixed(1) + '" style="width:0%"></span><span class="in-tick" style="left:' + (r.passTickPct || 0).toFixed(1) + '%"></span></div>'
-      + '<div class="in-rd-legend"><span>Now</span><span class="in-p">Pass ' + r.passScore + '</span></div>'
+      + '<div class="in-rd-legend"><span>Now</span><span class="in-p">Pass ' + r.passScore + (r.fmt === 'percent' ? '%' : '') + '</span></div>'
       + '<p class="in-rd-insight">' + line + '</p>'
       + '<div class="in-rd-forecast"><div class="in-rd-fc"><span class="in-fl">' + fLbl + '</span><span class="in-fv' + (fDim ? ' in-dim' : '') + '">' + fVal + '</span>' + (fRange ? '<span class="in-fr">' + fRange + '</span>' : '') + '</div>'
       + '<div class="in-rd-fc"><span class="in-fl">Days to exam</span><span class="in-fv' + (dte === 'Not set' ? ' in-dim' : '') + '">' + dte + '</span></div></div>' + pbqLine + '</div>'
@@ -211,7 +211,7 @@
       }).join('') + '</div>';
     var ex = m.wins.exams || [];
     wh += '<div class="in-card in-reveal">' + head('Full exams', 'Scaled scores') + (ex.length ? ex.map(function (x) {
-      return '<div class="in-exrow"><b>' + x.score + '</b><span>' + e(x.date) + ' · ' + x.questions + ' questions</span></div>';
+      return '<div class="in-exrow"><b>' + x.score + (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT === 'percent' ? '%' : '') + '</b><span>' + e(x.date) + ' · ' + x.questions + ' questions</span></div>';
     }).join('') : '<div class="in-empty"><span class="in-ei">' + ICON.empty + '</span><b>None yet</b><span>Run one to track scaled scores.</span></div>') + '</div>';
     h += page(5, 'Wins', wh);
 
@@ -254,7 +254,7 @@
     try { drills = typeof window._anaDrillsGroupData === 'function' ? window._anaDrillsGroupData() : null; } catch (_) { drills = null; }
     var model = _iosAnalyticsModel(D, _iosMapModel(stars, _inDomains()), drills);
     if (!model.empty) {
-      model.readiness = Object.assign({ maxScore: (typeof EXAM_MAX_SCORE === 'number' && EXAM_MAX_SCORE) || 900 }, model.readiness);
+      model.readiness = Object.assign({ maxScore: (typeof EXAM_MAX_SCORE === 'number' && EXAM_MAX_SCORE) || 900, fmt: (typeof EXAM_SCORE_FORMAT === 'string' && EXAM_SCORE_FORMAT) || 'scaled' }, model.readiness);
       model.wins.exams = D.examHistory || [];
     }
     root.innerHTML = _iosAnalyticsHtml(model, _inCert());
@@ -283,7 +283,7 @@
     var num = root.querySelector('.in-rd-num');
     if (num && !reduce) {
       var to = +num.getAttribute('data-to'), t0 = null;
-      var step = function (t) { if (!t0) t0 = t; var p = Math.min((t - t0) / 900, 1); num.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+      var step = function (t) { if (!t0) t0 = t; var p = Math.min((t - t0) / 900, 1); num.textContent = Math.round(to * (1 - Math.pow(1 - p, 3))) + (num.getAttribute('data-sfx') || ''); if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
     }
     var sheet = root.querySelector('.in-map-sheet'), scrim = root.querySelector('.in-map-scrim'), cur = null;
